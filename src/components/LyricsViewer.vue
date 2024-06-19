@@ -9,6 +9,7 @@ const props = defineProps<{
     text: string
   }[]
   currentTime: number
+  isDisabled: boolean
 }>()
 
 const lyricsWithStatus = computed(() =>
@@ -48,19 +49,22 @@ watch(
     <li
       v-for="lyric in lyricsWithStatus"
       :key="lyric.startTime"
-      class="pt-1 pb-1 cursor-pointer"
+      class="pt-1 pb-1"
       :class="{
+        'cursor-pointer': !isDisabled,
+        'cursor-default': isDisabled,
         'pt-4': lyric.spaceBefore
       }"
-      @click="$emit('seek', lyric.startTime)"
+      @click="() => !isDisabled && $emit('seek', lyric.startTime)"
     >
       <span
         :class="{
           'text-primary': lyric.status === 'active',
-          'opacity-40': lyric.status === 'past',
+          'font-semibold': lyric.status === 'active',
+          'text-surface-400': lyric.status === 'past',
           'text-2xl': lyric.status === 'active'
         }"
-        class="transition-all transition-duration-500"
+        class="transition-all transition-duration-500 uppercase"
         :ref="
           (el) => {
             if (lyric.status === 'active') {

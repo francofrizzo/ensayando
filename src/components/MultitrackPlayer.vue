@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type WaveSurfer from 'wavesurfer.js'
 import { WaveSurferPlayer } from '@meersagor/wavesurfer-vue'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -8,6 +8,7 @@ import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
+import ProgressSpinner from 'primevue/progressspinner'
 
 import LyricsViewer from '@/components/LyricsViewer.vue'
 
@@ -23,17 +24,10 @@ const getTrackColor = (index: number) => {
 
 const getWaveSurferColorScheme = (index: number, muted = false) => {
   const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-  if (muted) {
-    return {
-      waveColor: isDarkMode ? $dt('gray.700').value : $dt('gray.300').value,
-      progressColor: $dt('gray.500').value
-    }
-  } else {
-    const color = getTrackColor(index)
-    return {
-      waveColor: isDarkMode ? $dt(`${color}.700`).value : $dt(`${color}.300`).value,
-      progressColor: $dt(`${color}.500`).value
-    }
+  const color = muted ? 'zinc' : getTrackColor(index)
+  return {
+    waveColor: isDarkMode ? $dt(`${color}.700`).value : $dt(`${color}.300`).value,
+    progressColor: isDarkMode ? $dt(`${color}.500`).value : $dt(`${color}.400`).value
   }
 }
 
@@ -77,28 +71,50 @@ const waveSurferOptions = ref<PartialWaveSurferOptions>({
   barGap: 5,
   barWidth: 4,
   barRadius: 8,
-  dragToSeek: false
+  dragToSeek: false,
+  backend: 'WebAudio'
 })
 
 const currentTime = ref<number>(0)
 const totalDuration = ref<number>(0)
 const isPlaying = ref(false)
-const trackData = ref<{ waveSurfer: WaveSurfer | null; isMuted: boolean }[]>(
-  props.song.tracks.map(() => ({ waveSurfer: null, isMuted: false }))
+const trackData = ref<{ waveSurfer: WaveSurfer | null; isMuted: boolean; isReady: boolean }[]>(
+  props.song.tracks.map(() => ({ waveSurfer: null, isMuted: false, isReady: false }))
 )
 
-const onReady = (duration: number) => {
-  totalDuration.value = duration
+const isReady = computed(() => trackData.value.every((track) => track.isReady))
+
+const isCtrlPressed = ref(false)
+
+const onReady = (index: number, duration: number) => {
+  trackData.value[index].isReady = true
+  if (index === 0) {
+    totalDuration.value = duration
+  }
 }
-const onTimeUpdate = (time: number) => {
-  currentTime.value = time
+const onTimeUpdate = (index: number, time: number) => {
+  if (index === 0) {
+    currentTime.value = time
+  }
 }
 
 const onToggleTrackMuted = (index: number) => {
   const isMuted = !trackData.value[index].isMuted
   trackData.value[index].isMuted = isMuted
-  trackData.value[index].waveSurfer?.setMuted(isMuted)
+  trackData.value[index].waveSurfer?.setVolume(isMuted ? 0 : 1)
   trackData.value[index].waveSurfer?.setOptions(getWaveSurferColorScheme(index, isMuted))
+}
+
+const onChangeTrackMutedSwitch = (index: number) => {
+  if (!isCtrlPressed.value) {
+    onToggleTrackMuted(index)
+  } else {
+    for (let index2 = 0; index2 < trackData.value.length; index2++) {
+      if (index !== index2) {
+        onToggleTrackMuted(index2)
+      }
+    }
+  }
 }
 
 const onPlayPause = (forcePlay?: boolean) => {
@@ -122,19 +138,31 @@ const onSeekToTime = (time: number) => {
   onPlayPause(true)
 }
 
-const spaceKeyHandler = (event: KeyboardEvent) => {
+const keydownHandler = (event: KeyboardEvent) => {
   if (event.key === ' ') {
     event.preventDefault()
     onPlayPause()
+  } else if (
+    navigator.userAgent.indexOf('Mac') > 0 ? event.key === 'Meta' : event.key === 'Control'
+  ) {
+    isCtrlPressed.value = true
+  }
+}
+
+const keyupHandler = (event: KeyboardEvent) => {
+  if (navigator.userAgent.indexOf('Mac') > 0 ? event.key === 'Meta' : event.key === 'Control') {
+    isCtrlPressed.value = false
   }
 }
 
 onMounted(() => {
-  window.onkeydown = spaceKeyHandler
+  window.addEventListener('keydown', keydownHandler)
+  window.addEventListener('keyup', keyupHandler)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', spaceKeyHandler)
+  window.removeEventListener('keydown', keydownHandler)
+  window.removeEventListener('keyup', keyupHandler)
   for (const track of trackData.value) {
     track.waveSurfer?.destroy()
   }
@@ -145,9 +173,9 @@ const formatTime = (seconds: number): string =>
 </script>
 
 <template>
-  <div class="surface-100 flex w-full h-dvh flex-col p-2">
+  <div class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col p-2">
     <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         <Menu ref="menu" id="overlay_menu" :popup="true" :model="menuItems" />
         <Button
           class="flex-shrink-0"
@@ -158,7 +186,7 @@ const formatTime = (seconds: number): string =>
           aria-controls="overlay_menu"
         />
 
-        <span class="text-lg">{{ song.title }}</span>
+        <span class="text-lg font-bold">{{ song.title }}</span>
       </div>
 
       <div class="flex items-center gap-3 text-right">
@@ -174,6 +202,7 @@ const formatTime = (seconds: number): string =>
           class="flex-shrink-0"
           :icon="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
           @click="() => onPlayPause()"
+          :disabled="!isReady"
           rounded
           aria-label="Play/Pause"
         />
@@ -185,50 +214,61 @@ const formatTime = (seconds: number): string =>
       class="border border-green-500 flex-grow min-h-0 border border-green-500"
     >
       <SplitterPanel class="outline-none" :size="75">
-        <div class="h-full overflow-y-auto">
-          <div class="w-full py-3 pl-2 md:pl-4">
-            <div v-for="(track, index) in song.tracks" class="flex items-center gap-3">
-              <div
-                class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-2"
-              >
-                <span class="truncate">{{ track.title }}</span>
-                <ToggleSwitch
-                  @change="() => onToggleTrackMuted(index)"
-                  :dt="getToggleColorScheme(index)"
-                  :modelValue="!trackData[index]?.isMuted"
-                />
-              </div>
-              <div class="w-full p-0">
-                <WaveSurferPlayer
-                  v-if="index === 0"
-                  :options="{
-                    ...waveSurferOptions,
-                    ...getWaveSurferColorScheme(index),
-                    url: track.file
-                  }"
-                  @interaction="(time: number) => onSeekToTime(time)"
-                  @waveSurfer="(ws: WaveSurfer) => (trackData[index].waveSurfer = ws)"
-                  @ready="(duration: number) => onReady(duration)"
-                  @timeupdate="(time: number) => onTimeUpdate(time)"
-                />
-                <WaveSurferPlayer
-                  v-else
-                  :options="{
-                    ...waveSurferOptions,
-                    ...getWaveSurferColorScheme(index),
-                    url: track.file
-                  }"
-                  @interaction="(time: number) => onSeekToTime(time)"
-                  @waveSurfer="(ws: WaveSurfer) => (trackData[index].waveSurfer = ws)"
-                />
+        <div class="h-full relative">
+          <div class="h-full overflow-y-auto">
+            <div class="w-full h-full py-3 pl-3 md:pl-4">
+              <div v-for="(track, index) in song.tracks" class="flex items-center gap-3">
+                <div
+                  class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-2"
+                >
+                  <div class="flex flex-col gap-1">
+                    <span class="text-ellipsis overflow-hidden">{{ track.title }}</span>
+                    <span
+                      v-if="track.subtitle"
+                      class="text-ellipsis overflow-hidden text-surface-400 text-xs uppercase tracking-wider"
+                      >{{ track.subtitle }}</span
+                    >
+                  </div>
+                  <ToggleSwitch
+                    @change="() => onChangeTrackMutedSwitch(index)"
+                    :dt="getToggleColorScheme(index)"
+                    :modelValue="!trackData[index]?.isMuted"
+                  />
+                </div>
+                <div class="w-full p-0">
+                  <WaveSurferPlayer
+                    :options="{
+                      ...waveSurferOptions,
+                      ...getWaveSurferColorScheme(index),
+                      url: track.file
+                    }"
+                    @interaction="(time: number) => onSeekToTime(time)"
+                    @waveSurfer="(ws: WaveSurfer) => (trackData[index].waveSurfer = ws)"
+                    @ready="(duration: number) => onReady(index, duration)"
+                    @timeupdate="(time: number) => onTimeUpdate(index, time)"
+                  />
+                </div>
               </div>
             </div>
+          </div>
+
+          <div
+            v-if="!isReady"
+            class="absolute top-0 left-0 bottom-0 right-0 z-10 bg-surface-200 dark:bg-surface-800 rounded opacity-80 flex flex-col gap-4 text-xl items-center justify-center"
+          >
+            <ProgressSpinner />
+            Cargando...
           </div>
         </div>
       </SplitterPanel>
       <SplitterPanel class="outline-none" :size="25">
         <div class="h-full overflow-y-auto px-2">
-          <LyricsViewer :lyrics="song.lyrics" :currentTime="currentTime" @seek="onSeekToTime" />
+          <LyricsViewer
+            :lyrics="song.lyrics"
+            :currentTime="currentTime"
+            :isDisabled="!isReady"
+            @seek="onSeekToTime"
+          />
         </div>
       </SplitterPanel>
     </Splitter>
