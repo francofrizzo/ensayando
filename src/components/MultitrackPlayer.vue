@@ -52,7 +52,6 @@ const getToggleColorScheme = (index: number) => {
 }
 
 // Component logic
-
 const songsStore = useSongsStore()
 
 const props = defineProps<{ song: Song }>()
@@ -68,8 +67,8 @@ const menuItems = songsStore.allSongs.map((song) => ({
 
 const waveSurferOptions = ref<PartialWaveSurferOptions>({
   height: 120,
-  barGap: 5,
-  barWidth: 4,
+  barGap: 2,
+  barWidth: 2,
   barRadius: 8,
   dragToSeek: false,
   backend: 'WebAudio'
