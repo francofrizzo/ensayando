@@ -8,7 +8,8 @@ const songsStore = useSongsStore()
 
 <template>
   <MultitrackPlayer
-    v-if="songsStore.currentSong"
+    v-if="songsStore.currentCollection && songsStore.currentSong"
+    :collection="songsStore.currentCollection"
     :song="songsStore.currentSong"
     :key="songsStore.currentSong.title"
   />

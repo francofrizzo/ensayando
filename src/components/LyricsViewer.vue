@@ -45,7 +45,7 @@ watch(
 </script>
 
 <template>
-  <ul class="list-none w-full text-center text-xl px-0 py-8">
+  <ul class="list-none w-full text-center text-xl px-0 py-8 tracking-wide">
     <li
       v-for="lyric in lyricsWithStatus"
       :key="lyric.startTime"

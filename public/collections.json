@@ -1,0 +1,12 @@
+[
+  {
+    "id": "beetlejuice",
+    "title": "Beetlejuice",
+    "songsFile": "songs-beetlejuice.json"
+  },
+  {
+    "id": "hamilton",
+    "title": "Hamilton",
+    "songsFile": "songs-hamilton.json"
+  }
+]

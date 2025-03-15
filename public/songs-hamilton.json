@@ -1,0 +1,55 @@
+[
+  {
+    "title": "Alexander Hamilton",
+    "tracks": [
+      {
+        "title": "Pista",
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-t.wav"
+      },
+      {
+        "title": "Solistas",
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-l.wav"
+      },
+      {
+        "title": "Voz 1",
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v1.wav"
+      },
+      {
+        "title": "Voz 2",
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v2.wav"
+      },
+      {
+        "title": "Voz 3",
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v3.wav"
+      },
+      {
+        "title": "Voz 4",
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v4.wav"
+      }
+    ],
+    "lyrics": [
+      {
+        "startTime": 6.76,
+        "endTime": 12.82,
+        "text": "Daylight come and me wan' go..."
+      },
+
+      {
+        "spaceBefore": true,
+        "startTime": 32.17,
+        "endTime": 36.79,
+        "text": "Aah, aah, aah"
+      },
+      {
+        "startTime": 37.36,
+        "endTime": 42.03,
+        "text": "Aah, ah-ah-ah, ah-ah-ah"
+      },
+      {
+        "startTime": 42.16,
+        "endTime": 47.71,
+        "text": "Aah, ah-aaah, ah"
+      }
+    ]
+  }
+]

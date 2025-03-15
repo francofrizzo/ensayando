@@ -1,5 +1,6 @@
 export type Song = {
   title: string
+  collectionId: string
   tracks: {
     title: string
     subtitle?: string

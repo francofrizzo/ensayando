@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type WaveSurfer from 'wavesurfer.js'
 import { WaveSurferPlayer } from '@meersagor/wavesurfer-vue'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { $dt } from '@primevue/themes'
 import Button from 'primevue/button'
-import Menu from 'primevue/menu'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import ProgressSpinner from 'primevue/progressspinner'
 
 import LyricsViewer from '@/components/LyricsViewer.vue'
+import SongMenu from '@/components/SongMenu.vue'
 
 import { useSongsStore } from '@/stores/songs'
 import type { Song } from '@/data/song.types'
 import type { PartialWaveSurferOptions } from 'node_modules/@meersagor/wavesurfer-vue/dist/types/types'
+import type { Collection } from '@/data/collection.types'
 
 // Utility functions
 const getTrackColor = (index: number) => {
@@ -54,19 +55,10 @@ const getToggleColorScheme = (index: number) => {
 // Component logic
 const songsStore = useSongsStore()
 
-const props = defineProps<{ song: Song }>()
-
-const menu = ref()
-const toggleMenu = (event: MouseEvent) => {
-  menu.value.toggle(event)
-}
-const menuItems = songsStore.allSongs.map((song) => ({
-  label: song.title,
-  command: () => songsStore.changeSong(song.title)
-}))
+const props = defineProps<{ collection: Collection, song: Song }>()
 
 const waveSurferOptions = ref<PartialWaveSurferOptions>({
-  height: 120,
+  height: 72,
   barGap: 2,
   barWidth: 2,
   barRadius: 8,
@@ -175,30 +167,24 @@ const formatTime = (seconds: number): string =>
   <div class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col p-2">
     <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3">
       <div class="flex items-center gap-4">
-        <Menu ref="menu" id="overlay_menu" :popup="true" :model="menuItems" />
-        <Button
-          class="flex-shrink-0"
-          type="button"
-          icon="pi pi-bars"
-          @click="toggleMenu"
-          aria-haspopup="true"
-          aria-controls="overlay_menu"
-        />
+        <SongMenu :collection="collection" />
 
-        <span class="text-lg font-bold">{{ song.title }}</span>
+        <div class="flex flex-col tracking-wide">
+          <span class="text-lg font-semibold">{{ song.title }}</span>
+          <span class="text-xs font-medium uppercase text-muted-color ">{{ collection.title }}</span>
+        </div>
       </div>
 
-      <div class="flex items-center gap-3 text-right">
-        <span class="text-surface-400"
-          >{{ formatTime(currentTime)
-          }}<span class="text-surface-500 text-sm">.{{ currentTime.toFixed(2).split('.')[1] }}</span
-          >&nbsp;/ {{ formatTime(totalDuration)
-          }}<span class="text-surface-500 text-sm"
-            >.{{ totalDuration.toFixed(2).split('.')[1] }}</span
-          ></span
-        >
+      <div class="flex items-center gap-5 text-right">
+        <div class="flex items-baseline">
+          <span class="text-surface-200 text-xl">{{ formatTime(currentTime) }}</span>
+          <span class="text-surface-500 text-md">.{{ currentTime.toFixed(2).split('.')[1] }}</span>
+          <span class="text-surface-300 text-xl mx-1">/</span>
+          <span class="text-surface-400">{{ formatTime(totalDuration) }}</span>
+          <span class="text-surface-600 text-xs">.{{ totalDuration.toFixed(2).split('.')[1] }}</span>
+        </div>
         <Button
-          class="flex-shrink-0"
+          class="flex-shrink-0 aspect-square"
           :icon="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
           @click="() => onPlayPause()"
           :disabled="!isReady"
@@ -208,25 +194,31 @@ const formatTime = (seconds: number): string =>
       </div>
     </div>
 
-    <Splitter
-      layout="vertical"
-      class="border border-green-500 flex-grow min-h-0 border border-green-500"
-    >
+    <Splitter layout="vertical" class="flex-grow min-h-0">
+      <SplitterPanel class="outline-none" :size="25">
+        <div class="h-full overflow-y-auto px-2">
+          <LyricsViewer
+            :lyrics="song.lyrics"
+            :currentTime="currentTime"
+            :isDisabled="!isReady"
+            @seek="onSeekToTime"
+          />
+        </div>
+      </SplitterPanel>
       <SplitterPanel class="outline-none" :size="75">
         <div class="h-full relative">
           <div class="h-full overflow-y-auto">
             <div class="w-full h-full py-3 pl-3 md:pl-4">
-              <div v-for="(track, index) in song.tracks" class="flex items-center gap-3">
+              <div
+                v-for="(track, index) in song.tracks"
+                v-bind:key="index"
+                class="flex items-center gap-3"
+              >
                 <div
                   class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-2"
                 >
                   <div class="flex flex-col gap-1">
                     <span class="text-ellipsis overflow-hidden">{{ track.title }}</span>
-                    <span
-                      v-if="track.subtitle"
-                      class="text-ellipsis overflow-hidden text-surface-400 text-xs uppercase tracking-wider"
-                      >{{ track.subtitle }}</span
-                    >
                   </div>
                   <ToggleSwitch
                     @change="() => onChangeTrackMutedSwitch(index)"
@@ -258,16 +250,6 @@ const formatTime = (seconds: number): string =>
             <ProgressSpinner />
             Cargando...
           </div>
-        </div>
-      </SplitterPanel>
-      <SplitterPanel class="outline-none" :size="25">
-        <div class="h-full overflow-y-auto px-2">
-          <LyricsViewer
-            :lyrics="song.lyrics"
-            :currentTime="currentTime"
-            :isDisabled="!isReady"
-            @seek="onSeekToTime"
-          />
         </div>
       </SplitterPanel>
     </Splitter>
