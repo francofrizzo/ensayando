@@ -29,11 +29,31 @@ const emit = defineEmits<{
 const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
+const isIOS = computed(() => /iPad|iPhone|iPod/.test(navigator.userAgent))
 
 // Methods
 const seekTo = (time: number) => {
   if (!waveSurfer.value || !props.isReady) return
   waveSurfer.value.setTime(time)
+}
+
+// Initialize audio context for iOS
+const initializeAudioContext = () => {
+  if (isIOS.value && waveSurfer.value) {
+    const audioContext = (waveSurfer.value as any).backend?.ac
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume()
+    }
+  }
+}
+
+const handleVolumeChange = (value: number | number[]) => {
+  const newVolume = Array.isArray(value) ? value[0] : value
+  const clampedVolume = Math.max(0, Math.min(1, newVolume))
+  if (waveSurfer.value) {
+    waveSurfer.value.setVolume(clampedVolume)
+  }
+  emit('volume-change', clampedVolume)
 }
 
 defineExpose({
@@ -106,7 +126,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   barWidth: 2,
   barRadius: 8,
   dragToSeek: false,
-  backend: 'MediaElement',
+  backend: 'WebAudio',
   url: props.track.file,
   ...waveSurferColorScheme.value
 }))
@@ -138,6 +158,7 @@ watch(
   (newIsPlaying) => {
     if (!waveSurfer.value || !props.isReady) return
     if (newIsPlaying) {
+      initializeAudioContext()
       waveSurfer.value?.play()
     } else {
       waveSurfer.value?.pause()
@@ -157,8 +178,12 @@ watch(
 watch(
   () => props.volume,
   (newVolume) => {
-    waveSurfer.value?.setVolume(newVolume)
-  }
+    if (waveSurfer.value) {
+      const clampedVolume = Math.max(0, Math.min(1, newVolume))
+      waveSurfer.value.setVolume(clampedVolume)
+    }
+  },
+  { immediate: true }
 )
 
 onMounted(() => {
@@ -195,10 +220,7 @@ onUnmounted(() => {
         :max="1"
         :step="0.01"
         :dt="sliderColorScheme"
-        @update:modelValue="
-          (value: number | number[]) =>
-            emit('volume-change', Array.isArray(value) ? value[0] : value)
-        "
+        @update:modelValue="handleVolumeChange"
       />
     </div>
     <div class="w-full p-0">

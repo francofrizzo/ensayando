@@ -100,27 +100,24 @@ const onTimeUpdate = (trackIndex: number, time: number) => {
 }
 
 const onVolumeChange = (trackIndex: number, volume: number) => {
-  state.trackStates.value[trackIndex].volume = volume
+  const clampedVolume = Math.max(0, Math.min(1, volume))
+  state.trackStates.value[trackIndex].volume = clampedVolume
 }
 
 const onToggleTrackMuted = (trackIndex: number) => {
-  state.trackStates.value[trackIndex].volume =
-    state.trackStates.value[trackIndex].volume === 0 ? 1 : 0
+  const newVolume = state.trackStates.value[trackIndex].volume === 0 ? 1 : 0
+  onVolumeChange(trackIndex, newVolume)
 }
 
 const onSoloTrack = (index: number) => {
   const isCurrentlySoloed = state.trackStates.value.every(
     (track, i) => i === index || track.volume === 0
   )
-  if (isCurrentlySoloed) {
-    state.trackStates.value.forEach((_, i) => {
-      onVolumeChange(i, 1)
-    })
-  } else {
-    state.trackStates.value.forEach((_, i) => {
-      onVolumeChange(i, i === index ? 1 : 0)
-    })
-  }
+
+  state.trackStates.value.forEach((_, i) => {
+    const newVolume = isCurrentlySoloed ? 1 : i === index ? 1 : 0
+    onVolumeChange(i, newVolume)
+  })
 }
 
 const onPlayPause = async (forcePlay?: boolean) => {
