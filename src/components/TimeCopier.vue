@@ -71,16 +71,16 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="bg-surface-200 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-full px-2.5 py-1 transition-all duration-300"
+    class="bg-surface-200 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-full px-2 py-0.5 transition-all duration-300 text-sm"
     :class="{
       'opacity-0': !isVisible,
       'bg-green-100 dark:bg-green-900 border-green-200 dark:border-green-800 scale-110': wasCopied
     }"
   >
     <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-1.5">
         <span
-          class="text-surface-700 dark:text-surface-200 mx-1"
+          class="text-surface-700 dark:text-surface-200"
           v-if="firstTime !== null || copiedFirstTime !== null"
           >{{ firstTime !== null ? firstTime.toFixed(2) : copiedFirstTime!.toFixed(2) }}</span
         >
@@ -90,7 +90,7 @@ onUnmounted(() => {
           >-</span
         >
         <span
-          class="text-surface-700 dark:text-surface-200 mx-1"
+          class="text-surface-700 dark:text-surface-200"
           v-if="secondTime !== null || copiedSecondTime !== null"
           >{{ secondTime !== null ? secondTime.toFixed(2) : copiedSecondTime!.toFixed(2) }}</span
         >
