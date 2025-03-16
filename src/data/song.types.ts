@@ -3,7 +3,7 @@ export type Song = {
   collectionId: string
   title: string
   tracks: Track[]
-  lyrics: LyricsLine[]
+  lyrics: Lyric[][]
 }
 
 export type Track = {
@@ -13,9 +13,10 @@ export type Track = {
   file: string
 }
 
-export type LyricsLine = {
+export type Lyric = {
   startTime: number
   endTime?: number
-  spaceBefore?: boolean
   text: string
+  tracks?: string[]
+  comment?: string
 }

@@ -20,7 +20,14 @@ const emit = defineEmits<{
   'update:currentTime': [time: number]
   'update:playing': [isPlaying: boolean]
 }>()
- 
+
+const getTrackColor = (index: number) => {
+  const { trackColors } = props.collection.theme
+  if (Array.isArray(trackColors)) {
+    return trackColors[index % trackColors.length]
+  }
+  return trackColors[props.song.tracks[index].id] || "primary"
+}
 
 const state = {
   currentTime: ref<number>(0),
@@ -113,6 +120,7 @@ onUnmounted(() => {
         :lyrics="song.lyrics"
         :currentTime="state.currentTime.value"
         :isDisabled="!isReady"
+        :collection="collection"
         @seek="onSeekToTime"
       />
     </div>
@@ -126,17 +134,17 @@ onUnmounted(() => {
             <div class="flex items-center gap-2">
               <TrackPlayer
                 :track="track"
-                :index="index"
+                :color="getTrackColor(index)"
                 :isReady="state.trackStates.value[index].isReady"
                 :volume="state.trackStates.value[index].volume"
                 :isPlaying="state.playing.value"
                 :lastSeekTime="state.lastSeekTime.value"
-                @ready="onReady"
-                @time-update="onTimeUpdate"
-                @volume-change="onVolumeChange"
+                @ready="(duration: number) => onReady(index, duration)"
+                @time-update="(time: number) => onTimeUpdate(index, time)"
+                @volume-change="(volume: number) => onVolumeChange(index, volume)"
+                @toggle-track-muted="() => onToggleTrackMuted(index)"
+                @toggle-track-solo="() => onSoloTrack(index)"
                 @seek-to-time="onSeekToTime"
-                @solo-track="onSoloTrack"
-                @toggle-track-muted="onToggleTrackMuted"
               />
             </div>
           </div>

@@ -2,6 +2,7 @@ import type { Song } from '@/data/song.types'
 import type { Collection } from '@/data/collection.types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { updatePrimaryPalette } from '@primevue/themes'
 
 export const useSongsStore = defineStore('songs', () => {
   const collections = ref<Collection[]>([])
@@ -23,7 +24,7 @@ export const useSongsStore = defineStore('songs', () => {
     // Reset songs and current song before loading new ones
     songs.value = []
     currentSong.value = undefined
-    
+
     // Load songs for the selected collection
     const response = await fetch(`/bj/${collection.songsFile}`)
     const data = await response.json()
@@ -34,6 +35,21 @@ export const useSongsStore = defineStore('songs', () => {
     if (data.length > 0) {
       currentSong.value = songs.value[0]
     }
+
+    const color = collection.theme.mainColor
+    updatePrimaryPalette({
+      50: `{${color}.50}`,
+      100: `{${color}.100}`,
+      200: `{${color}.200}`,
+      300: `{${color}.300}`,
+      400: `{${color}.400}`,
+      500: `{${color}.500}`,
+      600: `{${color}.600}`,
+      700: `{${color}.700}`,
+      800: `{${color}.800}`,
+      900: `{${color}.900}`,
+      950: `{${color}.950}`
+    })
   }
 
   function changeCurrentSong(title: string) {
@@ -43,7 +59,7 @@ export const useSongsStore = defineStore('songs', () => {
     }
   }
 
-  return { 
+  return {
     collections,
     songs,
     currentCollection,

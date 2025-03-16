@@ -2,11 +2,26 @@
   {
     "id": "beetlejuice",
     "title": "Beetlejuice",
-    "songsFile": "songs-beetlejuice.json"
+    "songsFile": "songs-beetlejuice.json",
+    "theme": {
+      "mainColor": "emerald",
+      "trackColors": ["emerald", "amber", "sky", "rose", "indigo", "lime"]
+    }
   },
   {
     "id": "hamilton",
     "title": "Hamilton",
-    "songsFile": "songs-hamilton.json"
+    "songsFile": "songs-hamilton.json",
+    "theme": {
+      "mainColor": "yellow",
+      "trackColors": {
+        "b": "rose",
+        "h": "yellow",
+        "v1": "blue",
+        "v2": "sky",
+        "v3": "emerald",
+        "v4": "lime"
+      }
+    }
   }
 ]

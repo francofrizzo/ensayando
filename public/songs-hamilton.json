@@ -1,55 +1,221 @@
 [
   {
+    "id": "1-alexander-hamilton",
     "title": "Alexander Hamilton",
     "tracks": [
       {
+        "id": "b",
         "title": "Pista",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-t.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-b.wav"
       },
       {
+        "id": "h",
         "title": "Solistas",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-l.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-h.wav"
       },
       {
+        "id": "v1",
         "title": "Voz 1",
         "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v1.wav"
       },
       {
+        "id": "v2",
         "title": "Voz 2",
         "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v2.wav"
       },
       {
+        "id": "v3",
         "title": "Voz 3",
         "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v3.wav"
       },
       {
+        "id": "v4",
         "title": "Voz 4",
         "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v4.wav"
       }
     ],
     "lyrics": [
-      {
-        "startTime": 6.76,
-        "endTime": 12.82,
-        "text": "Daylight come and me wan' go..."
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 32.17,
-        "endTime": 36.79,
-        "text": "Aah, aah, aah"
-      },
-      {
-        "startTime": 37.36,
-        "endTime": 42.03,
-        "text": "Aah, ah-ah-ah, ah-ah-ah"
-      },
-      {
-        "startTime": 42.16,
-        "endTime": 47.71,
-        "text": "Aah, ah-aaah, ah"
-      }
+      [
+        {
+          "startTime": 3.28,
+          "text": "¿Cómo es que un niño bastardo",
+          "tracks": ["h"],
+          "comment": "Aaron Burr"
+        },
+        {
+          "startTime": 5.78,
+          "text": "Que fue abandonado",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 7.35,
+          "text": "Y a su suerte dejado en medio de la nada del Caribe",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 12.26,
+          "text": "Acompañado por muerte y escoria",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 14.97,
+          "text": "Creció y se convirtió en un héroe de la historia?",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 18.46,
+          "text": "El tipo que hoy está impreso en los billetes",
+          "tracks": ["h"],
+          "comment": "John Laurens"
+        },
+        {
+          "startTime": 22.34,
+          "endTime": 25.97,
+          "text": "Creció sin un centavo en los bolsillos y su suerte",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 26.07,
+          "endTime": 29.7,
+          "text": "Fue gracias a su esfuerzo y a su inteligencia",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 29.8,
+          "text": "Que llegó a los catorce a ser una eminencia",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 32.0,
+          "text": "Y mientras cada esclavo era masacrado,",
+          "tracks": ["h"],
+          "comment": "Thomas Jefferson"
+        },
+        {
+          "startTime": 35.0,
+          "text": "El tipo se llevaba todo puesto a su paso",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 37.5,
+          "text": "Pertenecer a un sitio era su objetivo",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 40.0,
+          "text": "Y si había algo que hacer para eso estaba listo",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 42.5,
+          "text": "Y vino un huracán y todo se llevó",
+          "tracks": ["h"],
+          "comment": "James Madison"
+        },
+        {
+          "startTime": 45.0,
+          "text": "Parecía que a sus sueños por un caño los tiró",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 47.5,
+          "text": "Puso un lápiz en su frente, su cerebro conectó",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 50.0,
+          "text": "Y así un testamento escribió a su dolor",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 52.5,
+          "text": "Y aunque todos le dijeron que no estaba en su juicio",
+          "tracks": ["h"],
+          "comment": "Aaron Burr"
+        },
+        {
+          "startTime": 55.0,
+          "text": "Siguió adelante con su canto y esto dejó escrito",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 57.5,
+          "text": "“Educa tu mente y conoce bien su cimiento",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 60.0,
+          "text": "Que así el mundo va a saber muy bien tu movimiento”",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 62.5,
+          "text": "Alexander Hamilton",
+          "tracks": ["h"],
+          "comment": "Alexander Hamilton"
+        },
+        {
+          "startTime": 64.5,
+          "text": "Mi nombre es Alexander Hamilton",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 67.0,
+          "text": "Hay tantas cosas que voy a lograr,",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 69.0,
+          "text": "Esperá, ya vendrán...",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 71.0,
+          "text": "Luego a los diez su padre huyó,",
+          "tracks": ["h"],
+          "comment": "Eliza Hamilton"
+        },
+        {
+          "startTime": 73.0,
+          "text": "Lo dejó endeudado,",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 74.5,
+          "text": "Años después Alex y su madre enfermaron,",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 77.0,
+          "text": "Pero él gracias a Dios pronto",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 105.58,
+          "endTime": 108.79,
+          "text": "Pudo salir, mas vio a su madre morir",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 105.58,
+          "endTime": 108.79,
+          "text": "Pudo salir, mas vio a su madre morir",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        }
+      ],
+      []
     ]
   }
 ]

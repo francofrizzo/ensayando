@@ -28,28 +28,30 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 6.76,
-        "endTime": 12.82,
-        "text": "Daylight come and me wan' go..."
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 32.17,
-        "endTime": 36.79,
-        "text": "Aah, aah, aah"
-      },
-      {
-        "startTime": 37.36,
-        "endTime": 42.03,
-        "text": "Aah, ah-ah-ah, ah-ah-ah"
-      },
-      {
-        "startTime": 42.16,
-        "endTime": 47.71,
-        "text": "Aah, ah-aaah, ah"
-      }
+      [
+        {
+          "startTime": 6.76,
+          "endTime": 12.82,
+          "text": "Daylight come and me wan' go..."
+        }
+      ],
+      [
+        {
+          "startTime": 32.17,
+          "endTime": 36.79,
+          "text": "Aah, aah, aah"
+        },
+        {
+          "startTime": 37.36,
+          "endTime": 42.03,
+          "text": "Aah, ah-ah-ah, ah-ah-ah"
+        },
+        {
+          "startTime": 42.16,
+          "endTime": 47.71,
+          "text": "Aah, ah-aaah, ah"
+        }
+      ]
     ]
   },
 
@@ -82,135 +84,137 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 47.3,
-        "endTime": 49.48,
-        "text": "De la muerte el show va a tratar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 70.92,
-        "endTime": 73.69,
-        "text": "¡Posta de la muerte este show va a tratar!"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 98.52,
-        "endTime": 101.58,
-        "text": "Dies irae"
-      },
-      {
-        "startTime": 104.72,
-        "text": "Dies irae"
-      },
-      {
-        "startTime": 107.6,
-        "text": "Ah, ah, ah, ah, ah"
-      },
-      {
-        "startTime": 113.55,
-        "endTime": 120.13,
-        "text": "Ah, ah, ah, ah, ah"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 127.7,
-        "endTime": 130,
-        "text": "De la muerte el show va a tratar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 153.48,
-        "text": "La muerte es tabú"
-      },
-      {
-        "startTime": 155.1,
-        "text": "Pero no es cosa vudú"
-      },
-      {
-        "startTime": 156.29,
-        "text": "Nada puede hacer ni un gurú ni un monje hindú"
-      },
-      {
-        "startTime": 159.07,
-        "endTime": 161.8,
-        "text": "Es solo el destino"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 165.8,
-        "text": "No hay un orden superior"
-      },
-      {
-        "startTime": 167.36,
-        "text": "Solo esperas con terror"
-      },
-      {
-        "startTime": 168.74,
-        "text": "Y gente odiosa alrededor"
-      },
-      {
-        "startTime": 170.3,
-        "endTime": 175.44,
-        "text": "A que tu vida llegue al fin del camino"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 180.19,
-        "endTime": 183.31,
-        "text": "Ah, ah, ah, ah, ah"
-      },
-      {
-        "startTime": 186.13,
-        "endTime": 189.12,
-        "text": "Ah, ah, ah, ah, ah"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 192.36,
-        "text": "Dies irae"
-      },
-      {
-        "startTime": 195.34,
-        "endTime": 198.37,
-        "text": "Oh, tan irae"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 200.03,
-        "endTime": 201.6,
-        "text": "Dies irae"
-      },
-      {
-        "startTime": 203.11,
-        "endTime": 204.75,
-        "text": "Dies irae"
-      },
-      {
-        "startTime": 206.4,
-        "text": "Dies irae, ah"
-      },
-      {
-        "startTime": 210.7,
-        "text": "Ah, ah, ah, ah"
-      },
-      {
-        "startTime": 213.75,
-        "text": "Ah, ah-ah, ah, ah-ah"
-      },
-      {
-        "startTime": 216.81,
-        "endTime": 219.6,
-        "text": "¡Posta de la muerte este show va a tratar!"
-      }
+      [
+        {
+          "startTime": 47.3,
+          "endTime": 49.48,
+          "text": "De la muerte el show va a tratar"
+        }
+      ],
+      [
+        {
+          "startTime": 70.92,
+          "endTime": 73.69,
+          "text": "¡Posta de la muerte este show va a tratar!"
+        }
+      ],
+      [
+        {
+          "startTime": 98.52,
+          "endTime": 101.58,
+          "text": "Dies irae"
+        },
+        {
+          "startTime": 104.72,
+          "text": "Dies irae"
+        },
+        {
+          "startTime": 107.6,
+          "text": "Ah, ah, ah, ah, ah"
+        },
+        {
+          "startTime": 113.55,
+          "endTime": 120.13,
+          "text": "Ah, ah, ah, ah, ah"
+        }
+      ],
+      [
+        {
+          "startTime": 127.7,
+          "endTime": 130,
+          "text": "De la muerte el show va a tratar"
+        }
+      ],
+      [
+        {
+          "startTime": 153.48,
+          "text": "La muerte es tabú"
+        },
+        {
+          "startTime": 155.1,
+          "text": "Pero no es cosa vudú"
+        },
+        {
+          "startTime": 156.29,
+          "text": "Nada puede hacer ni un gurú ni un monje hindú"
+        },
+        {
+          "startTime": 159.07,
+          "endTime": 161.8,
+          "text": "Es solo el destino"
+        }
+      ],
+      [
+        {
+          "startTime": 165.8,
+          "text": "No hay un orden superior"
+        },
+        {
+          "startTime": 167.36,
+          "text": "Solo esperas con terror"
+        },
+        {
+          "startTime": 168.74,
+          "text": "Y gente odiosa alrededor"
+        },
+        {
+          "startTime": 170.3,
+          "endTime": 175.44,
+          "text": "A que tu vida llegue al fin del camino"
+        }
+      ],
+      [
+        {
+          "startTime": 180.19,
+          "endTime": 183.31,
+          "text": "Ah, ah, ah, ah, ah"
+        },
+        {
+          "startTime": 186.13,
+          "endTime": 189.12,
+          "text": "Ah, ah, ah, ah, ah"
+        }
+      ],
+      [
+        {
+          "startTime": 192.36,
+          "text": "Dies irae"
+        },
+        {
+          "startTime": 195.34,
+          "endTime": 198.37,
+          "text": "Oh, tan irae"
+        }
+      ],
+      [
+        {
+          "startTime": 200.03,
+          "endTime": 201.6,
+          "text": "Dies irae"
+        },
+        {
+          "startTime": 203.11,
+          "endTime": 204.75,
+          "text": "Dies irae"
+        },
+        {
+          "startTime": 206.4,
+          "text": "Dies irae, ah"
+        },
+        {
+          "startTime": 210.7,
+          "text": "Ah, ah, ah, ah"
+        },
+        {
+          "startTime": 213.75,
+          "text": "Ah, ah-ah, ah, ah-ah"
+        },
+        {
+          "startTime": 216.81,
+          "endTime": 219.6,
+          "text": "¡Posta de la muerte este show va a tratar!"
+        }
+      ]
     ]
   },
 
@@ -243,59 +247,61 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 22.36,
-        "endTime": 25.0,
-        "text": "Buen día, será su guía"
-      },
-      {
-        "startTime": 25.41,
-        "endTime": 27.96,
-        "text": "Será su gran G-U-I-A a la otra vida"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 60.19,
-        "endTime": 63.48,
-        "text": "Echas a los vivos y todo listo"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 67.07,
-        "endTime": 68.62,
-        "text": "¡Un zombie-Cristo!"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 74.94,
-        "endTime": 76.7,
-        "text": "¡Yeah, muerte!"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 85.87,
-        "text": "Ah, ah, ah, ah, ah, ah, ah"
-      },
-      {
-        "startTime": 87.7,
-        "text": "Ah, ah, ah"
-      },
-      {
-        "startTime": 88.6,
-        "endTime": 89.81,
-        "text": "Ah, ah, ah, ah, ah"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 92.39,
-        "endTime": 96.93,
-        "text": "Que es estar muerto, ¡yeah!"
-      }
+      [
+        {
+          "startTime": 22.36,
+          "endTime": 25.0,
+          "text": "Buen día, será su guía"
+        },
+        {
+          "startTime": 25.41,
+          "endTime": 27.96,
+          "text": "Será su gran G-U-I-A a la otra vida"
+        }
+      ],
+      [
+        {
+          "startTime": 60.19,
+          "endTime": 63.48,
+          "text": "Echas a los vivos y todo listo"
+        }
+      ],
+      [
+        {
+          "startTime": 67.07,
+          "endTime": 68.62,
+          "text": "¡Un zombie-Cristo!"
+        }
+      ],
+      [
+        {
+          "startTime": 74.94,
+          "endTime": 76.7,
+          "text": "¡Yeah, muerte!"
+        }
+      ],
+      [
+        {
+          "startTime": 85.87,
+          "text": "Ah, ah, ah, ah, ah, ah, ah"
+        },
+        {
+          "startTime": 87.7,
+          "text": "Ah, ah, ah"
+        },
+        {
+          "startTime": 88.6,
+          "endTime": 89.81,
+          "text": "Ah, ah, ah, ah, ah"
+        }
+      ],
+      [
+        {
+          "startTime": 92.39,
+          "endTime": 96.93,
+          "text": "Que es estar muerto, ¡yeah!"
+        }
+      ]
     ]
   },
 
@@ -328,40 +334,42 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 15.52,
-        "text": "Uuh"
-      },
-      {
-        "startTime": 18.61,
-        "text": "Uuh"
-      },
-      {
-        "startTime": 22.28,
-        "text": "Uuh"
-      },
-      {
-        "startTime": 25.19,
-        "endTime": 28.06,
-        "text": "Beetlejuice, Beetlejuice, Beetlejuice"
-      },
+      [
+        {
+          "startTime": 15.52,
+          "text": "Uuh"
+        },
+        {
+          "startTime": 18.61,
+          "text": "Uuh"
+        },
+        {
+          "startTime": 22.28,
+          "text": "Uuh"
+        },
+        {
+          "startTime": 25.19,
+          "endTime": 28.06,
+          "text": "Beetlejuice, Beetlejuice, Beetlejuice"
+        }
+      ],
+      [
+        {
+          "startTime": 28.69,
+          "text": "Shoop-hum, tarados"
+        },
 
-      {
-        "spaceBefore": true,
-        "startTime": 28.69,
-        "text": "Shoop-hum, tarados"
-      },
+        {
+          "startTime": 32.05,
+          "text": "Shoop-hum, adecuado"
+        },
 
-      {
-        "startTime": 32.05,
-        "text": "Shoop-hum, adecuado"
-      },
-
-      {
-        "startTime": 35.42,
-        "endTime": 38.8,
-        "text": "Ah, ah, ah, uh"
-      }
+        {
+          "startTime": 35.42,
+          "endTime": 38.8,
+          "text": "Ah, ah, ah, uh"
+        }
+      ]
     ]
   },
 
@@ -389,73 +397,75 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 44.5,
-        "endTime": 48.5,
-        "text": "Daylight come and me wan' go home"
-      },
-      {
-        "startTime": 52.2,
-        "text": "Daylight come and me wan' go home"
-      },
-      {
-        "startTime": 55.5,
-        "text": "Day, me say da-a-a-a-oh"
-      },
-      {
-        "startTime": 59.2,
-        "text": "Daylight come and me wan' go home"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 67,
-        "endTime": 70,
-        "text": "Daylight come and me wan' go home"
-      },
-      {
-        "startTime": 74.1,
-        "endTime": 78,
-        "text": "Daylight come and me wan' go home"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 96.5,
-        "endTime": 100,
-        "text": "Daylight come and me wan' go home"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 107,
-        "text": "Lift six foot, seven foot, eight foot bunch"
-      },
-      {
-        "startTime": 110.9,
-        "text": "Daylight come and me wan' go home"
-      },
-      {
-        "startTime": 114.9,
-        "text": "Six foot, seven foot, eight foot bunch"
-      },
-      {
-        "startTime": 118.65,
-        "endTime": 122.2,
-        "text": "Daylight come and me wan' go home"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 190.5,
-        "endTime": 195.1,
-        "text": "Aaaaaaaaah"
-      },
-      {
-        "startTime": 200,
-        "endTime": 201.7,
-        "text": "¡Aaah!"
-      }
+      [
+        {
+          "startTime": 44.5,
+          "endTime": 48.5,
+          "text": "Daylight come and me wan' go home"
+        },
+        {
+          "startTime": 52.2,
+          "text": "Daylight come and me wan' go home"
+        },
+        {
+          "startTime": 55.5,
+          "text": "Day, me say da-a-a-a-oh"
+        },
+        {
+          "startTime": 59.2,
+          "text": "Daylight come and me wan' go home"
+        }
+      ],
+      [
+        {
+          "startTime": 67,
+          "endTime": 70,
+          "text": "Daylight come and me wan' go home"
+        },
+        {
+          "startTime": 74.1,
+          "endTime": 78,
+          "text": "Daylight come and me wan' go home"
+        }
+      ],
+      [
+        {
+          "startTime": 96.5,
+          "endTime": 100,
+          "text": "Daylight come and me wan' go home"
+        }
+      ],
+      [
+        {
+          "startTime": 107,
+          "text": "Lift six foot, seven foot, eight foot bunch"
+        },
+        {
+          "startTime": 110.9,
+          "text": "Daylight come and me wan' go home"
+        },
+        {
+          "startTime": 114.9,
+          "text": "Six foot, seven foot, eight foot bunch"
+        },
+        {
+          "startTime": 118.65,
+          "endTime": 122.2,
+          "text": "Daylight come and me wan' go home"
+        }
+      ],
+      [
+        {
+          "startTime": 190.5,
+          "endTime": 195.1,
+          "text": "Aaaaaaaaah"
+        },
+        {
+          "startTime": 200,
+          "endTime": 201.7,
+          "text": "¡Aaah!"
+        }
+      ]
     ]
   },
 
@@ -488,143 +498,145 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 105.4,
-        "endTime": 109.3,
-        "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
-      },
-      {
-        "startTime": 110.43,
-        "endTime": 114.73,
-        "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
-      },
-      {
-        "startTime": 115.9,
-        "endTime": 120.07,
-        "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
-      },
-      {
-        "startTime": 121.26,
-        "endTime": 125.35,
-        "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 252.84,
-        "text": "Yo también escucho bien"
-      },
-      {
-        "startTime": 255.36,
-        "endTime": 257.82,
-        "text": "Sí, también escucho bien"
-      },
-      {
-        "startTime": 259.96,
-        "endTime": 262.46,
-        "text": "Que aguantar"
-      },
-      {
-        "startTime": 263.11,
-        "endTime": 264.67,
-        "text": "Uh, uh, uh"
-      },
-      {
-        "startTime": 265.86,
-        "endTime": 267.32,
-        "text": "Uh, uh, uh"
-      },
-      {
-        "startTime": 268.46,
-        "endTime": 270.95,
-        "text": "Papi, no me..."
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 273.51,
-        "text": "¡Te vemos bien, Lidia!"
-      },
-      {
-        "startTime": 275.84,
-        "endTime": 278.54,
-        "text": "¡Sos libre al fin, ya!"
-      },
-      {
-        "startTime": 278.87,
-        "endTime": 283.1,
-        "text": "Era invisible pero ahora la ves"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 286.54,
-        "text": "Es mi canción"
-      },
-      {
-        "startTime": 288.35,
-        "text": "¿No es el ruido más genial?"
-      },
-      {
-        "startTime": 292.3,
-        "endTime": 296.7,
-        "text": "Hacerlos gritar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 295.71,
-        "endTime": 298.02,
-        "text": "Gritarán"
-      },
-      {
-        "startTime": 296.7,
-        "endTime": 299.4,
-        "text": "Gri..."
-      },
-      {
-        "startTime": 298.02,
-        "endTime": 300.76,
-        "text": "Gritarán"
-      },
-      {
-        "startTime": 299.4,
-        "endTime": 302.1,
-        "text": "ta..."
-      },
-      {
-        "startTime": 300.76,
-        "endTime": 304.68,
-        "text": "Gritarán"
-      },
-      {
-        "startTime": 302.1,
-        "endTime": 304.68,
-        "text": "ran..."
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 305.14,
-        "text": "Hacerlos gritar"
-      },
-      {
-        "startTime": 307.43,
-        "endTime": 309.29,
-        "text": "Ya van a gritar"
-      },
-      {
-        "startTime": 309.95,
-        "endTime": 313.0,
-        "text": "Ya van a gritar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 314.98,
-        "endTime": 316.73,
-        "text": "¡Hacerlos gritar!"
-      }
+      [
+        {
+          "startTime": 105.4,
+          "endTime": 109.3,
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+        },
+        {
+          "startTime": 110.43,
+          "endTime": 114.73,
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+        },
+        {
+          "startTime": 115.9,
+          "endTime": 120.07,
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+        },
+        {
+          "startTime": 121.26,
+          "endTime": 125.35,
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+        }
+      ],
+      [
+        {
+          "startTime": 252.84,
+          "text": "Yo también escucho bien"
+        },
+        {
+          "startTime": 255.36,
+          "endTime": 257.82,
+          "text": "Sí, también escucho bien"
+        },
+        {
+          "startTime": 259.96,
+          "endTime": 262.46,
+          "text": "Que aguantar"
+        },
+        {
+          "startTime": 263.11,
+          "endTime": 264.67,
+          "text": "Uh, uh, uh"
+        },
+        {
+          "startTime": 265.86,
+          "endTime": 267.32,
+          "text": "Uh, uh, uh"
+        },
+        {
+          "startTime": 268.46,
+          "endTime": 270.95,
+          "text": "Papi, no me..."
+        }
+      ],
+      [
+        {
+          "startTime": 273.51,
+          "text": "¡Te vemos bien, Lidia!"
+        },
+        {
+          "startTime": 275.84,
+          "endTime": 278.54,
+          "text": "¡Sos libre al fin, ya!"
+        },
+        {
+          "startTime": 278.87,
+          "endTime": 283.1,
+          "text": "Era invisible pero ahora la ves"
+        }
+      ],
+      [
+        {
+          "startTime": 286.54,
+          "text": "Es mi canción"
+        },
+        {
+          "startTime": 288.35,
+          "text": "¿No es el ruido más genial?"
+        },
+        {
+          "startTime": 292.3,
+          "endTime": 296.7,
+          "text": "Hacerlos gritar"
+        }
+      ],
+      [
+        {
+          "startTime": 295.71,
+          "endTime": 298.02,
+          "text": "Gritarán"
+        },
+        {
+          "startTime": 296.7,
+          "endTime": 299.4,
+          "text": "Gri..."
+        },
+        {
+          "startTime": 298.02,
+          "endTime": 300.76,
+          "text": "Gritarán"
+        },
+        {
+          "startTime": 299.4,
+          "endTime": 302.1,
+          "text": "ta..."
+        },
+        {
+          "startTime": 300.76,
+          "endTime": 304.68,
+          "text": "Gritarán"
+        },
+        {
+          "startTime": 302.1,
+          "endTime": 304.68,
+          "text": "ran..."
+        }
+      ],
+      [
+        {
+          "startTime": 305.14,
+          "text": "Hacerlos gritar"
+        },
+        {
+          "startTime": 307.43,
+          "endTime": 309.29,
+          "text": "Ya van a gritar"
+        },
+        {
+          "startTime": 309.95,
+          "endTime": 313.0,
+          "text": "Ya van a gritar"
+        }
+      ],
+      [
+        {
+          "startTime": 314.98,
+          "endTime": 316.73,
+          "text": "¡Hacerlos gritar!"
+        }
+      ]
     ]
   },
 
@@ -661,63 +673,65 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 19.26,
-        "endTime": 20.6,
-        "text": "Ja ja ja ja ja"
-      },
-      {
-        "startTime": 22.1,
-        "endTime": 23.3,
-        "text": "Ja ja ja ja ja"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 37.9,
-        "endTime": 39.3,
-        "text": "¡Curiosidad!"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 40.52,
-        "endTime": 42.69,
-        "text": "Él tiene un gran plan"
-      },
-      {
-        "startTime": 43.01,
-        "endTime": 45.38,
-        "text": "Y va a mentir más"
-      },
-      {
-        "startTime": 47.9,
-        "endTime": 50.4,
-        "text": "Va a vivir"
-      },
-      {
-        "startTime": 53.04,
-        "text": "A disfrutar"
-      },
-      {
-        "startTime": 55.1,
-        "text": "¿No es el ruido más genial?"
-      },
-      {
-        "startTime": 59.21,
-        "endTime": 63.4,
-        "text": "Hacerlos gritar"
-      },
-      {
-        "startTime": 63.6,
-        "endTime": 66.1,
-        "text": "Taaaar"
-      },
-      {
-        "startTime": 66.4,
-        "endTime": 69.1,
-        "text": "Taaaar"
-      }
+      [
+        {
+          "startTime": 19.26,
+          "endTime": 20.6,
+          "text": "Ja ja ja ja ja"
+        },
+        {
+          "startTime": 22.1,
+          "endTime": 23.3,
+          "text": "Ja ja ja ja ja"
+        }
+      ],
+      [
+        {
+          "startTime": 37.9,
+          "endTime": 39.3,
+          "text": "¡Curiosidad!"
+        }
+      ],
+      [
+        {
+          "startTime": 40.52,
+          "endTime": 42.69,
+          "text": "Él tiene un gran plan"
+        },
+        {
+          "startTime": 43.01,
+          "endTime": 45.38,
+          "text": "Y va a mentir más"
+        },
+        {
+          "startTime": 47.9,
+          "endTime": 50.4,
+          "text": "Va a vivir"
+        },
+        {
+          "startTime": 53.04,
+          "text": "A disfrutar"
+        },
+        {
+          "startTime": 55.1,
+          "text": "¿No es el ruido más genial?"
+        },
+        {
+          "startTime": 59.21,
+          "endTime": 63.4,
+          "text": "Hacerlos gritar"
+        },
+        {
+          "startTime": 63.6,
+          "endTime": 66.1,
+          "text": "Taaaar"
+        },
+        {
+          "startTime": 66.4,
+          "endTime": 69.1,
+          "text": "Taaaar"
+        }
+      ]
     ]
   },
 
@@ -750,108 +764,110 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 105.99,
-        "endTime": 107.9,
-        "text": "El pigmeo es muy cruel"
-      },
-      {
-        "startTime": 108.1,
-        "endTime": 110.5,
-        "text": "Solo en la muerte entendí"
-      },
-      {
-        "startTime": 111.3,
-        "endTime": 113.5,
-        "text": "Ser feliz estaba en mí"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 114.2,
-        "endTime": 119.1,
-        "text": "No supe ver lo que sé hoy"
-      },
-      {
-        "startTime": 120,
-        "endTime": 125.1,
-        "text": "Habría vivido disfrutando y no con temor"
-      },
-      {
-        "startTime": 126,
-        "endTime": 131.5,
-        "text": "Creí saber, ¡qué gran error!"
-      },
-      {
-        "startTime": 132,
-        "endTime": 135.1,
-        "text": "La vida es corta mas la muerte no"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 168.5,
-        "endTime": 169.7,
-        "text": "Supe ver"
-      },
-      {
-        "startTime": 171.1,
-        "endTime": 172.8,
-        "text": "Lo que sé"
-      },
-      {
-        "startTime": 173.3,
-        "text": "Me hubiera puesto a escabiar, joder, disfrutar"
-      },
-      {
-        "startTime": 176.3,
-        "endTime": 179.1,
-        "text": "Sin más en qué pensar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 180.4,
-        "text": "Con saber"
-      },
-      {
-        "startTime": 181.6,
-        "endTime": 184.6,
-        "text": "Las cosas que yo sé"
-      },
-      {
-        "startTime": 185.2,
-        "text": "Para aprovechar lo que descarté"
-      },
-      {
-        "startTime": 187.7,
-        "endTime": 191,
-        "text": "Entendiendo que no hay ni un por qué"
-      },
-      {
-        "startTime": 191.5,
-        "endTime": 197.6,
-        "text": "Ah ah ah ah ah"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 200,
-        "text": "La vida es corta, entendé"
-      },
-      {
-        "startTime": 202.4,
-        "text": "Es un goce, no desdén"
-      },
-      {
-        "startTime": 204.6,
-        "text": "Sin saber me equivoqué"
-      },
-      {
-        "startTime": 207,
-        "endTime": 210,
-        "text": "Yo no supe ver lo que sé hoy"
-      }
+      [
+        {
+          "startTime": 105.99,
+          "endTime": 107.9,
+          "text": "El pigmeo es muy cruel"
+        },
+        {
+          "startTime": 108.1,
+          "endTime": 110.5,
+          "text": "Solo en la muerte entendí"
+        },
+        {
+          "startTime": 111.3,
+          "endTime": 113.5,
+          "text": "Ser feliz estaba en mí"
+        }
+      ],
+      [
+        {
+          "startTime": 114.2,
+          "endTime": 119.1,
+          "text": "No supe ver lo que sé hoy"
+        },
+        {
+          "startTime": 120,
+          "endTime": 125.1,
+          "text": "Habría vivido disfrutando y no con temor"
+        },
+        {
+          "startTime": 126,
+          "endTime": 131.5,
+          "text": "Creí saber, ¡qué gran error!"
+        },
+        {
+          "startTime": 132,
+          "endTime": 135.1,
+          "text": "La vida es corta mas la muerte no"
+        }
+      ],
+      [
+        {
+          "startTime": 168.5,
+          "endTime": 169.7,
+          "text": "Supe ver"
+        },
+        {
+          "startTime": 171.1,
+          "endTime": 172.8,
+          "text": "Lo que sé"
+        },
+        {
+          "startTime": 173.3,
+          "text": "Me hubiera puesto a escabiar, joder, disfrutar"
+        },
+        {
+          "startTime": 176.3,
+          "endTime": 179.1,
+          "text": "Sin más en qué pensar"
+        }
+      ],
+      [
+        {
+          "startTime": 180.4,
+          "text": "Con saber"
+        },
+        {
+          "startTime": 181.6,
+          "endTime": 184.6,
+          "text": "Las cosas que yo sé"
+        },
+        {
+          "startTime": 185.2,
+          "text": "Para aprovechar lo que descarté"
+        },
+        {
+          "startTime": 187.7,
+          "endTime": 191,
+          "text": "Entendiendo que no hay ni un por qué"
+        },
+        {
+          "startTime": 191.5,
+          "endTime": 197.6,
+          "text": "Ah ah ah ah ah"
+        }
+      ],
+      [
+        {
+          "startTime": 200,
+          "text": "La vida es corta, entendé"
+        },
+        {
+          "startTime": 202.4,
+          "text": "Es un goce, no desdén"
+        },
+        {
+          "startTime": 204.6,
+          "text": "Sin saber me equivoqué"
+        },
+        {
+          "startTime": 207,
+          "endTime": 210,
+          "text": "Yo no supe ver lo que sé hoy"
+        }
+      ]
     ]
   },
 
@@ -884,147 +900,149 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 75.96,
-        "endTime": 79.72,
-        "text": "Uh-uh uh-uh-uh uh-uh-uh uh-uh-uh uh ah"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 82.62,
-        "text": "Viejo violín, viejo violín, viejo violín"
-      },
-      {
-        "startTime": 86.81,
-        "text": "Se casa él"
-      },
-      {
-        "startTime": 88.24,
-        "endTime": 92.71,
-        "text": "Viejo violín, viejo violín, viejo violín"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 93.83,
-        "text": "Bop shoo bee doo wop, bop shoo bee doo wop"
-      },
-      {
-        "startTime": 96.69,
-        "endTime": 99.39,
-        "text": "Bop shoo bee, a-bop-bop shoo bee"
-      },
-      {
-        "startTime": 99.84,
-        "text": "Bop shoo bee doo wop, bop shoo bee doo wop"
-      },
-      {
-        "startTime": 102.48,
-        "text": "Bop shoo bee, a-bop-bop shoo bee"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 105.23,
-        "endTime": 111.23,
-        "text": "Uh, uh, brillar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 128.9,
-        "endTime": 130.73,
-        "text": "¡Abusador!"
-      },
-      {
-        "startTime": 131.1,
-        "text": "Tu suerte al fin cambió"
-      },
-      {
-        "startTime": 133.08,
-        "endTime": 139.44,
-        "text": "Su amor es real"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 139.83,
-        "text": "Uuh-uh, bop shoo bee"
-      },
-      {
-        "startTime": 142.73,
-        "endTime": 145.66,
-        "text": "Uuh-uh, bop shoo bee"
-      },
-      {
-        "startTime": 148.66,
-        "endTime": 151.95,
-        "text": "Shoo bee du da, ba dun da, ba dun da, ba dun doo"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 160.72,
-        "endTime": 163.77,
-        "text": "Es lo mejor, es lo mejor"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 216.15,
-        "endTime": 219.71,
-        "text": "Se va a casar, se va a casar"
-      },
-      {
-        "startTime": 220.08,
-        "endTime": 222.37,
-        "text": "¡Gloria celestial!"
-      },
-      {
-        "startTime": 223.1,
-        "endTime": 227.86,
-        "text": "Pensar que hay culturas donde esto es normal"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 229.5,
-        "endTime": 230.9,
-        "text": "Viejo violín"
-      },
-      {
-        "startTime": 238.3,
-        "endTime": 239.4,
-        "text": "Sí, por fin"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 240.5,
-        "endTime": 245.32,
-        "text": "Ah, ah, ah"
-      },
-      {
-        "startTime": 246.19,
-        "text": "Sí, al fin, viejo violín"
-      },
-      {
-        "startTime": 249.54,
-        "text": "Al fin, viejo violín"
-      },
-      {
-        "startTime": 252.44,
-        "endTime": 255.04,
-        "text": "Al fin..."
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 257.5,
-        "endTime": 259.69,
-        "text": "¡Yeah!"
-      }
+      [
+        {
+          "startTime": 75.96,
+          "endTime": 79.72,
+          "text": "Uh-uh uh-uh-uh uh-uh-uh uh-uh-uh uh ah"
+        }
+      ],
+      [
+        {
+          "startTime": 82.62,
+          "text": "Viejo violín, viejo violín, viejo violín"
+        },
+        {
+          "startTime": 86.81,
+          "text": "Se casa él"
+        },
+        {
+          "startTime": 88.24,
+          "endTime": 92.71,
+          "text": "Viejo violín, viejo violín, viejo violín"
+        }
+      ],
+      [
+        {
+          "startTime": 93.83,
+          "text": "Bop shoo bee doo wop, bop shoo bee doo wop"
+        },
+        {
+          "startTime": 96.69,
+          "endTime": 99.39,
+          "text": "Bop shoo bee, a-bop-bop shoo bee"
+        },
+        {
+          "startTime": 99.84,
+          "text": "Bop shoo bee doo wop, bop shoo bee doo wop"
+        },
+        {
+          "startTime": 102.48,
+          "text": "Bop shoo bee, a-bop-bop shoo bee"
+        }
+      ],
+      [
+        {
+          "startTime": 105.23,
+          "endTime": 111.23,
+          "text": "Uh, uh, brillar"
+        }
+      ],
+      [
+        {
+          "startTime": 128.9,
+          "endTime": 130.73,
+          "text": "¡Abusador!"
+        },
+        {
+          "startTime": 131.1,
+          "text": "Tu suerte al fin cambió"
+        },
+        {
+          "startTime": 133.08,
+          "endTime": 139.44,
+          "text": "Su amor es real"
+        }
+      ],
+      [
+        {
+          "startTime": 139.83,
+          "text": "Uuh-uh, bop shoo bee"
+        },
+        {
+          "startTime": 142.73,
+          "endTime": 145.66,
+          "text": "Uuh-uh, bop shoo bee"
+        },
+        {
+          "startTime": 148.66,
+          "endTime": 151.95,
+          "text": "Shoo bee du da, ba dun da, ba dun da, ba dun doo"
+        }
+      ],
+      [
+        {
+          "startTime": 160.72,
+          "endTime": 163.77,
+          "text": "Es lo mejor, es lo mejor"
+        }
+      ],
+      [
+        {
+          "startTime": 216.15,
+          "endTime": 219.71,
+          "text": "Se va a casar, se va a casar"
+        },
+        {
+          "startTime": 220.08,
+          "endTime": 222.37,
+          "text": "¡Gloria celestial!"
+        },
+        {
+          "startTime": 223.1,
+          "endTime": 227.86,
+          "text": "Pensar que hay culturas donde esto es normal"
+        }
+      ],
+      [
+        {
+          "startTime": 229.5,
+          "endTime": 230.9,
+          "text": "Viejo violín"
+        },
+        {
+          "startTime": 238.3,
+          "endTime": 239.4,
+          "text": "Sí, por fin"
+        }
+      ],
+      [
+        {
+          "startTime": 240.5,
+          "endTime": 245.32,
+          "text": "Ah, ah, ah"
+        },
+        {
+          "startTime": 246.19,
+          "text": "Sí, al fin, viejo violín"
+        },
+        {
+          "startTime": 249.54,
+          "text": "Al fin, viejo violín"
+        },
+        {
+          "startTime": 252.44,
+          "endTime": 255.04,
+          "text": "Al fin..."
+        }
+      ],
+      [
+        {
+          "startTime": 257.5,
+          "endTime": 259.69,
+          "text": "¡Yeah!"
+        }
+      ]
     ]
   },
 
@@ -1057,102 +1075,104 @@
       }
     ],
     "lyrics": [
-      {
-        "startTime": 35.5,
-        "endTime": 38.1,
-        "text": "Vente pa'cá, sienteló vibrar"
-      },
-      {
-        "startTime": 39.8,
-        "endTime": 42.7,
-        "text": "Vente pa'cá, sienteló vibrar"
-      },
-      {
-        "startTime": 48.3,
-        "endTime": 50,
-        "text": "Vamos a bailar"
-      },
-      {
-        "startTime": 54.7,
-        "endTime": 56.3,
-        "text": "Mueva sin parar"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 57,
-        "text": "Ah ah ah ah"
-      },
-      {
-        "startTime": 61,
-        "text": "Shake, shake, shake, shake Señora"
-      },
-      {
-        "startTime": 63.4,
-        "text": "Shake, shake, shake, shake Señora"
-      },
-      {
-        "startTime": 65.5,
-        "text": "Ah ah ah ah"
-      },
-      {
-        "startTime": 69.4,
-        "text": "Shake, shake, shake, shake Señora"
-      },
-      {
-        "startTime": 71.7,
-        "text": "Shake, shake, shake, shake Señora"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 74.07,
-        "text": "Aaah aaah aaah"
-      },
-      {
-        "startTime": 82.05,
-        "endTime": 84.58,
-        "text": "Shake, shake, shake, shake Señora"
-      },
-      {
-        "startTime": 86.47,
-        "endTime": 88.76,
-        "text": "Shake, shake, shake, shake Señora"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 90.72,
-        "text": "Ah ah ah ah ah"
-      },
-      {
-        "startTime": 96.76,
-        "endTime": 98.04,
-        "text": "¡Shake, shake!"
-      },
-
-      {
-        "spaceBefore": true,
-        "startTime": 99.2,
-        "text": "Aaah, daylight come and we wanna go home"
-      },
-      {
-        "startTime": 103.39,
-        "text": "Aaah, daylight come and we wanna go home"
-      },
-      {
-        "startTime": 107.5,
-        "text": "Aaah, daylight come and we wanna go home"
-      },
-      {
-        "startTime": 111.82,
-        "text": "Aaah..."
-      },
-      {
-        "startTime": 113.67,
-        "endTime": 117.32,
-        "text": "Shake, shake, shake, Señora"
-      }
+      [
+        {
+          "startTime": 35.5,
+          "endTime": 38.1,
+          "text": "Vente pa'cá, sienteló vibrar"
+        },
+        {
+          "startTime": 39.8,
+          "endTime": 42.7,
+          "text": "Vente pa'cá, sienteló vibrar"
+        },
+        {
+          "startTime": 48.3,
+          "endTime": 50,
+          "text": "Vamos a bailar"
+        },
+        {
+          "startTime": 54.7,
+          "endTime": 56.3,
+          "text": "Mueva sin parar"
+        }
+      ],
+      [
+        {
+          "startTime": 57,
+          "text": "Ah ah ah ah"
+        },
+        {
+          "startTime": 61,
+          "text": "Shake, shake, shake, shake Señora"
+        },
+        {
+          "startTime": 63.4,
+          "text": "Shake, shake, shake, shake Señora"
+        },
+        {
+          "startTime": 65.5,
+          "text": "Ah ah ah ah"
+        },
+        {
+          "startTime": 69.4,
+          "text": "Shake, shake, shake, shake Señora"
+        },
+        {
+          "startTime": 71.7,
+          "text": "Shake, shake, shake, shake Señora"
+        }
+      ],
+      [
+        {
+          "startTime": 74.07,
+          "text": "Aaah aaah aaah"
+        },
+        {
+          "startTime": 82.05,
+          "endTime": 84.58,
+          "text": "Shake, shake, shake, shake Señora"
+        },
+        {
+          "startTime": 86.47,
+          "endTime": 88.76,
+          "text": "Shake, shake, shake, shake Señora"
+        }
+      ],
+      [
+        {
+          "startTime": 90.72,
+          "text": "Ah ah ah ah ah"
+        },
+        {
+          "startTime": 96.76,
+          "endTime": 98.04,
+          "text": "¡Shake, shake!"
+        }
+      ],
+      [
+        {
+          "startTime": 99.2,
+          "text": "Aaah, daylight come and we wanna go home"
+        },
+        {
+          "startTime": 103.39,
+          "text": "Aaah, daylight come and we wanna go home"
+        },
+        {
+          "startTime": 107.5,
+          "text": "Aaah, daylight come and we wanna go home"
+        },
+        {
+          "startTime": 111.82,
+          "text": "Aaah..."
+        },
+        {
+          "startTime": 113.67,
+          "endTime": 117.32,
+          "text": "Shake, shake, shake, Señora"
+        }
+      ]
     ]
   }
 ]

@@ -10,7 +10,7 @@ import { $dt } from '@primevue/themes'
 
 const props = defineProps<{
   track: Track
-  index: number
+  color: string
   volume: number
   isReady: boolean
   isPlaying: boolean
@@ -18,12 +18,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  ready: [index: number, duration: number]
-  'time-update': [index: number, time: number]
-  'volume-change': [index: number, volume: number]
+  ready: [duration: number]
+  'time-update': [time: number]
   'seek-to-time': [time: number]
-  'solo-track': [index: number]
-  'toggle-track-muted': [index: number]
+  'volume-change': [volume: number]
+  'toggle-track-muted': []
+  'toggle-track-solo': []
 }>()
 
 // State
@@ -31,11 +31,8 @@ const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
 
-const trackColors = ['emerald', 'amber', 'sky', 'rose', 'indigo', 'lime']
-const getTrackColor = (index: number) => trackColors[index % trackColors.length]
-
-const getButtonColorScheme = (index: number, muted = false) => {
-  const color = muted ? 'zinc' : getTrackColor(index)
+const buttonColorScheme = computed(() => {
+  const color = isMuted.value ? 'zinc' : props.color
   return {
     colorScheme: {
       light: {
@@ -58,10 +55,10 @@ const getButtonColorScheme = (index: number, muted = false) => {
       }
     }
   }
-}
+})
 
-const getSliderColorScheme = (index: number, muted = false) => {
-  const color = muted ? 'zinc' : getTrackColor(index)
+const sliderColorScheme = computed(() => {
+  const color = isMuted.value ? 'zinc' : props.color
   return {
     colorScheme: {
       light: {
@@ -80,16 +77,16 @@ const getSliderColorScheme = (index: number, muted = false) => {
       }
     }
   }
-}
+})
 
-const getWaveSurferColorScheme = (index: number, muted = false) => {
+const waveSurferColorScheme = computed(() => {
   const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const color = muted ? 'zinc' : getTrackColor(index)
+  const color = isMuted.value ? 'zinc' : props.color
   return {
     waveColor: isDarkMode ? $dt(`${color}.700`).value : $dt(`${color}.300`).value,
     progressColor: isDarkMode ? $dt(`${color}.500`).value : $dt(`${color}.400`).value
   }
-}
+})
 
 // WaveSurfer Configuration
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
@@ -100,14 +97,14 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   dragToSeek: false,
   backend: 'WebAudio',
   url: props.track.file,
-  ...getWaveSurferColorScheme(props.index, isMuted.value),
+  ...waveSurferColorScheme.value
 }))
 
-const handleTrackButtonClick = (index: number) => {
+const handleTrackButtonClick = () => {
   if (isCtrlPressed.value) {
-    emit('solo-track', index)
+    emit('toggle-track-solo')
   } else {
-    emit('toggle-track-muted', index)
+    emit('toggle-track-muted')
   }
 }
 
@@ -125,28 +122,40 @@ const handleKeyup = (event: KeyboardEvent) => {
   }
 }
 
-watch(() => props.isPlaying, (newIsPlaying) => {
-  if (!waveSurfer.value || !props.isReady) return
-  if (newIsPlaying) {
-    waveSurfer.value?.play()
-  } else {
-    waveSurfer.value?.pause()
+watch(
+  () => props.isPlaying,
+  (newIsPlaying) => {
+    if (!waveSurfer.value || !props.isReady) return
+    if (newIsPlaying) {
+      waveSurfer.value?.play()
+    } else {
+      waveSurfer.value?.pause()
+    }
   }
-})
+)
 
-watch(() => isMuted.value, (newIsMuted) => {
-  waveSurfer.value?.setOptions({
-    ...getWaveSurferColorScheme(props.index, newIsMuted)
-  })
-})
+watch(
+  () => isMuted.value,
+  () => {
+    waveSurfer.value?.setOptions({
+      ...waveSurferColorScheme.value
+    })
+  }
+)
 
-watch(() => props.volume, (newVolume) => {
-  waveSurfer.value?.setVolume(newVolume)
-})
+watch(
+  () => props.volume,
+  (newVolume) => {
+    waveSurfer.value?.setVolume(newVolume)
+  }
+)
 
-watch(() => props.lastSeekTime, (newLastSeekTime) => {
-  waveSurfer.value?.setTime(newLastSeekTime)
-})
+watch(
+  () => props.lastSeekTime,
+  (newLastSeekTime) => {
+    waveSurfer.value?.setTime(newLastSeekTime)
+  }
+)
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
@@ -168,10 +177,10 @@ onUnmounted(() => {
           class="text-ellipsis overflow-hidden text-left justify-start w-full whitespace-nowrap"
           :label="track.title"
           :disabled="!isReady"
-          @click="() => handleTrackButtonClick(index)"
+          @click="handleTrackButtonClick"
           :text="true"
           size="small"
-          :dt="getButtonColorScheme(index, isMuted)"
+          :dt="buttonColorScheme"
         />
       </div>
 
@@ -181,8 +190,8 @@ onUnmounted(() => {
         :min="0"
         :max="1"
         :step="0.01"
-        :dt="getSliderColorScheme(index, isMuted)"
-        @update:modelValue="(value: number) => emit('volume-change', index, value)"
+        :dt="sliderColorScheme"
+        @update:modelValue="(value: number) => emit('volume-change', value)"
       />
     </div>
     <div class="w-full p-0">
@@ -190,8 +199,8 @@ onUnmounted(() => {
         :options="waveSurferOptions"
         @interaction="(time: number) => emit('seek-to-time', time)"
         @waveSurfer="(ws: WaveSurfer) => (waveSurfer = ws)"
-        @ready="(duration: number) => emit('ready', index, duration)"
-        @timeupdate="(time: number) => emit('time-update', index, time)"
+        @ready="(duration: number) => emit('ready', duration)"
+        @timeupdate="(time: number) => emit('time-update', time)"
       />
     </div>
   </div>
