@@ -1,268 +1,117 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import type WaveSurfer from 'wavesurfer.js'
-import { WaveSurferPlayer } from '@meersagor/wavesurfer-vue'
-import Slider from 'primevue/slider'
-import { $dt } from '@primevue/themes'
-import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 
 import LyricsViewer from '@/components/LyricsViewer.vue'
-import SongMenu from '@/components/SongMenu.vue'
 
-import { useSongsStore } from '@/stores/songs'
 import type { Song } from '@/data/song.types'
-import type { PartialWaveSurferOptions } from 'node_modules/@meersagor/wavesurfer-vue/dist/types/types'
 import type { Collection } from '@/data/collection.types'
+import PlayerHeader from '@/components/PlayerHeader.vue'
+import PlayerControls from '@/components/PlayerControls.vue'
+import TrackPlayer from '@/components/TrackPlayer.vue'
 
-// Utility functions
-const getTrackColor = (index: number) => {
-  const colors = ['emerald', 'amber', 'sky', 'rose', 'indigo', 'lime']
-  return colors[index % colors.length]
+// Props and Emits
+const props = defineProps<{ 
+  collection: Collection
+  song: Song 
+}>()
+
+const emit = defineEmits<{
+  'update:currentTime': [time: number]
+  'update:playing': [isPlaying: boolean]
+}>()
+ 
+
+const state = {
+  currentTime: ref<number>(0),
+  lastSeekTime: ref<number>(0),
+  totalDuration: ref<number>(0),
+  playing: ref(false),
+  trackStates: ref<{ isReady: boolean, volume: number }[]>(
+    props.song.tracks.map(() => ({ isReady: false, volume: 1 }))
+  )
 }
 
-const getWaveSurferColorScheme = (index: number, muted = false) => {
-  const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const color = muted ? 'zinc' : getTrackColor(index)
-  return {
-    waveColor: isDarkMode ? $dt(`${color}.700`).value : $dt(`${color}.300`).value,
-    progressColor: isDarkMode ? $dt(`${color}.500`).value : $dt(`${color}.400`).value
+// Computed
+const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
+
+const onReady = (trackIndex: number, duration: number) => {
+  state.trackStates.value[trackIndex].isReady = true
+  if (trackIndex === 0) {
+    state.totalDuration.value = duration
   }
 }
 
-const getButtonColorScheme = (index: number, muted = false) => {
-  const color = muted ? 'zinc' : getTrackColor(index)
-  return {
-    colorScheme: {
-      light: {
-        text: {
-          primary: {
-            hoverBackground: `color-mix(in srgb, {${color}.500}, transparent 96%)`,
-            activeBackground: `color-mix(in srgb, {${color}.500}, transparent 84%)`,
-            color: `{${color}.50}`
-          }
-        }
-      },
-      dark: {
-        text: {
-          primary: {
-            color: `{${color}.400}`,
-            hoverBackground: `color-mix(in srgb, {${color}.500}, transparent 90%)`,
-            activeBackground: `color-mix(in srgb, {${color}.500}, transparent 80%)`
-          }
-        }
-      }
-    }
+const onTimeUpdate = (trackIndex: number, time: number) => {
+  if (trackIndex === 0) {
+    state.currentTime.value = time
+    emit('update:currentTime', time)
   }
 }
 
-const getSliderColorScheme = (index: number, muted = false) => {
-  const color = muted ? 'zinc' : getTrackColor(index)
-  return {
-    colorScheme: {
-      light: {
-        root: {
-          rangeBackground: `{${color}.500}`,
-          handleBackground: `{${color}.500}`,
-          handleHoverBackground: `{${color}.600}`
-        }
-      },
-      dark: {
-        root: {
-          rangeBackground: `{${color}.400}`,
-          handleBackground: `{${color}.400}`,
-          handleHoverBackground: `{${color}.300}`
-        }
-      }
-    }
-  }
+const onVolumeChange = (trackIndex: number, volume: number) => {
+  state.trackStates.value[trackIndex].volume = volume
 }
 
-// Component logic
-const songsStore = useSongsStore()
-
-const props = defineProps<{ collection: Collection; song: Song }>()
-
-const waveSurferOptions = ref<PartialWaveSurferOptions>({
-  height: 72,
-  barGap: 2,
-  barWidth: 2,
-  barRadius: 8,
-  dragToSeek: false,
-  backend: 'WebAudio'
-})
-
-const currentTime = ref<number>(0)
-const totalDuration = ref<number>(0)
-const isPlaying = ref(false)
-const trackData = ref<
-  { waveSurfer: WaveSurfer | null; isMuted: boolean; isReady: boolean; volume: number }[]
->(props.song.tracks.map(() => ({ waveSurfer: null, isMuted: false, isReady: false, volume: 1 })))
-
-const isReady = computed(() => trackData.value.every((track) => track.isReady))
-
-const isCtrlPressed = ref(false)
-
-const onReady = (index: number, duration: number) => {
-  trackData.value[index].isReady = true
-  if (index === 0) {
-    totalDuration.value = duration
-  }
-}
-const onTimeUpdate = (index: number, time: number) => {
-  if (index === 0) {
-    currentTime.value = time
-  }
-}
-
-const onVolumeChange = (index: number, volume: number) => {
-  trackData.value[index].volume = volume
-  const shouldBeMuted = volume === 0
-  if (trackData.value[index].isMuted !== shouldBeMuted) {
-    trackData.value[index].isMuted = shouldBeMuted
-    trackData.value[index].waveSurfer?.setOptions(getWaveSurferColorScheme(index, shouldBeMuted))
-  }
-  trackData.value[index].waveSurfer?.setVolume(volume)
-}
-
-const onToggleTrackMuted = (index: number) => {
-  const isMuted = !trackData.value[index].isMuted
-  trackData.value[index].isMuted = isMuted
-  const newVolume = isMuted ? 0 : trackData.value[index].volume || 1
-  trackData.value[index].volume = newVolume
-  trackData.value[index].waveSurfer?.setVolume(newVolume)
-  trackData.value[index].waveSurfer?.setOptions(getWaveSurferColorScheme(index, isMuted))
+const onToggleTrackMuted = (trackIndex: number) => {
+  state.trackStates.value[trackIndex].volume = state.trackStates.value[trackIndex].volume === 0 ? 1 : 0
 }
 
 const onSoloTrack = (index: number) => {
-  // Check if all other tracks are muted (meaning this track is solo-ed)
-  const isCurrentlySoloed = trackData.value.every((track, i) => 
-    i === index || track.isMuted
-  )
-
+  const isCurrentlySoloed = state.trackStates.value.every((track, i) => i === index || track.volume === 0)
   if (isCurrentlySoloed) {
-    // If the track is currently solo-ed, unmute all tracks
-    trackData.value.forEach((track, i) => {
-      if (track.isMuted) {
-        onToggleTrackMuted(i)
-      }
+    state.trackStates.value.forEach((_, i) => {
+      onVolumeChange(i, 1)
     })
   } else {
-    // First, ensure all tracks are unmuted
-    trackData.value.forEach((track, i) => {
-      if (track.isMuted) {
-        onToggleTrackMuted(i)
-      }
-    })
-    // Then mute all tracks except the selected one
-    trackData.value.forEach((_, i) => {
-      if (i !== index) {
-        onToggleTrackMuted(i)
-      }
+    state.trackStates.value.forEach((_, i) => {
+      onVolumeChange(i, i === index ? 1 : 0)
     })
   }
 }
 
 const onPlayPause = (forcePlay?: boolean) => {
-  const shouldPlay = forcePlay !== undefined ? forcePlay : !isPlaying.value
-  if (shouldPlay) {
-    for (const track of trackData.value) {
-      track.waveSurfer?.play()
-    }
-  } else {
-    for (const track of trackData.value) {
-      track.waveSurfer?.pause()
-    }
-  }
-  isPlaying.value = shouldPlay
+  state.playing.value = forcePlay ?? !state.playing.value
+  emit('update:playing', state.playing.value)
 }
 
 const onSeekToTime = (time: number) => {
-  for (const track of trackData.value) {
-    track.waveSurfer?.setTime(time)
-  }
-  onPlayPause(true)
+  state.lastSeekTime.value = time
 }
 
 const keydownHandler = (event: KeyboardEvent) => {
   if (event.key === ' ') {
     event.preventDefault()
     onPlayPause()
-  } else if (
-    navigator.userAgent.indexOf('Mac') > 0 ? event.key === 'Meta' : event.key === 'Control'
-  ) {
-    isCtrlPressed.value = true
-  }
-}
-
-const keyupHandler = (event: KeyboardEvent) => {
-  if (navigator.userAgent.indexOf('Mac') > 0 ? event.key === 'Meta' : event.key === 'Control') {
-    isCtrlPressed.value = false
   }
 }
 
 onMounted(() => {
   window.addEventListener('keydown', keydownHandler)
-  window.addEventListener('keyup', keyupHandler)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', keydownHandler)
-  window.removeEventListener('keyup', keyupHandler)
-  for (const track of trackData.value) {
-    track.waveSurfer?.destroy()
-  }
 })
-
-const formatTime = (seconds: number): string =>
-  [seconds / 60, seconds % 60].map((v) => `${Math.floor(v)}`.padStart(2, '0')).join(':')
-
-const handleTrackClick = (index: number) => {
-  if (isCtrlPressed.value) {
-    onSoloTrack(index)
-  } else {
-    onToggleTrackMuted(index)
-  }
-}
 </script>
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col p-2">
     <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-4">
-        <SongMenu :collection="collection" />
-
-        <div class="flex flex-col tracking-wide">
-          <span class="text-lg font-semibold">{{ song.title }}</span>
-          <span class="text-xs font-medium uppercase text-muted-color">{{ collection.title }}</span>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-5 text-right">
-        <div class="flex items-baseline">
-          <span class="text-surface-200 text-xl">{{ formatTime(currentTime) }}</span>
-          <span class="text-surface-500 text-md">.{{ currentTime.toFixed(2).split('.')[1] }}</span>
-          <span class="text-surface-300 text-xl mx-1">/</span>
-          <span class="text-surface-400">{{ formatTime(totalDuration) }}</span>
-          <span class="text-surface-600 text-xs"
-            >.{{ totalDuration.toFixed(2).split('.')[1] }}</span
-          >
-        </div>
-        <Button
-          class="flex-shrink-0 aspect-square"
-          :icon="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
-          @click="() => onPlayPause()"
-          :disabled="!isReady"
-          rounded
-          aria-label="Play/Pause"
-        />
-      </div>
+      <PlayerHeader :collection="collection" :song="song" />
+      <PlayerControls
+        :currentTime="state.currentTime.value"
+        :totalDuration="state.totalDuration.value"
+        :isPlaying="state.playing.value"
+        :isReady="isReady"
+        @play-pause="onPlayPause"
+      />
     </div>
 
     <div class="h-full flex-grow-1 overflow-y-auto px-2 mb-3">
       <LyricsViewer
         :lyrics="song.lyrics"
-        :currentTime="currentTime"
+        :currentTime="state.currentTime.value"
         :isDisabled="!isReady"
         @seek="onSeekToTime"
       />
@@ -273,47 +122,21 @@ const handleTrackClick = (index: number) => {
     >
       <div class="h-full overflow-y-auto">
         <div class="w-full h-full py-3 pl-3 md:pl-4">
-          <div
-            v-for="(track, index) in song.tracks"
-            v-bind:key="index"
-            class="flex items-start gap-6"
-          >
-            <div
-              class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-3"
-            >
-              <div class="flex items-center gap-2">
-                <Button
-                  class="text-ellipsis overflow-hidden text-left justify-start w-full whitespace-nowrap"
-                  :label="track.title"
-                  :disabled="!isReady"
-                  @click="() => handleTrackClick(index)"
-                  :text="true"
-                  size="small"
-                  :dt="getButtonColorScheme(index, trackData[index].isMuted)"
-                />
-              </div>
-
-              <Slider
-                v-model="trackData[index].volume"
-                class="w-full"
-                :min="0"
-                :max="1"
-                :step="0.01"
-                :dt="getSliderColorScheme(index, trackData[index].isMuted)"
-                @update:modelValue="(value: number) => onVolumeChange(index, value)"
-              />
-            </div>
-            <div class="w-full p-0">
-              <WaveSurferPlayer
-                :options="{
-                  ...waveSurferOptions,
-                  ...getWaveSurferColorScheme(index),
-                  url: track.file
-                }"
-                @interaction="(time: number) => onSeekToTime(time)"
-                @waveSurfer="(ws: WaveSurfer) => (trackData[index].waveSurfer = ws)"
-                @ready="(duration: number) => onReady(index, duration)"
-                @timeupdate="(time: number) => onTimeUpdate(index, time)"
+          <div class="flex flex-col gap-3" v-for="(track, index) in song.tracks" :key="index">
+            <div class="flex items-center gap-2">
+              <TrackPlayer
+                :track="track"
+                :index="index"
+                :isReady="state.trackStates.value[index].isReady"
+                :volume="state.trackStates.value[index].volume"
+                :isPlaying="state.playing.value"
+                :lastSeekTime="state.lastSeekTime.value"
+                @ready="onReady"
+                @time-update="onTimeUpdate"
+                @volume-change="onVolumeChange"
+                @seek-to-time="onSeekToTime"
+                @solo-track="onSoloTrack"
+                @toggle-track-muted="onToggleTrackMuted"
               />
             </div>
           </div>

@@ -1,15 +1,21 @@
 export type Song = {
-  title: string
+  id: string
   collectionId: string
-  tracks: {
-    title: string
-    subtitle?: string
-    file: string
-  }[]
-  lyrics: {
-    startTime: number
-    endTime?: number
-    spaceBefore?: boolean
-    text: string
-  }[]
+  title: string
+  tracks: Track[]
+  lyrics: LyricsLine[]
+}
+
+export type Track = {
+  id: string
+  title: string
+  subtitle?: string
+  file: string
+}
+
+export type LyricsLine = {
+  startTime: number
+  endTime?: number
+  spaceBefore?: boolean
+  text: string
 }
