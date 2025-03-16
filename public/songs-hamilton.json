@@ -354,9 +354,9 @@
       [
         {
           "startTime": 166.2,
-          "endTime": 168.6,
+          "endTime": 168.23,
           "text": "Alexander Hamilton",
-          "tracks": ["v1", "v2", "v4"]
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 168.23,
@@ -392,9 +392,9 @@
       [
         {
           "startTime": 180.43,
-          "endTime": 182.41,
+          "endTime": 182.35,
           "text": "Alexander Hamilton",
-          "tracks": ["v1", "v2", "v4"]
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 182.35,
@@ -406,7 +406,13 @@
           "startTime": 183.48,
           "endTime": 186.45,
           "text": "Hoy América te canta a vos",
-          "tracks": ["v1", "v2", "v3", "v4"]
+          "tracks": ["v1", "v2", "v4"]
+        },
+        {
+          "startTime": 183.8,
+          "endTime": 186.45,
+          "text": "mérica te canta a vos",
+          "tracks": ["v3"]
         },
         {
           "startTime": 187.0,
