@@ -39,23 +39,11 @@ const state = {
   )
 }
 
-// Track player refs and audio context
+// Track player refs
 const trackPlayers = ref<any[]>([])
-const audioContext = ref<AudioContext>(new AudioContext())
 const syncInterval = ref<number | null>(null)
 const SYNC_CHECK_INTERVAL = 1000 // Check every second
 const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
-
-// Initialize audio context on user interaction
-const initializeAudioContext = async () => {
-  if (audioContext.value.state === 'suspended') {
-    await audioContext.value.resume()
-  }
-  // Resume all track players
-  for (const player of trackPlayers.value) {
-    await player?.resumeAudioContext()
-  }
-}
 
 // Computed
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
@@ -136,9 +124,6 @@ const onSoloTrack = (index: number) => {
 }
 
 const onPlayPause = async (forcePlay?: boolean) => {
-  if (forcePlay ?? !state.playing.value) {
-    await initializeAudioContext()
-  }
   state.playing.value = forcePlay ?? !state.playing.value
   emit('update:playing', state.playing.value)
 }
@@ -172,7 +157,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', keydownHandler)
   stopSyncCheck()
-  audioContext.value.close()
 })
 </script>
 
@@ -180,9 +164,6 @@ onUnmounted(() => {
   <div class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col p-2">
     <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3 relative">
       <PlayerHeader :collection="collection" :song="song" />
-      <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
-        <TimeCopier :currentTime="state.currentTime.value" />
-      </div>
       <PlayerControls
         :currentTime="state.currentTime.value"
         :totalDuration="state.totalDuration.value"
@@ -190,6 +171,9 @@ onUnmounted(() => {
         :isReady="isReady"
         @play-pause="onPlayPause"
       />
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
+        <TimeCopier :currentTime="state.currentTime.value" />
+      </div>
     </div>
 
     <div class="h-full flex-grow-1 overflow-y-auto px-2 mb-3">
@@ -220,7 +204,6 @@ onUnmounted(() => {
                 :isReady="state.trackStates.value[index].isReady"
                 :volume="state.trackStates.value[index].volume"
                 :isPlaying="state.playing.value"
-                :audioContext="audioContext"
                 :ref="(el) => (trackPlayers[index] = el)"
                 @ready="(duration: number) => onReady(index, duration)"
                 @time-update="(time: number) => onTimeUpdate(index, time)"

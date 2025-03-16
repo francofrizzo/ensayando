@@ -42,14 +42,18 @@ onUnmounted(() => {
         class="text-surface-600 dark:text-surface-200 text-xl cursor-default transition-colors"
         >{{ formatTime(currentTime) }}</span
       >
-      <span class="text-surface-500 dark:text-surface-500 text-md cursor-default transition-colors"
+      <span
+        class="hidden sm:inline text-surface-500 dark:text-surface-500 text-md cursor-default transition-colors"
         >.{{ currentTime.toFixed(2).split('.')[1] }}</span
       >
-      <span class="text-surface-400 dark:text-surface-300 text-xl mx-1">/</span>
-      <span class="text-surface-500 dark:text-surface-400 cursor-default transition-colors">{{
-        formatTime(totalDuration)
-      }}</span>
-      <span class="text-surface-400 dark:text-surface-600 text-xs cursor-default transition-colors"
+
+      <span class="hidden sm:inline text-surface-400 dark:text-surface-300 text-xl mx-1">/</span>
+      <span
+        class="hidden sm:inline text-surface-500 dark:text-surface-400 cursor-default transition-colors"
+        >{{ formatTime(totalDuration) }}</span
+      >
+      <span
+        class="hidden sm:inline text-surface-400 dark:text-surface-600 text-xs cursor-default transition-colors"
         >.{{ totalDuration.toFixed(2).split('.')[1] }}</span
       >
     </div>

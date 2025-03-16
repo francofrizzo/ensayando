@@ -14,7 +14,6 @@ const props = defineProps<{
   volume: number
   isReady: boolean
   isPlaying: boolean
-  audioContext?: AudioContext // Optional shared audio context
 }>()
 
 const emit = defineEmits<{
@@ -30,20 +29,6 @@ const emit = defineEmits<{
 const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
-const localAudioContext = ref<AudioContext | null>(null)
-
-// Get or create audio context
-const getAudioContext = () => {
-  if (props.audioContext) return props.audioContext
-  if (!localAudioContext.value) {
-    localAudioContext.value = new AudioContext()
-    // Resume audio context on iOS
-    if (localAudioContext.value.state === 'suspended') {
-      localAudioContext.value.resume()
-    }
-  }
-  return localAudioContext.value
-}
 
 // Methods
 const seekTo = (time: number) => {
@@ -51,17 +36,8 @@ const seekTo = (time: number) => {
   waveSurfer.value.setTime(time)
 }
 
-// Add method to resume audio context
-const resumeAudioContext = async () => {
-  const context = getAudioContext()
-  if (context.state === 'suspended') {
-    await context.resume()
-  }
-}
-
 defineExpose({
-  seekTo,
-  resumeAudioContext
+  seekTo
 })
 
 const buttonColorScheme = computed(() => {
@@ -130,9 +106,8 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   barWidth: 2,
   barRadius: 8,
   dragToSeek: false,
-  backend: 'WebAudio',
+  backend: 'MediaElement',
   url: props.track.file,
-  audioContext: getAudioContext(),
   ...waveSurferColorScheme.value
 }))
 
@@ -195,9 +170,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
   waveSurfer.value?.destroy()
-  if (localAudioContext.value) {
-    localAudioContext.value.close()
-  }
 })
 </script>
 

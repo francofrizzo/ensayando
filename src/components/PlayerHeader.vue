@@ -10,12 +10,16 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-4 min-w-0">
     <SongMenu :collection="collection" />
 
-    <div class="flex flex-col tracking-wide">
-      <span class="text-lg font-semibold">{{ song.title }}</span>
-      <span class="text-xs font-medium uppercase text-muted-color">{{ collection.title }}</span>
+    <div class="flex flex-col tracking-wide min-w-0 gap-1">
+      <span class="text-lg font-semibold text-ellipsis line-clamp-2 leading-tight tracking-tight">{{
+        song.title
+      }}</span>
+      <span class="text-xs font-medium uppercase text-muted-color text-ellipsis line-clamp-1">{{
+        collection.title
+      }}</span>
     </div>
   </div>
 </template>
