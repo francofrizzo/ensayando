@@ -38,8 +38,8 @@ const itemColorScheme = computed(() => {
         text: {
           primary: {
             color: `{${props.collection.theme.mainColor}.500}`,
-            hoverBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 96%)`,
-            activeBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 84%)`
+            hoverBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 90%)`,
+            activeBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 80%)`
           }
         }
       },

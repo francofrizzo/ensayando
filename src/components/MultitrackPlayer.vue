@@ -46,6 +46,17 @@ const syncInterval = ref<number | null>(null)
 const SYNC_CHECK_INTERVAL = 1000 // Check every second
 const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
 
+// Initialize audio context on user interaction
+const initializeAudioContext = async () => {
+  if (audioContext.value.state === 'suspended') {
+    await audioContext.value.resume()
+  }
+  // Resume all track players
+  for (const player of trackPlayers.value) {
+    await player?.resumeAudioContext()
+  }
+}
+
 // Computed
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
 
@@ -124,7 +135,10 @@ const onSoloTrack = (index: number) => {
   }
 }
 
-const onPlayPause = (forcePlay?: boolean) => {
+const onPlayPause = async (forcePlay?: boolean) => {
+  if (forcePlay ?? !state.playing.value) {
+    await initializeAudioContext()
+  }
   state.playing.value = forcePlay ?? !state.playing.value
   emit('update:playing', state.playing.value)
 }
@@ -194,7 +208,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative border border-surface-200 dark:border-surface-800 rounded-lg bg-surface-100 dark:bg-surface-900 md:m-3"
+      class="relative border border-surface-200 dark:border-surface-800 rounded-lg bg-surface-100 dark:bg-surface-900 md:m-3 shadow-sm"
     >
       <div class="h-full overflow-y-auto">
         <div class="w-full h-full py-3 pl-3 md:pl-4">

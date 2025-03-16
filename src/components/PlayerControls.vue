@@ -39,20 +39,17 @@ onUnmounted(() => {
   <div class="flex items-center gap-5 text-right">
     <div class="flex items-baseline">
       <span
-        class="text-surface-200 text-xl cursor-default transition-colors"
-        title="Press '.' key to copy current time in seconds"
+        class="text-surface-600 dark:text-surface-200 text-xl cursor-default transition-colors"
         >{{ formatTime(currentTime) }}</span
       >
-      <span
-        class="text-surface-500 text-md cursor-default transition-colors"
-        title="Press '.' key to copy current time in seconds"
+      <span class="text-surface-500 dark:text-surface-500 text-md cursor-default transition-colors"
         >.{{ currentTime.toFixed(2).split('.')[1] }}</span
       >
-      <span class="text-surface-300 text-xl mx-1">/</span>
-      <span class="text-surface-400 cursor-default transition-colors">{{
+      <span class="text-surface-400 dark:text-surface-300 text-xl mx-1">/</span>
+      <span class="text-surface-500 dark:text-surface-400 cursor-default transition-colors">{{
         formatTime(totalDuration)
       }}</span>
-      <span class="text-surface-600 text-xs cursor-default transition-colors"
+      <span class="text-surface-400 dark:text-surface-600 text-xs cursor-default transition-colors"
         >.{{ totalDuration.toFixed(2).split('.')[1] }}</span
       >
     </div>

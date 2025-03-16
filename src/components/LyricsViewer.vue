@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Lyric } from '@/data/song.types'
 import type { Collection } from '@/data/collection.types'
+import type { Lyric } from '@/data/song.types'
 import { type ComponentPublicInstance, computed, ref, watch } from 'vue'
 
 const props = defineProps<{
@@ -20,6 +20,8 @@ type LyricLine = {
 }
 
 const getLyricStyles = (lyric: LyricWithStatus) => {
+  const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+
   if (lyric.status === 'past') {
     return {
       color: 'var(--p-surface-400)',
@@ -30,7 +32,7 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
     }
   }
 
-  const shade = lyric.status === 'active' ? '500' : '600'
+  const shade = lyric.status === 'active' ? '500' : isDarkMode ? '600' : '400'
 
   const { trackColors } = props.collection.theme
   if (!trackColors || Array.isArray(trackColors) || typeof trackColors !== 'object') {
@@ -59,10 +61,16 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
   return { color: `var(--p-${trackColors[firstTrack]}-${shade})` }
 }
 const enabledLyrics = computed(() =>
-  props.lyrics.map((lyricGroup) => {
-    const filtered = lyricGroup.filter((lyric) => ((!lyric.tracks) || lyric.tracks?.some(track => props.enabledTracks.includes(track))) ?? false)
-    return filtered.length > 0 ? filtered : []
-  }).filter(group => group.length > 0)
+  props.lyrics
+    .map((lyricGroup) => {
+      const filtered = lyricGroup.filter(
+        (lyric) =>
+          (!lyric.tracks || lyric.tracks?.some((track) => props.enabledTracks.includes(track))) ??
+          false
+      )
+      return filtered.length > 0 ? filtered : []
+    })
+    .filter((group) => group.length > 0)
 )
 
 const lyricsWithStatus = computed(() =>
@@ -95,7 +103,7 @@ const calculateOverlap = (lyric1: LyricWithStatus, lyric2: LyricWithStatus) => {
   const overlap = end - start
   const duration1 = lyric1.endTime - lyric1.startTime
   const duration2 = lyric2.endTime - lyric2.startTime
-  
+
   // Return the overlap percentage relative to the shorter duration
   return overlap / Math.min(duration1, duration2)
 }
@@ -110,7 +118,7 @@ const lyricsInColumns = computed(() =>
       if (lastLine) {
         // Check overlap with all lyrics in the last line
         const hasSignificantOverlap = lastLine.columns.some(
-          existingLyric => calculateOverlap(existingLyric, lyric) >= OVERLAP_THRESHOLD
+          (existingLyric) => calculateOverlap(existingLyric, lyric) >= OVERLAP_THRESHOLD
         )
 
         if (hasSignificantOverlap) {
@@ -145,18 +153,14 @@ watch(
 
 <template>
   <div class="py-8 flex flex-col gap-6 text-xl">
-    <div
-      v-for="(lyricGroup, index) in lyricsInColumns"
-      :key="index"
-      class="flex flex-col gap-2"
-    >
+    <div v-for="(lyricGroup, index) in lyricsInColumns" :key="index" class="flex flex-col gap-2">
       <div
         v-for="lyricLine in lyricGroup"
         :key="lyricLine.startTime"
         class="flex flex-row items-center justify-evenly gap-4"
         :class="{
           'cursor-pointer': !isDisabled,
-          'cursor-default': isDisabled,
+          'cursor-default': isDisabled
         }"
       >
         <div

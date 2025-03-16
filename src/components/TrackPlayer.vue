@@ -37,6 +37,10 @@ const getAudioContext = () => {
   if (props.audioContext) return props.audioContext
   if (!localAudioContext.value) {
     localAudioContext.value = new AudioContext()
+    // Resume audio context on iOS
+    if (localAudioContext.value.state === 'suspended') {
+      localAudioContext.value.resume()
+    }
   }
   return localAudioContext.value
 }
@@ -47,8 +51,17 @@ const seekTo = (time: number) => {
   waveSurfer.value.setTime(time)
 }
 
+// Add method to resume audio context
+const resumeAudioContext = async () => {
+  const context = getAudioContext()
+  if (context.state === 'suspended') {
+    await context.resume()
+  }
+}
+
 defineExpose({
-  seekTo
+  seekTo,
+  resumeAudioContext
 })
 
 const buttonColorScheme = computed(() => {
@@ -58,9 +71,9 @@ const buttonColorScheme = computed(() => {
       light: {
         text: {
           primary: {
-            hoverBackground: `color-mix(in srgb, {${color}.500}, transparent 96%)`,
-            activeBackground: `color-mix(in srgb, {${color}.500}, transparent 84%)`,
-            color: `{${color}.50}`
+            color: `{${color}.600}`,
+            hoverBackground: `color-mix(in srgb, {${color}.500}, transparent 90%)`,
+            activeBackground: `color-mix(in srgb, {${color}.500}, transparent 80%)`
           }
         }
       },
@@ -85,14 +98,16 @@ const sliderColorScheme = computed(() => {
         root: {
           rangeBackground: `{${color}.500}`,
           handleBackground: `{${color}.500}`,
-          handleHoverBackground: `{${color}.600}`
+          handleHoverBackground: `{${color}.600}`,
+          handleFocusRingColor: `{${color}.400}`
         }
       },
       dark: {
         root: {
           rangeBackground: `{${color}.400}`,
           handleBackground: `{${color}.400}`,
-          handleHoverBackground: `{${color}.300}`
+          handleHoverBackground: `{${color}.300}`,
+          handleFocusRingColor: `{${color}.600}`
         }
       }
     }
@@ -103,8 +118,8 @@ const waveSurferColorScheme = computed(() => {
   const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
   const color = isMuted.value ? 'zinc' : props.color
   return {
-    waveColor: isDarkMode ? $dt(`${color}.700`).value : $dt(`${color}.300`).value,
-    progressColor: isDarkMode ? $dt(`${color}.500`).value : $dt(`${color}.400`).value
+    waveColor: isDarkMode ? $dt(`${color}.700`).value : $dt(`${color}.400`).value,
+    progressColor: isDarkMode ? $dt(`${color}.500`).value : $dt(`${color}.600`).value
   }
 })
 
@@ -117,7 +132,6 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   dragToSeek: false,
   backend: 'WebAudio',
   url: props.track.file,
-  barHeight: props.volume,
   audioContext: getAudioContext(),
   ...waveSurferColorScheme.value
 }))
@@ -169,7 +183,6 @@ watch(
   () => props.volume,
   (newVolume) => {
     waveSurfer.value?.setVolume(newVolume)
-    waveSurfer.value?.setOptions({ barHeight: props.volume })
   }
 )
 
