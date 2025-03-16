@@ -1,7 +1,7 @@
 [
   {
     "id": "beetlejuice",
-    "title": "Beetlejuice",
+    "title": "BJ: El Musical, El Musical, El Musical",
     "songsFile": "songs-beetlejuice.json",
     "theme": {
       "mainColor": "emerald",
@@ -10,7 +10,7 @@
   },
   {
     "id": "hamilton",
-    "title": "Hamilton",
+    "title": "Alexander",
     "songsFile": "songs-hamilton.json",
     "theme": {
       "mainColor": "yellow",

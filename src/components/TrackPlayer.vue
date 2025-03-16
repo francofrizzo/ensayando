@@ -14,6 +14,7 @@ const props = defineProps<{
   volume: number
   isReady: boolean
   isPlaying: boolean
+  audioContext?: AudioContext // Optional shared audio context
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +30,16 @@ const emit = defineEmits<{
 const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
+const localAudioContext = ref<AudioContext | null>(null)
+
+// Get or create audio context
+const getAudioContext = () => {
+  if (props.audioContext) return props.audioContext
+  if (!localAudioContext.value) {
+    localAudioContext.value = new AudioContext()
+  }
+  return localAudioContext.value
+}
 
 // Methods
 const seekTo = (time: number) => {
@@ -106,6 +117,8 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   dragToSeek: false,
   backend: 'WebAudio',
   url: props.track.file,
+  barHeight: props.volume,
+  audioContext: getAudioContext(),
   ...waveSurferColorScheme.value
 }))
 
@@ -156,6 +169,7 @@ watch(
   () => props.volume,
   (newVolume) => {
     waveSurfer.value?.setVolume(newVolume)
+    waveSurfer.value?.setOptions({ barHeight: props.volume })
   }
 )
 
@@ -168,6 +182,9 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
   waveSurfer.value?.destroy()
+  if (localAudioContext.value) {
+    localAudioContext.value.close()
+  }
 })
 </script>
 

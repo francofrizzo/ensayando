@@ -1,8 +1,8 @@
-import type { Song } from '@/data/song.types'
 import type { Collection } from '@/data/collection.types'
+import type { Song } from '@/data/song.types'
+import { updatePrimaryPalette } from '@primevue/themes'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { updatePrimaryPalette } from '@primevue/themes'
 
 export const useSongsStore = defineStore('songs', () => {
   const collections = ref<Collection[]>([])
@@ -12,7 +12,7 @@ export const useSongsStore = defineStore('songs', () => {
   const currentSong = ref<Song | undefined>(undefined)
 
   // Load collections on store initialization
-  fetch('/bj/collections.json').then((res) =>
+  fetch('/collections.json').then((res) =>
     res.json().then((data) => {
       collections.value = data
       changeCurrentCollection(data[1])
@@ -26,7 +26,7 @@ export const useSongsStore = defineStore('songs', () => {
     currentSong.value = undefined
 
     // Load songs for the selected collection
-    const response = await fetch(`/bj/${collection.songsFile}`)
+    const response = await fetch(`/${collection.songsFile}`)
     const data = await response.json()
     songs.value = data.map((song: any) => ({
       ...song,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import LyricsViewer from '@/components/LyricsViewer.vue'
 import PlayerControls from '@/components/PlayerControls.vue'
@@ -39,11 +39,42 @@ const state = {
   )
 }
 
-// Track player refs
+// Track player refs and audio context
 const trackPlayers = ref<any[]>([])
+const audioContext = ref<AudioContext>(new AudioContext())
+const syncInterval = ref<number | null>(null)
+const SYNC_CHECK_INTERVAL = 1000 // Check every second
+const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
 
 // Computed
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
+
+const checkAndCorrectSync = () => {
+  if (!state.playing.value || !isReady.value) return
+
+  const times = trackPlayers.value.map((player) => player?.waveSurfer?.getCurrentTime() ?? 0)
+  const mainTime = times[0] // Use first track as reference
+
+  // Check if any track has drifted beyond threshold
+  const needsSync = times.some((time) => Math.abs(time - mainTime) > DRIFT_THRESHOLD)
+
+  if (needsSync) {
+    console.debug('Correcting track sync, drift detected')
+    seekAllTracks(mainTime)
+  }
+}
+
+const startSyncCheck = () => {
+  stopSyncCheck()
+  syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL)
+}
+
+const stopSyncCheck = () => {
+  if (syncInterval.value) {
+    window.clearInterval(syncInterval.value)
+    syncInterval.value = null
+  }
+}
 
 const seekAllTracks = (time: number) => {
   trackPlayers.value.forEach((player) => {
@@ -109,12 +140,25 @@ const keydownHandler = (event: KeyboardEvent) => {
   }
 }
 
+watch(
+  () => state.playing.value,
+  (isPlaying) => {
+    if (isPlaying) {
+      startSyncCheck()
+    } else {
+      stopSyncCheck()
+    }
+  }
+)
+
 onMounted(() => {
   window.addEventListener('keydown', keydownHandler)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', keydownHandler)
+  stopSyncCheck()
+  audioContext.value.close()
 })
 </script>
 
@@ -162,6 +206,7 @@ onUnmounted(() => {
                 :isReady="state.trackStates.value[index].isReady"
                 :volume="state.trackStates.value[index].volume"
                 :isPlaying="state.playing.value"
+                :audioContext="audioContext"
                 :ref="(el) => (trackPlayers[index] = el)"
                 @ready="(duration: number) => onReady(index, duration)"
                 @time-update="(time: number) => onTimeUpdate(index, time)"
@@ -177,10 +222,10 @@ onUnmounted(() => {
 
       <div
         v-if="!isReady"
-        class="absolute top-0 left-0 bottom-0 right-0 z-10 bg-surface-200 dark:bg-surface-800 rounded opacity-80 flex flex-col gap-4 text-xl items-center justify-center"
+        class="absolute top-0 left-0 bottom-0 right-0 z-10 bg-surface-200 dark:bg-surface-800 rounded opacity-80 flex flex-col gap-6 text-lg items-center justify-center"
       >
         <ProgressSpinner />
-        Cargando...
+        <span class="text-muted uppercase text-muted-color tracking-wide">Cargando...</span>
       </div>
     </div>
   </div>
