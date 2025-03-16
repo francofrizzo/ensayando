@@ -6,32 +6,32 @@
       {
         "id": "b",
         "title": "Pista",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-b.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-b.m4a"
       },
       {
         "id": "h",
         "title": "Solistas",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-h.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-h.m4a"
       },
       {
         "id": "v1",
         "title": "Voz 1",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v1.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v1.m4a"
       },
       {
         "id": "v2",
         "title": "Voz 2",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v2.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v2.m4a"
       },
       {
         "id": "v3",
         "title": "Voz 3",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v3.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v3.m4a"
       },
       {
         "id": "v4",
         "title": "Voz 4",
-        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v4.wav"
+        "file": "/bj/audio/hamilton/1-alexander-hamilton/1-alexander-hamilton-v4.m4a"
       }
     ],
     "lyrics": [
@@ -73,7 +73,7 @@
         {
           "startTime": 22.34,
           "endTime": 25.97,
-          "text": "Creció sin un centavo en los bolsillos y su suerte",
+          "text": "Creció sin un centavo en los bolsillos y sin suerte",
           "tracks": ["h"]
         },
         {
@@ -90,132 +90,446 @@
       ],
       [
         {
-          "startTime": 32.0,
+          "startTime": 33.89,
           "text": "Y mientras cada esclavo era masacrado,",
           "tracks": ["h"],
           "comment": "Thomas Jefferson"
         },
         {
-          "startTime": 35.0,
+          "startTime": 37.63,
           "text": "El tipo se llevaba todo puesto a su paso",
           "tracks": ["h"]
         },
         {
-          "startTime": 37.5,
+          "startTime": 41.48,
           "text": "Pertenecer a un sitio era su objetivo",
           "tracks": ["h"]
         },
         {
-          "startTime": 40.0,
+          "startTime": 44.98,
           "text": "Y si había algo que hacer para eso estaba listo",
           "tracks": ["h"]
         }
       ],
       [
         {
-          "startTime": 42.5,
+          "startTime": 48.84,
           "text": "Y vino un huracán y todo se llevó",
           "tracks": ["h"],
           "comment": "James Madison"
         },
         {
-          "startTime": 45.0,
+          "startTime": 52.49,
           "text": "Parecía que a sus sueños por un caño los tiró",
           "tracks": ["h"]
         },
         {
-          "startTime": 47.5,
+          "startTime": 56.14,
           "text": "Puso un lápiz en su frente, su cerebro conectó",
           "tracks": ["h"]
         },
         {
-          "startTime": 50.0,
+          "startTime": 59.81,
           "text": "Y así un testamento escribió a su dolor",
           "tracks": ["h"]
         }
       ],
       [
         {
-          "startTime": 52.5,
+          "startTime": 63.52,
           "text": "Y aunque todos le dijeron que no estaba en su juicio",
           "tracks": ["h"],
           "comment": "Aaron Burr"
         },
         {
-          "startTime": 55.0,
+          "startTime": 67.59,
           "text": "Siguió adelante con su canto y esto dejó escrito",
           "tracks": ["h"]
         },
         {
-          "startTime": 57.5,
+          "startTime": 71.51,
           "text": "“Educa tu mente y conoce bien su cimiento",
           "tracks": ["h"]
         },
         {
-          "startTime": 60.0,
+          "startTime": 74.77,
           "text": "Que así el mundo va a saber muy bien tu movimiento”",
           "tracks": ["h"]
         }
       ],
       [
         {
-          "startTime": 62.5,
+          "startTime": 79.08,
           "text": "Alexander Hamilton",
           "tracks": ["h"],
           "comment": "Alexander Hamilton"
         },
         {
-          "startTime": 64.5,
+          "startTime": 82.3,
           "text": "Mi nombre es Alexander Hamilton",
           "tracks": ["h"]
         },
         {
-          "startTime": 67.0,
+          "startTime": 86.05,
           "text": "Hay tantas cosas que voy a lograr,",
           "tracks": ["h"]
         },
         {
-          "startTime": 69.0,
+          "startTime": 89.74,
           "text": "Esperá, ya vendrán...",
           "tracks": ["h"]
         }
       ],
       [
         {
-          "startTime": 71.0,
+          "startTime": 93.76,
           "text": "Luego a los diez su padre huyó,",
           "tracks": ["h"],
           "comment": "Eliza Hamilton"
         },
         {
-          "startTime": 73.0,
+          "startTime": 96.79,
           "text": "Lo dejó endeudado,",
           "tracks": ["h"]
         },
         {
-          "startTime": 74.5,
+          "startTime": 98.57,
           "text": "Años después Alex y su madre enfermaron,",
           "tracks": ["h"]
         },
         {
-          "startTime": 77.0,
+          "startTime": 102.66,
           "text": "Pero él gracias a Dios pronto",
           "tracks": ["h"]
         },
         {
-          "startTime": 105.58,
-          "endTime": 108.79,
+          "startTime": 105.64,
+          "endTime": 108.97,
           "text": "Pudo salir, mas vio a su madre morir",
+          "tracks": ["h", "v1", "v2", "v3", "v4"]
+        }
+      ],
+      [
+        {
+          "startTime": 109.0,
+          "text": "Lo buscó a su primo, se encontró con su suicidio",
+          "tracks": ["h"],
+          "comment": "George Washington"
+        },
+        {
+          "startTime": 113.12,
+          "text": "Que lo dejó solo en el mundo, un martirio y huyó",
           "tracks": ["h"]
         },
         {
-          "startTime": 105.58,
-          "endTime": 108.79,
-          "text": "Pudo salir, mas vio a su madre morir",
+          "startTime": 117.83,
+          "endTime": 120.06,
+          "text": "Alex, solo vos vas a poder",
+          "tracks": ["h", "v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 120.06,
+          "text": "Y empezó a leer y pensar cómo iba a proceder",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 124.15,
+          "text": "Más no había solución para alguien sin su convicción",
+          "tracks": ["h"],
+          "comment": "Aaron Burr"
+        },
+        {
+          "startTime": 127.1,
+          "text": "Ya estaría muerto, indigente, ya sin más que su presente",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 130.3,
+          "text": "Y comenzó, salió a trabajar para otra gente",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 134.72,
+          "text": "Cosechando azúcar formó su coeficiente",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 138.1,
+          "endTime": 141.69,
+          "text": "Y leyó todo libro que en su camino encontró",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 138.1,
+          "endTime": 139.09,
+          "text": "Y leyó",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 141.5,
+          "endTime": 145.19,
+          "text": "Él planeó el futuro, en un mapa lo dibujó",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 141.5,
+          "endTime": 142.4,
+          "text": "Él planeó",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 143.97,
+          "endTime": 147.13,
+          "text": "Uh, uh, uh",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 145.07,
+          "endTime": 148.48,
+          "text": "En un barco viajó, hacia atrás no miró",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 148.48,
+          "endTime": 151.93,
+          "text": "“¡En New York nuevo hombre serás!”",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 152.22,
+          "endTime": 155.75,
+          "text": "“¡En New York nuevo hombre serás!”",
+          "tracks": ["v3", "v4"]
+        },
+        {
+          "startTime": 154.12,
+          "endTime": 155.76,
+          "text": "Esperá",
+          "tracks": ["h"],
+          "comment": "Alexander Hamilton"
+        },
+        {
+          "startTime": 155.75,
+          "endTime": 159.18,
+          "text": "“¡En New York nuevo hombre serás!”",
+          "tracks": ["v2", "v3", "v4"]
+        },
+        {
+          "startTime": 157.7,
+          "endTime": 159.2,
+          "text": "Esperá",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 159.18,
+          "endTime": 162.94,
+          "text": "“¡En New York nuevo hombre serás!”",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 162.94,
+          "endTime": 164.9,
+          "text": "New York",
+          "tracks": ["v1", "v2"]
+        },
+        {
+          "startTime": 163.5,
+          "endTime": 164.9,
+          "text": "New York",
+          "tracks": ["v3", "v4"]
+        },
+        {
+          "startTime": 164.9,
+          "endTime": 166.2,
+          "text": "Esperá",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 166.2,
+          "endTime": 168.6,
+          "text": "Alexander Hamilton",
+          "tracks": ["v1", "v2", "v4"]
+        },
+        {
+          "startTime": 168.23,
+          "endTime": 169.77,
+          "text": "Alexander Hamilton",
+          "tracks": ["v3"]
+        },
+        {
+          "startTime": 169.4,
+          "endTime": 172.56,
+          "text": "Te estamos esperando a vos",
+          "tracks": ["v1", "v2", "v4"]
+        },
+        {
+          "startTime": 171.45,
+          "endTime": 173.86,
+          "text": "Te estamos esperando a vos",
+          "tracks": ["v3"]
+        },
+        {
+          "startTime": 173.06,
+          "endTime": 174.93,
+          "text": "Ya no hay vuelta atrás",
+          "tracks": ["v1", "v2", "v4"]
+        },
+        {
+          "startTime": 174.93,
+          "endTime": 180.33,
+          "text": "Ya la historia te da tu lugar, oh",
           "tracks": ["v1", "v2", "v3", "v4"]
         }
       ],
-      []
+      [
+        {
+          "startTime": 180.43,
+          "endTime": 182.41,
+          "text": "Alexander Hamilton",
+          "tracks": ["v1", "v2", "v4"]
+        },
+        {
+          "startTime": 182.35,
+          "endTime": 184.17,
+          "text": "Alexander Hamilton",
+          "tracks": ["v3"]
+        },
+        {
+          "startTime": 183.48,
+          "endTime": 186.45,
+          "text": "Hoy América te canta a vos",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 187.0,
+          "endTime": 190.08,
+          "text": "¿Sabrán ellos lo que pasó?",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 190.37,
+          "endTime": 193.56,
+          "text": "¿Sabrán que la historia cambió?",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 193.84,
+          "endTime": 201.77,
+          "text": "El mundo no va a ser igual, oh",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        }
+      ],
+      [
+        {
+          "startTime": 201.31,
+
+          "text": "El barco está amarrando ya",
+          "comment": "Aaron Burr",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 203.03,
+          "endTime": 205.0,
+          "text": "Atentos si lo encuentran",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 204.21,
+          "endTime": 205.67,
+          "text": "Esperá",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 205.0,
+          "endTime": 208.23,
+          "text": "Otro inmigrante más que viene a la guerra",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 207.78,
+          "endTime": 209.01,
+          "text": "Esperá",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 208.23,
+          "endTime": 209.91,
+          "text": "Destruido por amigos",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 209.91,
+          "endTime": 211.64,
+          "text": "Su patria lo ha olvidado",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 212.09,
+          "endTime": 213.74,
+          "comment": "Hercules Mulligan/Marquis de Lafayette",
+          "text": "¿Yo? Luché con él",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 213.74,
+          "endTime": 215.73,
+          "comment": "John Laurens/Philip Hamilton",
+          "text": "¿Yo? Morí por él",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 215.73,
+          "endTime": 217.3,
+          "comment": "George Washington",
+          "text": "¿Yo? Creí en él",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 217.3,
+          "endTime": 219.18,
+          "comment": "Eliza Hamilton, Angelica Schuyler, María Reynolds",
+          "text": "¿Yo? Lo amé",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 219.18,
+          "endTime": 221.99,
+          "comment": "Aaron Burr",
+          "text": "¿Y yo? Soy el idiota que le disparó",
+          "tracks": ["h"]
+        }
+      ],
+      [
+        {
+          "startTime": 223.3,
+          "endTime": 229.26,
+          "text": "Tantas cosas que vas a lograr, ya vendrán...",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        },
+        {
+          "startTime": 229.44,
+          "endTime": 230.71,
+          "comment": "Aaron Burr",
+          "text": "Y su nombre es...",
+          "tracks": ["h"]
+        },
+        {
+          "startTime": 230.71,
+          "endTime": 232.8,
+          "text": "Alexander Hamilton",
+          "tracks": ["v1", "v2", "v3", "v4"]
+        }
+      ]
     ]
   }
 ]
