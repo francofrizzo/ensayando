@@ -4,27 +4,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/Prologo/Prologo-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/Prologo/Prologo-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/Prologo/Prologo-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/Prologo/Prologo-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/Prologo/Prologo-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/Prologo/Prologo-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/Prologo/Prologo-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/Prologo/Prologo-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/Prologo/Prologo-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/Prologo/Prologo-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -60,27 +60,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte1/Estar-Muerto-Parte1-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -223,27 +223,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/EstarMuertoParte2/Estar-Muerto-Parte2-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -310,27 +310,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ElSustoDeSusVidas/El-Susto-De-Sus-Vidas-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -378,22 +378,22 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/BananaBoatSong/Banana-Boat-Song-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/BananaBoatSong/Banana-Boat-Song-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/BananaBoatSong/Banana-Boat-Song-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/BananaBoatSong/Banana-Boat-Song-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/BananaBoatSong/Banana-Boat-Song-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/BananaBoatSong/Banana-Boat-Song-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Varones",
-        "file": "/audio/beetlejuice/BananaBoatSong/Banana-Boat-Song-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/BananaBoatSong/Banana-Boat-Song-voz3.m4a"
       }
     ],
     "lyrics": [
@@ -474,27 +474,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/HacerlosGritar/Hacerlos-Gritar-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -645,31 +645,31 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-voz4.m4a"
       },
       {
         "title": "Beetlejuice",
-        "file": "/audio/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-Beetlejuice.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritarReprise/Hacerlos-Gritar-Reprise-Beetlejuice.m4a"
       }
     ],
     "lyrics": [
@@ -740,27 +740,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/LoQueSeHoy/Lo-Que-Se-Hoy-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -876,27 +876,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/ViejoViolin/Viejo-Violin-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ViejoViolin/Viejo-Violin-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/ViejoViolin/Viejo-Violin-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ViejoViolin/Viejo-Violin-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/ViejoViolin/Viejo-Violin-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ViejoViolin/Viejo-Violin-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/ViejoViolin/Viejo-Violin-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ViejoViolin/Viejo-Violin-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/ViejoViolin/Viejo-Violin-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/ViejoViolin/Viejo-Violin-voz4.m4a"
       }
     ],
     "lyrics": [
@@ -1051,27 +1051,27 @@
     "tracks": [
       {
         "title": "Pista",
-        "file": "/audio/beetlejuice/JumpInTheLine/Jump-In-The-Line-track.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/JumpInTheLine/Jump-In-The-Line-track.m4a"
       },
       {
         "title": "Voz 1",
         "subtitle": "Soprano",
-        "file": "/audio/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz1.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz1.m4a"
       },
       {
         "title": "Voz 2",
         "subtitle": "Mezzo",
-        "file": "/audio/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz2.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz2.m4a"
       },
       {
         "title": "Voz 3",
         "subtitle": "Tenor",
-        "file": "/audio/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz3.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz3.m4a"
       },
       {
         "title": "Voz 4",
         "subtitle": "Bajo",
-        "file": "/audio/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz4.m4a"
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/JumpInTheLine/Jump-In-The-Line-voz4.m4a"
       }
     ],
     "lyrics": [
