@@ -16,13 +16,13 @@
     "@chakra-ui/vue": "^0.13.1",
     "@emotion/css": "^11.11.2",
     "@meersagor/wavesurfer-vue": "^0.1.0",
-    "@primevue/themes": "^4.0.0-rc.2",
+    "@primevue/themes": "^4.3.2",
     "pinia": "^2.1.7",
     "primeicons": "^7.0.0",
-    "primevue": "^4.0.0-rc.2",
-    "tailwindcss-primeui": "^0.3.1",
-    "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "primevue": "^4.3.2",
+    "tailwindcss-primeui": "^0.3.4",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.8.0",

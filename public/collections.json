@@ -4,7 +4,7 @@
     "title": "BJ: El Musical, El Musical, El Musical",
     "songsFile": "songs-beetlejuice.json",
     "theme": {
-      "mainColor": "emerald",
+      "mainColor": "violet",
       "trackColors": ["emerald", "amber", "sky", "rose", "indigo", "lime"]
     }
   },

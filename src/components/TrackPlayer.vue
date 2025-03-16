@@ -197,7 +197,7 @@ onUnmounted(() => {
           :label="track.title"
           :disabled="!isReady"
           @click="handleTrackButtonClick"
-          :text="true"
+          text
           size="small"
           :dt="buttonColorScheme"
         />
@@ -210,7 +210,10 @@ onUnmounted(() => {
         :max="1"
         :step="0.01"
         :dt="sliderColorScheme"
-        @update:modelValue="(value: number) => emit('volume-change', value)"
+        @update:modelValue="
+          (value: number | number[]) =>
+            emit('volume-change', Array.isArray(value) ? value[0] : value)
+        "
       />
     </div>
     <div class="w-full p-0">
