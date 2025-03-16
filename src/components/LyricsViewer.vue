@@ -45,7 +45,7 @@ watch(
 </script>
 
 <template>
-  <ul class="list-none w-full text-center text-xl px-0 py-8 tracking-wide">
+  <ul class="list-none w-full text-center text-xl px-0 py-8">
     <li
       v-for="lyric in lyricsWithStatus"
       :key="lyric.startTime"
@@ -64,7 +64,7 @@ watch(
           'text-surface-400': lyric.status === 'past',
           'text-2xl': lyric.status === 'active'
         }"
-        class="transition-all transition-duration-500 uppercase"
+        class="transition-all transition-duration-500 uppercase tracking-wide"
         :ref="
           (el) => {
             if (lyric.status === 'active') {

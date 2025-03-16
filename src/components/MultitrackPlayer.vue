@@ -2,11 +2,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type WaveSurfer from 'wavesurfer.js'
 import { WaveSurferPlayer } from '@meersagor/wavesurfer-vue'
-import ToggleSwitch from 'primevue/toggleswitch'
+import Slider from 'primevue/slider'
 import { $dt } from '@primevue/themes'
 import Button from 'primevue/button'
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
 import ProgressSpinner from 'primevue/progressspinner'
 
 import LyricsViewer from '@/components/LyricsViewer.vue'
@@ -32,20 +30,48 @@ const getWaveSurferColorScheme = (index: number, muted = false) => {
   }
 }
 
-const getToggleColorScheme = (index: number) => {
-  const color = getTrackColor(index)
+const getButtonColorScheme = (index: number, muted = false) => {
+  const color = muted ? 'zinc' : getTrackColor(index)
+  return {
+    colorScheme: {
+      light: {
+        text: {
+          primary: {
+            hoverBackground: `color-mix(in srgb, {${color}.500}, transparent 96%)`,
+            activeBackground: `color-mix(in srgb, {${color}.500}, transparent 84%)`,
+            color: `{${color}.50}`
+          }
+        }
+      },
+      dark: {
+        text: {
+          primary: {
+            color: `{${color}.400}`,
+            hoverBackground: `color-mix(in srgb, {${color}.500}, transparent 90%)`,
+            activeBackground: `color-mix(in srgb, {${color}.500}, transparent 80%)`
+          }
+        }
+      }
+    }
+  }
+}
+
+const getSliderColorScheme = (index: number, muted = false) => {
+  const color = muted ? 'zinc' : getTrackColor(index)
   return {
     colorScheme: {
       light: {
         root: {
-          checkedBackground: `{${color}.500}`,
-          checkedHoverBackground: `{${color}.600}`
+          rangeBackground: `{${color}.500}`,
+          handleBackground: `{${color}.500}`,
+          handleHoverBackground: `{${color}.600}`
         }
       },
       dark: {
         root: {
-          checkedBackground: `{${color}.400}`,
-          checkedHoverBackground: `{${color}.300}`
+          rangeBackground: `{${color}.400}`,
+          handleBackground: `{${color}.400}`,
+          handleHoverBackground: `{${color}.300}`
         }
       }
     }
@@ -55,7 +81,7 @@ const getToggleColorScheme = (index: number) => {
 // Component logic
 const songsStore = useSongsStore()
 
-const props = defineProps<{ collection: Collection, song: Song }>()
+const props = defineProps<{ collection: Collection; song: Song }>()
 
 const waveSurferOptions = ref<PartialWaveSurferOptions>({
   height: 72,
@@ -69,9 +95,9 @@ const waveSurferOptions = ref<PartialWaveSurferOptions>({
 const currentTime = ref<number>(0)
 const totalDuration = ref<number>(0)
 const isPlaying = ref(false)
-const trackData = ref<{ waveSurfer: WaveSurfer | null; isMuted: boolean; isReady: boolean }[]>(
-  props.song.tracks.map(() => ({ waveSurfer: null, isMuted: false, isReady: false }))
-)
+const trackData = ref<
+  { waveSurfer: WaveSurfer | null; isMuted: boolean; isReady: boolean; volume: number }[]
+>(props.song.tracks.map(() => ({ waveSurfer: null, isMuted: false, isReady: false, volume: 1 })))
 
 const isReady = computed(() => trackData.value.every((track) => track.isReady))
 
@@ -89,22 +115,51 @@ const onTimeUpdate = (index: number, time: number) => {
   }
 }
 
+const onVolumeChange = (index: number, volume: number) => {
+  trackData.value[index].volume = volume
+  const shouldBeMuted = volume === 0
+  if (trackData.value[index].isMuted !== shouldBeMuted) {
+    trackData.value[index].isMuted = shouldBeMuted
+    trackData.value[index].waveSurfer?.setOptions(getWaveSurferColorScheme(index, shouldBeMuted))
+  }
+  trackData.value[index].waveSurfer?.setVolume(volume)
+}
+
 const onToggleTrackMuted = (index: number) => {
   const isMuted = !trackData.value[index].isMuted
   trackData.value[index].isMuted = isMuted
-  trackData.value[index].waveSurfer?.setVolume(isMuted ? 0 : 1)
+  const newVolume = isMuted ? 0 : trackData.value[index].volume || 1
+  trackData.value[index].volume = newVolume
+  trackData.value[index].waveSurfer?.setVolume(newVolume)
   trackData.value[index].waveSurfer?.setOptions(getWaveSurferColorScheme(index, isMuted))
 }
 
-const onChangeTrackMutedSwitch = (index: number) => {
-  if (!isCtrlPressed.value) {
-    onToggleTrackMuted(index)
-  } else {
-    for (let index2 = 0; index2 < trackData.value.length; index2++) {
-      if (index !== index2) {
-        onToggleTrackMuted(index2)
+const onSoloTrack = (index: number) => {
+  // Check if all other tracks are muted (meaning this track is solo-ed)
+  const isCurrentlySoloed = trackData.value.every((track, i) => 
+    i === index || track.isMuted
+  )
+
+  if (isCurrentlySoloed) {
+    // If the track is currently solo-ed, unmute all tracks
+    trackData.value.forEach((track, i) => {
+      if (track.isMuted) {
+        onToggleTrackMuted(i)
       }
-    }
+    })
+  } else {
+    // First, ensure all tracks are unmuted
+    trackData.value.forEach((track, i) => {
+      if (track.isMuted) {
+        onToggleTrackMuted(i)
+      }
+    })
+    // Then mute all tracks except the selected one
+    trackData.value.forEach((_, i) => {
+      if (i !== index) {
+        onToggleTrackMuted(i)
+      }
+    })
   }
 }
 
@@ -161,6 +216,14 @@ onUnmounted(() => {
 
 const formatTime = (seconds: number): string =>
   [seconds / 60, seconds % 60].map((v) => `${Math.floor(v)}`.padStart(2, '0')).join(':')
+
+const handleTrackClick = (index: number) => {
+  if (isCtrlPressed.value) {
+    onSoloTrack(index)
+  } else {
+    onToggleTrackMuted(index)
+  }
+}
 </script>
 
 <template>
@@ -171,7 +234,7 @@ const formatTime = (seconds: number): string =>
 
         <div class="flex flex-col tracking-wide">
           <span class="text-lg font-semibold">{{ song.title }}</span>
-          <span class="text-xs font-medium uppercase text-muted-color ">{{ collection.title }}</span>
+          <span class="text-xs font-medium uppercase text-muted-color">{{ collection.title }}</span>
         </div>
       </div>
 
@@ -181,7 +244,9 @@ const formatTime = (seconds: number): string =>
           <span class="text-surface-500 text-md">.{{ currentTime.toFixed(2).split('.')[1] }}</span>
           <span class="text-surface-300 text-xl mx-1">/</span>
           <span class="text-surface-400">{{ formatTime(totalDuration) }}</span>
-          <span class="text-surface-600 text-xs">.{{ totalDuration.toFixed(2).split('.')[1] }}</span>
+          <span class="text-surface-600 text-xs"
+            >.{{ totalDuration.toFixed(2).split('.')[1] }}</span
+          >
         </div>
         <Button
           class="flex-shrink-0 aspect-square"
@@ -194,64 +259,74 @@ const formatTime = (seconds: number): string =>
       </div>
     </div>
 
-    <Splitter layout="vertical" class="flex-grow min-h-0">
-      <SplitterPanel class="outline-none" :size="25">
-        <div class="h-full overflow-y-auto px-2">
-          <LyricsViewer
-            :lyrics="song.lyrics"
-            :currentTime="currentTime"
-            :isDisabled="!isReady"
-            @seek="onSeekToTime"
-          />
-        </div>
-      </SplitterPanel>
-      <SplitterPanel class="outline-none" :size="75">
-        <div class="h-full relative">
-          <div class="h-full overflow-y-auto">
-            <div class="w-full h-full py-3 pl-3 md:pl-4">
-              <div
-                v-for="(track, index) in song.tracks"
-                v-bind:key="index"
-                class="flex items-center gap-3"
-              >
-                <div
-                  class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-2"
-                >
-                  <div class="flex flex-col gap-1">
-                    <span class="text-ellipsis overflow-hidden">{{ track.title }}</span>
-                  </div>
-                  <ToggleSwitch
-                    @change="() => onChangeTrackMutedSwitch(index)"
-                    :dt="getToggleColorScheme(index)"
-                    :modelValue="!trackData[index]?.isMuted"
-                  />
-                </div>
-                <div class="w-full p-0">
-                  <WaveSurferPlayer
-                    :options="{
-                      ...waveSurferOptions,
-                      ...getWaveSurferColorScheme(index),
-                      url: track.file
-                    }"
-                    @interaction="(time: number) => onSeekToTime(time)"
-                    @waveSurfer="(ws: WaveSurfer) => (trackData[index].waveSurfer = ws)"
-                    @ready="(duration: number) => onReady(index, duration)"
-                    @timeupdate="(time: number) => onTimeUpdate(index, time)"
-                  />
-                </div>
+    <div class="h-full flex-grow-1 overflow-y-auto px-2 mb-3">
+      <LyricsViewer
+        :lyrics="song.lyrics"
+        :currentTime="currentTime"
+        :isDisabled="!isReady"
+        @seek="onSeekToTime"
+      />
+    </div>
+
+    <div
+      class="relative border border-surface-200 dark:border-surface-800 rounded-lg bg-surface-100 dark:bg-surface-900 md:m-3"
+    >
+      <div class="h-full overflow-y-auto">
+        <div class="w-full h-full py-3 pl-3 md:pl-4">
+          <div
+            v-for="(track, index) in song.tracks"
+            v-bind:key="index"
+            class="flex items-start gap-6"
+          >
+            <div
+              class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-3"
+            >
+              <div class="flex items-center gap-2">
+                <Button
+                  class="text-ellipsis overflow-hidden text-left justify-start w-full whitespace-nowrap"
+                  :label="track.title"
+                  :disabled="!isReady"
+                  @click="() => handleTrackClick(index)"
+                  :text="true"
+                  size="small"
+                  :dt="getButtonColorScheme(index, trackData[index].isMuted)"
+                />
               </div>
+
+              <Slider
+                v-model="trackData[index].volume"
+                class="w-full"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                :dt="getSliderColorScheme(index, trackData[index].isMuted)"
+                @update:modelValue="(value: number) => onVolumeChange(index, value)"
+              />
+            </div>
+            <div class="w-full p-0">
+              <WaveSurferPlayer
+                :options="{
+                  ...waveSurferOptions,
+                  ...getWaveSurferColorScheme(index),
+                  url: track.file
+                }"
+                @interaction="(time: number) => onSeekToTime(time)"
+                @waveSurfer="(ws: WaveSurfer) => (trackData[index].waveSurfer = ws)"
+                @ready="(duration: number) => onReady(index, duration)"
+                @timeupdate="(time: number) => onTimeUpdate(index, time)"
+              />
             </div>
           </div>
-
-          <div
-            v-if="!isReady"
-            class="absolute top-0 left-0 bottom-0 right-0 z-10 bg-surface-200 dark:bg-surface-800 rounded opacity-80 flex flex-col gap-4 text-xl items-center justify-center"
-          >
-            <ProgressSpinner />
-            Cargando...
-          </div>
         </div>
-      </SplitterPanel>
-    </Splitter>
+      </div>
+
+      <div
+        v-if="!isReady"
+        class="absolute top-0 left-0 bottom-0 right-0 z-10 bg-surface-200 dark:bg-surface-800 rounded opacity-80 flex flex-col gap-4 text-xl items-center justify-center"
+      >
+        <ProgressSpinner />
+        Cargando...
+      </div>
+    </div>
   </div>
 </template>
