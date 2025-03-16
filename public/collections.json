@@ -5,7 +5,7 @@
     "songsFile": "songs-beetlejuice.json",
     "theme": {
       "mainColor": "violet",
-      "trackColors": ["emerald", "amber", "sky", "rose", "indigo", "lime"]
+      "trackColors": ["lime", "pink", "orange", "yellow", "sky", "violet"]
     }
   },
   {

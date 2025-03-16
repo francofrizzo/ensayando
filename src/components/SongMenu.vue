@@ -72,7 +72,7 @@ const itemColorScheme = computed(() => {
                 :dt="itemColorScheme"
                 class="justify-start"
               >
-                <span>{{ song.label }}</span>
+                <span class="text-left w-full">{{ song.label }}</span>
               </Button>
             </div>
           </div>
@@ -86,9 +86,8 @@ const itemColorScheme = computed(() => {
               @click="collection.command()"
               text
               :dt="itemColorScheme"
-              class="justify-start"
             >
-              <span>{{ collection.label }}</span>
+              <span class="text-left w-full">{{ collection.label }}</span>
             </Button>
           </div>
         </div>
