@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { Track } from '@/data/song.types'
-import type { PartialWaveSurferOptions } from 'node_modules/@meersagor/wavesurfer-vue/dist/types/types'
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import type WaveSurfer from 'wavesurfer.js'
-import Slider from 'primevue/slider'
-import Button from 'primevue/button'
 import { WaveSurferPlayer } from '@meersagor/wavesurfer-vue'
 import { $dt } from '@primevue/themes'
+import type { PartialWaveSurferOptions } from 'node_modules/@meersagor/wavesurfer-vue/dist/types/types'
+import Button from 'primevue/button'
+import Slider from 'primevue/slider'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type WaveSurfer from 'wavesurfer.js'
 
 const props = defineProps<{
   track: Track
@@ -14,7 +14,6 @@ const props = defineProps<{
   volume: number
   isReady: boolean
   isPlaying: boolean
-  lastSeekTime: number
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +29,16 @@ const emit = defineEmits<{
 const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
+
+// Methods
+const seekTo = (time: number) => {
+  if (!waveSurfer.value || !props.isReady) return
+  waveSurfer.value.setTime(time)
+}
+
+defineExpose({
+  seekTo
+})
 
 const buttonColorScheme = computed(() => {
   const color = isMuted.value ? 'zinc' : props.color
@@ -147,13 +156,6 @@ watch(
   () => props.volume,
   (newVolume) => {
     waveSurfer.value?.setVolume(newVolume)
-  }
-)
-
-watch(
-  () => props.lastSeekTime,
-  (newLastSeekTime) => {
-    waveSurfer.value?.setTime(newLastSeekTime)
   }
 )
 

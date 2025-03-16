@@ -39,8 +39,21 @@ const state = {
   )
 }
 
+// Track player refs
+const trackPlayers = ref<any[]>([])
+
 // Computed
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
+
+const seekAllTracks = (time: number) => {
+  trackPlayers.value.forEach((player) => {
+    if (player) {
+      player.seekTo(time)
+    }
+  })
+  state.currentTime.value = time
+  emit('update:currentTime', time)
+}
 
 const onReady = (trackIndex: number, duration: number) => {
   state.trackStates.value[trackIndex].isReady = true
@@ -86,7 +99,7 @@ const onPlayPause = (forcePlay?: boolean) => {
 }
 
 const onSeekToTime = (time: number) => {
-  state.lastSeekTime.value = time
+  seekAllTracks(time)
 }
 
 const keydownHandler = (event: KeyboardEvent) => {
@@ -149,7 +162,7 @@ onUnmounted(() => {
                 :isReady="state.trackStates.value[index].isReady"
                 :volume="state.trackStates.value[index].volume"
                 :isPlaying="state.playing.value"
-                :lastSeekTime="state.lastSeekTime.value"
+                :ref="(el) => (trackPlayers[index] = el)"
                 @ready="(duration: number) => onReady(index, duration)"
                 @time-update="(time: number) => onTimeUpdate(index, time)"
                 @volume-change="(volume: number) => onVolumeChange(index, volume)"
