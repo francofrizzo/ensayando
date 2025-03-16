@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
 import ProgressSpinner from 'primevue/progressspinner'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import LyricsViewer from '@/components/LyricsViewer.vue'
-
-import type { Song } from '@/data/song.types'
-import type { Collection } from '@/data/collection.types'
-import PlayerHeader from '@/components/PlayerHeader.vue'
 import PlayerControls from '@/components/PlayerControls.vue'
+import PlayerHeader from '@/components/PlayerHeader.vue'
+import TimeCopier from '@/components/TimeCopier.vue'
 import TrackPlayer from '@/components/TrackPlayer.vue'
+import type { Collection } from '@/data/collection.types'
+import type { Song } from '@/data/song.types'
 
 // Props and Emits
-const props = defineProps<{ 
+const props = defineProps<{
   collection: Collection
-  song: Song 
+  song: Song
 }>()
 
 const emit = defineEmits<{
@@ -26,7 +26,7 @@ const getTrackColor = (index: number) => {
   if (Array.isArray(trackColors)) {
     return trackColors[index % trackColors.length]
   }
-  return trackColors[props.song.tracks[index].id] || "primary"
+  return trackColors[props.song.tracks[index].id] || 'primary'
 }
 
 const state = {
@@ -34,7 +34,7 @@ const state = {
   lastSeekTime: ref<number>(0),
   totalDuration: ref<number>(0),
   playing: ref(false),
-  trackStates: ref<{ isReady: boolean, volume: number }[]>(
+  trackStates: ref<{ isReady: boolean; volume: number }[]>(
     props.song.tracks.map(() => ({ isReady: false, volume: 1 }))
   )
 }
@@ -61,11 +61,14 @@ const onVolumeChange = (trackIndex: number, volume: number) => {
 }
 
 const onToggleTrackMuted = (trackIndex: number) => {
-  state.trackStates.value[trackIndex].volume = state.trackStates.value[trackIndex].volume === 0 ? 1 : 0
+  state.trackStates.value[trackIndex].volume =
+    state.trackStates.value[trackIndex].volume === 0 ? 1 : 0
 }
 
 const onSoloTrack = (index: number) => {
-  const isCurrentlySoloed = state.trackStates.value.every((track, i) => i === index || track.volume === 0)
+  const isCurrentlySoloed = state.trackStates.value.every(
+    (track, i) => i === index || track.volume === 0
+  )
   if (isCurrentlySoloed) {
     state.trackStates.value.forEach((_, i) => {
       onVolumeChange(i, 1)
@@ -104,8 +107,11 @@ onUnmounted(() => {
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col p-2">
-    <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3">
+    <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3 relative">
       <PlayerHeader :collection="collection" :song="song" />
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
+        <TimeCopier :currentTime="state.currentTime.value" />
+      </div>
       <PlayerControls
         :currentTime="state.currentTime.value"
         :totalDuration="state.totalDuration.value"
@@ -121,6 +127,11 @@ onUnmounted(() => {
         :currentTime="state.currentTime.value"
         :isDisabled="!isReady"
         :collection="collection"
+        :enabledTracks="
+          song.tracks
+            .filter((_, i) => state.trackStates.value[i].volume > 0)
+            .map((track) => track.id)
+        "
         @seek="onSeekToTime"
       />
     </div>

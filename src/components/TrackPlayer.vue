@@ -90,7 +90,7 @@ const waveSurferColorScheme = computed(() => {
 
 // WaveSurfer Configuration
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
-  height: 72,
+  height: 60,
   barGap: 2,
   barWidth: 2,
   barRadius: 8,

@@ -15,12 +15,12 @@
     "theme": {
       "mainColor": "yellow",
       "trackColors": {
-        "b": "rose",
+        "b": "indigo",
         "h": "yellow",
-        "v1": "blue",
-        "v2": "sky",
-        "v3": "emerald",
-        "v4": "lime"
+        "v1": "pink",
+        "v2": "orange",
+        "v3": "lime",
+        "v4": "sky"
       }
     }
   }
