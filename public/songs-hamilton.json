@@ -537,5 +537,37 @@
         }
       ]
     ]
+  },
+  {
+    "id": "3-my-shot",
+    "title": "My Shot",
+    "tracks": [
+      {
+        "id": "b",
+        "title": "Pista",
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/hamilton/3-my-shot/3-my-shot-b.m4a"
+      },
+      {
+        "id": "v1",
+        "title": "Voz 1",
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/hamilton/3-my-shot/3-my-shot-v1.m4a"
+      },
+      {
+        "id": "v2",
+        "title": "Voz 2",
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/hamilton/3-my-shot/3-my-shot-v2.m4a"
+      },
+      {
+        "id": "v3",
+        "title": "Voz 3",
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/hamilton/3-my-shot/3-my-shot-v3.m4a"
+      },
+      {
+        "id": "v4",
+        "title": "Voz 4",
+        "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/hamilton/3-my-shot/3-my-shot-v4.m4a"
+      }
+    ],
+    "lyrics": []
   }
 ]
