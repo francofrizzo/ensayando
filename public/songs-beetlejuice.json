@@ -479,25 +479,30 @@
     "id": "hacerlos-gritar",
     "tracks": [
       {
+        "id": "b",
         "title": "Pista",
         "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-track.m4a"
       },
       {
+        "id": "v1",
         "title": "Voz 1",
         "subtitle": "Soprano",
         "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz1.m4a"
       },
       {
+        "id": "v2",
         "title": "Voz 2",
         "subtitle": "Mezzo",
         "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz2.m4a"
       },
       {
+        "id": "v3",
         "title": "Voz 3",
         "subtitle": "Tenor",
         "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz3.m4a"
       },
       {
+        "id": "v4",
         "title": "Voz 4",
         "subtitle": "Bajo",
         "file": "https://ac7lkfnq401n6fkh.public.blob.vercel-storage.com/beetlejuice/HacerlosGritar/Hacerlos-Gritar-voz4.m4a"
@@ -508,139 +513,171 @@
         {
           "startTime": 105.4,
           "endTime": 109.3,
-          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar",
+          "tracks": ["v4"]
         },
         {
           "startTime": 110.43,
           "endTime": 114.73,
-          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar",
+          "tracks": ["v3", "v4"]
         },
         {
           "startTime": 115.9,
           "endTime": 120.07,
-          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar",
+          "tracks": ["v2", "v3", "v4"]
         },
         {
           "startTime": 121.26,
           "endTime": 125.35,
-          "text": "Es lo que queremos escuchar, es lo que queremos escuchar"
+          "text": "Es lo que queremos escuchar, es lo que queremos escuchar",
+          "tracks": ["v1", "v2", "v3", "v4"]
         }
       ],
       [
         {
           "startTime": 252.84,
-          "text": "Yo también escucho bien"
+          "text": "Yo también escucho bien",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 255.36,
           "endTime": 257.82,
-          "text": "Sí, también escucho bien"
+          "text": "Sí, también escucho bien",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 259.96,
           "endTime": 262.46,
-          "text": "Que aguantar"
+          "text": "Que aguantar",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 263.11,
           "endTime": 264.67,
-          "text": "Uh, uh, uh"
+          "text": "Uh, uh, uh",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 265.86,
           "endTime": 267.32,
-          "text": "Uh, uh, uh"
+          "text": "Uh, uh, uh",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 268.46,
           "endTime": 270.95,
-          "text": "Papi, no me..."
+          "text": "Papi, no me...",
+          "tracks": ["v1", "v2", "v3", "v4"]
         }
       ],
       [
         {
           "startTime": 273.51,
-          "text": "¡Te vemos bien, Lidia!"
+          "text": "¡Te vemos bien, Lidia!",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 275.84,
           "endTime": 278.54,
-          "text": "¡Sos libre al fin, ya!"
+          "text": "¡Sos libre al fin, ya!",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 278.87,
           "endTime": 283.1,
-          "text": "Era invisible pero ahora la ves"
+          "text": "Era invisible pero ahora la ves",
+          "tracks": ["v1", "v2", "v3", "v4"]
         }
       ],
       [
         {
           "startTime": 286.54,
-          "text": "Es mi canción"
+          "text": "Es mi canción",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 288.35,
-          "text": "¿No es el ruido más genial?"
+          "text": "¿No es el ruido más genial?",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 292.3,
           "endTime": 296.7,
-          "text": "Hacerlos gritar"
+          "text": "Hacerlos gritar",
+          "tracks": ["v1", "v2", "v3", "v4"]
         }
       ],
       [
-        {
-          "startTime": 295.71,
-          "endTime": 298.02,
-          "text": "Gritarán"
-        },
-        {
-          "startTime": 296.7,
-          "endTime": 299.4,
-          "text": "Gri..."
-        },
-        {
-          "startTime": 298.02,
-          "endTime": 300.76,
-          "text": "Gritarán"
-        },
-        {
-          "startTime": 299.4,
-          "endTime": 302.1,
-          "text": "ta..."
-        },
-        {
-          "startTime": 300.76,
-          "endTime": 304.68,
-          "text": "Gritarán"
-        },
-        {
-          "startTime": 302.1,
-          "endTime": 304.68,
-          "text": "ran..."
-        }
+        [
+          [
+            {
+              "startTime": 295.71,
+              "endTime": 298.02,
+              "text": "Gritarán",
+              "tracks": ["v3", "v4"]
+            },
+            {
+              "startTime": 298.02,
+              "endTime": 300.76,
+              "text": "Gritarán",
+              "tracks": ["v3", "v4"]
+            },
+            {
+              "startTime": 300.76,
+              "endTime": 304.68,
+              "text": "Gritarán",
+              "tracks": ["v3", "v4"]
+            }
+          ],
+          [
+            {
+              "startTime": 296.7,
+              "endTime": 299.4,
+              "text": "Gri...",
+              "tracks": ["v1", "v2"]
+            },
+            {
+              "startTime": 299.4,
+              "endTime": 302.1,
+              "text": "ta...",
+              "tracks": ["v1", "v2"]
+            },
+            {
+              "startTime": 302.1,
+              "endTime": 304.68,
+              "text": "ran...",
+              "tracks": ["v1", "v2"]
+            }
+          ]
+        ]
       ],
       [
         {
           "startTime": 305.14,
-          "text": "Hacerlos gritar"
+          "text": "Hacerlos gritar",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 307.43,
           "endTime": 309.29,
-          "text": "Ya van a gritar"
+          "text": "Ya van a gritar",
+          "tracks": ["v1", "v2", "v3", "v4"]
         },
         {
           "startTime": 309.95,
           "endTime": 313.0,
-          "text": "Ya van a gritar"
+          "text": "Ya van a gritar",
+          "tracks": ["v1", "v2", "v3", "v4"]
         }
       ],
       [
         {
           "startTime": 314.98,
           "endTime": 316.73,
-          "text": "¡Hacerlos gritar!"
+          "text": "¡Hacerlos gritar!",
+          "tracks": ["v1", "v2", "v3", "v4"]
         }
       ]
     ]
