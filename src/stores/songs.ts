@@ -16,9 +16,16 @@ export const useSongsStore = defineStore('songs', () => {
     if (initialized.value) return
 
     try {
-      const res = await fetch('/collections.json')
+      const res = await fetch(
+        `${import.meta.env.VITE_JSON_STORAGE_BASE_URL}/${import.meta.env.VITE_COLLECTIONS_JSON_PATH}`,
+        {
+          headers: {
+            'X-Access-Key': import.meta.env.VITE_JSON_STORAGE_ACCESS_KEY
+          }
+        }
+      )
       const data = await res.json()
-      collections.value = data
+      collections.value = data.record
       initialized.value = true
 
       // Don't automatically load a collection as we'll rely on route params
@@ -40,9 +47,16 @@ export const useSongsStore = defineStore('songs', () => {
 
     // Load songs for the selected collection
     try {
-      const response = await fetch(`/${collection.songsFile}`)
+      const response = await fetch(
+        `${import.meta.env.VITE_JSON_STORAGE_BASE_URL}/${collection.songsFile}`,
+        {
+          headers: {
+            'X-Access-Key': import.meta.env.VITE_JSON_STORAGE_ACCESS_KEY
+          }
+        }
+      )
       const data = await response.json()
-      songs.value = data.map((song: any) => ({
+      songs.value = data.record.map((song: any) => ({
         ...song,
         collectionId: collection.id
       }))
