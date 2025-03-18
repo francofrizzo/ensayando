@@ -193,27 +193,23 @@ onUnmounted(() => {
     <div
       class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm max-h-[420px]"
     >
-      <div class="h-full overflow-y-auto">
-        <div class="w-full h-full py-3 pl-3 md:pl-4">
-          <div class="flex flex-col gap-3" v-for="(track, index) in song.tracks" :key="index">
-            <div class="flex items-center gap-2">
-              <TrackPlayer
-                :track="track"
-                :color="getTrackColor(index)"
-                :isReady="state.trackStates.value[index].isReady"
-                :volume="state.trackStates.value[index].volume"
-                :isPlaying="state.playing.value"
-                :ref="(el) => (trackPlayers[index] = el)"
-                @ready="(duration: number) => onReady(index, duration)"
-                @time-update="(time: number) => onTimeUpdate(index, time)"
-                @volume-change="(volume: number) => onVolumeChange(index, volume)"
-                @toggle-track-muted="() => onToggleTrackMuted(index)"
-                @toggle-track-solo="() => onSoloTrack(index)"
-                @seek-to-time="onSeekToTime"
-              />
-            </div>
-          </div>
-        </div>
+      <div class="h-full overflow-y-auto p-3">
+        <TrackPlayer
+          v-for="(track, index) in song.tracks"
+          :key="index"
+          :track="track"
+          :color="getTrackColor(index)"
+          :isReady="state.trackStates.value[index].isReady"
+          :volume="state.trackStates.value[index].volume"
+          :isPlaying="state.playing.value"
+          :ref="(el) => (trackPlayers[index] = el)"
+          @ready="(duration: number) => onReady(index, duration)"
+          @time-update="(time: number) => onTimeUpdate(index, time)"
+          @volume-change="(volume: number) => onVolumeChange(index, volume)"
+          @toggle-track-muted="() => onToggleTrackMuted(index)"
+          @toggle-track-solo="() => onSoloTrack(index)"
+          @seek-to-time="onSeekToTime"
+        />
       </div>
 
       <div

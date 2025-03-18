@@ -6,8 +6,20 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'player',
+      name: 'home',
       component: PlayerView
+    },
+    {
+      path: '/:collectionId',
+      name: 'collection',
+      component: PlayerView,
+      props: true
+    },
+    {
+      path: '/:collectionId/:songId',
+      name: 'song',
+      component: PlayerView,
+      props: true
     }
   ]
 })

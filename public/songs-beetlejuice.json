@@ -1,6 +1,7 @@
 [
   {
     "title": "Prólogo (Invisible)",
+    "id": "prologo-invisible",
     "tracks": [
       {
         "title": "Pista",
@@ -57,6 +58,7 @@
 
   {
     "title": "Esto de Estar Muerto (Parte 1)",
+    "id": "estar-muerto-parte-1",
     "tracks": [
       {
         "title": "Pista",
@@ -220,6 +222,7 @@
 
   {
     "title": "Esto de Estar Muerto (Parte 2)",
+    "id": "estar-muerto-parte-2",
     "tracks": [
       {
         "title": "Pista",
@@ -307,6 +310,7 @@
 
   {
     "title": "El Susto de sus Vidas",
+    "id": "el-susto-de-sus-vidas",
     "tracks": [
       {
         "title": "Pista",
@@ -375,6 +379,7 @@
 
   {
     "title": "Banana Boat Song",
+    "id": "banana-boat-song",
     "tracks": [
       {
         "title": "Pista",
@@ -471,6 +476,7 @@
 
   {
     "title": "Hacerlos Gritar",
+    "id": "hacerlos-gritar",
     "tracks": [
       {
         "title": "Pista",
@@ -642,6 +648,7 @@
 
   {
     "title": "Hacerlos Gritar (Reprise)",
+    "id": "hacerlos-gritar-reprise",
     "tracks": [
       {
         "title": "Pista",
@@ -737,6 +744,7 @@
 
   {
     "title": "Lo Que Sé Hoy",
+    "id": "lo-que-se-hoy",
     "tracks": [
       {
         "title": "Pista",
@@ -873,6 +881,7 @@
 
   {
     "title": "Viejo Violín",
+    "id": "viejo-violin",
     "tracks": [
       {
         "title": "Pista",
@@ -1048,6 +1057,7 @@
 
   {
     "title": "Jump In The Line (Shake, Señora)",
+    "id": "jump-in-the-line-shake-senora",
     "tracks": [
       {
         "title": "Pista",

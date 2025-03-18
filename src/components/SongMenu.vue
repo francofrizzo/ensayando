@@ -18,7 +18,7 @@ const songMenuItems = computed(() => {
     .filter((song) => song.collectionId === props.collection.id)
     .map((song) => ({
       label: song.title,
-      command: () => songsStore.changeSong(song.title)
+      id: song.id
     }))
 })
 
@@ -27,7 +27,7 @@ const otherCollectionMenuItems = computed(() => {
     .filter((collection) => collection.id !== props.collection.id && collection.enabled !== false)
     .map((collection) => ({
       label: collection.title,
-      command: () => songsStore.changeCollection(collection)
+      id: collection.id
     }))
 })
 
@@ -67,13 +67,14 @@ const itemColorScheme = computed(() => {
               <Button
                 v-for="song in songMenuItems"
                 :key="song.label"
-                @click="song.command"
-                text
+                @click="songsStore.changeSong(song.id)"
+                :text="songsStore.currentSong?.id !== song.id"
                 :dt="itemColorScheme"
-                class="justify-start"
-              >
-                <span class="text-left w-full">{{ song.label }}</span>
-              </Button>
+                :label="song.label"
+                :pt="{
+                  label: { class: 'text-left w-full font-normal' }
+                }"
+              />
             </div>
           </div>
         </div>
@@ -83,12 +84,14 @@ const itemColorScheme = computed(() => {
             <Button
               v-for="collection in otherCollectionMenuItems"
               :key="collection.label"
-              @click="collection.command()"
+              @click="songsStore.changeCollection(collection.id)"
               text
               :dt="itemColorScheme"
-            >
-              <span class="text-left w-full">{{ collection.label }}</span>
-            </Button>
+              :pt="{
+                label: { class: 'text-left w-full font-normal' }
+              }"
+              :label="collection.label"
+            />
           </div>
         </div>
       </div>

@@ -199,19 +199,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-start gap-6 w-full">
+  <div class="flex items-start gap-5 w-full">
     <div class="w-14 md:w-24 min-w-0 flex flex-grow-0 flex-shrink-0 flex-col justify-center gap-3">
-      <div class="flex items-center gap-2">
-        <Button
-          class="text-ellipsis overflow-hidden text-left justify-start w-full whitespace-nowrap"
-          :label="track.title"
-          :disabled="!isReady"
-          @click="handleTrackButtonClick"
-          text
-          size="small"
-          :dt="buttonColorScheme"
-        />
-      </div>
+      <Button
+        :disabled="!isReady"
+        @click="handleTrackButtonClick"
+        text
+        size="small"
+        :dt="buttonColorScheme"
+        :label="track.title"
+        :pt="{
+          label: { class: 'truncate ellipsis' }
+        }"
+      />
 
       <Slider
         :modelValue="volume"
