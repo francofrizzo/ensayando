@@ -8,7 +8,7 @@ const props = defineProps<{
   currentTime: number
   isDisabled: boolean
   collection: Collection
-  enabledTracks: string[]
+  tracks: Array<{ id: string; enabled: boolean }>
 }>()
 
 const emit = defineEmits<{
@@ -66,27 +66,42 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
   return { color: `var(--p-${trackColors[firstTrack]}-${shade})` }
 }
 
-const isLyricEnabled = (lyric: Lyric) => {
-  return !lyric.tracks || lyric.tracks.some((track) => props.enabledTracks.includes(track))
+const isLyricVisible = (lyric: Lyric) => {
+  console.log(
+    lyric.text,
+    props.tracks?.find(
+      (track) =>
+        props.tracks.every((t) => t.id !== track) ||
+        props.tracks.some((t) => t.id === track && t.enabled)
+    )
+  )
+  return (
+    !lyric.tracks ||
+    lyric.tracks.some(
+      (track) =>
+        props.tracks.every((t) => t.id !== track) ||
+        props.tracks.some((t) => t.id === track && t.enabled)
+    )
+  )
 }
 
-const enabledLyrics = computed(() =>
+const visibleLyrics = computed(() =>
   props.lyrics
     .map((lyricGroup) => {
       const filtered = lyricGroup
         .filter((item: LyricGroupItem) => {
           if (Array.isArray(item)) {
             // This is a LyricColumn[] (array of Lyric arrays)
-            return item.some((column) => column.some(isLyricEnabled))
+            return item.some((column) => column.some(isLyricVisible))
           }
           // This is a Lyric
-          return isLyricEnabled(item)
+          return isLyricVisible(item)
         })
         .map((item: LyricGroupItem) => {
           if (Array.isArray(item)) {
             // This is a LyricColumn[] (array of Lyric arrays)
             return item
-              .map((column) => column.filter(isLyricEnabled))
+              .map((column) => column.filter(isLyricVisible))
               .filter((column) => column.length > 0)
           }
           return item
@@ -112,8 +127,8 @@ const addStatusToLyric = (lyric: Lyric, nextLyric: Lyric | undefined) => {
 }
 
 const lyricsWithStatus = computed(() =>
-  enabledLyrics.value.map((lyricGroup, groupIndex): (LyricWithStatus | LyricWithStatus[][])[] => {
-    const nextGroup = enabledLyrics.value[groupIndex + 1]
+  visibleLyrics.value.map((lyricGroup, groupIndex): (LyricWithStatus | LyricWithStatus[][])[] => {
+    const nextGroup = visibleLyrics.value[groupIndex + 1]
     return lyricGroup.map((lyricOrColumn, itemIndex): LyricWithStatus | LyricWithStatus[][] => {
       if (Array.isArray(lyricOrColumn)) {
         // Handle columns of lyrics

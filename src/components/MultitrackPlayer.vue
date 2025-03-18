@@ -181,10 +181,11 @@ onUnmounted(() => {
         :currentTime="state.currentTime.value"
         :isDisabled="!isReady"
         :collection="collection"
-        :enabledTracks="
-          song.tracks
-            .filter((_, i) => state.trackStates.value[i].volume > 0)
-            .map((track) => track.id)
+        :tracks="
+          song.tracks.map((track, index) => ({
+            id: track.id,
+            enabled: state.trackStates.value[index].volume > 0
+          }))
         "
         @seek="onSeekToTime"
       />
