@@ -158,8 +158,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col p-2">
-    <div class="pt-2 pb-3 px-2 flex items-center justify-between gap-3 relative">
+  <div
+    class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4"
+  >
+    <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
       <PlayerHeader :collection="collection" :song="song" />
       <PlayerControls
         :currentTime="state.currentTime.value"
@@ -173,7 +175,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="h-full flex-grow-1 overflow-y-auto px-2 mb-3">
+    <div class="h-full flex-grow-1 overflow-x-hidden overflow-y-auto px-14">
       <LyricsViewer
         :lyrics="song.lyrics"
         :currentTime="state.currentTime.value"
@@ -189,7 +191,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative border border-surface-200 dark:border-surface-800 rounded-lg bg-surface-100 dark:bg-surface-900 md:m-3 shadow-sm max-h-[420px]"
+      class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm max-h-[420px]"
     >
       <div class="h-full overflow-y-auto">
         <div class="w-full h-full py-3 pl-3 md:pl-4">

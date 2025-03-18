@@ -245,7 +245,7 @@ watch(
               :class="{
                 'text-primary': lyric.status === 'active',
                 'font-semibold': lyric.status === 'active',
-                'scale-125': lyric.status === 'active'
+                'scale-[1.2]': lyric.status === 'active'
               }"
               class="transition-all transition-duration-500 uppercase tracking-wide text-center"
               :ref="
