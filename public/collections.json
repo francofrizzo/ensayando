@@ -1,6 +1,7 @@
 [
   {
     "id": "beetlejuice",
+    "enabled": false,
     "title": "BJ: El Musical, El Musical, El Musical",
     "songsFile": "songs-beetlejuice.json",
     "theme": {
@@ -20,7 +21,10 @@
         "v1": "pink",
         "v2": "orange",
         "v3": "lime",
-        "v4": "sky"
+        "v4": "sky",
+        "lf": "blue",
+        "lr": "rose",
+        "m": "teal"
       }
     }
   }

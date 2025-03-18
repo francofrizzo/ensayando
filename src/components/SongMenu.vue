@@ -24,7 +24,7 @@ const songMenuItems = computed(() => {
 
 const otherCollectionMenuItems = computed(() => {
   return songsStore.collections
-    .filter((collection) => collection.id !== props.collection.id)
+    .filter((collection) => collection.id !== props.collection.id && collection.enabled !== false)
     .map((collection) => ({
       label: collection.title,
       command: () => songsStore.changeCollection(collection)
@@ -77,7 +77,7 @@ const itemColorScheme = computed(() => {
             </div>
           </div>
         </div>
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2" v-if="otherCollectionMenuItems.length > 0">
           <span class="text-muted-color font-medium uppercase text-sm">Otras colecciones</span>
           <div class="flex flex-col gap-2">
             <Button

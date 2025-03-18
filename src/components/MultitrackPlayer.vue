@@ -189,7 +189,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative border border-surface-200 dark:border-surface-800 rounded-lg bg-surface-100 dark:bg-surface-900 md:m-3 shadow-sm"
+      class="relative border border-surface-200 dark:border-surface-800 rounded-lg bg-surface-100 dark:bg-surface-900 md:m-3 shadow-sm max-h-[420px]"
     >
       <div class="h-full overflow-y-auto">
         <div class="w-full h-full py-3 pl-3 md:pl-4">

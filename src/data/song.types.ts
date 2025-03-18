@@ -3,8 +3,14 @@ export type Song = {
   collectionId: string
   title: string
   tracks: Track[]
-  lyrics: Lyric[][]
+  lyrics: LyricGroup[]
 }
+
+export type LyricGroup = LyricGroupItem[]
+
+export type LyricGroupItem = Lyric | LyricColumn[]
+
+export type LyricColumn = Lyric[]
 
 export type Track = {
   id: string
