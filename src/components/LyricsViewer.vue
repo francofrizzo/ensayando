@@ -67,20 +67,12 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
 }
 
 const isLyricVisible = (lyric: Lyric) => {
-  console.log(
-    lyric.text,
-    props.tracks?.find(
-      (track) =>
-        props.tracks.every((t) => t.id !== track) ||
-        props.tracks.some((t) => t.id === track && t.enabled)
-    )
-  )
   return (
     !lyric.tracks ||
     lyric.tracks.some(
       (track) =>
-        props.tracks.every((t) => t.id !== track) ||
-        props.tracks.some((t) => t.id === track && t.enabled)
+        props.tracks.some((t) => t.id === track && t.enabled) ||
+        props.tracks.every((t) => t.id !== track)
     )
   )
 }
