@@ -1089,48 +1089,42 @@
         }
       ],
       [
-        [
-          [
-            {
-              "startTime": 73.72,
-              "endTime": 77.32,
-              "text": "Brindo por ser libre",
-              "tracks": ["lf", "m", "v1", "v3"]
-            },
-            {
-              "startTime": 79.59,
-              "endTime": 83.16,
-              "text": "Brindo por ser libre",
-              "tracks": ["lf", "m", "v1", "v3"]
-            },
-            {
-              "startTime": 85.95,
-              "endTime": 92.0,
-              "text": "Que de esta noche hablará-an...",
-              "tracks": ["lf", "m", "v1", "v3"]
-            }
-          ],
-          [
-            {
-              "startTime": 76.97,
-              "endTime": 81.57,
-              "text": "Que de esta noche hablarán",
-              "tracks": ["h", "lr", "v2", "v4"]
-            },
-            {
-              "startTime": 82.76,
-              "endTime": 87.46,
-              "text": "Que de esta noche hablarán",
-              "tracks": ["h", "lr", "v2", "v4"]
-            },
-            {
-              "startTime": 88.1,
-              "endTime": 92.0,
-              "text": "...blará-an...",
-              "tracks": ["h", "lr", "v2", "v4"]
-            }
-          ]
-        ]
+        {
+          "startTime": 73.72,
+          "endTime": 77.32,
+          "text": "Brindo por ser libre",
+          "tracks": ["lf", "m", "v1", "v3"]
+        },
+        {
+          "startTime": 76.97,
+          "endTime": 81.57,
+          "text": "Que de esta noche hablarán",
+          "tracks": ["h", "lr", "v2", "v4"]
+        },
+        {
+          "startTime": 79.59,
+          "endTime": 83.16,
+          "text": "Brindo por ser libre",
+          "tracks": ["lf", "v1", "v3"]
+        },
+        {
+          "startTime": 82.76,
+          "endTime": 87.46,
+          "text": "Que de esta noche hablarán",
+          "tracks": ["h", "lf", "lr", "v2", "v4"]
+        },
+        {
+          "startTime": 85.95,
+          "endTime": 92.0,
+          "text": "Que de esta noche hablará-an...",
+          "tracks": ["v1", "v3"]
+        },
+        {
+          "startTime": 88.1,
+          "endTime": 92.0,
+          "text": "...blará-an...",
+          "tracks": ["h", "lf", "lr", "v2", "v4"]
+        }
       ]
     ]
   }
