@@ -36,7 +36,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-5 text-right">
+  <div class="flex items-center gap-5 text-right font-mono">
     <div class="flex items-baseline">
       <span
         class="text-surface-600 dark:text-surface-200 text-xl cursor-default transition-colors"
