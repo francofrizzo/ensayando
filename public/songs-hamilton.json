@@ -502,13 +502,13 @@
               "startTime": 204.21,
               "endTime": 205.67,
               "text": "Esperá",
-              "tracks": ["v1", "v2", "v3", "v4"]
+              "tracks": ["v3", "v4"]
             },
             {
               "startTime": 207.78,
               "endTime": 209.01,
               "text": "Esperá",
-              "tracks": ["v1", "v2", "v3", "v4"]
+              "tracks": ["v1", "v2"]
             }
           ]
         ]
