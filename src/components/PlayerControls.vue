@@ -13,26 +13,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'play-pause': []
 }>()
-
-const copyTimeToClipboard = async (seconds: number) => {
-  const formattedSeconds = (seconds - 0.2).toFixed(2)
-  await navigator.clipboard.writeText(formattedSeconds)
-}
-
-// Add keyboard event listener
-const handleKeyPress = (event: KeyboardEvent) => {
-  if (event.key === '.') {
-    copyTimeToClipboard(props.currentTime)
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyPress)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyPress)
-})
 </script>
 
 <template>

@@ -23,10 +23,10 @@ const copyTimeToClipboard = async () => {
   if (firstTime.value !== null) {
     if (secondTime.value !== null) {
       await navigator.clipboard.writeText(
-        `"startTime": ${firstTime.value.toFixed(2)}, "endTime": ${secondTime.value.toFixed(2)}`
+        `"startTime": ${firstTime.value.toFixed(2)}, "endTime": ${secondTime.value.toFixed(2)},`
       )
     } else {
-      await navigator.clipboard.writeText(`"startTime": ${firstTime.value.toFixed(2)}`)
+      await navigator.clipboard.writeText(`"startTime": ${firstTime.value.toFixed(2)},`)
     }
     copiedFirstTime.value = firstTime.value
     copiedSecondTime.value = secondTime.value
@@ -71,7 +71,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="bg-surface-200 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-full px-2 py-0.5 transition-all duration-300 text-sm"
+    class="bg-surface-200 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-full px-2 py-0.5 transition-all duration-300 text-sm font-mono"
     :class="{
       'opacity-0': !isVisible,
       'bg-green-100 dark:bg-green-900 border-green-200 dark:border-green-800 scale-110': wasCopied
