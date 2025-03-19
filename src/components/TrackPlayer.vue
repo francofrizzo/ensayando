@@ -37,16 +37,6 @@ const seekTo = (time: number) => {
   waveSurfer.value.setTime(time)
 }
 
-// Initialize audio context for iOS
-const initializeAudioContext = () => {
-  if (isIOS.value && waveSurfer.value) {
-    const audioContext = (waveSurfer.value as any).backend?.ac
-    if (audioContext && audioContext.state === 'suspended') {
-      audioContext.resume()
-    }
-  }
-}
-
 const handleVolumeChange = (value: number | number[]) => {
   const newVolume = Array.isArray(value) ? value[0] : value
   const clampedVolume = Math.max(0, Math.min(1, newVolume))
@@ -126,7 +116,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   barWidth: 2,
   barRadius: 8,
   dragToSeek: false,
-  backend: 'WebAudio',
+  backend: isIOS.value ? 'MediaElement' : 'WebAudio',
   url: props.track.file,
   ...waveSurferColorScheme.value
 }))
@@ -158,7 +148,6 @@ watch(
   (newIsPlaying) => {
     if (!waveSurfer.value || !props.isReady) return
     if (newIsPlaying) {
-      initializeAudioContext()
       waveSurfer.value?.play()
     } else {
       waveSurfer.value?.pause()
