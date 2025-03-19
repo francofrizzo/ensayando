@@ -2,7 +2,6 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
 import Aura from '@primevue/themes/aura'
-import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 
 import App from '@/App.vue'

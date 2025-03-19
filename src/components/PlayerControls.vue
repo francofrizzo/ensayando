@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatTime } from '@/utils/utils'
+import { Pause, Play } from 'lucide-vue-next'
 import Button from 'primevue/button'
-import { onMounted, onUnmounted } from 'vue'
 
 const props = defineProps<{
   currentTime: number
@@ -39,11 +39,13 @@ const emit = defineEmits<{
     </div>
     <Button
       class="flex-shrink-0 aspect-square"
-      :icon="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
       @click="() => emit('play-pause')"
       :disabled="!isReady"
       rounded
       aria-label="Play/Pause"
-    />
+    >
+      <Pause v-if="isPlaying" class="w-5 h-5" />
+      <Play v-else class="w-5 h-5" />
+    </Button>
   </div>
 </template>

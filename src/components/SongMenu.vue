@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Collection } from '@/data/collection.types'
 import { useSongsStore } from '@/stores/songs'
+import { Menu } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
 import { computed, ref } from 'vue'
@@ -100,10 +101,11 @@ const itemColorScheme = computed(() => {
     <Button
       class="flex-shrink-0 aspect-square"
       type="button"
-      icon="pi pi-bars"
       @click="visible = true"
       aria-haspopup="true"
       aria-controls="overlay_menu"
-    />
+    >
+      <Menu class="w-5 h-5" />
+    </Button>
   </div>
 </template>

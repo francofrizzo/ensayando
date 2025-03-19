@@ -36,7 +36,8 @@ const state = {
   playing: ref(false),
   trackStates: ref<{ isReady: boolean; volume: number }[]>(
     props.song.tracks.map(() => ({ isReady: false, volume: 1 }))
-  )
+  ),
+  enabledLyricTracks: ref<string[]>(props.song.tracks.map((track) => track.id))
 }
 
 // Track player refs
@@ -102,22 +103,48 @@ const onTimeUpdate = (trackIndex: number, time: number) => {
 const onVolumeChange = (trackIndex: number, volume: number) => {
   const clampedVolume = Math.max(0, Math.min(1, volume))
   state.trackStates.value[trackIndex].volume = clampedVolume
+  if (state.trackStates.value[trackIndex].volume > 0) {
+    onSetTrackLyricsEnabled(trackIndex, true)
+  } else {
+    onSetTrackLyricsEnabled(trackIndex, false)
+  }
 }
 
-const onToggleTrackMuted = (trackIndex: number) => {
-  const newVolume = state.trackStates.value[trackIndex].volume === 0 ? 1 : 0
+const onToggleTrackMuted = (trackIndex: number, toggleLyrics: boolean) => {
+  const shouldBeEnabled = state.trackStates.value[trackIndex].volume === 0
+  const newVolume = shouldBeEnabled ? 1 : 0
   onVolumeChange(trackIndex, newVolume)
+  if (toggleLyrics) {
+    onSetTrackLyricsEnabled(trackIndex, shouldBeEnabled)
+  }
 }
 
-const onSoloTrack = (index: number) => {
+const onSoloTrack = (index: number, toggleLyrics: boolean) => {
   const isCurrentlySoloed = state.trackStates.value.every(
     (track, i) => i === index || track.volume === 0
   )
 
   state.trackStates.value.forEach((_, i) => {
-    const newVolume = isCurrentlySoloed ? 1 : i === index ? 1 : 0
+    const shouldBeEnabled = i === index || isCurrentlySoloed
+    const newVolume = shouldBeEnabled ? 1 : 0
     onVolumeChange(i, newVolume)
+    if (toggleLyrics) {
+      onSetTrackLyricsEnabled(i, shouldBeEnabled)
+    }
   })
+}
+
+const onSetTrackLyricsEnabled = (trackIndex: number, newState: boolean) => {
+  state.enabledLyricTracks.value = newState
+    ? [...state.enabledLyricTracks.value, props.song.tracks[trackIndex]?.id]
+    : state.enabledLyricTracks.value.filter((id) => id !== props.song.tracks[trackIndex]?.id)
+}
+
+const onToggleTrackLyrics = (trackIndex: number) => {
+  onSetTrackLyricsEnabled(
+    trackIndex,
+    !state.enabledLyricTracks.value.includes(props.song.tracks[trackIndex]?.id)
+  )
 }
 
 const onPlayPause = async (forcePlay?: boolean) => {
@@ -159,7 +186,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4"
+    class="bg-surface-50 dark:bg-surface-950 flex w-full h-dvh flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none"
   >
     <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
       <PlayerHeader :collection="collection" :song="song" />
@@ -182,9 +209,9 @@ onUnmounted(() => {
         :isDisabled="!isReady"
         :collection="collection"
         :tracks="
-          song.tracks.map((track, index) => ({
+          song.tracks.map((track) => ({
             id: track.id,
-            enabled: state.trackStates.value[index].volume > 0
+            enabled: state.enabledLyricTracks.value.includes(track.id)
           }))
         "
         @seek="onSeekToTime"
@@ -203,12 +230,14 @@ onUnmounted(() => {
           :isReady="state.trackStates.value[index].isReady"
           :volume="state.trackStates.value[index].volume"
           :isPlaying="state.playing.value"
+          :hasLyricsEnabled="state.enabledLyricTracks.value.includes(track.id)"
           :ref="(el) => (trackPlayers[index] = el)"
           @ready="(duration: number) => onReady(index, duration)"
           @time-update="(time: number) => onTimeUpdate(index, time)"
           @volume-change="(volume: number) => onVolumeChange(index, volume)"
-          @toggle-track-muted="() => onToggleTrackMuted(index)"
-          @toggle-track-solo="() => onSoloTrack(index)"
+          @toggle-track-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
+          @toggle-track-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
+          @toggle-lyrics="() => onToggleTrackLyrics(index)"
           @seek-to-time="onSeekToTime"
         />
       </div>

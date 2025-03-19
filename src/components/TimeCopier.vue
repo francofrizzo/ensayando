@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 const hideDelay = 400
@@ -74,7 +75,7 @@ onUnmounted(() => {
     class="bg-surface-200 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-full px-2 py-0.5 transition-all duration-300 text-sm font-mono"
     :class="{
       'opacity-0': !isVisible,
-      'bg-green-100 dark:bg-green-900 border-green-200 dark:border-green-800 scale-110': wasCopied
+      'scale-110': wasCopied
     }"
   >
     <div class="flex items-center gap-2">
@@ -95,11 +96,11 @@ onUnmounted(() => {
           >{{ secondTime !== null ? secondTime.toFixed(2) : copiedSecondTime!.toFixed(2) }}</span
         >
       </div>
-      <i
+      <Check
         v-if="wasCopied"
-        class="pi pi-check text-green-500 dark:text-green-400 transition-all duration-300"
+        class="text-green-500 dark:text-green-400 transition-all duration-300 w-4 h-4"
         :class="{ 'opacity-100': wasCopied, 'opacity-0': !wasCopied }"
-      ></i>
+      />
     </div>
   </div>
 </template>
