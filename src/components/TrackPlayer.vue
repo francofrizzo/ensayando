@@ -114,8 +114,9 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   barWidth: 2,
   barRadius: 8,
   dragToSeek: false,
-  backend: isIOS.value ? 'MediaElement' : 'WebAudio',
+  backend: 'WebAudio',
   url: props.track.file,
+  ignoreSilenceMode: isIOS.value,
   ...waveSurferColorScheme.value
 }))
 
