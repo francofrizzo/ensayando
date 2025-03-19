@@ -197,7 +197,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex items-start gap-2 w-full">
-    <div class="w-14 md:w-28 min-w-0 flex flex-col gap-0">
+    <div class="w-20 sm:w-24 lg:w-32 xl:w-36 flex flex-col gap-0">
       <div class="flex flex-row w-full gap-2 items-center justify-between">
         <span class="text-muted-color text-sm truncate text-ellipsis">
           {{ track.title }}

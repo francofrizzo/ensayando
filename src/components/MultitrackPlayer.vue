@@ -219,7 +219,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm max-h-[420px]"
+      class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm max-h-[45%]"
     >
       <div class="h-full overflow-y-auto p-3">
         <TrackPlayer
