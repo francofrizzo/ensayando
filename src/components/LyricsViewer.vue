@@ -19,8 +19,8 @@ type LyricStatus = 'active' | 'past' | 'future'
 type LyricWithStatus = Lyric & { endTime: number; status: LyricStatus }
 
 type LyricLine = {
-  startTime: number
-  endTime: number
+  startTime?: number
+  endTime?: number
   columns: LyricWithStatus[][]
 }
 
@@ -186,7 +186,7 @@ const lyricsInColumns = computed(() =>
 
           if (hasSignificantOverlap) {
             lastLine.columns.push([lyric]) // Add as new column
-            lastLine.endTime = Math.max(lastLine.endTime, lyric.endTime)
+            lastLine.endTime = Math.max(lastLine.endTime ?? 0, lyric.endTime ?? 0)
             continue
           }
         }
@@ -208,7 +208,7 @@ const currentLyric = ref<Element | ComponentPublicInstance | null>(null)
 
 watch(
   () => currentLyric.value,
-  (current, prev) => {
+  (current) => {
     if (current && current instanceof Element) {
       current.scrollIntoView({
         behavior: 'smooth',
@@ -227,7 +227,7 @@ watch(
         :key="lyricLine.startTime"
         class="flex flex-row items-center justify-evenly gap-4"
         :class="{
-          'cursor-pointer': !isDisabled,
+          'cursor-pointer': !isDisabled && lyricLine.startTime,
           'cursor-default': isDisabled
         }"
       >
@@ -240,7 +240,7 @@ watch(
             v-for="(lyric, lyricIndex) in column"
             :key="lyricIndex"
             class="flex flex-col text-left gap-1.5"
-            @click="() => !isDisabled && emit('seek', lyric.startTime)"
+            @click="() => !isDisabled && lyric.startTime && emit('seek', lyric.startTime)"
           >
             <span
               v-if="lyric.comment"
