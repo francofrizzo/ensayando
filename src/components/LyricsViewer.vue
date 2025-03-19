@@ -8,7 +8,7 @@ const props = defineProps<{
   currentTime: number
   isDisabled: boolean
   collection: Collection
-  tracks: Array<{ id: string; enabled: boolean }>
+  tracks: Record<string, boolean>
 }>()
 
 const emit = defineEmits<{
@@ -68,12 +68,7 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
 
 const isLyricVisible = (lyric: Lyric) => {
   return (
-    !lyric.tracks ||
-    lyric.tracks.some(
-      (track) =>
-        props.tracks.some((t) => t.id === track && t.enabled) ||
-        props.tracks.every((t) => t.id !== track)
-    )
+    !lyric.tracks || lyric.tracks.some((track) => props.tracks[track] || props.tracks === undefined)
   )
 }
 

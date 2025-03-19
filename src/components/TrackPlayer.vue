@@ -15,12 +15,14 @@ const props = defineProps<{
   volume: number
   isReady: boolean
   isPlaying: boolean
+  hasLyrics: boolean
   hasLyricsEnabled: boolean
 }>()
 
 const emit = defineEmits<{
   ready: [duration: number]
   'time-update': [time: number]
+  finish: []
   'seek-to-time': [time: number]
   'volume-change': [volume: number]
   'toggle-track-muted': [toggleLyrics: boolean]
@@ -204,6 +206,7 @@ onUnmounted(() => {
           {{ track.title }}
         </span>
         <Button
+          v-if="hasLyrics"
           :disabled="!isReady"
           @click="handleLyricsButtonClick"
           text
@@ -246,6 +249,7 @@ onUnmounted(() => {
         @waveSurfer="(ws: WaveSurfer) => (waveSurfer = ws)"
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"
+        @finish="emit('finish')"
       />
     </div>
   </div>

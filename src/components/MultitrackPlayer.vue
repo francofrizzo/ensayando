@@ -16,17 +16,30 @@ const props = defineProps<{
   song: Song
 }>()
 
-const emit = defineEmits<{
-  'update:currentTime': [time: number]
-  'update:playing': [isPlaying: boolean]
-}>()
-
 const getTrackColor = (index: number) => {
   const { trackColors } = props.collection.theme
   if (Array.isArray(trackColors)) {
     return trackColors[index % trackColors.length]
   }
   return trackColors[props.song.tracks[index].id] || 'primary'
+}
+
+const getLyricTracks = () => {
+  const tracks = new Set<string>()
+  props.song.lyrics.forEach((lyricGroup) => {
+    lyricGroup.forEach((item) => {
+      if (Array.isArray(item)) {
+        item.forEach((lyricColumn) => {
+          lyricColumn.forEach((lyric) => {
+            lyric.tracks?.forEach((trackId) => tracks.add(trackId))
+          })
+        })
+      } else {
+        item.tracks?.forEach((trackId) => tracks.add(trackId))
+      }
+    })
+  })
+  return Array.from(tracks)
 }
 
 const state = {
@@ -36,9 +49,18 @@ const state = {
   playing: ref(false),
   trackStates: ref<{ isReady: boolean; volume: number }[]>(
     props.song.tracks.map(() => ({ isReady: false, volume: 1 }))
-  ),
-  enabledLyricTracks: ref<string[]>(props.song.tracks.map((track) => track.id))
+  )
 }
+
+const lyricTracks = ref<Record<string, boolean>>(
+  getLyricTracks().reduce(
+    (acc, id) => {
+      acc[id] = true
+      return acc
+    },
+    {} as Record<string, boolean>
+  )
+)
 
 // Track player refs
 const trackPlayers = ref<any[]>([])
@@ -83,7 +105,6 @@ const seekAllTracks = (time: number) => {
     }
   })
   state.currentTime.value = time
-  emit('update:currentTime', time)
 }
 
 const onReady = (trackIndex: number, duration: number) => {
@@ -96,7 +117,12 @@ const onReady = (trackIndex: number, duration: number) => {
 const onTimeUpdate = (trackIndex: number, time: number) => {
   if (trackIndex === 0) {
     state.currentTime.value = time
-    emit('update:currentTime', time)
+  }
+}
+
+const onFinish = (trackIndex: number) => {
+  if (trackIndex === 0) {
+    state.playing.value = false
   }
 }
 
@@ -104,9 +130,9 @@ const onVolumeChange = (trackIndex: number, volume: number) => {
   const clampedVolume = Math.max(0, Math.min(1, volume))
   state.trackStates.value[trackIndex].volume = clampedVolume
   if (state.trackStates.value[trackIndex].volume > 0) {
-    onSetTrackLyricsEnabled(trackIndex, true)
+    onSetTrackLyricsEnabled(props.song.tracks[trackIndex]?.id, true)
   } else {
-    onSetTrackLyricsEnabled(trackIndex, false)
+    onSetTrackLyricsEnabled(props.song.tracks[trackIndex]?.id, false)
   }
 }
 
@@ -115,7 +141,7 @@ const onToggleTrackMuted = (trackIndex: number, toggleLyrics: boolean) => {
   const newVolume = shouldBeEnabled ? 1 : 0
   onVolumeChange(trackIndex, newVolume)
   if (toggleLyrics) {
-    onSetTrackLyricsEnabled(trackIndex, shouldBeEnabled)
+    onSetTrackLyricsEnabled(props.song.tracks[trackIndex]?.id, shouldBeEnabled)
   }
 }
 
@@ -129,27 +155,23 @@ const onSoloTrack = (index: number, toggleLyrics: boolean) => {
     const newVolume = shouldBeEnabled ? 1 : 0
     onVolumeChange(i, newVolume)
     if (toggleLyrics) {
-      onSetTrackLyricsEnabled(i, shouldBeEnabled)
+      onSetTrackLyricsEnabled(props.song.tracks[i]?.id, shouldBeEnabled)
     }
   })
 }
 
-const onSetTrackLyricsEnabled = (trackIndex: number, newState: boolean) => {
-  state.enabledLyricTracks.value = newState
-    ? [...state.enabledLyricTracks.value, props.song.tracks[trackIndex]?.id]
-    : state.enabledLyricTracks.value.filter((id) => id !== props.song.tracks[trackIndex]?.id)
+const onSetTrackLyricsEnabled = (trackId: string, newState: boolean) => {
+  if (trackId in lyricTracks.value) {
+    lyricTracks.value[trackId] = newState
+  }
 }
 
-const onToggleTrackLyrics = (trackIndex: number) => {
-  onSetTrackLyricsEnabled(
-    trackIndex,
-    !state.enabledLyricTracks.value.includes(props.song.tracks[trackIndex]?.id)
-  )
+const onToggleTrackLyrics = (trackId: string) => {
+  onSetTrackLyricsEnabled(trackId, !lyricTracks.value[trackId])
 }
 
 const onPlayPause = async (forcePlay?: boolean) => {
   state.playing.value = forcePlay ?? !state.playing.value
-  emit('update:playing', state.playing.value)
 }
 
 const onSeekToTime = (time: number) => {
@@ -208,12 +230,7 @@ onUnmounted(() => {
         :currentTime="state.currentTime.value"
         :isDisabled="!isReady"
         :collection="collection"
-        :tracks="
-          song.tracks.map((track) => ({
-            id: track.id,
-            enabled: state.enabledLyricTracks.value.includes(track.id)
-          }))
-        "
+        :tracks="lyricTracks"
         @seek="onSeekToTime"
       />
     </div>
@@ -230,15 +247,17 @@ onUnmounted(() => {
           :isReady="state.trackStates.value[index].isReady"
           :volume="state.trackStates.value[index].volume"
           :isPlaying="state.playing.value"
-          :hasLyricsEnabled="state.enabledLyricTracks.value.includes(track.id)"
+          :hasLyrics="lyricTracks[track.id] !== undefined"
+          :hasLyricsEnabled="lyricTracks[track.id] ?? false"
           :ref="(el) => (trackPlayers[index] = el)"
           @ready="(duration: number) => onReady(index, duration)"
           @time-update="(time: number) => onTimeUpdate(index, time)"
           @volume-change="(volume: number) => onVolumeChange(index, volume)"
           @toggle-track-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
           @toggle-track-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
-          @toggle-lyrics="() => onToggleTrackLyrics(index)"
+          @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
           @seek-to-time="onSeekToTime"
+          @finish="onFinish(index)"
         />
       </div>
 
