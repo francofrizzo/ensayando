@@ -224,7 +224,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="h-full flex-grow-1 overflow-x-hidden overflow-y-auto px-14">
+    <div class="h-full flex-grow-1 overflow-x-hidden overflow-y-auto px-10">
       <LyricsViewer
         :lyrics="song.lyrics"
         :currentTime="state.currentTime.value"

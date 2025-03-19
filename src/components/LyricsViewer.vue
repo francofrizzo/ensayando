@@ -220,7 +220,7 @@ watch(
       <div
         v-for="lyricLine in lyricGroup"
         :key="lyricLine.startTime"
-        class="flex flex-row items-center justify-evenly gap-4"
+        class="flex flex-row items-center justify-evenly gap-10"
         :class="{
           'cursor-pointer': !isDisabled && lyricLine.startTime,
           'cursor-default': isDisabled
