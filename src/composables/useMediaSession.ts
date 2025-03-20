@@ -8,7 +8,16 @@ export interface MediaSessionOptions {
   duration: number
 }
 
-export function useMediaSession(options: Ref<MediaSessionOptions>) {
+export interface MediaSessionEvents {
+  onPlay?: () => void
+  onPause?: () => void
+  onSeek?: (time: number) => void
+}
+
+export function useMediaSession(
+  options: Ref<MediaSessionOptions>,
+  events: MediaSessionEvents = {}
+) {
   const currentTime = ref(0)
   const isPlaying = ref(false)
 
@@ -18,26 +27,33 @@ export function useMediaSession(options: Ref<MediaSessionOptions>) {
 
       navigator.mediaSession.setActionHandler('play', () => {
         isPlaying.value = true
+        events.onPlay?.()
       })
 
       navigator.mediaSession.setActionHandler('pause', () => {
         isPlaying.value = false
+        events.onPause?.()
       })
 
       navigator.mediaSession.setActionHandler('seekto', (details) => {
         if (details.seekTime !== undefined) {
           currentTime.value = details.seekTime
+          events.onSeek?.(details.seekTime)
         }
       })
 
       navigator.mediaSession.setActionHandler('seekforward', (details) => {
         const skipTime = details.seekOffset || 10
-        currentTime.value = Math.min(currentTime.value + skipTime, options.value.duration)
+        const newTime = Math.min(currentTime.value + skipTime, options.value.duration)
+        currentTime.value = newTime
+        events.onSeek?.(newTime)
       })
 
       navigator.mediaSession.setActionHandler('seekbackward', (details) => {
         const skipTime = details.seekOffset || 10
-        currentTime.value = Math.max(currentTime.value - skipTime, 0)
+        const newTime = Math.max(currentTime.value - skipTime, 0)
+        currentTime.value = newTime
+        events.onSeek?.(newTime)
       })
     }
   }

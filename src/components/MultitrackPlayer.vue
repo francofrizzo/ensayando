@@ -83,7 +83,11 @@ const {
   isPlaying: mediaSessionPlaying,
   initMediaSession,
   cleanupMediaSession
-} = useMediaSession(mediaSessionOptions)
+} = useMediaSession(mediaSessionOptions, {
+  onPlay: () => onPlayPause(true),
+  onPause: () => onPlayPause(false),
+  onSeek: (time) => onSeekToTime(time)
+})
 
 // Sync media session with player state
 watch(
