@@ -7,10 +7,10 @@ import PlayerControls from '@/components/PlayerControls.vue'
 import PlayerHeader from '@/components/PlayerHeader.vue'
 import TimeCopier from '@/components/TimeCopier.vue'
 import TrackPlayer from '@/components/TrackPlayer.vue'
+import { useMediaSession } from '@/composables/useMediaSession'
 import type { Collection } from '@/data/collection.types'
 import type { Song } from '@/data/song.types'
 
-// Props and Emits
 const props = defineProps<{
   collection: Collection
   song: Song
@@ -62,14 +62,56 @@ const lyricTracks = ref<Record<string, boolean>>(
   )
 )
 
-// Track player refs
 const trackPlayers = ref<any[]>([])
 const syncInterval = ref<number | null>(null)
 const SYNC_CHECK_INTERVAL = 1000 // Check every second
 const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
 
-// Computed
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
+
+// Setup Media Session
+const mediaSessionOptions = computed(() => ({
+  title: props.song.title,
+  artist: props.collection.artist || props.song.artist || '',
+  album: props.collection.title,
+  artwork: props.collection.artwork || props.song.artwork,
+  duration: state.totalDuration.value
+}))
+
+const {
+  currentTime: mediaSessionTime,
+  isPlaying: mediaSessionPlaying,
+  initMediaSession,
+  cleanupMediaSession
+} = useMediaSession(mediaSessionOptions)
+
+// Sync media session with player state
+watch(
+  () => state.currentTime.value,
+  (time) => {
+    mediaSessionTime.value = time
+  }
+)
+
+watch(
+  () => state.playing.value,
+  (playing) => {
+    mediaSessionPlaying.value = playing
+  }
+)
+
+// Listen to media session controls
+watch(mediaSessionPlaying, (playing) => {
+  if (playing !== state.playing.value) {
+    state.playing.value = playing
+  }
+})
+
+watch(mediaSessionTime, (time) => {
+  if (Math.abs(time - state.currentTime.value) > 0.1) {
+    seekAllTracks(time)
+  }
+})
 
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return
@@ -185,6 +227,7 @@ const keydownHandler = (event: KeyboardEvent) => {
   }
 }
 
+// Update playback state when playing state changes
 watch(
   () => state.playing.value,
   (isPlaying) => {
@@ -198,11 +241,13 @@ watch(
 
 onMounted(() => {
   window.addEventListener('keydown', keydownHandler)
+  initMediaSession()
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', keydownHandler)
   stopSyncCheck()
+  cleanupMediaSession()
 })
 </script>
 

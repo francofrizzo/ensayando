@@ -2,6 +2,8 @@ export type Song = {
   id: string
   collectionId: string
   title: string
+  artist?: string
+  artwork?: string
   tracks: Track[]
   lyrics: LyricGroup[]
 }
