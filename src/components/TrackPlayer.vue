@@ -35,7 +35,6 @@ const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isShiftPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
-const isIOS = computed(() => /iPad|iPhone|iPod/.test(navigator.userAgent))
 
 // Methods
 const seekTo = (time: number) => {
@@ -118,7 +117,6 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   dragToSeek: false,
   backend: 'WebAudio',
   url: props.track.file,
-  ignoreSilenceMode: isIOS.value,
   ...waveSurferColorScheme.value
 }))
 

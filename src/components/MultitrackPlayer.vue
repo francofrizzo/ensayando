@@ -66,6 +66,19 @@ const trackPlayers = ref<any[]>([])
 const syncInterval = ref<number | null>(null)
 const SYNC_CHECK_INTERVAL = 1000 // Check every second
 const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
+const hasInitializedAudio = ref(false)
+const silentAudio = ref<HTMLAudioElement | null>(null)
+
+const initializeAudioContext = () => {
+  if (hasInitializedAudio.value || !/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    return
+  }
+  silentAudio.value = new Audio()
+  silentAudio.value.src =
+    'SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU5LjI3LjEwMAAAAAAAAAAAAAAA/+NAwAAAAAAAAAAAAEluZm8AAAAPAAAABAAAAnIAf39/f39/f39/f39/f39/f39/f39/f39/qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dX/'
+  silentAudio.value.load()
+  hasInitializedAudio.value = true
+}
 
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
 
@@ -217,6 +230,14 @@ const onToggleTrackLyrics = (trackId: string) => {
 }
 
 const onPlayPause = async (forcePlay?: boolean) => {
+  // Initialize audio context for iOS
+  if (!hasInitializedAudio.value) {
+    initializeAudioContext()
+    // Play and immediately pause the silent audio to unlock WebAudio
+    await silentAudio.value?.play()
+    silentAudio.value?.pause()
+  }
+
   state.playing.value = forcePlay ?? !state.playing.value
 }
 
