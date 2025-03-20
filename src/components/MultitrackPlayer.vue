@@ -70,14 +70,19 @@ const hasInitializedAudio = ref(false)
 const silentAudio = ref<HTMLAudioElement | null>(null)
 
 const initializeAudioContext = () => {
+  // Only run once and only on iOS
   if (hasInitializedAudio.value || !/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-    return
+    return Promise.resolve()
   }
+
+  // Create silent audio element
   silentAudio.value = new Audio()
+  // Use a very short mp3 data URI
   silentAudio.value.src =
-    'SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU5LjI3LjEwMAAAAAAAAAAAAAAA/+NAwAAAAAAAAAAAAEluZm8AAAAPAAAABAAAAnIAf39/f39/f39/f39/f39/f39/f39/f39/qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dX/'
+    'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAQABAQEBAQEBAQEBAQEBAQEBAQEB'
   silentAudio.value.load()
   hasInitializedAudio.value = true
+  return Promise.resolve()
 }
 
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady))
@@ -232,10 +237,15 @@ const onToggleTrackLyrics = (trackId: string) => {
 const onPlayPause = async (forcePlay?: boolean) => {
   // Initialize audio context for iOS
   if (!hasInitializedAudio.value) {
-    initializeAudioContext()
-    // Play and immediately pause the silent audio to unlock WebAudio
-    await silentAudio.value?.play()
-    silentAudio.value?.pause()
+    try {
+      await initializeAudioContext()
+      // Try to play silent audio without waiting for it to complete
+      silentAudio.value?.play().catch(() => {
+        console.debug('Silent audio play was blocked or failed')
+      })
+    } catch (e) {
+      console.error('Failed to initialize audio context:', e)
+    }
   }
 
   state.playing.value = forcePlay ?? !state.playing.value
