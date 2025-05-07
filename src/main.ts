@@ -9,6 +9,8 @@ import '@/assets/main.css'
 import router from '@/router'
 import { definePreset } from '@primevue/themes'
 
+import { inject } from '@vercel/analytics'
+
 const app = createApp(App)
 
 app.use(createPinia())
@@ -62,3 +64,5 @@ app.use(PrimeVue, {
 })
 
 app.mount('#app')
+
+inject()
