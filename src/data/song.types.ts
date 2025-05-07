@@ -26,5 +26,6 @@ export type Lyric = {
   endTime?: number
   text: string
   tracks?: string[]
+  visualTracks?: string[]
   comment?: string
 }

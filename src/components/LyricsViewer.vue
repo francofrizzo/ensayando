@@ -19,8 +19,8 @@ type LyricStatus = 'active' | 'past' | 'future'
 type LyricWithStatus = Lyric & { endTime: number; status: LyricStatus }
 
 type LyricLine = {
-  startTime?: number
-  endTime?: number
+  startTime: number
+  endTime: number
   columns: LyricWithStatus[][]
 }
 
@@ -44,9 +44,11 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
     return { color: `var(--p-primary-${shade})` }
   }
 
+  const visualTracks = lyric.visualTracks ?? lyric.tracks
+
   // If there are multiple tracks, create a linear gradient
-  if (lyric.tracks && lyric.tracks.length > 1) {
-    const colors = lyric.tracks.map((track) =>
+  if (visualTracks && visualTracks.length > 1) {
+    const colors = visualTracks.map((track) =>
       trackColors[track] ? `var(--p-${trackColors[track]}-${shade})` : `var(--p-primary-${shade})`
     )
     const gradient = `linear-gradient(to right, ${colors.join(', ')})`
@@ -58,7 +60,7 @@ const getLyricStyles = (lyric: LyricWithStatus) => {
     }
   }
 
-  const firstTrack = lyric.tracks?.[0]
+  const firstTrack = visualTracks?.[0]
   if (!firstTrack || !trackColors[firstTrack]) {
     return { color: `var(--p-primary-${shade})` }
   }
@@ -72,7 +74,7 @@ const isLyricVisible = (lyric: Lyric) => {
   )
 }
 
-const visibleLyrics = computed(() =>
+const visibleLyrics = computed((): LyricGroup[] =>
   props.lyrics
     .map((lyricGroup) => {
       const filtered = lyricGroup
@@ -98,8 +100,8 @@ const visibleLyrics = computed(() =>
     .filter((group) => group.length > 0)
 )
 
-const addStatusToLyric = (lyric: Lyric, nextLyric: Lyric | undefined) => {
-  const endTime = lyric.endTime ?? (nextLyric ? nextLyric.startTime : lyric.startTime + 5)
+const addStatusToLyric = (lyric: Lyric, nextLyricStartTime: number | undefined) => {
+  const endTime = lyric.endTime ?? (nextLyricStartTime ? nextLyricStartTime : lyric.startTime + 5)
   let status: LyricStatus = 'future'
 
   if (props.currentTime >= lyric.startTime) {
@@ -121,32 +123,37 @@ const lyricsWithStatus = computed(() =>
         // Handle columns of lyrics
         return lyricOrColumn.map((column) =>
           column.map((lyric, indexInColumn) => {
-            const nextLyric = column[indexInColumn + 1]
-            return addStatusToLyric(lyric, nextLyric)
+            const nextLyricItem = column[indexInColumn + 1] ?? nextGroup?.[0]
+            const nextLyricStartTime = Array.isArray(nextLyricItem)
+              ? Math.min(...nextLyricItem.map((column) => column[0].startTime))
+              : nextLyricItem?.startTime
+            return addStatusToLyric(lyric, nextLyricStartTime)
           })
-        ) as LyricWithStatus[][]
+        )
       } else {
         // Handle single lyric
-        const nextLyric = lyricGroup[itemIndex + 1] ?? nextGroup?.[0]
-        return addStatusToLyric(lyricOrColumn, nextLyric as Lyric | undefined)
+        const nextLyricItem = lyricGroup[itemIndex + 1] ?? nextGroup?.[0]
+        const nextLyricStartTime = Array.isArray(nextLyricItem)
+          ? Math.min(...nextLyricItem.map((column) => column[0].startTime))
+          : nextLyricItem?.startTime
+        return addStatusToLyric(lyricOrColumn, nextLyricStartTime)
       }
     })
   })
 )
 
-const OVERLAP_THRESHOLD = 0.5
+const OVERLAP_THRESHOLD = 0.4
 
-const calculateOverlap = (lyric1: LyricWithStatus, lyric2: LyricWithStatus) => {
-  const start = Math.max(lyric1.startTime, lyric2.startTime)
-  const end = Math.min(lyric1.endTime, lyric2.endTime)
-  if (end <= start) return 0 // No overlap
+// Calculate how much of lyric2 overlaps with lyric1. Example:
+// start1 [       |xxxxxx] end1
+//         start2 [xxxxxx|----] end2 -> 6/10 = 0.6 overlap
+const calculateOverlap = (start1: number, end1: number, start2: number, end2: number) => {
+  const overlapStart = Math.max(start1, start2)
+  const overlapEnd = Math.min(end1, end2)
+  const overlappingLength = Math.max(0, overlapEnd - overlapStart)
+  const totalLength = end2 - start2
 
-  const overlap = end - start
-  const duration1 = lyric1.endTime - lyric1.startTime
-  const duration2 = lyric2.endTime - lyric2.startTime
-
-  // Return the overlap percentage relative to the shorter duration
-  return overlap / Math.min(duration1, duration2)
+  return totalLength > 0 ? overlappingLength / totalLength : 0
 }
 
 const lyricsInColumns = computed(() =>
@@ -156,7 +163,7 @@ const lyricsInColumns = computed(() =>
     for (const lyricOrColumn of lyricGroup) {
       if (Array.isArray(lyricOrColumn)) {
         // This is an array of columns, each containing an array of lyrics
-        const columns = lyricOrColumn as LyricWithStatus[][]
+        const columns = lyricOrColumn
         const startTimes = columns.flatMap((col) => col.map((lyric) => lyric.startTime))
         const endTimes = columns.flatMap((col) => col.map((lyric) => lyric.endTime))
 
@@ -166,32 +173,32 @@ const lyricsInColumns = computed(() =>
           columns: columns
         })
       } else {
-        // Handle single lyric
-        const lyric = lyricOrColumn
-
-        // Check if the current lyric overlaps significantly with the last line
-        const lastLine = lines[lines.length - 1]
-        if (lastLine) {
-          // Check overlap with all lyrics in the last line
-          const hasSignificantOverlap = lastLine.columns.some((column) =>
-            column.some(
-              (existingLyric) => calculateOverlap(existingLyric, lyric) >= OVERLAP_THRESHOLD
-            )
+        // This is a single lyric
+        const previousLine = lines[lines.length - 1]
+        if (previousLine) {
+          const overlap = calculateOverlap(
+            lyricOrColumn.startTime,
+            lyricOrColumn.endTime,
+            previousLine.startTime,
+            previousLine.endTime
           )
-
-          if (hasSignificantOverlap) {
-            lastLine.columns.push([lyric]) // Add as new column
-            lastLine.endTime = Math.max(lastLine.endTime ?? 0, lyric.endTime ?? 0)
-            continue
+          if (overlap > OVERLAP_THRESHOLD) {
+            previousLine.columns.push([lyricOrColumn])
+            previousLine.endTime = Math.max(previousLine.endTime, lyricOrColumn.endTime)
+          } else {
+            lines.push({
+              startTime: lyricOrColumn.startTime,
+              endTime: lyricOrColumn.endTime,
+              columns: [[lyricOrColumn]]
+            })
           }
+        } else {
+          lines.push({
+            startTime: lyricOrColumn.startTime,
+            endTime: lyricOrColumn.endTime,
+            columns: [[lyricOrColumn]]
+          })
         }
-
-        // If no significant overlap or first line, create a new line
-        lines.push({
-          startTime: lyric.startTime,
-          endTime: lyric.endTime,
-          columns: [[lyric]] // Double wrap to match expected type
-        })
       }
     }
 
