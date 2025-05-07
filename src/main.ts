@@ -18,17 +18,17 @@ app.use(PrimeVue, {
     preset: definePreset(Aura, {
       primitive: {
         pastelrose: {
-          50: '#FFFFFF',
-          100: '#FEF1F4',
-          200: '#FDD3DE',
-          300: '#FFB4C8',
-          400: '#FB8EAB',
-          500: '#F76E93',
-          600: '#EF4D78',
-          700: '#E62D5E',
-          800: '#CB204D',
-          900: '#A12143',
-          950: '#8A243F'
+          50: '#FDF7F8',
+          100: '#FDF2F5',
+          200: '#FBDFE7',
+          300: '#FBD0DC',
+          400: '#FBC0D0',
+          500: '#FCABC1',
+          600: '#FF99B4',
+          700: '#F9537F',
+          800: '#F10E4B',
+          900: '#A40E36',
+          950: '#800F2D'
         },
         pastelsky: {
           50: '#FFFFFF',
