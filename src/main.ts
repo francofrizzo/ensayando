@@ -65,4 +65,6 @@ app.use(PrimeVue, {
 
 app.mount('#app')
 
-inject()
+inject({
+  framework: 'vue'
+})

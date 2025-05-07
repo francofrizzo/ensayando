@@ -83,7 +83,6 @@ export const useSongsStore = defineStore('songs', () => {
 
   function changeSong(id: string) {
     const matchingSong = songs.value.find((song) => song.id === id)
-    console.log('matchingSong', songs.value, id)
     if (matchingSong) {
       currentSong.value = matchingSong
     }
