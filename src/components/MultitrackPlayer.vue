@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronDown } from 'lucide-vue-next'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -68,6 +69,8 @@ const SYNC_CHECK_INTERVAL = 1000 // Check every second
 const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
 const hasInitializedAudio = ref(false)
 const silentAudio = ref<HTMLAudioElement | null>(null)
+
+const areTrackPlayersVisible = ref(true)
 
 const initializeAudioContext = () => {
   // Only run once and only on iOS
@@ -304,7 +307,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="h-full flex-grow-1 overflow-x-hidden overflow-y-auto px-10">
+    <div class="h-full flex-grow-1 overflow-auto px-10">
       <LyricsViewer
         :lyrics="song.lyrics"
         :currentTime="state.currentTime.value"
@@ -316,7 +319,8 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm max-h-[45%]"
+      class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm transition-[max-height] duration-300"
+      :class="{ 'max-h-[45%]': areTrackPlayersVisible, 'max-h-[0px]': !areTrackPlayersVisible }"
     >
       <div class="h-full overflow-y-auto p-3">
         <TrackPlayer
@@ -339,6 +343,18 @@ onUnmounted(() => {
           @seek-to-time="onSeekToTime"
           @finish="onFinish(index)"
         />
+      </div>
+
+      <div class="absolute inset-x-0 top-0 -mt-6 h-6 pointer-events-none flex justify-center z-10">
+        <button
+          class="p-2 pointer-events-auto bg-surface-100 dark:bg-surface-900 text-surface-500 dark:text-surface-500 rounded-t-xl w-16 flex items-center justify-center border-t border-r border-l border-surface-200 dark:border-surface-800"
+          @click="areTrackPlayersVisible = !areTrackPlayersVisible"
+        >
+          <ChevronDown
+            class="w-7 h-7 transition-transform duration-300"
+            :class="{ 'rotate-180': !areTrackPlayersVisible }"
+          />
+        </button>
       </div>
 
       <div
