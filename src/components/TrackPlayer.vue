@@ -35,6 +35,9 @@ const waveSurfer = ref<WaveSurfer | null>(null)
 const isCtrlPressed = ref(false)
 const isShiftPressed = ref(false)
 const isMuted = computed(() => props.volume === 0)
+const muteButtonLongPressTimer = ref<number | null>(null)
+const isMuteButtonLongPressActive = ref(false)
+const TOUCH_DURATION = 500 // 500ms for long press
 
 // Methods
 const seekTo = (time: number) => {
@@ -124,7 +127,36 @@ const handleLyricsButtonClick = () => {
   emit('toggle-lyrics')
 }
 
-const handleMuteButtonClick = () => {
+const handleMuteButtonTouchStart = () => {
+  isMuteButtonLongPressActive.value = false
+  muteButtonLongPressTimer.value = window.setTimeout(() => {
+    isMuteButtonLongPressActive.value = true
+    emit('toggle-track-solo', !isShiftPressed.value)
+  }, TOUCH_DURATION)
+}
+
+const handleMuteButtonTouchEnd = () => {
+  if (muteButtonLongPressTimer.value) {
+    clearTimeout(muteButtonLongPressTimer.value)
+    muteButtonLongPressTimer.value = null
+  }
+}
+
+const handleMuteButtonTouchCancel = () => {
+  if (muteButtonLongPressTimer.value) {
+    clearTimeout(muteButtonLongPressTimer.value)
+    muteButtonLongPressTimer.value = null
+  }
+  isMuteButtonLongPressActive.value = false
+}
+
+const handleMuteButtonClick = (event: MouseEvent) => {
+  // Prevent click handler from firing if it was a long press
+  if (isMuteButtonLongPressActive.value) {
+    event.preventDefault()
+    return
+  }
+
   if (isCtrlPressed.value) {
     emit('toggle-track-solo', !isShiftPressed.value)
   } else {
@@ -192,6 +224,9 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
+  if (muteButtonLongPressTimer.value) {
+    clearTimeout(muteButtonLongPressTimer.value)
+  }
   waveSurfer.value?.destroy()
 })
 </script>
@@ -229,6 +264,9 @@ onUnmounted(() => {
         <Button
           :disabled="!isReady"
           @click="handleMuteButtonClick"
+          @touchstart="handleMuteButtonTouchStart"
+          @touchend="handleMuteButtonTouchEnd"
+          @touchcancel="handleMuteButtonTouchCancel"
           text
           size="small"
           :dt="getButtonColorScheme(!isMuted)"
