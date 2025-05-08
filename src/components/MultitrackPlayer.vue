@@ -320,9 +320,12 @@ onUnmounted(() => {
 
     <div
       class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm transition-[max-height] duration-300"
-      :class="{ 'max-h-[45%]': areTrackPlayersVisible, 'max-h-[4px]': !areTrackPlayersVisible }"
+      :class="{ 'max-h-[45%]': areTrackPlayersVisible, 'max-h-1': !areTrackPlayersVisible }"
     >
-      <div class="h-full overflow-hidden">
+      <div
+        class="h-full overflow-hidden transition-all duration-300"
+        :class="{ 'p-1': !areTrackPlayersVisible }"
+      >
         <div class="h-full overflow-y-auto p-3">
           <TrackPlayer
             v-for="(track, index) in song.tracks"
