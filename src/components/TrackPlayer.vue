@@ -117,16 +117,19 @@ const waveSurferColorScheme = computed(() => {
 })
 
 // WaveSurfer Configuration
-const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
-  height: 60,
-  barGap: 2,
-  barWidth: 2,
-  barRadius: 8,
-  dragToSeek: true,
-  backend: 'MediaElement',
-  url: props.track.file,
-  ...waveSurferColorScheme.value
-}))
+const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
+  return {
+    height: 60,
+    barGap: 2,
+    barWidth: 2,
+    barRadius: 8,
+    dragToSeek: true,
+    backend: isIOS ? 'MediaElement' : 'WebAudio',
+    url: props.track.file,
+    ...waveSurferColorScheme.value
+  }
+})
 
 const handleLyricsButtonClick = () => {
   emit('toggle-lyrics')
