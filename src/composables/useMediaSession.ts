@@ -103,7 +103,11 @@ export function useMediaSession(
   }
 
   // Watch for options changes to update metadata
-  watch(() => options.value, updateMediaSessionMetadata, { deep: true })
+  watch(
+    () => options.value,
+    () => updateMediaSessionMetadata(),
+    { deep: true }
+  )
 
   // Watch for playback state changes
   watch(isPlaying, (playing) => {
