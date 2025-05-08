@@ -222,8 +222,10 @@ watch(
       const audioElement = waveSurfer.value.getMediaElement()
       if (audioElement) {
         audioElement.volume = clampedVolume
+        audioElement.muted = clampedVolume === 0
       }
       waveSurfer.value.setVolume(clampedVolume)
+      waveSurfer.value.setMuted(clampedVolume === 0)
     }
   },
   { immediate: true }
