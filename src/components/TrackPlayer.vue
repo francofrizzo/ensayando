@@ -39,6 +39,7 @@ const muteButtonLongPressTimer = ref<number | null>(null)
 const isMuteButtonLongPressActive = ref(false)
 const TOUCH_DURATION = 500 // 500ms for long press
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
+const isMac = navigator.userAgent.indexOf('Mac') > 0
 
 // Methods
 const seekTo = (time: number) => {
@@ -173,7 +174,6 @@ const handleMuteButtonClick = (event: MouseEvent) => {
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
-  const isMac = navigator.userAgent.indexOf('Mac') > 0
   if ((isMac && event.key === 'Meta') || (!isMac && event.key === 'Control')) {
     isCtrlPressed.value = true
   }
@@ -183,7 +183,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 const handleKeyup = (event: KeyboardEvent) => {
-  const isMac = navigator.userAgent.indexOf('Mac') > 0
   if ((isMac && event.key === 'Meta') || (!isMac && event.key === 'Control')) {
     isCtrlPressed.value = false
   }
@@ -241,12 +240,25 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-start gap-2 w-full">
-    <div class="min-w-0 w-20 sm:w-24 lg:w-32 xl:w-36 flex flex-col flex-shrink-0 gap-0">
-      <div class="flex flex-row w-full gap-0 items-center justify-between">
+  <div class="flex items-stretch gap-2 w-full">
+    <div class="w-20 sm:w-24 lg:w-32 xl:w-36 flex flex-row flex-shrink-0 gap-1 min-w-0">
+      <div class="flex flex-col flex-grow-1 w-full gap-4 pt-1 items-stretch justify-center min-w-0">
         <span class="text-muted-color text-sm truncate text-ellipsis">
           {{ track.title }}
         </span>
+        <div class="pb-2.5 pr-2" v-if="!isIOS">
+          <Slider
+            :modelValue="volume"
+            class="w-full"
+            :min="0"
+            :max="1"
+            :step="0.01"
+            :dt="sliderColorScheme"
+            @update:modelValue="handleVolumeChange"
+          />
+        </div>
+      </div>
+      <div class="flex flex-col flex-grow-0 flex-shrink-0 gap-0 items-center justify-center">
         <Button
           v-if="hasLyrics"
           :disabled="!isReady"
@@ -259,18 +271,6 @@ onUnmounted(() => {
         >
           <MicVocal class="w-4 h-4" />
         </Button>
-      </div>
-      <div class="flex flex-row w-full gap-3 items-center justify-between">
-        <Slider
-          v-if="!isIOS"
-          :modelValue="volume"
-          class="w-full"
-          :min="0"
-          :max="1"
-          :step="0.01"
-          :dt="sliderColorScheme"
-          @update:modelValue="handleVolumeChange"
-        />
         <Button
           :disabled="!isReady"
           @click="handleMuteButtonClick"
@@ -281,7 +281,7 @@ onUnmounted(() => {
           size="small"
           :dt="getButtonColorScheme(!isMuted)"
           rounded
-          class="aspect-square !w-7 !h-7 !p-0 flex-shrink-0 ml-auto"
+          class="aspect-square !w-7 !h-7 !p-0 flex-shrink-0"
         >
           <Volume2Icon class="w-4 h-4" v-if="!isMuted" />
           <VolumeX class="w-4 h-4" v-else />
