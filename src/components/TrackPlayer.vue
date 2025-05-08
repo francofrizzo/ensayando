@@ -49,6 +49,11 @@ const handleVolumeChange = (value: number | number[]) => {
   const newVolume = Array.isArray(value) ? value[0] : value
   const clampedVolume = Math.max(0, Math.min(1, newVolume))
   if (waveSurfer.value) {
+    // For iOS Chrome, we need to ensure the audio element is accessible
+    const audioElement = waveSurfer.value.getMediaElement()
+    if (audioElement) {
+      audioElement.volume = clampedVolume
+    }
     waveSurfer.value.setVolume(clampedVolume)
   }
   emit('volume-change', clampedVolume)
