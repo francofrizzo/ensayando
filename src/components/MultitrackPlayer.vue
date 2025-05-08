@@ -320,29 +320,31 @@ onUnmounted(() => {
 
     <div
       class="relative border-t md:border border-surface-200 dark:border-surface-800 md:rounded-lg bg-surface-100 dark:bg-surface-900 shadow-sm transition-[max-height] duration-300"
-      :class="{ 'max-h-[45%]': areTrackPlayersVisible, 'max-h-[0px]': !areTrackPlayersVisible }"
+      :class="{ 'max-h-[45%]': areTrackPlayersVisible, 'max-h-[4px]': !areTrackPlayersVisible }"
     >
-      <div class="h-full overflow-y-auto p-3">
-        <TrackPlayer
-          v-for="(track, index) in song.tracks"
-          :key="index"
-          :track="track"
-          :color="getTrackColor(index)"
-          :isReady="state.trackStates.value[index].isReady"
-          :volume="state.trackStates.value[index].volume"
-          :isPlaying="state.playing.value"
-          :hasLyrics="lyricTracks[track.id] !== undefined"
-          :hasLyricsEnabled="lyricTracks[track.id] ?? false"
-          :ref="(el) => (trackPlayers[index] = el)"
-          @ready="(duration: number) => onReady(index, duration)"
-          @time-update="(time: number) => onTimeUpdate(index, time)"
-          @volume-change="(volume: number) => onVolumeChange(index, volume)"
-          @toggle-track-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
-          @toggle-track-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
-          @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
-          @seek-to-time="onSeekToTime"
-          @finish="onFinish(index)"
-        />
+      <div class="h-full overflow-hidden">
+        <div class="h-full overflow-y-auto p-3">
+          <TrackPlayer
+            v-for="(track, index) in song.tracks"
+            :key="index"
+            :track="track"
+            :color="getTrackColor(index)"
+            :isReady="state.trackStates.value[index].isReady"
+            :volume="state.trackStates.value[index].volume"
+            :isPlaying="state.playing.value"
+            :hasLyrics="lyricTracks[track.id] !== undefined"
+            :hasLyricsEnabled="lyricTracks[track.id] ?? false"
+            :ref="(el) => (trackPlayers[index] = el)"
+            @ready="(duration: number) => onReady(index, duration)"
+            @time-update="(time: number) => onTimeUpdate(index, time)"
+            @volume-change="(volume: number) => onVolumeChange(index, volume)"
+            @toggle-track-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
+            @toggle-track-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
+            @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
+            @seek-to-time="onSeekToTime"
+            @finish="onFinish(index)"
+          />
+        </div>
       </div>
 
       <div class="absolute inset-x-0 top-0 -mt-6 h-6 pointer-events-none flex justify-center z-10">
