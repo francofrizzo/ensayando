@@ -117,7 +117,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => ({
   barGap: 2,
   barWidth: 2,
   barRadius: 8,
-  dragToSeek: false,
+  dragToSeek: true,
   backend: 'MediaElement',
   url: props.track.file,
   ...waveSurferColorScheme.value
