@@ -38,6 +38,7 @@ const isMuted = computed(() => props.volume === 0)
 const muteButtonLongPressTimer = ref<number | null>(null)
 const isMuteButtonLongPressActive = ref(false)
 const TOUCH_DURATION = 500 // 500ms for long press
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
 
 // Methods
 const seekTo = (time: number) => {
@@ -118,7 +119,6 @@ const waveSurferColorScheme = computed(() => {
 
 // WaveSurfer Configuration
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
-  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
   return {
     height: 60,
     barGap: 2,
@@ -262,6 +262,7 @@ onUnmounted(() => {
       </div>
       <div class="flex flex-row w-full gap-3 items-center justify-between">
         <Slider
+          v-if="!isIOS"
           :modelValue="volume"
           class="w-full"
           :min="0"
@@ -280,7 +281,7 @@ onUnmounted(() => {
           size="small"
           :dt="getButtonColorScheme(!isMuted)"
           rounded
-          class="aspect-square !w-7 !h-7 !p-0 flex-shrink-0"
+          class="aspect-square !w-7 !h-7 !p-0 flex-shrink-0 ml-auto"
         >
           <Volume2Icon class="w-4 h-4" v-if="!isMuted" />
           <VolumeX class="w-4 h-4" v-else />
