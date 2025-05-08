@@ -218,12 +218,6 @@ watch(
   (newVolume) => {
     if (waveSurfer.value) {
       const clampedVolume = Math.max(0, Math.min(1, newVolume))
-      // For iOS Chrome, we need to ensure the audio element is accessible
-      const audioElement = waveSurfer.value.getMediaElement()
-      if (audioElement) {
-        audioElement.volume = clampedVolume
-        audioElement.muted = clampedVolume === 0
-      }
       waveSurfer.value.setVolume(clampedVolume)
       waveSurfer.value.setMuted(clampedVolume === 0)
     }
