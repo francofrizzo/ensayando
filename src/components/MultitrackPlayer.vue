@@ -63,10 +63,11 @@ const lyricTracks = ref<Record<string, boolean>>(
   )
 )
 
+const isIOS = computed(() => /iPhone|iPad|iPod/.test(navigator.userAgent))
 const trackPlayers = ref<any[]>([])
 const syncInterval = ref<number | null>(null)
-const SYNC_CHECK_INTERVAL = 1000 // Check every second
-const DRIFT_THRESHOLD = 0.05 // 50ms drift threshold
+const SYNC_CHECK_INTERVAL = computed(() => (isIOS.value ? 100 : 1000))
+const DRIFT_THRESHOLD = computed(() => (isIOS.value ? 0.03 : 0.05))
 const hasInitializedAudio = ref(false)
 const silentAudio = ref<HTMLAudioElement | null>(null)
 
@@ -74,7 +75,7 @@ const areTrackPlayersVisible = ref(true)
 
 const initializeAudioContext = () => {
   // Only run once and only on iOS
-  if (hasInitializedAudio.value || !/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+  if (hasInitializedAudio.value || !isIOS.value) {
     return Promise.resolve()
   }
 
@@ -141,16 +142,20 @@ watch(mediaSessionTime, (time) => {
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return
 
-  const times = trackPlayers.value.map((player) => player?.waveSurfer?.getCurrentTime() ?? 0)
-  const mainTime = times[0] // Use first track as reference
+  const referenceTrack = trackPlayers.value[0]
+  const referenceTime = referenceTrack?.waveSurfer?.getCurrentTime?.() ?? 0
 
-  // Check if any track has drifted beyond threshold
-  const needsSync = times.some((time) => Math.abs(time - mainTime) > DRIFT_THRESHOLD)
+  for (let i = 1; i < trackPlayers.value.length; i++) {
+    const player = trackPlayers.value[i]
+    const time = player?.waveSurfer?.getCurrentTime?.() ?? 0
+    const drift = time - referenceTime
 
-  if (needsSync) {
-    console.debug('Correcting track sync, drift detected')
-    seekAllTracks(mainTime)
+    if (Math.abs(drift) > DRIFT_THRESHOLD.value) {
+      player.seekTo(referenceTime)
+    }
   }
+
+  state.currentTime.value = referenceTime
 }
 
 const startSyncCheck = () => {
