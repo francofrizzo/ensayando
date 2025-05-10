@@ -160,7 +160,7 @@ const checkAndCorrectSync = () => {
 
 const startSyncCheck = () => {
   stopSyncCheck()
-  syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL)
+  syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL.value)
 }
 
 const stopSyncCheck = () => {
