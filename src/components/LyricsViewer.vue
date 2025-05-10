@@ -241,7 +241,7 @@ watch(
           <div
             v-for="(lyric, lyricIndex) in column"
             :key="lyricIndex"
-            class="flex flex-col text-left gap-1.5"
+            class="flex flex-col align-center text-left gap-1.5"
             @click="() => !isDisabled && lyric.startTime && emit('seek', lyric.startTime)"
           >
             <span
