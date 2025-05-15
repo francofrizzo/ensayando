@@ -219,6 +219,9 @@ watch(
       const clampedVolume = Math.max(0, Math.min(1, newVolume))
       waveSurfer.value.setVolume(clampedVolume)
       waveSurfer.value.setMuted(clampedVolume === 0)
+      // Hack to prevent the track from desynchronizing
+      const currentTime = waveSurfer.value.getCurrentTime()
+      waveSurfer.value.setTime(currentTime)
     }
   },
   { immediate: true }
