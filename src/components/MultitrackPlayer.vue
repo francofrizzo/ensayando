@@ -63,23 +63,23 @@ const lyricTracks = ref<Record<string, boolean>>(
   )
 )
 
-const isIOS = computed(() => /iPhone|iPad|iPod/.test(navigator.userAgent))
 const trackPlayers = ref<any[]>([])
 const syncInterval = ref<number | null>(null)
-const SYNC_CHECK_INTERVAL = computed(() => (isIOS.value ? 100 : 1000))
-const DRIFT_THRESHOLD = computed(() => (isIOS.value ? 0.03 : 0.05))
+const SYNC_CHECK_INTERVAL = 1000
+const DRIFT_THRESHOLD = 0.05
 const hasInitializedAudio = ref(false)
 const silentAudio = ref<HTMLAudioElement | null>(null)
 
 const areTrackPlayersVisible = ref(true)
 
 const initializeAudioContext = () => {
-  // Only run once and only on iOS
-  if (hasInitializedAudio.value || !isIOS.value) {
+  // Only run once
+  if (hasInitializedAudio.value) {
     return Promise.resolve()
   }
 
-  // Create silent audio element
+  // Create silent audio element to unlock audio context on user interaction
+  // This is needed for WebAudio API which requires user gesture to start playing
   silentAudio.value = new Audio()
   // Use a very short mp3 data URI
   silentAudio.value.src =
@@ -150,7 +150,7 @@ const checkAndCorrectSync = () => {
     const time = player?.waveSurfer?.getCurrentTime?.() ?? 0
     const drift = time - referenceTime
 
-    if (Math.abs(drift) > DRIFT_THRESHOLD.value) {
+    if (Math.abs(drift) > DRIFT_THRESHOLD) {
       player.seekTo(referenceTime)
     }
   }
@@ -160,7 +160,7 @@ const checkAndCorrectSync = () => {
 
 const startSyncCheck = () => {
   stopSyncCheck()
-  syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL.value)
+  syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL)
 }
 
 const stopSyncCheck = () => {
@@ -243,11 +243,11 @@ const onToggleTrackLyrics = (trackId: string) => {
 }
 
 const onPlayPause = async (forcePlay?: boolean) => {
-  // Initialize audio context for iOS
+  // Initialize audio context for WebAudio API user gesture requirement
   if (!hasInitializedAudio.value) {
     try {
       await initializeAudioContext()
-      // Try to play silent audio without waiting for it to complete
+      // Try to play silent audio to unlock WebAudio context
       silentAudio.value?.play().catch(() => {
         console.debug('Silent audio play was blocked or failed')
       })

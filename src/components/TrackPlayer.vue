@@ -38,7 +38,6 @@ const isMuted = computed(() => props.volume === 0)
 const muteButtonLongPressTimer = ref<number | null>(null)
 const isMuteButtonLongPressActive = ref(false)
 const TOUCH_DURATION = 500 // 500ms for long press
-const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
 const isMac = navigator.userAgent.indexOf('Mac') > 0
 
 // Methods
@@ -51,11 +50,6 @@ const handleVolumeChange = (value: number | number[]) => {
   const newVolume = Array.isArray(value) ? value[0] : value
   const clampedVolume = Math.max(0, Math.min(1, newVolume))
   if (waveSurfer.value) {
-    // For iOS Chrome, we need to ensure the audio element is accessible
-    const audioElement = waveSurfer.value.getMediaElement()
-    if (audioElement) {
-      audioElement.volume = clampedVolume
-    }
     waveSurfer.value.setVolume(clampedVolume)
   }
   emit('volume-change', clampedVolume)
@@ -126,7 +120,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     barWidth: 2,
     barRadius: 8,
     dragToSeek: true,
-    backend: isIOS ? 'MediaElement' : 'WebAudio',
+    backend: 'WebAudio',
     url: props.track.file,
     ...waveSurferColorScheme.value
   }
@@ -249,7 +243,7 @@ onUnmounted(() => {
         <span class="text-muted-color text-sm truncate text-ellipsis">
           {{ track.title }}
         </span>
-        <div class="pb-2.5 pr-2" v-if="!isIOS">
+        <div class="pb-2.5 pr-2">
           <Slider
             :modelValue="volume"
             class="w-full"
