@@ -125,7 +125,11 @@ const lyricsWithStatus = computed(() =>
           column.map((lyric, indexInColumn) => {
             const nextLyricItem = column[indexInColumn + 1] ?? nextGroup?.[0]
             const nextLyricStartTime = Array.isArray(nextLyricItem)
-              ? Math.min(...nextLyricItem.map((column) => column[0].startTime))
+              ? Math.min(
+                  ...nextLyricItem.flatMap((column) =>
+                    column.map((lyric: Lyric) => lyric.startTime)
+                  )
+                )
               : nextLyricItem?.startTime
             return addStatusToLyric(lyric, nextLyricStartTime)
           })
@@ -134,7 +138,9 @@ const lyricsWithStatus = computed(() =>
         // Handle single lyric
         const nextLyricItem = lyricGroup[itemIndex + 1] ?? nextGroup?.[0]
         const nextLyricStartTime = Array.isArray(nextLyricItem)
-          ? Math.min(...nextLyricItem.map((column) => column[0].startTime))
+          ? Math.min(
+              ...nextLyricItem.flatMap((column) => column.map((lyric: Lyric) => lyric.startTime))
+            )
           : nextLyricItem?.startTime
         return addStatusToLyric(lyricOrColumn, nextLyricStartTime)
       }
