@@ -229,10 +229,14 @@ watch(
 
 <template>
   <div class="py-8 flex flex-col gap-6 text-xl">
-    <div v-for="(lyricGroup, index) in lyricsInColumns" :key="index" class="flex flex-col gap-2.5">
+    <div
+      v-for="(lyricGroup, groupIndex) in lyricsInColumns"
+      :key="groupIndex"
+      class="flex flex-col gap-2.5"
+    >
       <div
-        v-for="lyricLine in lyricGroup"
-        :key="lyricLine.startTime"
+        v-for="(lyricLine, lineIndex) in lyricGroup"
+        :key="`${groupIndex}-${lineIndex}`"
         class="flex flex-row items-center justify-evenly gap-10"
         :class="{
           'cursor-pointer': !isDisabled && lyricLine.startTime,
@@ -241,12 +245,12 @@ watch(
       >
         <div
           v-for="(column, columnIndex) in lyricLine.columns"
-          :key="columnIndex"
+          :key="`${groupIndex}-${lineIndex}-${columnIndex}`"
           class="flex flex-col items-center gap-2.5"
         >
           <div
             v-for="(lyric, lyricIndex) in column"
-            :key="lyricIndex"
+            :key="`${groupIndex}-${lineIndex}-${columnIndex}-${lyricIndex}`"
             class="flex flex-col items-center text-left gap-1.5"
             @click="() => !isDisabled && lyric.startTime && emit('seek', lyric.startTime)"
           >
