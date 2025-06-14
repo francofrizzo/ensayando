@@ -42,7 +42,7 @@ const otherCollectionMenuItems = computed(() => {
         <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="min-h-full w-80 flex lg:p-3">
           <div
-            class="bg-base-100/75 backdrop-blur-lg px-3 py-7 flex flex-col gap-6 justify-between text-base-content shadow-lg border border-base-200 lg:rounded-box"
+            class="bg-base-100/75 backdrop-blur-lg px-3 lg:px-1 py-7 flex flex-col gap-6 justify-between text-base-content shadow-lg border border-base-200 lg:rounded-box"
           >
             <div class="flex flex-col gap-2">
               <span class="text-base-content/60 font-medium uppercase px-5 tracking-wide">{{
@@ -55,7 +55,7 @@ const otherCollectionMenuItems = computed(() => {
                     :key="song.label"
                     @click="songsStore.changeSong(song.id)"
                     :class="{
-                      'btn-active': songsStore.currentSong?.id === song.id
+                      'menu-focus': songsStore.currentSong?.id === song.id
                     }"
                   >
                     {{ song.label }}
