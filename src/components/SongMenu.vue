@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import type { Collection } from '@/data/collection.types'
-import { useSongsStore } from '@/stores/songs'
-import { Menu } from 'lucide-vue-next'
-import Button from 'primevue/button'
-import Drawer from 'primevue/drawer'
-import { computed, ref } from 'vue'
+import type { Collection } from "@/data/collection.types";
+import { useSongsStore } from "@/stores/songs";
+import { Menu } from "lucide-vue-next";
+import { computed } from "vue";
 
 const props = defineProps<{
-  collection: Collection
-}>()
+  collection: Collection;
+}>();
 
-const songsStore = useSongsStore()
-
-const visible = ref(false)
+const songsStore = useSongsStore();
 
 const songMenuItems = computed(() => {
   return songsStore.songs
@@ -20,8 +16,8 @@ const songMenuItems = computed(() => {
     .map((song) => ({
       label: song.title,
       id: song.id
-    }))
-})
+    }));
+});
 
 const otherCollectionMenuItems = computed(() => {
   return songsStore.collections
@@ -29,83 +25,66 @@ const otherCollectionMenuItems = computed(() => {
     .map((collection) => ({
       label: collection.title,
       id: collection.id
-    }))
-})
-
-const itemColorScheme = computed(() => {
-  return {
-    colorScheme: {
-      light: {
-        text: {
-          primary: {
-            color: `{${props.collection.theme.mainColor}.500}`,
-            hoverBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 90%)`,
-            activeBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 80%)`
-          }
-        }
-      },
-      dark: {
-        text: {
-          primary: {
-            color: `{${props.collection.theme.mainColor}.500}`,
-            hoverBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 90%)`,
-            activeBackground: `color-mix(in srgb, {${props.collection.theme.mainColor}.500}, transparent 80%)`
-          }
-        }
-      }
-    }
-  }
-})
+    }));
+});
 </script>
 
 <template>
   <div class="flex items-center gap-4">
-    <Drawer v-model:visible="visible" :header="props.collection.title">
-      <div class="flex flex-col gap-6 justify-between h-full">
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
+    <div class="drawer">
+      <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+      <div class="drawer-content">
+        <label class="btn btn-square btn-primary btn-lg flex-shrink-0" htmlFor="my-drawer">
+          <Menu class="w-5 h-5" />
+        </label>
+      </div>
+      <div class="drawer-side z-50">
+        <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+        <div class="min-h-full w-80 flex lg:p-3">
+          <div
+            class="bg-base-100/75 backdrop-blur-lg px-3 py-7 flex flex-col gap-6 justify-between text-base-content shadow-lg border border-base-200 lg:rounded-box"
+          >
             <div class="flex flex-col gap-2">
-              <Button
-                v-for="song in songMenuItems"
-                :key="song.label"
-                @click="songsStore.changeSong(song.id)"
-                :text="songsStore.currentSong?.id !== song.id"
-                :dt="itemColorScheme"
-                :label="song.label"
-                :pt="{
-                  label: { class: 'text-left w-full font-normal' }
-                }"
-              />
+              <span class="text-base-content/60 font-medium uppercase px-5 tracking-wide">{{
+                collection.title
+              }}</span>
+              <ul class="menu w-full">
+                <li>
+                  <a
+                    v-for="song in songMenuItems"
+                    :key="song.label"
+                    @click="songsStore.changeSong(song.id)"
+                    :class="{
+                      'btn-active': songsStore.currentSong?.id === song.id
+                    }"
+                  >
+                    {{ song.label }}
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div class="flex flex-col gap-2" v-if="otherCollectionMenuItems.length > 0">
+              <span class="text-base-content/60 font-medium uppercase text-sm px-5 tracking-wide"
+                >Otras colecciones</span
+              >
+              <ul class="menu w-full">
+                <li>
+                  <a
+                    v-for="collection in otherCollectionMenuItems"
+                    :key="collection.label"
+                    @click="songsStore.changeCollection(collection.id)"
+                    :class="{
+                      'btn-active': songsStore.currentCollection?.id === collection.id
+                    }"
+                  >
+                    {{ collection.label }}
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-        <div class="flex flex-col gap-2" v-if="otherCollectionMenuItems.length > 0">
-          <span class="text-muted-color font-medium uppercase text-sm">Otras colecciones</span>
-          <div class="flex flex-col gap-2">
-            <Button
-              v-for="collection in otherCollectionMenuItems"
-              :key="collection.label"
-              @click="songsStore.changeCollection(collection.id)"
-              text
-              :dt="itemColorScheme"
-              :pt="{
-                label: { class: 'text-left w-full font-normal' }
-              }"
-              :label="collection.label"
-            />
-          </div>
-        </div>
       </div>
-    </Drawer>
-
-    <Button
-      class="flex-shrink-0 aspect-square"
-      type="button"
-      @click="visible = true"
-      aria-haspopup="true"
-      aria-controls="overlay_menu"
-    >
-      <Menu class="w-5 h-5" />
-    </Button>
+    </div>
   </div>
 </template>

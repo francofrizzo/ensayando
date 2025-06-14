@@ -1,1 +1,1 @@
-declare module '@meersagor/wavesurfer-vue'
+declare module "@meersagor/wavesurfer-vue";
