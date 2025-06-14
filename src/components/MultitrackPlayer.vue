@@ -331,7 +331,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="h-full flex-grow-1 overflow-auto px-10">
+    <div class="h-full flex-grow-1 overflow-auto px-10 relative">
+      <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
       <LyricsViewer
         :lyrics="song.lyrics"
         :currentTime="state.currentTime.value"
@@ -340,6 +341,7 @@ onUnmounted(() => {
         :tracks="lyricTracks"
         @seek="onSeekToTime"
       />
+      <div class="bg-gradient-to-t from-base-200 to-transparent sticky inset-x-0 bottom-0 h-8" />
     </div>
 
     <div

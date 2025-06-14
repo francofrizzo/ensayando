@@ -224,7 +224,7 @@ watch(
 </script>
 
 <template>
-  <div class="py-8 flex flex-col gap-6 text-xl">
+  <div class="flex flex-col gap-6 text-xl">
     <div
       v-for="(lyricGroup, groupIndex) in lyricsInColumns"
       :key="groupIndex"
