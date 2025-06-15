@@ -4,7 +4,6 @@ import { computed, ref } from "vue";
 
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import type { Collection } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 
 const props = defineProps<{
@@ -17,7 +16,6 @@ const emit = defineEmits<{
 
 const isOpen = ref(false);
 
-const authStore = useAuthStore();
 const collectionsStore = useCollectionsStore();
 const { currentSong } = useCurrentSong();
 
