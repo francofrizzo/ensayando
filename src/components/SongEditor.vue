@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { lyricStanzaArrayValidation } from "@/data/validate";
-import { useAuthStore } from "@/stores/auth";
-import { useCollectionsStore } from "@/stores/collections";
-import JsonEditorVue from "json-editor-vue";
 import { Save, X } from "lucide-vue-next";
 import { Mode } from "vanilla-jsoneditor";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
-import LoginModal from "./LoginModal.vue";
+
+import JsonEditor from "@/components/JsonEditor.vue";
+import LoginModal from "@/components/LoginModal.vue";
+import { lyricStanzaArrayValidation } from "@/data/validate";
+import { useAuthStore } from "@/stores/auth";
+import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
 const authStore = useAuthStore();
@@ -84,6 +85,12 @@ const onUpdateLyrics = (lyrics: any) => {
     // Error shown in editor
   }
 };
+
+const handleEditorChange = (content: any) => {
+  if (content && content.text) {
+    onUpdateLyrics(content.text);
+  }
+};
 </script>
 
 <template>
@@ -110,13 +117,12 @@ const onUpdateLyrics = (lyrics: any) => {
         <X class="size-3.5" />
       </button>
     </div>
-    <JsonEditorVue
-      :model-value="store.localLyrics.value"
+    <JsonEditor
+      :content="{ text: JSON.stringify(store.localLyrics.value, null, 2) }"
       :mode="Mode.text"
-      :debounce="200"
       :validator="validator"
+      :on-change="handleEditorChange"
       class="json-editor flex-1 min-h-0"
-      @update:model-value="onUpdateLyrics"
     />
 
     <!-- Login Modal -->
