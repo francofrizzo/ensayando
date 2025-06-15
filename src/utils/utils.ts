@@ -8,13 +8,17 @@ export const formatTime = (time: number): string => {
 export const darken = (colorStr: string, amount: number) => {
   const colorLch = lch(colorStr);
   if (!colorLch) return colorStr;
-  return formatCss(clampChroma({ ...colorLch, l: Math.max(0, colorLch.l - amount * 100) }));
+
+  const newL = Math.max(0, colorLch.l * (1 - amount));
+  return formatCss(clampChroma({ ...colorLch, l: newL }));
 };
 
 export const lighten = (colorStr: string, amount: number) => {
   const colorLch = lch(colorStr);
   if (!colorLch) return colorStr;
-  return formatCss(clampChroma({ ...colorLch, l: Math.min(100, colorLch.l + amount * 100) }));
+
+  const newL = Math.min(100, colorLch.l + (100 - colorLch.l) * amount);
+  return formatCss(clampChroma({ ...colorLch, l: newL }));
 };
 
 export const transparentize = (colorStr: string, amount: number) => {

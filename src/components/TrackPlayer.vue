@@ -71,7 +71,7 @@ const color = computed(() => {
 const waveSurferColorScheme = computed(() => {
   const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return {
-    waveColor: isDarkMode ? darken(color.value, 0.2) : lighten(color.value, 0.2),
+    waveColor: isDarkMode ? darken(color.value, 0.3) : lighten(color.value, 0.4),
     progressColor: color.value
   };
 });
