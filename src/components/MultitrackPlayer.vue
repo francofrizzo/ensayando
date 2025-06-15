@@ -10,7 +10,6 @@ import TimeCopier from "@/components/TimeCopier.vue";
 import TrackPlayer from "@/components/TrackPlayer.vue";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { Collection, LyricStanza, Song } from "@/data/types";
-import { selectMostContrasting } from "@/utils/utils";
 
 const props = defineProps<{
   collection: Collection;
@@ -193,19 +192,6 @@ onUnmounted(() => {
 const tracksVisible = ref(true);
 const editMode = ref(false);
 
-const colorVariables = computed(() => {
-  try {
-    const primaryColor = props.collection.main_color;
-    const primaryColorContentValue = selectMostContrasting(primaryColor, ["white", "black"]);
-    return {
-      "--color-primary": primaryColor,
-      "--color-primary-content": primaryColorContentValue
-    };
-  } catch {
-    return {};
-  }
-});
-
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
 const syncInterval = ref<number | null>(null);
@@ -313,7 +299,7 @@ watch(mediaSessionTime, (time) => {
 </script>
 
 <template>
-  <div class="flex" :style="{ ...colorVariables }">
+  <div class="flex">
     <div
       class="bg-base-200 flex flex-1 h-dvh min-w-0 flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none"
     >

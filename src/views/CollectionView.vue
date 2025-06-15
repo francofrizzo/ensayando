@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ErrorMessage from "@/components/ErrorMessage.vue";
 import LoadingScreen from "@/components/LoadingScreen.vue";
+import { useCollectionTheme } from "@/composables/useCollectionTheme";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useNavigation } from "@/composables/useNavigation";
 import { useCollectionsStore } from "@/stores/collections";
@@ -11,6 +12,7 @@ const route = useRoute();
 const collectionsStore = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();
 const { replaceToSong } = useNavigation();
+const { themeVariables } = useCollectionTheme(currentCollection);
 
 const isLoading = computed(() => collectionsStore.isLoading);
 
@@ -52,23 +54,25 @@ watch(
 </script>
 
 <template>
-  <LoadingScreen v-if="isLoading" />
+  <div :style="themeVariables">
+    <LoadingScreen v-if="isLoading" />
 
-  <ErrorMessage
-    v-else-if="!currentCollection"
-    type="collection-not-found"
-    :back-link="{
-      to: { name: 'home' },
-      text: 'Volver al inicio'
-    }"
-  />
+    <ErrorMessage
+      v-else-if="!currentCollection"
+      type="collection-not-found"
+      :back-link="{
+        to: { name: 'home' },
+        text: 'Volver al inicio'
+      }"
+    />
 
-  <ErrorMessage
-    v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading"
-    type="no-songs"
-  />
+    <ErrorMessage
+      v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading"
+      type="no-songs"
+    />
 
-  <div v-else class="flex items-center justify-center min-h-dvh">
-    <LoadingScreen />
+    <div v-else class="flex items-center justify-center min-h-dvh">
+      <LoadingScreen />
+    </div>
   </div>
 </template>
