@@ -117,11 +117,11 @@ const onUpdateLyrics = (lyrics: any) => {
     </div>
     <JsonEditorVue
       :model-value="store.localLyrics.value"
-      @update:model-value="onUpdateLyrics"
       :mode="Mode.text"
       :debounce="200"
       :validator="validator"
       class="json-editor flex-1 min-h-0"
+      @update:model-value="onUpdateLyrics"
     />
 
     <!-- Login Modal -->

@@ -85,8 +85,8 @@ const closeModal = () => {
             role="tab"
             class="tab flex-1"
             :class="{ 'tab-active': !isSignUp }"
-            @click="switchMode(false)"
             :disabled="isLoading"
+            @click="switchMode(false)"
           >
             Iniciar sesión
           </button>
@@ -94,8 +94,8 @@ const closeModal = () => {
             role="tab"
             class="tab flex-1"
             :class="{ 'tab-active': isSignUp }"
-            @click="switchMode(true)"
             :disabled="isLoading"
+            @click="switchMode(true)"
           >
             Crear una cuenta
           </button>
@@ -105,7 +105,7 @@ const closeModal = () => {
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="flex flex-col gap-4">
+      <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
         <label class="input w-full">
           <Mail class="size-4" />
           <span>Email</span>
@@ -113,8 +113,8 @@ const closeModal = () => {
             v-model="email"
             type="email"
             placeholder="tu@email.com"
-            @keydown="handleKeydown"
             :disabled="isLoading"
+            @keydown="handleKeydown"
           />
         </label>
 
@@ -125,8 +125,8 @@ const closeModal = () => {
             v-model="password"
             type="password"
             placeholder="••••••••"
-            @keydown="handleKeydown"
             :disabled="isLoading"
+            @keydown="handleKeydown"
           />
         </label>
 
@@ -139,7 +139,7 @@ const closeModal = () => {
         </div>
 
         <div class="modal-action gap-4">
-          <button type="button" class="btn btn-soft" @click="closeModal" :disabled="isLoading">
+          <button type="button" class="btn btn-soft" :disabled="isLoading" @click="closeModal">
             Cancelar
           </button>
           <button type="submit" class="btn btn-primary" :disabled="isLoading">

@@ -44,7 +44,7 @@ const seekTo = (time: number) => {
 };
 
 const handleVolumeChange = (value: number | number[]) => {
-  const newVolume = Array.isArray(value) ? value[0] ?? 0 : value;
+  const newVolume = Array.isArray(value) ? (value[0] ?? 0) : value;
   const clampedVolume = Math.max(0, Math.min(1, newVolume));
   if (waveSurfer.value) {
     waveSurfer.value.setVolume(clampedVolume);
@@ -206,23 +206,23 @@ onUnmounted(() => {
         <button
           v-if="props.hasLyrics"
           :disabled="!isReady"
-          @click="handleLyricsButtonClick"
           class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
           :style="{ color: props.lyricsEnabled ? trackColor : disabledColor }"
+          @click="handleLyricsButtonClick"
         >
           <MicVocal class="w-4 h-4" />
         </button>
         <button
           :disabled="!isReady"
+          class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
+          :style="{ color }"
           @click="handleMuteButtonClick"
           @touchstart="handleMuteButtonTouchStart"
           @touchend="handleMuteButtonTouchEnd"
           @touchcancel="handleMuteButtonTouchCancel"
-          class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
-          :style="{ color }"
         >
-          <Volume2Icon class="w-4 h-4" v-if="!isMuted" />
-          <VolumeX class="w-4 h-4" v-else />
+          <Volume2Icon v-if="!isMuted" class="w-4 h-4" />
+          <VolumeX v-else class="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -230,7 +230,7 @@ onUnmounted(() => {
       <WaveSurferPlayer
         :options="waveSurferOptions"
         @interaction="(time: number) => emit('seek', time)"
-        @waveSurfer="(ws: WaveSurfer) => (waveSurfer = ws)"
+        @wave-surfer="(ws: WaveSurfer) => (waveSurfer = ws)"
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"
         @finish="emit('finish')"

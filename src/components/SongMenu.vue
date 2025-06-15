@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { Edit, LockKeyhole, Menu, X } from "lucide-vue-next";
+import { computed, ref } from "vue";
+
+import { useCurrentSong } from "@/composables/useCurrentSong";
 import type { Collection } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
-import { Edit, LockKeyhole, Menu, X } from "lucide-vue-next";
-import { computed, ref } from "vue";
 
 const props = defineProps<{
   collection: Collection;
@@ -15,8 +17,9 @@ const emit = defineEmits<{
 
 const isOpen = ref(false);
 
-const collectionsStore = useCollectionsStore();
 const authStore = useAuthStore();
+const collectionsStore = useCollectionsStore();
+const { currentSong } = useCurrentSong();
 
 const songMenuItems = computed(() => {
   return collectionsStore.songs.filter((song) => authStore.isAuthenticated() || song.visible);
@@ -34,7 +37,7 @@ const otherCollectionMenuItems = computed(() => {
 <template>
   <div class="flex items-center gap-4">
     <div class="drawer">
-      <input id="my-drawer" type="checkbox" class="drawer-toggle" v-model="isOpen" />
+      <input id="my-drawer" v-model="isOpen" type="checkbox" class="drawer-toggle" />
       <div class="drawer-content">
         <label class="btn btn-square btn-primary btn-lg flex-shrink-0" htmlFor="my-drawer">
           <Menu class="w-5 h-5" />
@@ -56,38 +59,44 @@ const otherCollectionMenuItems = computed(() => {
                 </button>
               </div>
               <ul class="menu w-full">
-                <li>
-                  <a
-                    v-for="song in songMenuItems"
-                    :key="song.title"
-                    @click="collectionsStore.selectSong(song.slug)"
-                    :class="{
-                      'menu-focus': collectionsStore.selectedSong?.id === song.id
+                <li v-for="song in songMenuItems" :key="song.id">
+                  <router-link
+                    :to="{
+                      name: 'song',
+                      params: {
+                        collectionSlug: collection.slug,
+                        songSlug: song.slug
+                      }
                     }"
+                    :class="{
+                      'menu-focus': currentSong?.id === song.id
+                    }"
+                    @click="isOpen = false"
                   >
                     <LockKeyhole v-if="!song.visible" class="size-3 text-primary" />
                     {{ song.title }}
-                  </a>
+                  </router-link>
                 </li>
               </ul>
             </div>
-            <div class="flex flex-col gap-2" v-if="otherCollectionMenuItems.length > 0">
+            <div v-if="otherCollectionMenuItems.length > 0" class="flex flex-col gap-2">
               <span class="text-base-content/60 font-medium uppercase text-sm px-5 tracking-wide"
                 >Otras colecciones</span
               >
               <ul class="menu w-full">
-                <li>
-                  <a
-                    v-for="collection in otherCollectionMenuItems"
-                    :key="collection.title"
-                    @click="collectionsStore.selectCollection(collection.slug)"
-                    :class="{
-                      'menu-focus': collectionsStore.selectedCollection?.id === collection.id
+                <li v-for="otherCollection in otherCollectionMenuItems" :key="otherCollection.id">
+                  <router-link
+                    :to="{
+                      name: 'collection',
+                      params: {
+                        collectionSlug: otherCollection.slug
+                      }
                     }"
+                    @click="isOpen = false"
                   >
-                    <LockKeyhole v-if="!collection.visible" class="size-3 text-primary" />
-                    {{ collection.title }}
-                  </a>
+                    <LockKeyhole v-if="!otherCollection.visible" class="size-3 text-primary" />
+                    {{ otherCollection.title }}
+                  </router-link>
                 </li>
               </ul>
             </div>

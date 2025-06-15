@@ -253,13 +253,6 @@ watch(
               >{{ verse.comment }}</span
             >
             <span
-              :style="getVerseStyles(verse)"
-              :class="{
-                'text-primary': verse.status === 'active',
-                'font-semibold': verse.status === 'active',
-                'scale-[1.2]': verse.status === 'active'
-              }"
-              class="transition-all transition-duration-500 uppercase tracking-wide text-center"
               :ref="
                 (el: any) => {
                   if (verse.status === 'active') {
@@ -267,6 +260,13 @@ watch(
                   }
                 }
               "
+              :style="getVerseStyles(verse)"
+              :class="{
+                'text-primary': verse.status === 'active',
+                'font-semibold': verse.status === 'active',
+                'scale-[1.2]': verse.status === 'active'
+              }"
+              class="transition-all transition-duration-500 uppercase tracking-wide text-center"
               >{{ verse.text }}</span
             >
           </div>

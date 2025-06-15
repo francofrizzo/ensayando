@@ -46,10 +46,10 @@ const copyTimeToClipboard = () => {
     </div>
     <button
       class="btn btn-circle btn-primary btn-lg flex-shrink-0"
-      @click="() => emit('play-pause')"
       :disabled="!props.isReady"
       rounded
       aria-label="Play/Pause"
+      @click="() => emit('play-pause')"
     >
       <Pause v-if="props.isPlaying" class="w-5 h-5" />
       <Play v-else class="w-5 h-5" />

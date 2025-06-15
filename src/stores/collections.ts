@@ -1,23 +1,67 @@
 import * as supabase from "@/data/supabase";
 import { type Collection, type LyricStanza, type Song } from "@/data/types";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 
 export const useCollectionsStore = defineStore("collections", () => {
+  // Data state
   const collections = ref<Collection[]>([]);
-  const isLoadingCollections = ref(false);
   const songs = ref<Song[]>([]);
+  const isLoadingCollections = ref(false);
   const isLoadingSongs = ref(false);
+  const songsCollectionId = ref<number | null>(null); // Track which collection the loaded songs belong to
 
-  const selectedCollectionId = ref<number | null>(null);
-  const selectedSongId = ref<number | null>(null);
-
+  // Lyrics state
   const localLyrics = {
     value: ref<LyricStanza[]>([]),
     isDirty: ref(false),
     isSaving: ref(false)
   };
 
+  // Route-reactive computed properties
+  const route = useRoute();
+
+  const currentCollection = computed(() => {
+    const slug = route.params.collectionSlug as string;
+    if (!slug) return null;
+    return collections.value.find((c) => c.slug === slug) || null;
+  });
+
+  const currentSong = computed(() => {
+    const slug = route.params.songSlug as string;
+    if (!slug) return null;
+    return songs.value.find((s) => s.slug === slug) || null;
+  });
+
+  // Auto-fetch songs when collection changes
+  watch(
+    currentCollection,
+    async (collection, previousCollection) => {
+      if (collection?.id !== previousCollection?.id) {
+        songs.value = [];
+        songsCollectionId.value = null;
+      }
+      if (collection) {
+        await fetchSongsByCollectionId(collection.id);
+      }
+    },
+    { immediate: true }
+  );
+
+  // Update local lyrics when song changes
+  watch(
+    currentSong,
+    (song) => {
+      if (song) {
+        localLyrics.value.value = song.lyrics ?? [];
+        localLyrics.isDirty.value = false;
+      }
+    },
+    { immediate: true }
+  );
+
+  // Data fetching methods (no navigation logic)
   async function fetchCollections() {
     isLoadingCollections.value = true;
     const { data, error } = await supabase.fetchCollections();
@@ -34,26 +78,11 @@ export const useCollectionsStore = defineStore("collections", () => {
     const { data, error } = await supabase.fetchSongsByCollectionId(collectionId);
     if (!error) {
       songs.value = data;
+      songsCollectionId.value = collectionId;
     } else {
       console.error(error);
     }
     isLoadingSongs.value = false;
-  }
-
-  async function selectCollection(slug: string) {
-    const collection = collections.value?.find((collection) => collection.slug === slug);
-    if (collection) {
-      selectedCollectionId.value = collection.id;
-      await fetchSongsByCollectionId(collection.id);
-    }
-  }
-
-  async function selectSong(slug: string) {
-    const song = songs.value?.find((song) => song.slug === slug);
-    if (song) {
-      selectedSongId.value = song.id;
-      localLyrics.value.value = song.lyrics ?? [];
-    }
   }
 
   async function updateLocalLyrics(value: LyricStanza[]) {
@@ -63,9 +92,9 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   async function saveLyrics() {
     localLyrics.isSaving.value = true;
-    if (selectedSongId.value) {
+    if (currentSong.value) {
       const { error } = await supabase.updateSongLyrics(
-        selectedSongId.value,
+        currentSong.value.id,
         localLyrics.value.value
       );
       if (error) {
@@ -77,16 +106,6 @@ export const useCollectionsStore = defineStore("collections", () => {
     localLyrics.isSaving.value = false;
   }
 
-  const selectedCollection = computed(() => {
-    return (
-      collections.value?.find((collection) => collection.id === selectedCollectionId.value) ?? null
-    );
-  });
-
-  const selectedSong = computed(() => {
-    return songs.value?.find((song) => song.id === selectedSongId.value) ?? null;
-  });
-
   const isLoading = computed(() => {
     return isLoadingCollections.value || isLoadingSongs.value;
   });
@@ -94,13 +113,12 @@ export const useCollectionsStore = defineStore("collections", () => {
   return {
     collections,
     songs,
+    currentCollection,
+    currentSong,
+    songsCollectionId,
     isLoading,
     fetchCollections,
     fetchSongsByCollectionId,
-    selectCollection,
-    selectSong,
-    selectedCollection,
-    selectedSong,
     localLyrics,
     updateLocalLyrics,
     saveLyrics

@@ -24,7 +24,7 @@ const handleLogout = async () => {
         <User class="size-3.5" />
         <span>{{ authStore.user?.email }}</span>
       </div>
-      <button class="btn btn-xs btn-square btn-ghost" @click="handleLogout" title="Cerrar sesión">
+      <button class="btn btn-xs btn-square btn-ghost" title="Cerrar sesión" @click="handleLogout">
         <LogOut class="size-3.5" />
         <span class="sr-only">Salir</span>
       </button>

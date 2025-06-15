@@ -324,15 +324,15 @@ watch(mediaSessionTime, (time) => {
           @toggle-edit="() => (editMode = !editMode)"
         />
         <PlayerControls
-          :currentTime="state.currentTime.value"
-          :totalDuration="state.totalDuration.value"
-          :isPlaying="state.playing.value"
-          :isReady="isReady"
-          :editMode="editMode"
+          :current-time="state.currentTime.value"
+          :total-duration="state.totalDuration.value"
+          :is-playing="state.playing.value"
+          :is-ready="isReady"
+          :edit-mode="editMode"
           @play-pause="onPlayPause"
         />
         <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
-          <TimeCopier :currentTime="state.currentTime.value" />
+          <TimeCopier :current-time="state.currentTime.value" />
         </div>
       </div>
 
@@ -340,10 +340,10 @@ watch(mediaSessionTime, (time) => {
         <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
         <LyricsViewer
           :lyrics="lyrics"
-          :currentTime="state.currentTime.value"
-          :isDisabled="!isReady"
+          :current-time="state.currentTime.value"
+          :is-disabled="!isReady"
           :collection="collection"
-          :enabledTrackIds="trackIdsWithLyricsEnabled"
+          :enabled-track-ids="trackIdsWithLyricsEnabled"
           @seek="onSeekToTime"
         />
         <div class="bg-gradient-to-t from-base-200 to-transparent sticky inset-x-0 bottom-0 h-8" />
@@ -360,19 +360,19 @@ watch(mediaSessionTime, (time) => {
           <TrackPlayer
             v-for="(track, index) in sortedTracks"
             :key="index"
-            :track="track"
-            :collection="collection"
-            :isPlaying="state.playing.value"
-            :isReady="state.trackStates.value[index]!.isReady"
-            :volume="state.trackStates.value[index]!.volume"
-            :hasLyrics="state.trackStates.value[index]!.hasLyrics"
-            :lyricsEnabled="state.trackStates.value[index]!.lyricsEnabled"
-            :editMode="editMode"
             :ref="
               (el: any) => {
                 if (el) trackPlayers[index] = el;
               }
             "
+            :track="track"
+            :collection="collection"
+            :is-playing="state.playing.value"
+            :is-ready="state.trackStates.value[index]!.isReady"
+            :volume="state.trackStates.value[index]!.volume"
+            :has-lyrics="state.trackStates.value[index]!.hasLyrics"
+            :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
+            :edit-mode="editMode"
             @ready="(duration: number) => onReady(index, duration)"
             @time-update="(time: number) => onTimeUpdate(index, time)"
             @volume-change="(volume: number) => onVolumeChange(index, volume)"
@@ -407,7 +407,7 @@ watch(mediaSessionTime, (time) => {
         </div>
       </div>
     </div>
-    <div class="flex-1" v-if="editMode">
+    <div v-if="editMode" class="flex-1">
       <SongEditor @toggle-edit="() => (editMode = !editMode)" />
     </div>
   </div>
