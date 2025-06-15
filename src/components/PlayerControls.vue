@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { formatTime } from "@/utils/utils";
-import { Pause, Play } from "lucide-vue-next";
+import { Copy, Pause, Play } from "lucide-vue-next";
 
 const props = defineProps<{
   currentTime: number;
   totalDuration: number;
   isPlaying: boolean;
   isReady: boolean;
+  editMode?: boolean;
 }>();
 
 const emit = defineEmits<{
   "play-pause": [];
 }>();
+
+const copyTimeToClipboard = () => {
+  navigator.clipboard.writeText(props.currentTime.toFixed(2));
+};
 </script>
 
 <template>
@@ -31,6 +36,13 @@ const emit = defineEmits<{
       <span class="hidden sm:inline text-base-content/30 text-xs cursor-default transition-colors"
         >.{{ props.totalDuration.toFixed(2).split(".")[1] }}</span
       >
+      <button
+        v-if="props.editMode"
+        class="btn btn-sm btn-square btn-soft ml-3"
+        @click="copyTimeToClipboard"
+      >
+        <Copy class="size-3.5" />
+      </button>
     </div>
     <button
       class="btn btn-circle btn-primary btn-lg flex-shrink-0"

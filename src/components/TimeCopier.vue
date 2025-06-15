@@ -1,72 +1,52 @@
 <script setup lang="ts">
 import { Check } from "lucide-vue-next";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
 const hideDelay = 400;
 
-const firstTime = ref<number | null>(null);
-const secondTime = ref<number | null>(null);
-
-const copiedFirstTime = ref<number | null>(null);
-const copiedSecondTime = ref<number | null>(null);
-
 const isVisible = ref(false);
-
-const wasCopied = computed(() => {
-  return copiedFirstTime.value !== null;
-});
+const wasCopied = ref(false);
+const copiedTime = ref(0);
+const copiedType = ref<"start_time" | "end_time">("start_time");
 
 const props = defineProps<{
   currentTime: number;
 }>();
 
-const copyTimeToClipboard = async () => {
-  if (firstTime.value !== null) {
-    if (secondTime.value !== null) {
-      await navigator.clipboard.writeText(
-        `"startTime": ${firstTime.value.toFixed(2)}, "endTime": ${secondTime.value.toFixed(2)},`
-      );
-    } else {
-      await navigator.clipboard.writeText(`"startTime": ${firstTime.value.toFixed(2)},`);
-    }
-    copiedFirstTime.value = firstTime.value;
-    copiedSecondTime.value = secondTime.value;
-    firstTime.value = null;
-    secondTime.value = null;
-
-    setTimeout(() => {
-      isVisible.value = false;
-    }, hideDelay);
-    setTimeout(() => {
-      copiedFirstTime.value = null;
-      copiedSecondTime.value = null;
-    }, hideDelay + 300);
-  }
+const copyTimeToClipboard = async (type: "start_time" | "end_time") => {
+  copiedTime.value = props.currentTime;
+  copiedType.value = type;
+  const jsonValue = `"${type}": ${props.currentTime.toFixed(2)},`;
+  await navigator.clipboard.writeText(jsonValue);
+  wasCopied.value = true;
+  setTimeout(() => {
+    isVisible.value = false;
+  }, hideDelay);
+  setTimeout(() => {
+    wasCopied.value = false;
+  }, hideDelay + 300);
 };
 
 const keydownHandler = (event: KeyboardEvent) => {
-  if (event.key === ".") {
-    if (firstTime.value === null) {
+  if (event.metaKey) {
+    if (event.key === ",") {
+      event.preventDefault();
       isVisible.value = true;
-      firstTime.value = props.currentTime;
-    } else {
-      secondTime.value = props.currentTime;
-      copyTimeToClipboard();
+      copyTimeToClipboard("start_time");
+    } else if (event.key === ".") {
+      event.preventDefault();
+      isVisible.value = true;
+      copyTimeToClipboard("end_time");
     }
-  } else if (event.key === ",") {
-    copyTimeToClipboard();
-  } else if (event.key === "Escape") {
-    firstTime.value = null;
-    secondTime.value = null;
   }
 };
 
 onMounted(() => {
-  window.addEventListener("keydown", keydownHandler);
+  window.addEventListener("keydown", keydownHandler, true);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("keydown", keydownHandler);
+  window.removeEventListener("keydown", keydownHandler, true);
 });
 </script>
 
@@ -79,19 +59,9 @@ onUnmounted(() => {
     }"
   >
     <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1.5">
-        <span class="text-base-content/80" v-if="firstTime !== null || copiedFirstTime !== null">{{
-          firstTime !== null ? firstTime.toFixed(2) : copiedFirstTime!.toFixed(2)
-        }}</span>
-        <span class="text-base-content/50" v-if="secondTime !== null || copiedSecondTime !== null"
-          >-</span
-        >
-        <span
-          class="text-base-content/80"
-          v-if="secondTime !== null || copiedSecondTime !== null"
-          >{{ secondTime !== null ? secondTime.toFixed(2) : copiedSecondTime!.toFixed(2) }}</span
-        >
-      </div>
+      <span class="text-base-content/80 font-mono">
+        "{{ copiedType }}": {{ copiedTime.toFixed(2) }}
+      </span>
       <Check
         v-if="wasCopied"
         class="text-success transition-all duration-300 w-4 h-4"

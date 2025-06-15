@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import type { Track } from "@/data/song.types";
+import type { AudioTrack, Collection } from "@/data/types";
+import { darken, lighten } from "@/utils/utils";
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
-import { MicVocal, Volume2Icon, VolumeX } from "lucide-vue-next";
+import { Hash, MicVocal, Volume2Icon, VolumeX } from "lucide-vue-next";
 import type { PartialWaveSurferOptions } from "node_modules/@meersagor/wavesurfer-vue/dist/types/types";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 
 const props = defineProps<{
-  track: Track;
-  color: string;
+  collection: Collection;
+  track: AudioTrack;
   volume: number;
   isReady: boolean;
   isPlaying: boolean;
   hasLyrics: boolean;
-  hasLyricsEnabled: boolean;
+  lyricsEnabled: boolean;
+  editMode?: boolean;
 }>();
 
 const emit = defineEmits<{
   ready: [duration: number];
   "time-update": [time: number];
   finish: [];
-  "seek-to-time": [time: number];
+  seek: [time: number];
   "volume-change": [volume: number];
-  "toggle-track-muted": [toggleLyrics: boolean];
-  "toggle-track-solo": [toggleLyrics: boolean];
+  "toggle-muted": [toggleLyrics: boolean];
+  "toggle-solo": [toggleLyrics: boolean];
   "toggle-lyrics": [];
 }>();
 
 // State
 const waveSurfer = ref<WaveSurfer | null>(null);
-const isCtrlPressed = ref(false);
-const isShiftPressed = ref(false);
-const isMuted = computed(() => props.volume === 0);
 const muteButtonLongPressTimer = ref<number | null>(null);
 const isMuteButtonLongPressActive = ref(false);
 const TOUCH_DURATION = 500; // 500ms for long press
 const isMac = navigator.userAgent.indexOf("Mac") > 0;
+const isMuted = computed(() => props.volume === 0);
 
 // Methods
 const seekTo = (time: number) => {
@@ -44,7 +44,7 @@ const seekTo = (time: number) => {
 };
 
 const handleVolumeChange = (value: number | number[]) => {
-  const newVolume = Array.isArray(value) ? value[0] : value;
+  const newVolume = Array.isArray(value) ? value[0] ?? 0 : value;
   const clampedVolume = Math.max(0, Math.min(1, newVolume));
   if (waveSurfer.value) {
     waveSurfer.value.setVolume(clampedVolume);
@@ -53,28 +53,29 @@ const handleVolumeChange = (value: number | number[]) => {
 };
 
 defineExpose({
+  waveSurfer,
   seekTo
+});
+
+const trackColor = computed(() => {
+  return props.collection.track_colors[props.track.color_key] ?? props.collection.main_color;
+});
+const disabledColor = computed(() => {
+  const rootStyle = getComputedStyle(document.documentElement);
+  return rootStyle.getPropertyValue("--color-zinc-500").trim();
+});
+const color = computed(() => {
+  return isMuted.value ? disabledColor.value : trackColor.value;
 });
 
 const waveSurferColorScheme = computed(() => {
   const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const color = isMuted.value ? "zinc" : props.color;
-
-  const rootStyle = getComputedStyle(document.documentElement);
-  const waveColorValue = rootStyle
-    .getPropertyValue(`--color-${color}-${isDarkMode ? "600" : "400"}`)
-    .trim();
-  const progressColorValue = rootStyle
-    .getPropertyValue(`--color-${color}-${isDarkMode ? "500" : "600"}`)
-    .trim();
-
   return {
-    waveColor: waveColorValue || `var(--color-${color}-600)`,
-    progressColor: progressColorValue || `var(--color-${color}-500)`
+    waveColor: isDarkMode ? darken(color.value, 0.2) : lighten(color.value, 0.2),
+    progressColor: color.value
   };
 });
 
-// WaveSurfer Configuration
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
   return {
     height: 60,
@@ -83,7 +84,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     barRadius: 8,
     dragToSeek: true,
     backend: "WebAudio",
-    url: props.track.file,
+    url: props.track.audio_file_url,
     ...waveSurferColorScheme.value
   };
 });
@@ -96,7 +97,7 @@ const handleMuteButtonTouchStart = () => {
   isMuteButtonLongPressActive.value = false;
   muteButtonLongPressTimer.value = window.setTimeout(() => {
     isMuteButtonLongPressActive.value = true;
-    emit("toggle-track-solo", !isShiftPressed.value);
+    emit("toggle-solo", false); // Touch events don't have shift key context
   }, TOUCH_DURATION);
 };
 
@@ -116,34 +117,16 @@ const handleMuteButtonTouchCancel = () => {
 };
 
 const handleMuteButtonClick = (event: MouseEvent) => {
-  // Prevent click handler from firing if it was a long press
   if (isMuteButtonLongPressActive.value) {
     event.preventDefault();
     return;
   }
+  const isCtrlOrCmdPressed = isMac ? event.metaKey : event.ctrlKey;
 
-  if (isCtrlPressed.value) {
-    emit("toggle-track-solo", !isShiftPressed.value);
+  if (isCtrlOrCmdPressed) {
+    emit("toggle-solo", !event.shiftKey);
   } else {
-    emit("toggle-track-muted", !isShiftPressed.value);
-  }
-};
-
-const handleKeydown = (event: KeyboardEvent) => {
-  if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
-    isCtrlPressed.value = true;
-  }
-  if (event.key === "Shift") {
-    isShiftPressed.value = true;
-  }
-};
-
-const handleKeyup = (event: KeyboardEvent) => {
-  if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
-    isCtrlPressed.value = false;
-  }
-  if (event.key === "Shift") {
-    isShiftPressed.value = false;
+    emit("toggle-muted", !event.shiftKey);
   }
 };
 
@@ -183,14 +166,7 @@ watch(
   { immediate: true }
 );
 
-onMounted(() => {
-  window.addEventListener("keydown", handleKeydown);
-  window.addEventListener("keyup", handleKeyup);
-});
-
 onUnmounted(() => {
-  window.removeEventListener("keydown", handleKeydown);
-  window.removeEventListener("keyup", handleKeyup);
   if (muteButtonLongPressTimer.value) {
     clearTimeout(muteButtonLongPressTimer.value);
   }
@@ -204,27 +180,35 @@ onUnmounted(() => {
       <div
         class="py-2 gap-3 flex flex-col flex-grow-1 w-full items-stretch justify-between min-w-0"
       >
-        <span class="text-base-content/70 text-sm truncate text-ellipsis">
-          {{ track.title }}
-        </span>
+        <div class="flex items-center gap-1.5 justify-between">
+          <span class="text-base-content/70 text-sm truncate text-ellipsis">
+            {{ track.title }}
+          </span>
+          <span v-if="editMode" class="badge badge-sm badge-soft shrink-0 gap-1 px-1">
+            <Hash class="size-3" />{{ track.id }}
+          </span>
+        </div>
         <input
           :value="volume"
           type="range"
           min="0"
           max="1"
           step="0.01"
-          :class="`range range-xs text-${isMuted ? 'zinc' : props.color}-500`"
+          :style="{ color }"
+          class="range range-xs"
           @input="
-            (event) => handleVolumeChange(parseFloat((event.target as HTMLInputElement).value))
+            (event: Event) =>
+              handleVolumeChange(parseFloat((event.target as HTMLInputElement).value))
           "
         />
       </div>
       <div class="flex flex-col flex-grow-0 flex-shrink-0 gap-0 items-center justify-center">
         <button
-          v-if="hasLyrics"
+          v-if="props.hasLyrics"
           :disabled="!isReady"
           @click="handleLyricsButtonClick"
-          :class="`btn btn-circle btn-sm btn-ghost text-${!hasLyricsEnabled ? 'zinc-500' : `${color}-500`} flex-shrink-0`"
+          class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
+          :style="{ color: props.lyricsEnabled ? trackColor : disabledColor }"
         >
           <MicVocal class="w-4 h-4" />
         </button>
@@ -234,7 +218,8 @@ onUnmounted(() => {
           @touchstart="handleMuteButtonTouchStart"
           @touchend="handleMuteButtonTouchEnd"
           @touchcancel="handleMuteButtonTouchCancel"
-          :class="`btn btn-circle btn-sm btn-ghost text-${isMuted ? 'zinc-500' : `${color}-500`} flex-shrink-0`"
+          class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
+          :style="{ color }"
         >
           <Volume2Icon class="w-4 h-4" v-if="!isMuted" />
           <VolumeX class="w-4 h-4" v-else />
@@ -244,7 +229,7 @@ onUnmounted(() => {
     <div class="w-full p-0">
       <WaveSurferPlayer
         :options="waveSurferOptions"
-        @interaction="(time: number) => emit('seek-to-time', time)"
+        @interaction="(time: number) => emit('seek', time)"
         @waveSurfer="(ws: WaveSurfer) => (waveSurfer = ws)"
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"

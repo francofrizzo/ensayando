@@ -1,94 +1,95 @@
 <script setup lang="ts">
-import type { Collection } from "@/data/collection.types";
-import type { Lyric, LyricGroup, LyricGroupItem } from "@/data/song.types";
-import { type ComponentPublicInstance, computed, ref, watch } from "vue";
+import type { Collection, LyricStanza, LyricVerse } from "@/data/types";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
-  lyrics: LyricGroup[];
+  collection: Collection;
+  lyrics: LyricStanza[];
   currentTime: number;
   isDisabled: boolean;
-  collection: Collection;
-  tracks: Record<string, boolean>;
+  enabledTrackIds: number[];
 }>();
 
 const emit = defineEmits<{
   seek: [time: number];
 }>();
 
-type LyricStatus = "active" | "past" | "future";
-type LyricWithStatus = Lyric & { endTime: number; status: LyricStatus };
+type LyricVerseStatus = "active" | "past" | "future";
+type LyricVerseWithStatus = LyricVerse & { end_time: number; status: LyricVerseStatus };
+type LyricStanzaWithStatus = (LyricVerseWithStatus | LyricVerseWithStatus[][])[];
 
-type LyricLine = {
-  startTime: number;
-  endTime: number;
-  columns: LyricWithStatus[][];
+type RegularizedLyricLine = {
+  start_time: number;
+  end_time: number;
+  columns: LyricVerseWithStatus[][];
 };
+type RegularizedLyricStanza = RegularizedLyricLine[];
 
-const getLyricStyles = (lyric: LyricWithStatus) => {
+const getVerseStyles = (lyric: LyricVerseWithStatus) => {
+  const defaultColor = props.collection.main_color;
+  let color: string | undefined;
+  let gradientColors: string[] = [];
+
   if (lyric.status === "past") {
-    return {
-      color: "var(--color-zinc-400)",
-      backgroundImage: "linear-gradient(to right, var(--color-zinc-400), var(--color-zinc-400))",
-      "-webkit-background-clip": "text",
-      "-webkit-text-fill-color": "transparent",
-      "background-clip": "text"
-    };
+    color = `var(--color-zinc-400)`;
+  } else {
+    const { track_colors: trackColors } = props.collection;
+    if (lyric.color_keys && lyric.color_keys.length > 1) {
+      gradientColors = lyric.color_keys.map((colorKey) => trackColors[colorKey] ?? defaultColor);
+    } else if (lyric.color_keys && lyric.color_keys.length === 1) {
+      color = trackColors[lyric.color_keys[0]!];
+    } else {
+      color = defaultColor;
+    }
   }
 
-  const { trackColors } = props.collection.theme;
-  if (!trackColors || Array.isArray(trackColors) || typeof trackColors !== "object") {
-    return { color: `var(--color-primary)` };
-  }
-
-  const visualTracks = lyric.visualTracks ?? lyric.tracks;
-
-  // If there are multiple tracks, create a linear gradient
-  if (visualTracks && visualTracks.length > 1) {
-    const colors = visualTracks.map((track) =>
-      trackColors[track] ? `var(--color-${trackColors[track]}-500)` : `var(--color-primary-500)`
-    );
-    const gradient = `linear-gradient(to right, ${colors.join(", ")})`;
-    return {
-      "background-image": gradient,
-      "-webkit-background-clip": "text",
-      "-webkit-text-fill-color": "transparent",
-      "background-clip": "text"
-    };
-  }
-
-  const firstTrack = visualTracks?.[0];
-  if (!firstTrack || !trackColors[firstTrack]) {
-    return { color: `var(--color-primary-500)` };
-  }
-
-  return { color: `var(--color-${trackColors[firstTrack]}-500)` };
+  color = color ?? gradientColors[0] ?? defaultColor;
+  gradientColors = gradientColors.length > 0 ? gradientColors : [color, color];
+  return {
+    color,
+    "background-image": `linear-gradient(to right, ${gradientColors.join(", ")})`,
+    "-webkit-background-clip": "text",
+    "-webkit-text-fill-color": "transparent",
+    "background-clip": "text"
+  };
 };
 
-const isLyricVisible = (lyric: Lyric) => {
+const isVerseVisible = (verse: LyricVerse) => {
   return (
-    !lyric.tracks || lyric.tracks.some((track) => props.tracks[track] || props.tracks === undefined)
+    !verse.audio_track_ids ||
+    verse.audio_track_ids.some((trackId) => props.enabledTrackIds.includes(trackId))
   );
 };
 
-const visibleLyrics = computed((): LyricGroup[] =>
+const getItemStartTime = (
+  item: LyricVerse | LyricVerseWithStatus | LyricVerse[][] | LyricVerseWithStatus[][]
+) => {
+  if (Array.isArray(item)) {
+    return Math.min(...item.flatMap((column) => column.map((verse) => verse.start_time)));
+  }
+  return item.start_time;
+};
+
+const visibleLyrics = computed((): LyricStanza[] =>
   props.lyrics
-    .map((lyricGroup) => {
-      const filtered = lyricGroup
-        .filter((item: LyricGroupItem) => {
+    .map((stanza) => {
+      const filtered = stanza
+        .filter((item) => {
           if (Array.isArray(item)) {
-            // This is a LyricColumn[] (array of Lyric arrays)
-            return item.some((column) => column.some(isLyricVisible));
+            // Multi-column lyric array
+            return item.some((column) => column.some(isVerseVisible));
           }
-          // This is a Lyric
-          return isLyricVisible(item);
+          // Single verse
+          return isVerseVisible(item);
         })
-        .map((item: LyricGroupItem) => {
+        .map((item) => {
           if (Array.isArray(item)) {
-            // This is a LyricColumn[] (array of Lyric arrays)
+            // Multi-column lyric array
             return item
-              .map((column) => column.filter(isLyricVisible))
+              .map((column) => column.filter(isVerseVisible))
               .filter((column) => column.length > 0);
           }
+          // Single verse
           return item;
         });
       return filtered.length > 0 ? filtered : [];
@@ -96,49 +97,41 @@ const visibleLyrics = computed((): LyricGroup[] =>
     .filter((group) => group.length > 0)
 );
 
-const addStatusToLyric = (lyric: Lyric, nextLyricStartTime: number | undefined) => {
-  const endTime = lyric.endTime ?? (nextLyricStartTime ? nextLyricStartTime : lyric.startTime + 5);
-  let status: LyricStatus = "future";
+const addStatusToVerse = (
+  verse: LyricVerse,
+  nextVerseStartTime: number | undefined
+): LyricVerseWithStatus => {
+  const endTime =
+    verse.end_time ?? (nextVerseStartTime ? nextVerseStartTime : verse.start_time + 5);
+  let status: LyricVerseStatus = "future";
 
-  if (props.currentTime >= lyric.startTime) {
+  if (props.currentTime >= verse.start_time) {
     status = props.currentTime < endTime ? "active" : "past";
   }
 
   return {
-    ...lyric,
-    endTime,
+    ...verse,
+    end_time: endTime,
     status
   };
 };
 
 const lyricsWithStatus = computed(() =>
-  visibleLyrics.value.map((lyricGroup, groupIndex): (LyricWithStatus | LyricWithStatus[][])[] => {
-    const nextGroup = visibleLyrics.value[groupIndex + 1];
-    return lyricGroup.map((lyricOrColumn, itemIndex): LyricWithStatus | LyricWithStatus[][] => {
-      if (Array.isArray(lyricOrColumn)) {
-        // Handle columns of lyrics
-        return lyricOrColumn.map((column) =>
-          column.map((lyric, indexInColumn) => {
-            const nextLyricItem = column[indexInColumn + 1] ?? nextGroup?.[0];
-            const nextLyricStartTime = Array.isArray(nextLyricItem)
-              ? Math.min(
-                  ...nextLyricItem.flatMap((column) =>
-                    column.map((lyric: Lyric) => lyric.startTime)
-                  )
-                )
-              : nextLyricItem?.startTime;
-            return addStatusToLyric(lyric, nextLyricStartTime);
+  visibleLyrics.value.map((stanza, stanzaIndex): LyricStanzaWithStatus => {
+    const nextStanza = visibleLyrics.value[stanzaIndex + 1];
+    return stanza.map((item, itemIndex) => {
+      if (Array.isArray(item)) {
+        return item.map((column) =>
+          column.map((verse, verseIndex) => {
+            const nextItem = column[verseIndex + 1] ?? stanza[stanzaIndex + 1] ?? nextStanza?.[0];
+            const nextLyricStartTime = nextItem ? getItemStartTime(nextItem) : undefined;
+            return addStatusToVerse(verse, nextLyricStartTime);
           })
         );
       } else {
-        // Handle single lyric
-        const nextLyricItem = lyricGroup[itemIndex + 1] ?? nextGroup?.[0];
-        const nextLyricStartTime = Array.isArray(nextLyricItem)
-          ? Math.min(
-              ...nextLyricItem.flatMap((column) => column.map((lyric: Lyric) => lyric.startTime))
-            )
-          : nextLyricItem?.startTime;
-        return addStatusToLyric(lyricOrColumn, nextLyricStartTime);
+        const nextLyricItem = stanza[itemIndex + 1] ?? nextStanza?.[0];
+        const nextLyricStartTime = nextLyricItem ? getItemStartTime(nextLyricItem) : undefined;
+        return addStatusToVerse(item, nextLyricStartTime);
       }
     });
   })
@@ -146,7 +139,7 @@ const lyricsWithStatus = computed(() =>
 
 const OVERLAP_THRESHOLD = 0.4;
 
-// Calculate how much of lyric2 overlaps with lyric1. Example:
+// Calculate how much of verse2 overlaps with verse1. Example:
 // start1 [       |xxxxxx] end1
 //         start2 [xxxxxx|----] end2 -> 6/10 = 0.6 overlap
 const calculateOverlap = (start1: number, end1: number, start2: number, end2: number) => {
@@ -158,62 +151,50 @@ const calculateOverlap = (start1: number, end1: number, start2: number, end2: nu
   return totalLength > 0 ? overlappingLength / totalLength : 0;
 };
 
-const lyricsInColumns = computed(() =>
-  lyricsWithStatus.value.map((lyricGroup): LyricLine[] => {
-    const lines: LyricLine[] = [];
-
-    for (const lyricOrColumn of lyricGroup) {
-      if (Array.isArray(lyricOrColumn)) {
-        // This is an array of columns, each containing an array of lyrics
-        const columns = lyricOrColumn;
-        const startTimes = columns.flatMap((col) => col.map((lyric) => lyric.startTime));
-        const endTimes = columns.flatMap((col) => col.map((lyric) => lyric.endTime));
-
+const regularizedLyrics = computed(() =>
+  lyricsWithStatus.value.map((stanza): RegularizedLyricStanza => {
+    const lines: RegularizedLyricLine[] = [];
+    for (const item of stanza) {
+      if (Array.isArray(item)) {
+        const startTimes = item.flatMap((col) => col.map((verse) => verse.start_time));
+        const endTimes = item.flatMap((col) => col.map((verse) => verse.end_time));
         lines.push({
-          startTime: Math.min(...startTimes),
-          endTime: Math.max(...endTimes),
-          columns: columns
+          start_time: Math.min(...startTimes),
+          end_time: Math.max(...endTimes),
+          columns: item
         });
       } else {
-        // This is a single lyric
         const previousLine = lines[lines.length - 1];
         if (previousLine) {
           const overlap = calculateOverlap(
-            lyricOrColumn.startTime,
-            lyricOrColumn.endTime,
-            previousLine.startTime,
-            previousLine.endTime
+            item.start_time,
+            item.end_time,
+            previousLine.start_time,
+            previousLine.end_time
           );
           if (overlap > OVERLAP_THRESHOLD) {
-            previousLine.columns.push([lyricOrColumn]);
-            previousLine.endTime = Math.max(previousLine.endTime, lyricOrColumn.endTime);
-          } else {
-            lines.push({
-              startTime: lyricOrColumn.startTime,
-              endTime: lyricOrColumn.endTime,
-              columns: [[lyricOrColumn]]
-            });
+            previousLine.columns.push([item]);
+            previousLine.end_time = Math.max(previousLine.end_time, item.end_time);
+            continue;
           }
-        } else {
-          lines.push({
-            startTime: lyricOrColumn.startTime,
-            endTime: lyricOrColumn.endTime,
-            columns: [[lyricOrColumn]]
-          });
         }
+        lines.push({
+          start_time: item.start_time,
+          end_time: item.end_time,
+          columns: [[item]]
+        });
       }
     }
-
     return lines;
   })
 );
 
-const currentLyric = ref<Element | ComponentPublicInstance | null>(null);
+const currentVerseElement = ref<Element | null>(null);
 
 watch(
-  () => currentLyric.value,
+  () => currentVerseElement.value,
   (current) => {
-    if (current && current instanceof Element) {
+    if (current) {
       current.scrollIntoView({
         behavior: "smooth",
         block: "center"
@@ -226,51 +207,51 @@ watch(
 <template>
   <div class="flex flex-col gap-6 text-xl">
     <div
-      v-for="(lyricGroup, groupIndex) in lyricsInColumns"
-      :key="groupIndex"
+      v-for="(stanza, stanzaIndex) in regularizedLyrics"
+      :key="stanzaIndex"
       class="flex flex-col gap-2"
     >
       <div
-        v-for="(lyricLine, lineIndex) in lyricGroup"
-        :key="`${groupIndex}-${lineIndex}`"
+        v-for="(line, lineIndex) in stanza"
+        :key="`${stanzaIndex}-${lineIndex}`"
         class="flex flex-row items-center justify-evenly gap-10"
         :class="{
-          'cursor-pointer': !isDisabled && lyricLine.startTime,
+          'cursor-pointer': !isDisabled && line.start_time,
           'cursor-default': isDisabled
         }"
       >
         <div
-          v-for="(column, columnIndex) in lyricLine.columns"
-          :key="`${groupIndex}-${lineIndex}-${columnIndex}`"
+          v-for="(column, columnIndex) in line.columns"
+          :key="`${stanzaIndex}-${lineIndex}-${columnIndex}`"
           class="flex flex-col items-center gap-2"
         >
           <div
-            v-for="(lyric, lyricIndex) in column"
-            :key="`${groupIndex}-${lineIndex}-${columnIndex}-${lyricIndex}`"
+            v-for="(verse, verseIndex) in column"
+            :key="`${stanzaIndex}-${lineIndex}-${columnIndex}-${verseIndex}`"
             class="flex flex-col items-center text-left gap-1.5"
-            @click="() => !isDisabled && lyric.startTime && emit('seek', lyric.startTime)"
+            @click="() => !isDisabled && verse.start_time && emit('seek', verse.start_time)"
           >
             <span
-              v-if="lyric.comment"
+              v-if="verse.comment"
               class="text-sm text-base-content/40 uppercase tracking-wide text-center"
-              >{{ lyric.comment }}</span
+              >{{ verse.comment }}</span
             >
             <span
-              :style="getLyricStyles(lyric)"
+              :style="getVerseStyles(verse)"
               :class="{
-                'text-primary': lyric.status === 'active',
-                'font-semibold': lyric.status === 'active',
-                'scale-[1.2]': lyric.status === 'active'
+                'text-primary': verse.status === 'active',
+                'font-semibold': verse.status === 'active',
+                'scale-[1.2]': verse.status === 'active'
               }"
               class="transition-all transition-duration-500 uppercase tracking-wide text-center"
               :ref="
-                (el) => {
-                  if (lyric.status === 'active') {
-                    currentLyric = el;
+                (el: any) => {
+                  if (verse.status === 'active') {
+                    currentVerseElement = el;
                   }
                 }
               "
-              >{{ lyric.text }}</span
+              >{{ verse.text }}</span
             >
           </div>
         </div>

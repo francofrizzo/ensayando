@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import SongMenu from "@/components/SongMenu.vue";
-import type { Collection } from "@/data/collection.types";
-import type { Song } from "@/data/song.types";
+import type { Collection, Song } from "@/data/types";
 
 const props = defineProps<{
   collection: Collection;
   song: Song;
 }>();
+
+const emit = defineEmits<{
+  (e: "toggle-edit"): void;
+}>();
 </script>
 
 <template>
   <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-    <SongMenu :collection="props.collection" class="shrink-0" />
+    <SongMenu :collection="props.collection" class="shrink-0" @toggle-edit="emit('toggle-edit')" />
 
     <div class="flex flex-col tracking-wide min-w-0 gap-1">
       <span class="text-lg font-semibold text-ellipsis line-clamp-2 leading-tight tracking-tight">{{

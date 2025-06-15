@@ -1,0 +1,133 @@
+.json-editor {
+  --jse-theme: dark;
+  --jse-font-family: var(--font-sans);
+  --jse-font-family-mono: var(--font-mono);
+
+  /* over all fonts, sizes, and colors */
+  --jse-theme-color: var(--color-zinc-900);
+  --jse-theme-color-highlight: var(--color-primary);
+  --jse-background-color: var(--color-zinc-900);
+  --jse-text-color: var(--color-base-content);
+  --jse-text-color-inverse: var(--color-zinc-950);
+
+  /* main, menu, modal */
+  --jse-main-border: 1px solid var(--color-zinc-950);
+  --jse-menu-color: var(--color-base-content);
+  --jse-modal-background: var(--color-zinc-950);
+  --jse-modal-overlay-background: rgba(0, 0, 0, 0.5);
+  --jse-modal-code-background: var(--color-zinc-950);
+
+  /* tooltip in text mode */
+  --jse-tooltip-color: var(--jse-text-color);
+  --jse-tooltip-background: var(--color-zinc-900);
+  --jse-tooltip-border: 1px solid var(--color-zinc-950);
+  --jse-tooltip-action-button-color: inherit;
+  --jse-tooltip-action-button-background: var(--color-zinc-950);
+
+  /* panels: navigation bar, gutter, search box */
+  --jse-panel-background: var(--color-zinc-800);
+  --jse-panel-background-border: 1px solid var(--color-zinc-950);
+  --jse-panel-color: var(--jse-text-color);
+  --jse-panel-color-readonly: var(--color-zinc-500);
+  --jse-panel-border: 1px solid var(--color-zinc-800);
+  --jse-panel-button-color-highlight: var(--color-zinc-100);
+  --jse-panel-button-background-highlight: var(--color-zinc-800);
+
+  /* navigation-bar */
+  --jse-navigation-bar-background: var(--color-zinc-700);
+  --jse-navigation-bar-background-highlight: var(--color-zinc-800);
+  --jse-navigation-bar-dropdown-color: var(--jse-text-color);
+
+  /* context menu */
+  --jse-context-menu-background: var(--color-zinc-900);
+  --jse-context-menu-background-highlight: var(--color-zinc-800);
+  --jse-context-menu-separator-color: var(--color-zinc-800);
+  --jse-context-menu-color: var(--jse-text-color);
+  --jse-context-menu-pointer-background: var(--color-zinc-600);
+  --jse-context-menu-pointer-background-highlight: var(--color-zinc-700);
+  --jse-context-menu-pointer-color: var(--jse-context-menu-color);
+
+  /* contents: json key and values */
+  --jse-key-color: var(--color-sky-300);
+  --jse-value-color: var(--jse-text-color);
+  --jse-value-color-number: var(--color-violet-300);
+  --jse-value-color-boolean: var(--color-orange-300);
+  --jse-value-color-null: var(--color-red-300);
+  --jse-value-color-string: var(--color-lime-300);
+  --jse-value-color-url: var(--color-orange-300);
+  --jse-delimiter-color: var(--color-zinc-300);
+  --jse-edit-outline: 2px solid var(--jse-text-color);
+
+  /* contents: selected or hovered */
+  --jse-selection-background-color: var(--color-zinc-800);
+  --jse-selection-background-inactive-color: var(--color-zinc-700);
+  --jse-hover-background-color: var(--color-zinc-700);
+  --jse-active-line-background-color: rgba(255, 255, 255, 0.06);
+  --jse-search-match-background-color: var(--color-zinc-700);
+
+  /* contents: section of collapsed items in an array */
+  --jse-collapsed-items-background-color: var(--color-zinc-700);
+  --jse-collapsed-items-selected-background-color: var(--color-zinc-800);
+  --jse-collapsed-items-link-color: var(--color-zinc-300);
+  --jse-collapsed-items-link-color-highlight: var(--color-orange-300);
+
+  /* contents: highlighting of search results */
+  --jse-search-match-color: var(--color-yellow-800);
+  --jse-search-match-outline: 1px solid var(--color-yellow-700);
+  --jse-search-match-active-color: var(--color-yellow-600);
+  --jse-search-match-active-outline: 1px solid var(--color-yellow-500);
+
+  /* contents: inline tags inside the JSON document */
+  --jse-tag-background: #444444;
+  --jse-tag-color: #bdbdbd;
+
+  /* contents: table */
+  --jse-table-header-background: #333333;
+  --jse-table-header-background-highlight: #424242;
+  --jse-table-row-odd-background: rgba(255, 255, 255, 0.1);
+
+  /* controls in modals: inputs, buttons, and `a` */
+  --jse-input-background: #3d3d3d;
+  --jse-input-border: var(--jse-main-border);
+  --jse-button-background: #808080;
+  --jse-button-background-highlight: #7a7a7a;
+  --jse-button-color: #e0e0e0;
+  --jse-button-secondary-background: #494949;
+  --jse-button-secondary-background-highlight: #5d5d5d;
+  --jse-button-secondary-background-disabled: #9d9d9d;
+  --jse-button-secondary-color: var(--jse-text-color);
+  --jse-a-color: #55abff;
+  --jse-a-color-highlight: #4387c9;
+
+  /* svelte-select */
+  --jse-svelte-select-background: #3d3d3d;
+  --jse-svelte-select-border: 1px solid #4f4f4f;
+  --list-background: #3d3d3d;
+  --item-hover-bg: #505050;
+  --multi-item-bg: #5b5b5b;
+  --input-color: #d4d4d4;
+  --multi-clear-bg: #8a8a8a;
+  --multi-item-clear-icon-color: #d4d4d4;
+  --multi-item-outline: 1px solid #696969;
+  --list-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
+
+  /* color picker */
+  --jse-color-picker-background: #656565;
+  --jse-color-picker-border-box-shadow: #8c8c8c 0 0 0 1px;
+}
+
+.json-editor .jse-button {
+  @apply rounded-field!;
+}
+
+.json-editor .jse-group-button {
+  @apply rounded-none!;
+}
+
+.json-editor .jse-group-button.jse-first {
+  @apply rounded-l-field!;
+}
+
+.json-editor .jse-group-button.jse-last {
+  @apply rounded-r-field!;
+}

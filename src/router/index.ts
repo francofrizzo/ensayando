@@ -10,13 +10,13 @@ const router = createRouter({
       component: PlayerView
     },
     {
-      path: "/:collectionId",
+      path: "/:collectionSlug",
       name: "collection",
       component: PlayerView,
       props: true
     },
     {
-      path: "/:collectionId/:songId",
+      path: "/:collectionSlug/:songSlug",
       name: "song",
       component: PlayerView,
       props: true

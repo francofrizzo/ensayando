@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import type { Collection } from "@/data/collection.types";
-import { useSongsStore } from "@/stores/songs";
-import { Menu } from "lucide-vue-next";
-import { computed } from "vue";
+import type { Collection } from "@/data/types";
+import { useAuthStore } from "@/stores/auth";
+import { useCollectionsStore } from "@/stores/collections";
+import { Edit, LockKeyhole, Menu, X } from "lucide-vue-next";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
   collection: Collection;
 }>();
 
-const songsStore = useSongsStore();
+const emit = defineEmits<{
+  (e: "toggle-edit"): void;
+}>();
+
+const isOpen = ref(false);
+
+const collectionsStore = useCollectionsStore();
+const authStore = useAuthStore();
 
 const songMenuItems = computed(() => {
-  return songsStore.songs
-    .filter((song) => song.collectionId === props.collection.id)
-    .map((song) => ({
-      label: song.title,
-      id: song.id
-    }));
+  return collectionsStore.songs.filter((song) => authStore.isAuthenticated() || song.visible);
 });
 
 const otherCollectionMenuItems = computed(() => {
-  return songsStore.collections
-    .filter((collection) => collection.id !== props.collection.id && collection.enabled !== false)
-    .map((collection) => ({
-      label: collection.title,
-      id: collection.id
-    }));
+  return collectionsStore.collections.filter(
+    (collection) => collection.slug !== props.collection.slug && collection.visible !== false
+  );
 });
 </script>
 
 <template>
   <div class="flex items-center gap-4">
     <div class="drawer">
-      <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+      <input id="my-drawer" type="checkbox" class="drawer-toggle" v-model="isOpen" />
       <div class="drawer-content">
         <label class="btn btn-square btn-primary btn-lg flex-shrink-0" htmlFor="my-drawer">
           <Menu class="w-5 h-5" />
@@ -42,23 +42,40 @@ const otherCollectionMenuItems = computed(() => {
         <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="min-h-full w-80 flex lg:p-3">
           <div
-            class="bg-base-100/75 backdrop-blur-lg px-3 lg:px-1 py-7 flex flex-col gap-6 justify-between text-base-content shadow-lg border border-base-200 lg:rounded-box"
+            class="bg-base-100/75 backdrop-blur-lg w-full px-3 lg:px-1 py-4 flex flex-col gap-6 justify-between text-base-content shadow-lg border border-base-200 lg:rounded-box"
           >
             <div class="flex flex-col gap-2">
-              <span class="text-base-content/60 font-medium uppercase px-5 tracking-wide">{{
-                collection.title
-              }}</span>
+              <div class="flex items-center justify-between gap-2 pl-5 pr-3">
+                <span class="text-base-content/60 font-medium uppercase tracking-wide">{{
+                  collection.title
+                }}</span>
+                <div class="flex items-center gap-2">
+                  <button
+                    class="btn btn-circle btn-ghost btn-sm"
+                    @click="
+                      emit('toggle-edit');
+                      isOpen = false;
+                    "
+                  >
+                    <Edit class="size-4" />
+                  </button>
+                  <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
+                    <X class="size-4" />
+                  </button>
+                </div>
+              </div>
               <ul class="menu w-full">
                 <li>
                   <a
                     v-for="song in songMenuItems"
-                    :key="song.label"
-                    @click="songsStore.changeSong(song.id)"
+                    :key="song.title"
+                    @click="collectionsStore.selectSong(song.slug)"
                     :class="{
-                      'menu-focus': songsStore.currentSong?.id === song.id
+                      'menu-focus': collectionsStore.selectedSong?.id === song.id
                     }"
                   >
-                    {{ song.label }}
+                    <LockKeyhole v-if="!song.visible" class="size-3 text-primary" />
+                    {{ song.title }}
                   </a>
                 </li>
               </ul>
@@ -71,13 +88,13 @@ const otherCollectionMenuItems = computed(() => {
                 <li>
                   <a
                     v-for="collection in otherCollectionMenuItems"
-                    :key="collection.label"
-                    @click="songsStore.changeCollection(collection.id)"
+                    :key="collection.title"
+                    @click="collectionsStore.selectCollection(collection.slug)"
                     :class="{
-                      'btn-active': songsStore.currentCollection?.id === collection.id
+                      'menu-focus': collectionsStore.selectedCollection?.id === collection.id
                     }"
                   >
-                    {{ collection.label }}
+                    {{ collection.title }}
                   </a>
                 </li>
               </ul>
