@@ -15,13 +15,13 @@ const emit = defineEmits<{
 }>();
 
 type LyricVerseStatus = "active" | "past" | "future";
-type LyricVerseWithStatus = LyricVerse & { end_time: number; status: LyricVerseStatus };
+type LyricVerseWithStatus = LyricVerse & { status: LyricVerseStatus };
 type LyricStanzaWithStatus = (LyricVerseWithStatus | LyricVerseWithStatus[][])[];
 
 type RegularizedLyricLine = {
-  start_time: number;
-  end_time: number;
   columns: LyricVerseWithStatus[][];
+  start_time?: number;
+  end_time?: number;
 };
 type RegularizedLyricStanza = RegularizedLyricLine[];
 
@@ -65,7 +65,11 @@ const getItemStartTime = (
   item: LyricVerse | LyricVerseWithStatus | LyricVerse[][] | LyricVerseWithStatus[][]
 ) => {
   if (Array.isArray(item)) {
-    return Math.min(...item.flatMap((column) => column.map((verse) => verse.start_time)));
+    return Math.min(
+      ...item
+        .flatMap((column) => column.map((verse) => verse.start_time))
+        .filter((time) => time !== undefined)
+    );
   }
   return item.start_time;
 };
@@ -101,12 +105,14 @@ const addStatusToVerse = (
   verse: LyricVerse,
   nextVerseStartTime: number | undefined
 ): LyricVerseWithStatus => {
-  const endTime =
-    verse.end_time ?? (nextVerseStartTime ? nextVerseStartTime : verse.start_time + 5);
   let status: LyricVerseStatus = "future";
 
-  if (props.currentTime >= verse.start_time) {
-    status = props.currentTime < endTime ? "active" : "past";
+  let endTime: number | undefined = undefined;
+  if (verse.start_time) {
+    endTime = verse.end_time ?? (nextVerseStartTime ? nextVerseStartTime : verse.start_time + 5);
+    if (props.currentTime >= verse.start_time) {
+      status = props.currentTime < endTime ? "active" : "past";
+    }
   }
 
   return {
@@ -156,8 +162,12 @@ const regularizedLyrics = computed(() =>
     const lines: RegularizedLyricLine[] = [];
     for (const item of stanza) {
       if (Array.isArray(item)) {
-        const startTimes = item.flatMap((col) => col.map((verse) => verse.start_time));
-        const endTimes = item.flatMap((col) => col.map((verse) => verse.end_time));
+        const startTimes = item
+          .flatMap((col) => col.map((verse) => verse.start_time))
+          .filter((time) => time !== undefined);
+        const endTimes = item
+          .flatMap((col) => col.map((verse) => verse.end_time))
+          .filter((time) => time !== undefined);
         lines.push({
           start_time: Math.min(...startTimes),
           end_time: Math.max(...endTimes),
@@ -165,7 +175,13 @@ const regularizedLyrics = computed(() =>
         });
       } else {
         const previousLine = lines[lines.length - 1];
-        if (previousLine) {
+        if (
+          previousLine &&
+          item.start_time &&
+          item.end_time &&
+          previousLine.start_time &&
+          previousLine.end_time
+        ) {
           const overlap = calculateOverlap(
             item.start_time,
             item.end_time,
