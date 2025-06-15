@@ -24,7 +24,9 @@ const songMenuItems = computed(() => {
 
 const otherCollectionMenuItems = computed(() => {
   return collectionsStore.collections.filter(
-    (collection) => collection.slug !== props.collection.slug && collection.visible !== false
+    (collection) =>
+      collection.slug !== props.collection.slug &&
+      (authStore.isAuthenticated() || collection.visible !== false)
   );
 });
 </script>
@@ -42,27 +44,16 @@ const otherCollectionMenuItems = computed(() => {
         <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="min-h-full w-80 flex lg:p-3">
           <div
-            class="bg-base-100/75 backdrop-blur-lg w-full px-3 lg:px-1 py-4 flex flex-col gap-6 justify-between text-base-content shadow-lg border border-base-200 lg:rounded-box"
+            class="bg-base-100/75 backdrop-blur-lg w-full px-3 lg:px-1 py-4 flex flex-col gap-6 text-base-content shadow-lg border border-base-200 lg:rounded-box"
           >
             <div class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-2 pl-5 pr-3">
                 <span class="text-base-content/60 font-medium uppercase tracking-wide">{{
                   collection.title
                 }}</span>
-                <div class="flex items-center gap-2">
-                  <button
-                    class="btn btn-circle btn-ghost btn-sm"
-                    @click="
-                      emit('toggle-edit');
-                      isOpen = false;
-                    "
-                  >
-                    <Edit class="size-4" />
-                  </button>
-                  <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
-                    <X class="size-4" />
-                  </button>
-                </div>
+                <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
+                  <X class="size-4" />
+                </button>
               </div>
               <ul class="menu w-full">
                 <li>
@@ -94,10 +85,23 @@ const otherCollectionMenuItems = computed(() => {
                       'menu-focus': collectionsStore.selectedCollection?.id === collection.id
                     }"
                   >
+                    <LockKeyhole v-if="!collection.visible" class="size-3 text-primary" />
                     {{ collection.title }}
                   </a>
                 </li>
               </ul>
+            </div>
+            <div class="flex-grow-1" />
+            <div class="flex items-center justify-end gap-2 pl-5 pr-3 opacity-60">
+              <button
+                class="btn btn-circle btn-ghost btn-sm"
+                @click="
+                  emit('toggle-edit');
+                  isOpen = false;
+                "
+              >
+                <Edit class="size-4" />
+              </button>
             </div>
           </div>
         </div>

@@ -20,7 +20,7 @@ const handleLogout = async () => {
 <template>
   <div class="flex items-center gap-2 text-xs">
     <template v-if="authStore.isAuthenticated()">
-      <div class="flex items-center gap-2">
+      <div class="items-center gap-2 hidden md:flex">
         <User class="size-3.5" />
         <span>{{ authStore.user?.email }}</span>
       </div>
@@ -33,7 +33,7 @@ const handleLogout = async () => {
     <template v-else>
       <button class="btn btn-xs btn-soft" @click="showLoginModal = true">
         <LogIn class="size-3.5" />
-        <span>Iniciar sesión</span>
+        <span class="hidden md:block">Iniciar sesión</span>
       </button>
     </template>
 

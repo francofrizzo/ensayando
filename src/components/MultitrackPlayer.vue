@@ -314,7 +314,9 @@ watch(mediaSessionTime, (time) => {
 
 <template>
   <div class="flex" :style="{ ...colorVariables }">
-    <div class="bg-base-200 flex flex-1 h-dvh flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none">
+    <div
+      class="bg-base-200 flex flex-1 h-dvh min-w-0 flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none"
+    >
       <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
         <PlayerHeader
           :collection="collection"

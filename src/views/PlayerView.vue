@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import LoadingScreen from "@/components/LoadingScreen.vue";
 import MultitrackPlayer from "@/components/MultitrackPlayer.vue";
 import { useCollectionsStore } from "@/stores/collections";
+import { Rabbit } from "lucide-vue-next";
 
 import { onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -103,4 +103,22 @@ watch(
     :song="collectionsStore.selectedSong"
     :lyrics="collectionsStore.localLyrics.value"
   />
+  <div
+    v-else
+    class="flex flex-col gap-4 flex-grow-1 min-h-dvh items-center justify-center max-w-md mx-auto text-center"
+  >
+    <Rabbit class="size-22 opacity-50" />
+    <h2 class="text-2xl font-semibold text-base-content/80">No hay nada por acá</h2>
+    <p class="text-base-content/40" v-if="collectionsStore.collections.length === 0">
+      No hay colecciones disponibles.
+    </p>
+    <p
+      class="text-base-content/40"
+      v-else-if="collectionsStore.selectedCollection && collectionsStore.songs.length === 0"
+    >
+      Esta colección no tiene canciones. Las canciones aparecerán acá una vez que se agreguen a la
+      colección.
+    </p>
+    <p class="text-base-content/40" v-else>No encontramos lo que estabas buscando.</p>
+  </div>
 </template>

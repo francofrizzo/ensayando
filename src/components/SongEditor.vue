@@ -103,7 +103,7 @@ const onUpdateLyrics = (lyrics: any) => {
         </template>
         <template v-else>
           <Save class="size-3.5" />
-          <span>Guardar cambios</span>
+          <span class="hidden md:block">Guardar cambios</span>
         </template>
       </button>
 
