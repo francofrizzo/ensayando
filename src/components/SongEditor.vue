@@ -7,7 +7,6 @@ import { Save, X } from "lucide-vue-next";
 import { Mode } from "vanilla-jsoneditor";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
-import AuthStatus from "./AuthStatus.vue";
 import LoginModal from "./LoginModal.vue";
 
 const store = useCollectionsStore();
@@ -89,7 +88,7 @@ const onUpdateLyrics = (lyrics: any) => {
 
 <template>
   <div class="h-screen flex flex-col">
-    <div class="flex items-center justify-between pl-3 pr-2 py-2">
+    <div class="flex items-center justify-between p-1.5">
       <button
         class="btn btn-xs btn-primary"
         :disabled="
@@ -107,13 +106,9 @@ const onUpdateLyrics = (lyrics: any) => {
         </template>
       </button>
 
-      <div class="flex items-center gap-2">
-        <AuthStatus />
-
-        <button class="btn btn-xs btn-square btn-soft" @click="emit('toggle-edit')">
-          <X class="size-3.5" />
-        </button>
-      </div>
+      <button class="btn btn-xs btn-square btn-soft" @click="emit('toggle-edit')">
+        <X class="size-3.5" />
+      </button>
     </div>
     <JsonEditorVue
       :model-value="store.localLyrics.value"

@@ -4,7 +4,9 @@ import { computed, ref } from "vue";
 
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import type { Collection } from "@/data/types";
+import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
+import AuthStatus from "./AuthStatus.vue";
 
 const props = defineProps<{
   collection: Collection;
@@ -18,6 +20,7 @@ const isOpen = ref(false);
 
 const collectionsStore = useCollectionsStore();
 const { currentSong } = useCurrentSong();
+const authStore = useAuthStore();
 
 const songMenuItems = computed(() => {
   return collectionsStore.songs;
@@ -97,8 +100,10 @@ const otherCollectionMenuItems = computed(() => {
               </ul>
             </div>
             <div class="flex-grow-1" />
-            <div class="flex items-center justify-end gap-2 pl-5 pr-3 opacity-60">
+            <div class="flex items-center justify-between gap-2 pl-4 pr-3 opacity-60">
+              <AuthStatus class="grow-0" />
               <button
+                v-if="authStore.isAuthenticated()"
                 class="btn btn-circle btn-ghost btn-sm"
                 @click="
                   emit('toggle-edit');

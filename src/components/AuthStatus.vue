@@ -18,22 +18,22 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="flex items-center gap-2 text-xs">
+  <div class="flex items-center gap-2 text-xs min-w-0">
     <template v-if="authStore.isAuthenticated()">
-      <div class="items-center gap-2 hidden md:flex">
-        <User class="size-3.5" />
+      <div class="items-center gap-2 flex truncate text-ellipsis">
+        <User class="size-4 shrink-0" />
         <span>{{ authStore.user?.email }}</span>
       </div>
-      <button class="btn btn-xs btn-square btn-ghost" title="Cerrar sesión" @click="handleLogout">
-        <LogOut class="size-3.5" />
-        <span class="sr-only">Salir</span>
+      <button class="btn btn-circle btn-ghost btn-sm" title="Cerrar sesión" @click="handleLogout">
+        <LogOut class="size-4" />
+        <span class="sr-only">Cerrar sesión</span>
       </button>
     </template>
 
     <template v-else>
-      <button class="btn btn-xs btn-soft" @click="showLoginModal = true">
-        <LogIn class="size-3.5" />
-        <span class="hidden md:block">Iniciar sesión</span>
+      <button class="btn btn-circle btn-ghost btn-sm" @click="showLoginModal = true">
+        <LogIn class="size-4" />
+        <span class="sr-only">Iniciar sesión</span>
       </button>
     </template>
 
