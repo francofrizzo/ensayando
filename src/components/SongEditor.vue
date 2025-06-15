@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Save, X } from "lucide-vue-next";
-import { Mode } from "vanilla-jsoneditor";
+import { Mode, type ValidationError, ValidationSeverity } from "vanilla-jsoneditor";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 
@@ -33,7 +33,7 @@ const handleSaveClick = () => {
   }
 };
 
-const validator = (json: any): { path: string[]; message: string; severity: string }[] => {
+const validator = (json: any): ValidationError[] => {
   if (json == null) return [];
   let normalizedJson: any;
   try {
@@ -43,27 +43,27 @@ const validator = (json: any): { path: string[]; message: string; severity: stri
       {
         path: [],
         message: "Invalid JSON syntax",
-        severity: "error" as const
+        severity: ValidationSeverity.error
       }
     ];
   }
 
   const zodResult = lyricStanzaArrayValidation(normalizedJson);
-  let result: Array<{ path: string[]; message: string; severity: "error" }> = [];
+  let result: ValidationError[] = [];
 
   if (!zodResult.success) {
     const errors = zodResult.error.errors.slice(0, 10);
     result = errors.map((error) => ({
       path: error.path.map(String),
       message: `${error.path.join(".") || "root"}: ${error.message}`,
-      severity: "error" as const
+      severity: ValidationSeverity.error
     }));
 
     if (zodResult.error.errors.length > 10) {
       result.push({
         path: [],
         message: `... and ${zodResult.error.errors.length - 10} more errors`,
-        severity: "error" as const
+        severity: ValidationSeverity.error
       });
     }
   }
@@ -120,6 +120,9 @@ const handleEditorChange = (content: any) => {
     <JsonEditor
       :content="{ text: JSON.stringify(store.localLyrics.value, null, 2) }"
       :mode="Mode.text"
+      :main-menu-bar="true"
+      :navigation-bar="true"
+      :status-bar="true"
       :validator="validator"
       :on-change="handleEditorChange"
       class="json-editor flex-1 min-h-0"
