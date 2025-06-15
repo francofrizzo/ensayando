@@ -26,12 +26,12 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   // Filtered collections based on authentication
   const visibleCollections = computed(() => {
-    return collections.value.filter((c) => authStore.isAuthenticated() || c.visible !== false);
+    return collections.value.filter((c) => authStore.isAuthenticated || c.visible !== false);
   });
 
   // Filtered songs based on authentication
   const visibleSongs = computed(() => {
-    return songs.value.filter((s) => authStore.isAuthenticated() || s.visible !== false);
+    return songs.value.filter((s) => authStore.isAuthenticated || s.visible !== false);
   });
 
   const currentCollection = computed(() => {

@@ -10,12 +10,15 @@ import TimeCopier from "@/components/TimeCopier.vue";
 import TrackPlayer from "@/components/TrackPlayer.vue";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { Collection, LyricStanza, Song } from "@/data/types";
+import { useAuthStore } from "@/stores/auth";
 
 const props = defineProps<{
   collection: Collection;
   song: Song;
   lyrics: LyricStanza[];
 }>();
+
+const authStore = useAuthStore();
 
 // General state
 const sortedTracks = computed(() => {
@@ -191,6 +194,15 @@ onUnmounted(() => {
 // UI/Visual related state
 const tracksVisible = ref(true);
 const editMode = ref(false);
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (!isAuthenticated && editMode.value) {
+      editMode.value = false;
+    }
+  }
+);
 
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);

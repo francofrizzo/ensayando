@@ -1,11 +1,15 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { User } from "@supabase/supabase-js";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
+
+  const isAuthenticated = computed(() => {
+    return user.value !== null;
+  });
 
   const initAuth = async () => {
     isLoading.value = true;
@@ -51,17 +55,13 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const isAuthenticated = () => {
-    return user.value !== null;
-  };
-
   return {
     user,
     isLoading,
+    isAuthenticated,
     initAuth,
     signIn,
     signUp,
-    signOut,
-    isAuthenticated
+    signOut
   };
 });

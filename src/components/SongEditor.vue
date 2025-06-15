@@ -21,7 +21,7 @@ const showLoginModal = ref(false);
 const lastValidJson = ref<any>(store.localLyrics.value);
 
 const handleSaveClick = () => {
-  if (authStore.isAuthenticated()) {
+  if (authStore.isAuthenticated) {
     try {
       saveLyrics();
     } catch (error) {
@@ -92,7 +92,7 @@ const onUpdateLyrics = (lyrics: any) => {
       <button
         class="btn btn-xs btn-primary"
         :disabled="
-          !authStore.isAuthenticated() || !store.localLyrics.isDirty || store.localLyrics.isSaving
+          !authStore.isAuthenticated || !store.localLyrics.isDirty || store.localLyrics.isSaving
         "
         @click="handleSaveClick"
       >

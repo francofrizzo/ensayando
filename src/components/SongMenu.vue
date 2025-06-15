@@ -103,7 +103,7 @@ const otherCollectionMenuItems = computed(() => {
             <div class="flex items-center justify-between gap-2 pl-4 pr-3 opacity-60">
               <AuthStatus class="grow-0" />
               <button
-                v-if="authStore.isAuthenticated()"
+                v-if="authStore.isAuthenticated"
                 class="btn btn-circle btn-ghost btn-sm"
                 @click="
                   emit('toggle-edit');
