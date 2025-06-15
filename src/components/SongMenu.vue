@@ -22,14 +22,12 @@ const collectionsStore = useCollectionsStore();
 const { currentSong } = useCurrentSong();
 
 const songMenuItems = computed(() => {
-  return collectionsStore.songs.filter((song) => authStore.isAuthenticated() || song.visible);
+  return collectionsStore.songs;
 });
 
 const otherCollectionMenuItems = computed(() => {
   return collectionsStore.collections.filter(
-    (collection) =>
-      collection.slug !== props.collection.slug &&
-      (authStore.isAuthenticated() || collection.visible !== false)
+    (collection) => collection.slug !== props.collection.slug
   );
 });
 </script>

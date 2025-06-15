@@ -3,14 +3,12 @@ import ErrorMessage from "@/components/ErrorMessage.vue";
 import LoadingScreen from "@/components/LoadingScreen.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useNavigation } from "@/composables/useNavigation";
-import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
 const collectionsStore = useCollectionsStore();
-const authStore = useAuthStore();
 const { currentCollection } = useCurrentCollection();
 const { replaceToSong } = useNavigation();
 
@@ -42,7 +40,7 @@ watch(
       !route.params.songSlug &&
       songsCollectionId === collection.id // Ensure songs belong to current collection
     ) {
-      const firstSong = songs.find((s) => authStore.isAuthenticated() || s.visible) || songs[0];
+      const firstSong = songs[0];
 
       if (firstSong) {
         replaceToSong(collection, firstSong);

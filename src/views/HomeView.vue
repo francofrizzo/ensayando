@@ -14,7 +14,7 @@ onMounted(async () => {
   }
 
   if (collectionsStore.collections.length > 0) {
-    const defaultCollection = collectionsStore.collections.find((c) => c.visible !== false);
+    const defaultCollection = collectionsStore.collections[0]; // Store already filters visible collections
 
     if (defaultCollection) {
       replaceToCollection(defaultCollection);

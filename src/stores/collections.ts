@@ -3,6 +3,7 @@ import { type Collection, type LyricStanza, type Song } from "@/data/types";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useAuthStore } from "./auth";
 
 export const useCollectionsStore = defineStore("collections", () => {
   // Data state
@@ -21,17 +22,28 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   // Route-reactive computed properties
   const route = useRoute();
+  const authStore = useAuthStore();
+
+  // Filtered collections based on authentication
+  const visibleCollections = computed(() => {
+    return collections.value.filter((c) => authStore.isAuthenticated() || c.visible !== false);
+  });
+
+  // Filtered songs based on authentication
+  const visibleSongs = computed(() => {
+    return songs.value.filter((s) => authStore.isAuthenticated() || s.visible !== false);
+  });
 
   const currentCollection = computed(() => {
     const slug = route.params.collectionSlug as string;
     if (!slug) return null;
-    return collections.value.find((c) => c.slug === slug) || null;
+    return visibleCollections.value.find((c) => c.slug === slug) || null;
   });
 
   const currentSong = computed(() => {
     const slug = route.params.songSlug as string;
     if (!slug) return null;
-    return songs.value.find((s) => s.slug === slug) || null;
+    return visibleSongs.value.find((s) => s.slug === slug) || null;
   });
 
   // Auto-fetch songs when collection changes
@@ -111,8 +123,8 @@ export const useCollectionsStore = defineStore("collections", () => {
   });
 
   return {
-    collections,
-    songs,
+    collections: visibleCollections,
+    songs: visibleSongs,
     currentCollection,
     currentSong,
     songsCollectionId,
