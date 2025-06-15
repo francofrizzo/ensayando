@@ -33,7 +33,10 @@ export const useAuthStore = defineStore("auth", () => {
   const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        emailRedirectTo: import.meta.env.VITE_SITE_URL
+      }
     });
     if (error) {
       throw error;
