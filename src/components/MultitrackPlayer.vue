@@ -10,7 +10,7 @@ import TimeCopier from "@/components/TimeCopier.vue";
 import TrackPlayer from "@/components/TrackPlayer.vue";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { Collection, LyricStanza, Song } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
+import { useUIStore } from "@/stores/ui";
 
 const props = defineProps<{
   collection: Collection;
@@ -18,7 +18,7 @@ const props = defineProps<{
   lyrics: LyricStanza[];
 }>();
 
-const authStore = useAuthStore();
+const uiStore = useUIStore();
 
 // General state
 const sortedTracks = computed(() => {
@@ -193,16 +193,6 @@ onUnmounted(() => {
 
 // UI/Visual related state
 const tracksVisible = ref(true);
-const editMode = ref(false);
-
-watch(
-  () => authStore.isAuthenticated,
-  (isAuthenticated) => {
-    if (!isAuthenticated && editMode.value) {
-      editMode.value = false;
-    }
-  }
-);
 
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
@@ -316,17 +306,13 @@ watch(mediaSessionTime, (time) => {
       class="bg-base-200 flex flex-1 h-dvh min-w-0 flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none"
     >
       <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
-        <PlayerHeader
-          :collection="collection"
-          :song="song"
-          @toggle-edit="() => (editMode = !editMode)"
-        />
+        <PlayerHeader :collection="collection" :song="song" @toggle-edit="uiStore.toggleEditMode" />
         <PlayerControls
           :current-time="state.currentTime.value"
           :total-duration="state.totalDuration.value"
           :is-playing="state.playing.value"
           :is-ready="isReady"
-          :edit-mode="editMode"
+          :edit-mode="uiStore.editMode"
           @play-pause="onPlayPause"
         />
         <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
@@ -370,7 +356,7 @@ watch(mediaSessionTime, (time) => {
             :volume="state.trackStates.value[index]!.volume"
             :has-lyrics="state.trackStates.value[index]!.hasLyrics"
             :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
-            :edit-mode="editMode"
+            :edit-mode="uiStore.editMode"
             @ready="(duration: number) => onReady(index, duration)"
             @time-update="(time: number) => onTimeUpdate(index, time)"
             @volume-change="(volume: number) => onVolumeChange(index, volume)"
@@ -405,8 +391,8 @@ watch(mediaSessionTime, (time) => {
         </div>
       </div>
     </div>
-    <div v-if="editMode" class="flex-1">
-      <SongEditor @toggle-edit="() => (editMode = !editMode)" />
+    <div v-if="uiStore.editMode" class="flex-1">
+      <SongEditor @toggle-edit="uiStore.toggleEditMode" />
     </div>
   </div>
 </template>
