@@ -2,7 +2,7 @@
 import { Check } from "lucide-vue-next";
 import { onMounted, onUnmounted, ref } from "vue";
 
-const hideDelay = 400;
+const hideDelay = 1000;
 
 const isVisible = ref(false);
 const wasCopied = ref(false);
