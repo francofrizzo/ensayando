@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lyric Stanzas Array",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/LyricStanza"
+  },
+  "definitions": {
+    "LyricStanza": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/LyricVerse" },
+          {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/LyricVerse" }
+            }
+          }
+        ]
+      }
+    },
+    "LyricVerse": {
+      "type": "object",
+      "properties": {
+        "start_time": {
+          "type": "number",
+          "description": "Start time in seconds"
+        },
+        "end_time": {
+          "type": "number",
+          "description": "End time in seconds"
+        },
+        "text": {
+          "type": "string",
+          "description": "The lyric text"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Optional comment about this verse"
+        },
+        "audio_track_ids": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Array of audio track IDs"
+        },
+        "color_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of color key strings"
+        }
+      },
+      "required": ["text"],
+      "additionalProperties": false
+    }
+  }
+}

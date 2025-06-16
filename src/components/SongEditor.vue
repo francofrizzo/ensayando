@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { Save, X } from "lucide-vue-next";
-import { Mode, type ValidationError, ValidationSeverity } from "vanilla-jsoneditor";
-import { ref } from "vue";
+import { Mode, createAjvValidator } from "vanilla-jsoneditor";
+import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
 import JsonEditor from "@/components/JsonEditor.vue";
-import LoginModal from "@/components/LoginModal.vue";
-import { lyricStanzaArrayValidation } from "@/data/validate";
+import lyricSchema from "@/data/lyric-schema.json";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 
@@ -19,11 +18,36 @@ const emit = defineEmits<{
 }>();
 
 const showLoginModal = ref(false);
-const lastValidJson = ref<any>(store.localLyrics.value);
+const hasValidationErrors = ref(false);
+const editorRef = ref<any>(null);
+const initialContent = ref({ text: JSON.stringify(store.localLyrics.value, null, 2) });
+
+const validator = createAjvValidator({ schema: lyricSchema });
+
+const isSaveDisabled = computed(() => {
+  return (
+    !authStore.isAuthenticated ||
+    !store.localLyrics.isDirty ||
+    store.localLyrics.isSaving ||
+    hasValidationErrors.value
+  );
+});
 
 const handleSaveClick = () => {
+  if (hasValidationErrors.value) {
+    toast.error("Cannot save: Please fix validation errors first");
+    return;
+  }
+
   if (authStore.isAuthenticated) {
     try {
+      if (editorRef.value) {
+        const currentContent = editorRef.value.get();
+        if (currentContent && currentContent.text) {
+          const parsedLyrics = JSON.parse(currentContent.text);
+          updateLocalLyrics(parsedLyrics);
+        }
+      }
       saveLyrics();
     } catch (error) {
       toast.error(`Error al guardar letras: ${error}`);
@@ -33,62 +57,18 @@ const handleSaveClick = () => {
   }
 };
 
-const validator = (json: any): ValidationError[] => {
-  if (json == null) return [];
-  let normalizedJson: any;
-  try {
-    normalizedJson = typeof json === "string" ? JSON.parse(json) : json;
-  } catch (error) {
-    return [
-      {
-        path: [],
-        message: "Invalid JSON syntax",
-        severity: ValidationSeverity.error
-      }
-    ];
-  }
+const handleEditorChange = (content: any, previousContent: any, { contentErrors }: any) => {
+  hasValidationErrors.value =
+    contentErrors && contentErrors.validationErrors && contentErrors.validationErrors.length > 0;
 
-  const zodResult = lyricStanzaArrayValidation(normalizedJson);
-  let result: ValidationError[] = [];
-
-  if (!zodResult.success) {
-    const errors = zodResult.error.errors.slice(0, 10);
-    result = errors.map((error) => ({
-      path: error.path.map(String),
-      message: `${error.path.join(".") || "root"}: ${error.message}`,
-      severity: ValidationSeverity.error
-    }));
-
-    if (zodResult.error.errors.length > 10) {
-      result.push({
-        path: [],
-        message: `... and ${zodResult.error.errors.length - 10} more errors`,
-        severity: ValidationSeverity.error
-      });
-    }
-  }
-  return result;
-};
-
-const onUpdateLyrics = (lyrics: any) => {
-  try {
-    const parsedLyrics = typeof lyrics === "string" ? JSON.parse(lyrics) : lyrics;
-    const errors = validator(parsedLyrics);
-    if (
-      errors.length === 0 &&
-      JSON.stringify(lastValidJson.value) !== JSON.stringify(parsedLyrics)
-    ) {
+  // Update store only when JSON is valid and conforms to schema
+  if (!hasValidationErrors.value && content && content.text) {
+    try {
+      const parsedLyrics = JSON.parse(content.text);
       updateLocalLyrics(parsedLyrics);
-      lastValidJson.value = parsedLyrics;
+    } catch (error) {
+      // JSON parse error - don't update store
     }
-  } catch (error) {
-    // Error shown in editor
-  }
-};
-
-const handleEditorChange = (content: any) => {
-  if (content && content.text) {
-    onUpdateLyrics(content.text);
   }
 };
 </script>
@@ -98,14 +78,17 @@ const handleEditorChange = (content: any) => {
     <div class="flex items-center justify-between p-1.5">
       <button
         class="btn btn-xs btn-primary"
-        :disabled="
-          !authStore.isAuthenticated || !store.localLyrics.isDirty || store.localLyrics.isSaving
-        "
+        :disabled="isSaveDisabled"
+        :class="{ 'btn-error': hasValidationErrors }"
         @click="handleSaveClick"
       >
         <template v-if="store.localLyrics.isSaving">
           <span class="loading loading-spinner loading-xs"></span>
           <span>Guardando...</span>
+        </template>
+        <template v-else-if="hasValidationErrors">
+          <X class="size-3.5" />
+          <span class="hidden md:block">Validation errors</span>
         </template>
         <template v-else>
           <Save class="size-3.5" />
@@ -118,7 +101,8 @@ const handleEditorChange = (content: any) => {
       </button>
     </div>
     <JsonEditor
-      :content="{ text: JSON.stringify(store.localLyrics.value, null, 2) }"
+      ref="editorRef"
+      :content="initialContent"
       :mode="Mode.text"
       :main-menu-bar="true"
       :navigation-bar="true"
@@ -127,8 +111,5 @@ const handleEditorChange = (content: any) => {
       :on-change="handleEditorChange"
       class="json-editor flex-1 min-h-0"
     />
-
-    <!-- Login Modal -->
-    <LoginModal v-if="showLoginModal" @close="showLoginModal = false" />
   </div>
 </template>
