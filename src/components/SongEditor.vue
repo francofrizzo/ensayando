@@ -44,7 +44,7 @@ watch(
 const validator = createAjvValidator({ schema: lyricSchema });
 
 let validationTimeout: NodeJS.Timeout | null = null;
-const VALIDATION_DELAY = 500;
+const VALIDATION_DELAY = 200;
 
 const isSaveDisabled = computed(() => {
   return (
