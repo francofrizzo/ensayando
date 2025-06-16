@@ -40,7 +40,15 @@ const isMuted = computed(() => props.volume === 0);
 // Methods
 const seekTo = (time: number) => {
   if (!waveSurfer.value || !props.isReady) return;
-  waveSurfer.value.setTime(time);
+
+  try {
+    // Check if waveSurfer is actually ready to accept setTime calls
+    if (waveSurfer.value.getDuration() > 0) {
+      waveSurfer.value.setTime(time);
+    }
+  } catch (error) {
+    console.warn("Failed to seek track:", error);
+  }
 };
 
 const handleVolumeChange = (value: number | number[]) => {
@@ -134,10 +142,14 @@ watch(
   () => props.isPlaying,
   (newIsPlaying) => {
     if (!waveSurfer.value || !props.isReady) return;
-    if (newIsPlaying) {
-      waveSurfer.value?.play();
-    } else {
-      waveSurfer.value?.pause();
+    try {
+      if (newIsPlaying) {
+        waveSurfer.value?.play();
+      } else {
+        waveSurfer.value?.pause();
+      }
+    } catch (error) {
+      console.warn("Failed to change playback state:", error);
     }
   }
 );
@@ -154,13 +166,24 @@ watch(
 watch(
   () => props.volume,
   (newVolume) => {
-    if (waveSurfer.value) {
-      const clampedVolume = Math.max(0, Math.min(1, newVolume));
-      waveSurfer.value.setVolume(clampedVolume);
-      waveSurfer.value.setMuted(clampedVolume === 0);
-      // Hack to prevent the track from desynchronizing
-      const currentTime = waveSurfer.value.getCurrentTime();
-      waveSurfer.value.setTime(currentTime);
+    if (waveSurfer.value && props.isReady) {
+      try {
+        const clampedVolume = Math.max(0, Math.min(1, newVolume));
+        waveSurfer.value.setVolume(clampedVolume);
+        waveSurfer.value.setMuted(clampedVolume === 0);
+        // Resync track position after volume change to prevent desynchronization
+        // When a track is muted, it pauses; when unmuted, it needs to jump to the current playback position
+        try {
+          const currentTime = waveSurfer.value.getCurrentTime();
+          if (currentTime >= 0 && waveSurfer.value.getDuration() > 0) {
+            waveSurfer.value.setTime(currentTime);
+          }
+        } catch (syncError) {
+          console.warn("Failed to resync track after volume change:", syncError);
+        }
+      } catch (error) {
+        console.warn("Failed to set volume:", error);
+      }
     }
   },
   { immediate: true }

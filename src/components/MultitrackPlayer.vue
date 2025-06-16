@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown, Loader2 } from "lucide-vue-next";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import LyricsViewer from "@/components/LyricsViewer.vue";
 import PlayerControls from "@/components/PlayerControls.vue";
@@ -65,9 +65,13 @@ const trackIdsWithLyricsEnabled = computed(() => {
 
 // Interactivity
 const seekAllTracks = (time: number) => {
-  trackPlayers.value.forEach((player) => {
+  trackPlayers.value.forEach((player, index) => {
     if (player) {
-      player.seekTo(time);
+      try {
+        player.seekTo(time);
+      } catch (error) {
+        console.warn(`Failed to seek track ${index}:`, error);
+      }
     }
   });
   state.currentTime.value = time;
@@ -139,6 +143,12 @@ const onToggleTrackLyrics = (trackId: number) => {
 };
 
 const onPlayPause = async (forcePlay?: boolean) => {
+  // Check if tracks are ready before allowing playback
+  if (!isReady.value && (forcePlay === true || forcePlay === undefined)) {
+    console.warn("Cannot start playback: tracks are not ready");
+    return;
+  }
+
   // Initialize audio context for WebAudio API user gesture requirement
   if (!hasInitializedAudio.value) {
     try {
@@ -149,6 +159,7 @@ const onPlayPause = async (forcePlay?: boolean) => {
       });
     } catch (e) {
       console.error("Failed to initialize audio context:", e);
+      return; // Don't proceed if audio context initialization fails
     }
   }
 
@@ -189,6 +200,12 @@ onUnmounted(() => {
   window.removeEventListener("keydown", keydownHandler);
   stopSyncCheck();
   cleanupMediaSession();
+  if (silentAudio.value) {
+    silentAudio.value.pause();
+    silentAudio.value.src = "";
+    silentAudio.value.load();
+    silentAudio.value = null;
+  }
 });
 
 // UI/Visual related state
@@ -202,46 +219,55 @@ const DRIFT_THRESHOLD = 0.05;
 const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
 
-const initializeAudioContext = () => {
-  // Only run once
-  if (hasInitializedAudio.value) {
-    return Promise.resolve();
-  }
-
-  // Create silent audio element to unlock audio context on user interaction
-  // This is needed for WebAudio API which requires user gesture to start playing
-  silentAudio.value = new Audio();
-  // Use a very short mp3 data URI
-  silentAudio.value.src =
-    "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAQABAQEBAQEBAQEBAQEBAQEBAQEB";
-  silentAudio.value.load();
-  hasInitializedAudio.value = true;
-  return Promise.resolve();
-};
-
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
+
   const referenceTrack = trackPlayers.value[0];
-  const referenceTime = referenceTrack?.waveSurfer?.getCurrentTime?.() ?? 0;
-  trackPlayers.value.forEach((player) => {
-    const time = player.waveSurfer?.getCurrentTime?.() ?? 0;
-    const drift = time - referenceTime;
-    if (Math.abs(drift) > DRIFT_THRESHOLD) {
-      player.seekTo(referenceTime);
-    }
-  });
-  state.currentTime.value = referenceTime;
+  if (!referenceTrack?.waveSurfer) return;
+
+  try {
+    const referenceTime = referenceTrack.waveSurfer.getCurrentTime?.() ?? 0;
+
+    // Only proceed if we have a valid reference time (not 0 unless actually at start)
+    if (referenceTime < 0) return;
+
+    trackPlayers.value.forEach((player, index) => {
+      if (!player?.waveSurfer || index === 0) return; // Skip reference track
+
+      try {
+        const time = player.waveSurfer.getCurrentTime?.() ?? 0;
+        const drift = time - referenceTime;
+        if (Math.abs(drift) > DRIFT_THRESHOLD) {
+          player.seekTo(referenceTime);
+        }
+      } catch (error) {
+        console.warn(`Failed to sync track ${index}:`, error);
+      }
+    });
+
+    state.currentTime.value = referenceTime;
+  } catch (error) {
+    console.warn("Failed to check sync:", error);
+  }
 };
 
 const startSyncCheck = () => {
-  stopSyncCheck();
-  syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL);
+  try {
+    stopSyncCheck();
+    syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL);
+  } catch (error) {
+    console.warn("Failed to start sync check:", error);
+  }
 };
 
 const stopSyncCheck = () => {
-  if (syncInterval.value) {
-    window.clearInterval(syncInterval.value);
-    syncInterval.value = null;
+  try {
+    if (syncInterval.value) {
+      window.clearInterval(syncInterval.value);
+      syncInterval.value = null;
+    }
+  } catch (error) {
+    console.warn("Failed to stop sync check:", error);
   }
 };
 
@@ -276,28 +302,94 @@ const {
   onSeek: (time) => onSeekToTime(time)
 });
 
-watch(
-  () => state.currentTime.value,
-  (time) => {
-    mediaSessionTime.value = time;
-  }
-);
-watch(
-  () => state.playing.value,
-  (playing) => {
-    mediaSessionPlaying.value = playing;
-  }
-);
+const isUpdatingFromMediaSession = ref(false);
+
 watch(mediaSessionPlaying, (playing) => {
+  if (isUpdatingFromMediaSession.value) return;
+
   if (playing !== state.playing.value) {
     state.playing.value = playing;
   }
 });
+
 watch(mediaSessionTime, (time) => {
+  if (isUpdatingFromMediaSession.value) return;
+
   if (Math.abs(time - state.currentTime.value) > 0.1) {
     seekAllTracks(time);
   }
 });
+
+// Update MediaSession state without triggering circular updates
+watch(
+  () => state.playing.value,
+  (playing) => {
+    isUpdatingFromMediaSession.value = true;
+    mediaSessionPlaying.value = playing;
+    // Use nextTick to ensure the flag is reset after all watchers have run
+    nextTick(() => {
+      isUpdatingFromMediaSession.value = false;
+    });
+  }
+);
+
+watch(
+  () => state.currentTime.value,
+  (time) => {
+    isUpdatingFromMediaSession.value = true;
+    mediaSessionTime.value = time;
+    nextTick(() => {
+      isUpdatingFromMediaSession.value = false;
+    });
+  }
+);
+
+const initializeAudioContext = async () => {
+  // Only run once
+  if (hasInitializedAudio.value) {
+    return Promise.resolve();
+  }
+
+  try {
+    // Create silent audio element to unlock audio context on user interaction
+    // This is needed for WebAudio API which requires user gesture to start playing
+    silentAudio.value = new Audio();
+    // Use a very short mp3 data URI
+    silentAudio.value.src =
+      "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAQABAQEBAQEBAQEBAQEBAQEBAQEB";
+
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Audio load timeout")), 5000);
+
+      silentAudio.value!.addEventListener(
+        "canplaythrough",
+        () => {
+          clearTimeout(timeout);
+          resolve(void 0);
+        },
+        { once: true }
+      );
+
+      silentAudio.value!.addEventListener(
+        "error",
+        (e) => {
+          clearTimeout(timeout);
+          reject(e);
+        },
+        { once: true }
+      );
+
+      silentAudio.value!.load();
+    });
+
+    hasInitializedAudio.value = true;
+  } catch (error) {
+    console.warn("Failed to initialize audio context:", error);
+    // Set as initialized anyway to prevent repeated attempts
+    hasInitializedAudio.value = true;
+    throw error;
+  }
+};
 </script>
 
 <template>
