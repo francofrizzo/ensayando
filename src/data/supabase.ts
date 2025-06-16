@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 
 export const fetchCollections = async (): Promise<PostgrestSingleResponse<Collection[]>> => {
-  return await supabase.from("collections").select().order("id", { ascending: true });
+  return await supabase.from("collections").select().order("id", { ascending: false });
 };
 
 export const fetchSongsByCollectionId = async (
