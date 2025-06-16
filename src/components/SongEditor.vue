@@ -11,7 +11,7 @@ import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
 const authStore = useAuthStore();
-const { saveLyrics, updateLocalLyrics } = store;
+const { saveLyrics, updateLocalLyrics, localLyrics } = store;
 
 const emit = defineEmits<{
   "toggle-edit": [];
@@ -23,6 +23,9 @@ const editorRef = ref<any>(null);
 const initialContent = ref({ text: JSON.stringify(store.localLyrics.value, null, 2) });
 
 const validator = createAjvValidator({ schema: lyricSchema });
+
+let validationTimeout: NodeJS.Timeout | null = null;
+const VALIDATION_DELAY = 500;
 
 const isSaveDisabled = computed(() => {
   return (
@@ -58,18 +61,30 @@ const handleSaveClick = () => {
 };
 
 const handleEditorChange = (content: any, previousContent: any, { contentErrors }: any) => {
-  hasValidationErrors.value =
-    contentErrors && contentErrors.validationErrors && contentErrors.validationErrors.length > 0;
+  // Clear existing timeout
+  if (validationTimeout) {
+    clearTimeout(validationTimeout);
+  }
 
-  // Update store only when JSON is valid and conforms to schema
-  if (!hasValidationErrors.value && content && content.text) {
+  // Always update store for valid JSON immediately
+  if (!contentErrors?.parseErrors?.length && content && content.text) {
     try {
       const parsedLyrics = JSON.parse(content.text);
-      updateLocalLyrics(parsedLyrics);
+      // Only validate schema after delay, but update store immediately for valid JSON
+      const schemaErrors = validator(parsedLyrics);
+      if (schemaErrors.length === 0) {
+        updateLocalLyrics(parsedLyrics);
+      }
     } catch (error) {
       // JSON parse error - don't update store
     }
   }
+
+  // Debounce validation error state updates
+  validationTimeout = setTimeout(() => {
+    hasValidationErrors.value =
+      contentErrors && contentErrors.validationErrors && contentErrors.validationErrors.length > 0;
+  }, VALIDATION_DELAY);
 };
 </script>
 
