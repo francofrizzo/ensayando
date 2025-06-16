@@ -140,7 +140,6 @@ const handleEditorChange = (content: any, previousContent: any, { contentErrors 
       :mode="Mode.text"
       :main-menu-bar="true"
       :navigation-bar="true"
-      :status-bar="true"
       :validator="validator"
       :on-change="handleEditorChange"
       class="json-editor flex-1 min-h-0"
