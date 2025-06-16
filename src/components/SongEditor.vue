@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Save, X } from "lucide-vue-next";
 import { Mode, createAjvValidator } from "vanilla-jsoneditor";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
 import JsonEditor from "@/components/JsonEditor.vue";
@@ -11,7 +11,7 @@ import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
 const authStore = useAuthStore();
-const { saveLyrics, updateLocalLyrics, localLyrics } = store;
+const { saveLyrics, updateLocalLyrics } = store;
 
 const emit = defineEmits<{
   "toggle-edit": [];
@@ -20,7 +20,21 @@ const emit = defineEmits<{
 const showLoginModal = ref(false);
 const hasValidationErrors = ref(false);
 const editorRef = ref<any>(null);
-const initialContent = ref({ text: JSON.stringify(store.localLyrics.value, null, 2) });
+
+const initialContent = computed(() => ({
+  text: JSON.stringify(store.localLyrics.value, null, 2)
+}));
+
+watch(
+  () => store.localLyrics.value,
+  (newLyrics) => {
+    if (editorRef.value) {
+      const newContent = { text: JSON.stringify(newLyrics, null, 2) };
+      editorRef.value.set(newContent);
+    }
+  },
+  { deep: true }
+);
 
 const validator = createAjvValidator({ schema: lyricSchema });
 

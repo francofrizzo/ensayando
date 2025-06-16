@@ -53,6 +53,8 @@ export const useCollectionsStore = defineStore("collections", () => {
       if (collection?.id !== previousCollection?.id) {
         songs.value = [];
         songsCollectionId.value = null;
+        localLyrics.value.value = [];
+        localLyrics.isDirty.value = false;
       }
       if (collection) {
         await fetchSongsByCollectionId(collection.id);
@@ -67,6 +69,9 @@ export const useCollectionsStore = defineStore("collections", () => {
     (song) => {
       if (song) {
         localLyrics.value.value = song.lyrics ?? [];
+        localLyrics.isDirty.value = false;
+      } else {
+        localLyrics.value.value = [];
         localLyrics.isDirty.value = false;
       }
     },
