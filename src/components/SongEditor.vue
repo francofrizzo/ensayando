@@ -21,9 +21,9 @@ const showLoginModal = ref(false);
 const hasValidationErrors = ref(false);
 const editorRef = ref<any>(null);
 
-const initialContent = computed(() => ({
+const initialContent = {
   text: JSON.stringify(store.localLyrics.value, null, 2)
-}));
+};
 
 // Watch for song changes and update the editor content
 watch(
