@@ -74,8 +74,52 @@ const getItemStartTime = (
   return item.start_time;
 };
 
-const visibleLyrics = computed((): LyricStanza[] =>
-  props.lyrics
+const addStatusToVerse = (
+  verse: LyricVerse,
+  nextVerseStartTime: number | undefined
+): LyricVerseWithStatus => {
+  let status: LyricVerseStatus = "future";
+
+  let endTime: number | undefined = undefined;
+  if (verse.start_time) {
+    endTime = verse.end_time ?? (nextVerseStartTime ? nextVerseStartTime : verse.start_time + 5);
+    if (props.currentTime >= verse.start_time) {
+      status = props.currentTime < endTime ? "active" : "past";
+    }
+  }
+
+  return {
+    ...verse,
+    end_time: endTime,
+    status
+  };
+};
+
+// First add status to ALL lyrics (including non-visible ones)
+const allLyricsWithStatus = computed(() =>
+  props.lyrics.map((stanza, stanzaIndex): LyricStanzaWithStatus => {
+    const nextStanza = props.lyrics[stanzaIndex + 1];
+    return stanza.map((item, itemIndex) => {
+      if (Array.isArray(item)) {
+        return item.map((column) =>
+          column.map((verse, verseIndex) => {
+            const nextItem = column[verseIndex + 1] ?? stanza[itemIndex + 1] ?? nextStanza?.[0];
+            const nextLyricStartTime = nextItem ? getItemStartTime(nextItem) : undefined;
+            return addStatusToVerse(verse, nextLyricStartTime);
+          })
+        );
+      } else {
+        const nextLyricItem = stanza[itemIndex + 1] ?? nextStanza?.[0];
+        const nextLyricStartTime = nextLyricItem ? getItemStartTime(nextLyricItem) : undefined;
+        return addStatusToVerse(item, nextLyricStartTime);
+      }
+    });
+  })
+);
+
+// Then filter for visible lyrics while preserving status
+const lyricsWithStatus = computed(() =>
+  allLyricsWithStatus.value
     .map((stanza) => {
       const filtered = stanza
         .filter((item) => {
@@ -99,48 +143,6 @@ const visibleLyrics = computed((): LyricStanza[] =>
       return filtered.length > 0 ? filtered : [];
     })
     .filter((group) => group.length > 0)
-);
-
-const addStatusToVerse = (
-  verse: LyricVerse,
-  nextVerseStartTime: number | undefined
-): LyricVerseWithStatus => {
-  let status: LyricVerseStatus = "future";
-
-  let endTime: number | undefined = undefined;
-  if (verse.start_time) {
-    endTime = verse.end_time ?? (nextVerseStartTime ? nextVerseStartTime : verse.start_time + 5);
-    if (props.currentTime >= verse.start_time) {
-      status = props.currentTime < endTime ? "active" : "past";
-    }
-  }
-
-  return {
-    ...verse,
-    end_time: endTime,
-    status
-  };
-};
-
-const lyricsWithStatus = computed(() =>
-  visibleLyrics.value.map((stanza, stanzaIndex): LyricStanzaWithStatus => {
-    const nextStanza = visibleLyrics.value[stanzaIndex + 1];
-    return stanza.map((item, itemIndex) => {
-      if (Array.isArray(item)) {
-        return item.map((column) =>
-          column.map((verse, verseIndex) => {
-            const nextItem = column[verseIndex + 1] ?? stanza[stanzaIndex + 1] ?? nextStanza?.[0];
-            const nextLyricStartTime = nextItem ? getItemStartTime(nextItem) : undefined;
-            return addStatusToVerse(verse, nextLyricStartTime);
-          })
-        );
-      } else {
-        const nextLyricItem = stanza[itemIndex + 1] ?? nextStanza?.[0];
-        const nextLyricStartTime = nextLyricItem ? getItemStartTime(nextLyricItem) : undefined;
-        return addStatusToVerse(item, nextLyricStartTime);
-      }
-    });
-  })
 );
 
 const OVERLAP_THRESHOLD = 0.4;
