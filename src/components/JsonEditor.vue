@@ -20,6 +20,14 @@ const editorRef: Ref<HTMLElement | null> = ref(null);
 const editor: Ref<any> = ref(null);
 const prevProps: Ref<Partial<JSONEditorPropsOptional>> = ref({});
 
+// Expose editor methods to parent components
+defineExpose({
+  get: () => editor.value?.get(),
+  set: (content: any) => editor.value?.set(content),
+  updateProps: (props: any) => editor.value?.updateProps(props),
+  destroy: () => editor.value?.destroy()
+});
+
 onMounted(() => {
   // filter the props that actually changed
   // since the last time to prevent syncing issues

@@ -25,15 +25,20 @@ const initialContent = computed(() => ({
   text: JSON.stringify(store.localLyrics.value, null, 2)
 }));
 
+// Watch for song changes and update the editor content
 watch(
-  () => store.localLyrics.value,
-  (newLyrics) => {
-    if (editorRef.value) {
-      const newContent = { text: JSON.stringify(newLyrics, null, 2) };
+  () => store.currentSong,
+  (newSong) => {
+    if (editorRef.value && newSong) {
+      const newContent = { text: JSON.stringify(newSong.lyrics ?? [], null, 2) };
+      editorRef.value.set(newContent);
+    } else if (editorRef.value && !newSong) {
+      // Clear editor when no song is selected
+      const newContent = { text: JSON.stringify([], null, 2) };
       editorRef.value.set(newContent);
     }
   },
-  { deep: true }
+  { immediate: false }
 );
 
 const validator = createAjvValidator({ schema: lyricSchema });
