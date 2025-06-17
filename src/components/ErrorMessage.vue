@@ -51,7 +51,7 @@ const message = computed(() => config[props.type].message);
   <div
     class="flex flex-col gap-4 flex-grow-1 min-h-dvh items-center justify-center max-w-md mx-auto text-center"
   >
-    <component :is="icon" class="size-22 opacity-50" />
+    <component :is="icon" class="size-22 opacity-50 mb-4" />
     <h2 class="text-2xl font-semibold text-base-content/80">{{ title }}</h2>
     <p class="text-base-content/40">{{ message }}</p>
     <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary">

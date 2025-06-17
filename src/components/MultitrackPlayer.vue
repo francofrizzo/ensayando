@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Loader2 } from "lucide-vue-next";
+import { ChevronDown, Loader2, MicVocal } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import LyricsViewer from "@/components/LyricsViewer.vue";
@@ -412,7 +412,7 @@ const initializeAudioContext = async () => {
         </div>
       </div>
 
-      <div class="h-full flex-grow-1 overflow-auto px-10 relative">
+      <div v-if="lyrics.length > 0" class="flex-grow-1 overflow-auto px-10 relative">
         <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
         <LyricsViewer
           :lyrics="lyrics"
@@ -422,7 +422,13 @@ const initializeAudioContext = async () => {
           :enabled-track-ids="trackIdsWithLyricsEnabled"
           @seek="onSeekToTime"
         />
+
         <div class="bg-gradient-to-t from-base-200 to-transparent sticky inset-x-0 bottom-0 h-8" />
+      </div>
+      <div v-else class="flex-grow-1 flex flex-col gap-4 p-10 items-center justify-center">
+        <MicVocal class="size-22 opacity-50 mb-4" />
+        <h2 class="text-2xl font-semibold text-base-content/80">Letra faltante</h2>
+        <p class="text-base-content/40">La letra de esta canción todavía no está disponible.</p>
       </div>
 
       <div
