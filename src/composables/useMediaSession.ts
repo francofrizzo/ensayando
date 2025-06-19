@@ -74,31 +74,43 @@ export function useMediaSession(
 
   const updateMediaSessionPlaybackState = (playing: boolean) => {
     if ("mediaSession" in navigator) {
-      navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+      try {
+        navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+      } catch (error) {
+        console.error("Failed to update MediaSession playback state:", error);
+      }
     }
   };
 
   const updatePositionState = (time: number) => {
     if ("mediaSession" in navigator && "setPositionState" in navigator.mediaSession) {
-      navigator.mediaSession.setPositionState({
-        duration: options.value.duration,
-        position: time,
-        playbackRate: 1.0
-      });
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: options.value.duration,
+          position: time,
+          playbackRate: 1.0
+        });
+      } catch (error) {
+        console.error("Failed to update MediaSession position state:", error);
+      }
     }
   };
 
   const cleanupMediaSession = () => {
     if ("mediaSession" in navigator) {
-      // Remove action handlers
-      navigator.mediaSession.setActionHandler("play", null);
-      navigator.mediaSession.setActionHandler("pause", null);
-      navigator.mediaSession.setActionHandler("seekto", null);
-      navigator.mediaSession.setActionHandler("seekforward", null);
-      navigator.mediaSession.setActionHandler("seekbackward", null);
+      try {
+        // Remove action handlers
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+        navigator.mediaSession.setActionHandler("seekto", null);
+        navigator.mediaSession.setActionHandler("seekforward", null);
+        navigator.mediaSession.setActionHandler("seekbackward", null);
 
-      // Clear metadata
-      navigator.mediaSession.metadata = null;
+        // Clear metadata
+        navigator.mediaSession.metadata = null;
+      } catch (error) {
+        console.error("Failed to cleanup MediaSession:", error);
+      }
     }
   };
 

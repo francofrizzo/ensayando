@@ -70,7 +70,7 @@ const seekAllTracks = (time: number) => {
       try {
         player.seekTo(time);
       } catch (error) {
-        console.warn(`Failed to seek track ${index}:`, error);
+        handleAudioError(error as Error, `seek track ${index}`);
       }
     }
   });
@@ -145,7 +145,7 @@ const onToggleTrackLyrics = (trackId: number) => {
 const onPlayPause = async (forcePlay?: boolean) => {
   // Check if tracks are ready before allowing playback
   if (!isReady.value && (forcePlay === true || forcePlay === undefined)) {
-    console.warn("Cannot start playback: tracks are not ready");
+    handleAudioError(new Error("Cannot start playback: tracks are not ready"), "onPlayPause");
     return;
   }
 
@@ -154,16 +154,24 @@ const onPlayPause = async (forcePlay?: boolean) => {
     try {
       await initializeAudioContext();
       // Try to play silent audio to unlock WebAudio context
-      silentAudio.value?.play().catch(() => {
-        console.debug("Silent audio play was blocked or failed");
-      });
+      if (silentAudio.value) {
+        try {
+          await silentAudio.value.play();
+        } catch (playError) {
+          console.debug("Silent audio play was blocked or failed:", playError);
+        }
+      }
     } catch (e) {
-      console.error("Failed to initialize audio context:", e);
+      handleAudioError(e as Error, "initializeAudioContext in onPlayPause");
       return; // Don't proceed if audio context initialization fails
     }
   }
 
-  state.playing.value = forcePlay ?? !state.playing.value;
+  try {
+    state.playing.value = forcePlay ?? !state.playing.value;
+  } catch (error) {
+    handleAudioError(error as Error, "setting playing state");
+  }
 };
 
 const onSeekToTime = (time: number) => {
@@ -197,14 +205,43 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener("keydown", keydownHandler);
-  stopSyncCheck();
-  cleanupMediaSession();
+  try {
+    window.removeEventListener("keydown", keydownHandler);
+  } catch (error) {
+    handleAudioError(error as Error, "removeEventListener");
+  }
+
+  try {
+    stopSyncCheck();
+  } catch (error) {
+    handleAudioError(error as Error, "stopSyncCheck");
+  }
+
+  // More aggressive cleanup of track players
+  trackPlayers.value.forEach((player, index) => {
+    try {
+      player?.waveSurfer?.destroy();
+    } catch (error) {
+      handleAudioError(error as Error, `destroying wavesurfer ${index}`);
+    }
+  });
+
+  try {
+    cleanupMediaSession();
+  } catch (error) {
+    handleAudioError(error as Error, "cleanupMediaSession");
+  }
+
   if (silentAudio.value) {
-    silentAudio.value.pause();
-    silentAudio.value.src = "";
-    silentAudio.value.load();
-    silentAudio.value = null;
+    try {
+      silentAudio.value.pause();
+      silentAudio.value.src = "";
+      silentAudio.value.load();
+      silentAudio.value = null;
+    } catch (error) {
+      handleAudioError(error as Error, "silentAudio cleanup");
+      silentAudio.value = null; // Force cleanup even if error
+    }
   }
 });
 
@@ -241,13 +278,13 @@ const checkAndCorrectSync = () => {
           player.seekTo(referenceTime);
         }
       } catch (error) {
-        console.warn(`Failed to sync track ${index}:`, error);
+        handleAudioError(error as Error, `sync track ${index}`);
       }
     });
 
     state.currentTime.value = referenceTime;
   } catch (error) {
-    console.warn("Failed to check sync:", error);
+    handleAudioError(error as Error, "checkAndCorrectSync");
   }
 };
 
@@ -256,7 +293,7 @@ const startSyncCheck = () => {
     stopSyncCheck();
     syncInterval.value = window.setInterval(checkAndCorrectSync, SYNC_CHECK_INTERVAL);
   } catch (error) {
-    console.warn("Failed to start sync check:", error);
+    handleAudioError(error as Error, "startSyncCheck");
   }
 };
 
@@ -267,7 +304,7 @@ const stopSyncCheck = () => {
       syncInterval.value = null;
     }
   } catch (error) {
-    console.warn("Failed to stop sync check:", error);
+    handleAudioError(error as Error, "stopSyncCheck");
   }
 };
 
@@ -344,6 +381,11 @@ watch(
   }
 );
 
+const handleAudioError = (error: Error, context: string) => {
+  console.error(`Audio error in ${context}:`, error);
+  // Don't throw, just log to prevent crashes
+};
+
 const initializeAudioContext = async () => {
   // Only run once
   if (hasInitializedAudio.value) {
@@ -359,12 +401,19 @@ const initializeAudioContext = async () => {
       "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAQABAQEBAQEBAQEBAQEBAQEBAQEB";
 
     await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("Audio load timeout")), 5000);
+      const timeout = setTimeout(() => {
+        handleAudioError(new Error("Audio load timeout"), "initializeAudioContext");
+        reject(new Error("Audio load timeout"));
+      }, 5000);
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+      };
 
       silentAudio.value!.addEventListener(
         "canplaythrough",
         () => {
-          clearTimeout(timeout);
+          cleanup();
           resolve(void 0);
         },
         { once: true }
@@ -373,21 +422,27 @@ const initializeAudioContext = async () => {
       silentAudio.value!.addEventListener(
         "error",
         (e) => {
-          clearTimeout(timeout);
+          cleanup();
+          handleAudioError(new Error(e.message || "Silent audio error"), "silentAudio");
           reject(e);
         },
         { once: true }
       );
 
-      silentAudio.value!.load();
+      try {
+        silentAudio.value!.load();
+      } catch (loadError) {
+        cleanup();
+        handleAudioError(loadError as Error, "silentAudio.load");
+        reject(loadError);
+      }
     });
 
     hasInitializedAudio.value = true;
   } catch (error) {
-    console.warn("Failed to initialize audio context:", error);
+    handleAudioError(error as Error, "initializeAudioContext");
     // Set as initialized anyway to prevent repeated attempts
     hasInitializedAudio.value = true;
-    throw error;
   }
 };
 </script>

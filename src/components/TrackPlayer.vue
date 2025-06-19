@@ -38,6 +38,10 @@ const isMac = navigator.userAgent.indexOf("Mac") > 0;
 const isMuted = computed(() => props.volume === 0);
 
 // Methods
+const handleTrackError = (error: Error, context: string) => {
+  console.error(`Track ${props.track.id} error in ${context}:`, error);
+};
+
 const seekTo = (time: number) => {
   if (!waveSurfer.value || !props.isReady) return;
 
@@ -47,7 +51,7 @@ const seekTo = (time: number) => {
       waveSurfer.value.setTime(time);
     }
   } catch (error) {
-    console.warn("Failed to seek track:", error);
+    handleTrackError(error as Error, "seekTo");
   }
 };
 
@@ -149,7 +153,7 @@ watch(
         waveSurfer.value?.pause();
       }
     } catch (error) {
-      console.warn("Failed to change playback state:", error);
+      handleTrackError(error as Error, "playback state change");
     }
   }
 );
@@ -179,10 +183,10 @@ watch(
             waveSurfer.value.setTime(currentTime);
           }
         } catch (syncError) {
-          console.warn("Failed to resync track after volume change:", syncError);
+          handleTrackError(syncError as Error, "resync after volume change");
         }
       } catch (error) {
-        console.warn("Failed to set volume:", error);
+        handleTrackError(error as Error, "set volume");
       }
     }
   },
@@ -190,10 +194,20 @@ watch(
 );
 
 onUnmounted(() => {
-  if (muteButtonLongPressTimer.value) {
-    clearTimeout(muteButtonLongPressTimer.value);
+  try {
+    if (muteButtonLongPressTimer.value) {
+      clearTimeout(muteButtonLongPressTimer.value);
+      muteButtonLongPressTimer.value = null;
+    }
+  } catch (error) {
+    handleTrackError(error as Error, "cleanup timer");
   }
-  waveSurfer.value?.destroy();
+
+  try {
+    waveSurfer.value?.destroy();
+  } catch (error) {
+    handleTrackError(error as Error, "destroy waveSurfer");
+  }
 });
 </script>
 
