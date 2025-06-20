@@ -361,9 +361,7 @@ export function useLyricsEditor(
     const newColumnLayout: LyricVerse[][] = [
       [
         {
-          text: currentVerse.text,
-          start_time: currentVerse.start_time,
-          end_time: currentVerse.end_time
+          ...currentVerse // Copy all properties from the original verse
         }
       ],
       [{ text: "" }]
