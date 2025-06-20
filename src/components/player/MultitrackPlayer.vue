@@ -8,6 +8,7 @@ import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
 import PlayerControls from "@/components/player/PlayerControls.vue";
 import PlayerHeader from "@/components/player/PlayerHeader.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
+import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { Collection, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
@@ -61,6 +62,13 @@ const state = {
 const isReady = computed(() => state.trackStates.value.every((track) => track.isReady));
 const trackIdsWithLyricsEnabled = computed(() => {
   return state.trackStates.value.filter((track) => track.lyricsEnabled).map((track) => track.id);
+});
+
+providePlayerState({
+  currentTime: state.currentTime,
+  totalDuration: state.totalDuration,
+  isPlaying: state.playing,
+  isReady
 });
 
 // Interactivity

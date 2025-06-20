@@ -6,12 +6,12 @@ import { HelpCircle, Save } from "lucide-vue-next";
 
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
+import { usePlayerState } from "@/composables/useCurrentTime";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useLyricsEditor, type FocusPosition } from "@/composables/useLyricsEditor";
 import type { LyricVerse } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
-import { formatTime } from "@/utils/datetime-utils";
 import KeyboardHelpModal from "./KeyboardHelpModal.vue";
 import LyricsTextarea from "./LyricsTextarea.vue";
 import LyricsToolbar from "./LyricsToolbar.vue";
@@ -19,6 +19,7 @@ import LyricsToolbar from "./LyricsToolbar.vue";
 const store = useCollectionsStore();
 const authStore = useAuthStore();
 const { currentCollection } = useCurrentCollection();
+const { currentTime, isPlaying } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
 const { saveLyrics } = store;
 
@@ -42,16 +43,6 @@ const lyricsToDisplay = computed(() => {
   }
   return lyrics;
 });
-
-const formatTimestamp = (verse: LyricVerse): string | null => {
-  if (verse.start_time !== undefined) {
-    if (verse.end_time !== undefined) {
-      return `${formatTime(verse.start_time)} - ${formatTime(verse.end_time)}`;
-    }
-    return formatTime(verse.start_time);
-  }
-  return null;
-};
 
 const {
   showHelp,
