@@ -192,6 +192,92 @@ const altKey = isMac ? "⌥" : "Alt";
 
         <div>
           <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
+            Marcas de tiempo
+          </h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span>Establecer tiempo de inicio del verso</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">Shift</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">,</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Establecer tiempo de finalización del verso</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">Shift</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">.</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Ajustar tiempo de inicio (-0.1s / +0.1s)</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">Shift</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">S</kbd>
+                <span class="text-base-content/60">→</span>
+                <kbd class="kbd kbd-sm">←</kbd>
+                <span class="text-base-content/60">/</span>
+                <kbd class="kbd kbd-sm">→</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Ajustar tiempo de finalización (-0.1s / +0.1s)</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">Shift</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">E</kbd>
+                <span class="text-base-content/60">→</span>
+                <kbd class="kbd kbd-sm">←</kbd>
+                <span class="text-base-content/60">/</span>
+                <kbd class="kbd kbd-sm">→</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Limpiar tiempo de inicio</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">,</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Limpiar tiempo de finalización</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">.</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Limpiar ambos tiempos</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">/</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
             Acciones rápidas
           </h3>
           <div class="space-y-2">

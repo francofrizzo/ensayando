@@ -189,22 +189,19 @@ const onSeekToTime = (time: number) => {
 const keydownHandler = (event: KeyboardEvent) => {
   // Check if the event originates from an capturing element
   const target = event.target as HTMLElement;
-  if (
+  const isInCapturingElement =
     target &&
     (target.closest(".jse-modal") || target.closest("input") || target.closest("textarea")) &&
-    !event.altKey
-  ) {
-    return;
-  }
+    !event.ctrlKey;
 
-  if (event.key === " ") {
+  if (event.key === " " && (!isInCapturingElement || event.ctrlKey)) {
     event.preventDefault();
     onPlayPause();
-  } else if (event.key === "ArrowLeft") {
+  } else if (event.key === "ArrowLeft" && (!isInCapturingElement || event.altKey)) {
     event.preventDefault();
     const newTime = Math.max(0, state.currentTime.value - 0.1);
     onSeekToTime(newTime);
-  } else if (event.key === "ArrowRight") {
+  } else if (event.key === "ArrowRight" && (!isInCapturingElement || event.altKey)) {
     event.preventDefault();
     const newTime = Math.min(state.totalDuration.value, state.currentTime.value + 0.1);
     onSeekToTime(newTime);

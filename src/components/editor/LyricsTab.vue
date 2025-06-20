@@ -58,8 +58,20 @@ const {
   setCurrentVerseColors,
   copyColorFromMode,
   toggleCopyColorFromMode,
-  copyColorsFromVerse
-} = useLyricsEditor(lyricsToDisplay, store.updateLocalLyrics, handleSaveClick);
+  copyColorsFromVerse,
+  setCurrentVerseStartTime,
+  setCurrentVerseEndTime,
+  adjustCurrentVerseStartTime,
+  adjustCurrentVerseEndTime,
+  clearCurrentVerseStartTime,
+  clearCurrentVerseEndTime,
+  clearCurrentVerseBothTimes
+} = useLyricsEditor(
+  lyricsToDisplay,
+  store.updateLocalLyrics,
+  handleSaveClick,
+  () => currentTime.value
+);
 
 // Timestamp visibility state
 const showTimestamps = ref(true);
@@ -186,6 +198,11 @@ defineExpose({
         :on-toggle-copy-color-from="handleToggleCopyColorFrom"
         :show-timestamps="showTimestamps"
         :on-toggle-timestamps="toggleTimestamps"
+        :on-set-start-time="setCurrentVerseStartTime"
+        :on-set-end-time="setCurrentVerseEndTime"
+        :on-adjust-start-time="adjustCurrentVerseStartTime"
+        :on-adjust-end-time="adjustCurrentVerseEndTime"
+        :on-clear-both-times="clearCurrentVerseBothTimes"
       />
     </div>
     <div class="flex-1 flex flex-col pb-3">
@@ -210,14 +227,16 @@ defineExpose({
               "
             >
               <div
-                v-if="(item.start_time || item.end_time) && showTimestamps"
+                v-if="
+                  (item.start_time !== undefined || item.end_time !== undefined) && showTimestamps
+                "
                 class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
               >
-                <span v-if="item.start_time">
+                <span v-if="item.start_time !== undefined">
                   {{ item.start_time }}
                 </span>
-                <span v-if="item.end_time">-</span>
-                <span v-if="item.end_time">
+                <span v-if="item.end_time !== undefined">-</span>
+                <span v-if="item.end_time !== undefined">
                   {{ item.end_time }}
                 </span>
               </div>
@@ -258,14 +277,17 @@ defineExpose({
                   "
                 >
                   <div
-                    v-if="(line.start_time || line.end_time) && showTimestamps"
+                    v-if="
+                      (line.start_time !== undefined || line.end_time !== undefined) &&
+                      showTimestamps
+                    "
                     class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
                   >
-                    <span v-if="line.start_time">
+                    <span v-if="line.start_time !== undefined">
                       {{ line.start_time }}
                     </span>
-                    <span v-if="line.end_time">-</span>
-                    <span v-if="line.end_time">
+                    <span v-if="line.end_time !== undefined">-</span>
+                    <span v-if="line.end_time !== undefined">
                       {{ line.end_time }}
                     </span>
                   </div>

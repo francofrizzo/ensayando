@@ -10,7 +10,8 @@ import {
   Copy,
   Droplet,
   ListPlus,
-  Trash2
+  Trash2,
+  X
 } from "lucide-vue-next";
 import { computed } from "vue";
 
@@ -33,6 +34,12 @@ interface Props {
   // Timestamp visibility
   showTimestamps: boolean;
   onToggleTimestamps: () => void;
+  // Timestamp operations
+  onSetStartTime: () => void;
+  onSetEndTime: () => void;
+  onAdjustStartTime: (delta: number) => void;
+  onAdjustEndTime: (delta: number) => void;
+  onClearBothTimes: () => void;
 }
 
 const props = defineProps<Props>();
@@ -56,7 +63,9 @@ const altKey = isMac ? "⌥" : "Alt";
   >
     <!-- Line operations -->
     <div class="lg:tooltip lg:tooltip-bottom">
-      <div class="tooltip-content">Agregar verso después • <kbd class="kbd kbd-xs">Enter</kbd></div>
+      <div class="tooltip-content">
+        Agregar verso después<br /><kbd class="kbd kbd-xs">Enter</kbd>
+      </div>
       <button
         class="btn btn-xs btn-circle btn-ghost"
         :disabled="!canPerformActions"
@@ -69,7 +78,7 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Agregar verso antes • <kbd class="kbd kbd-xs">{{ altKey }}</kbd
+        Agregar verso antes<br /><kbd class="kbd kbd-xs">{{ altKey }}</kbd
         >+<kbd class="kbd kbd-xs">Enter</kbd>
       </div>
       <button
@@ -84,7 +93,7 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Duplicar verso • <kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        Duplicar verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
         >+<kbd class="kbd kbd-xs">D</kbd>
       </div>
       <button
@@ -102,7 +111,7 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div v-if="!hasColumnContext" class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Convertir a columnas • <kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        Convertir a columnas<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
         >+<kbd class="kbd kbd-xs">\</kbd>
       </div>
       <button
@@ -117,7 +126,7 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div v-if="hasColumnContext" class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Insertar columna a la izquierda • <kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        Insertar columna a la izquierda<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
         >+<kbd class="kbd kbd-xs">[</kbd>
       </div>
       <button class="btn btn-xs btn-circle btn-ghost" @click="() => onInsertColumn(true)">
@@ -128,7 +137,7 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div v-if="hasColumnContext" class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Insertar columna a la derecha • <kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        Insertar columna a la derecha<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
         >+<kbd class="kbd kbd-xs">]</kbd>
       </div>
       <button
@@ -144,7 +153,7 @@ const altKey = isMac ? "⌥" : "Alt";
     <!-- Color operations -->
     <div class="divider divider-horizontal mx-0"></div>
 
-    <div class="lg:tooltip lg:tooltip-bottom">
+    <div class="lg:tooltip lg:tooltip-right">
       <div class="tooltip-content">Cambiar colores del verso</div>
       <ColorPicker
         :selected-colors="currentVerseColors"
@@ -157,7 +166,10 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div class="lg:tooltip lg:tooltip-bottom">
-      <div class="tooltip-content">Copiar color de otro verso</div>
+      <div class="tooltip-content">
+        Copiar color de otro verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        >+<kbd class="kbd kbd-xs">K</kbd>
+      </div>
       <button
         class="btn btn-xs btn-circle btn-ghost"
         :class="{ 'btn-active': copyColorFromMode }"
@@ -184,12 +196,59 @@ const altKey = isMac ? "⌥" : "Alt";
       </button>
     </div>
 
+    <!-- Timestamp operations -->
+    <div class="lg:tooltip lg:tooltip-bottom">
+      <div class="tooltip-content">
+        Establecer tiempo de inicio<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        >+<kbd class="kbd kbd-xs">Shift</kbd>+<kbd class="kbd kbd-xs">,</kbd>
+      </div>
+      <button
+        class="btn btn-xs btn-circle btn-ghost"
+        :disabled="!canPerformActions"
+        @click="onSetStartTime"
+      >
+        <ArrowLeftToLine class="size-3" />
+        <span class="sr-only">Establecer tiempo de inicio</span>
+      </button>
+    </div>
+
+    <div class="lg:tooltip lg:tooltip-bottom">
+      <div class="tooltip-content">
+        Establecer tiempo de finalización<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        >+<kbd class="kbd kbd-xs">Shift</kbd>+<kbd class="kbd kbd-xs">.</kbd>
+      </div>
+      <button
+        class="btn btn-xs btn-circle btn-ghost"
+        :disabled="!canPerformActions"
+        @click="onSetEndTime"
+      >
+        <ArrowRightToLine class="size-3" />
+        <span class="sr-only">Establecer tiempo de finalización</span>
+      </button>
+    </div>
+
+    <div class="lg:tooltip lg:tooltip-bottom">
+      <div class="tooltip-content">
+        Limpiar tiempos<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        >+<kbd class="kbd kbd-xs">{{ altKey }}</kbd
+        >+<kbd class="kbd kbd-xs">/</kbd>
+      </div>
+      <button
+        class="btn btn-xs btn-circle btn-ghost"
+        :disabled="!canPerformActions"
+        @click="onClearBothTimes"
+      >
+        <X class="size-3" />
+        <span class="sr-only">Limpiar ambos tiempos</span>
+      </button>
+    </div>
+
     <!-- Stanza operations -->
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Agregar estrofa • <kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        Agregar estrofa<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
         >+<kbd class="kbd kbd-xs">Enter</kbd>
       </div>
       <button
@@ -207,7 +266,7 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div class="lg:tooltip lg:tooltip-bottom">
       <div class="tooltip-content">
-        Eliminar verso • <kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        Eliminar verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
         >+<kbd class="kbd kbd-xs">⌫</kbd>
       </div>
       <button

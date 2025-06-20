@@ -11,10 +11,43 @@ export interface FocusPosition {
 export function useLyricsEditor(
   lyrics: Ref<LyricStanza[]>,
   updateLyrics: (newLyrics: LyricStanza[]) => void,
-  onSave?: () => void
+  onSave?: () => void,
+  getCurrentTime?: () => number
 ) {
   const currentFocus = ref<FocusPosition | null>(null);
   const showHelp = ref(false);
+
+  // State machine for complex keyboard shortcuts
+  const keySequenceState = ref<{
+    isWaitingForArrow: boolean;
+    targetType: "start" | "end" | null;
+    timeout: NodeJS.Timeout | null;
+  }>({
+    isWaitingForArrow: false,
+    targetType: null,
+    timeout: null
+  });
+
+  const resetKeySequenceState = () => {
+    if (keySequenceState.value.timeout) {
+      clearTimeout(keySequenceState.value.timeout);
+    }
+    keySequenceState.value = {
+      isWaitingForArrow: false,
+      targetType: null,
+      timeout: null
+    };
+  };
+
+  const startKeySequence = (targetType: "start" | "end") => {
+    resetKeySequenceState();
+    keySequenceState.value.isWaitingForArrow = true;
+    keySequenceState.value.targetType = targetType;
+    // Reset state after 2 seconds if no arrow key is pressed
+    keySequenceState.value.timeout = setTimeout(() => {
+      resetKeySequenceState();
+    }, 2000);
+  };
 
   // Get input element for a given position
   const getInputElement = (position: FocusPosition): HTMLInputElement | null => {
@@ -519,6 +552,185 @@ export function useLyricsEditor(
     return false;
   };
 
+  // Timestamp operations
+  const setCurrentVerseStartTime = () => {
+    if (!currentFocus.value || !getCurrentTime) return;
+
+    const currentTime = Math.round(getCurrentTime() * 100) / 100;
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        column[lineIndex].start_time = currentTime;
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      verse.start_time = currentTime;
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
+  const setCurrentVerseEndTime = () => {
+    if (!currentFocus.value || !getCurrentTime) return;
+
+    const currentTime = Math.round(getCurrentTime() * 100) / 100;
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        column[lineIndex].end_time = currentTime;
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      verse.end_time = currentTime;
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
+  const adjustCurrentVerseStartTime = (deltaSeconds: number) => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    let verse: LyricVerse | undefined;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        verse = column[lineIndex];
+      }
+    } else {
+      // Regular verse
+      verse = stanza[itemIndex] as LyricVerse;
+    }
+
+    if (verse && verse.start_time !== undefined) {
+      verse.start_time = Math.max(0, verse.start_time + deltaSeconds);
+      updateLyrics(currentLyrics);
+    }
+  };
+
+  const adjustCurrentVerseEndTime = (deltaSeconds: number) => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    let verse: LyricVerse | undefined;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        verse = column[lineIndex];
+      }
+    } else {
+      // Regular verse
+      verse = stanza[itemIndex] as LyricVerse;
+    }
+
+    if (verse && verse.end_time !== undefined) {
+      verse.end_time = Math.max(0, verse.end_time + deltaSeconds);
+      updateLyrics(currentLyrics);
+    }
+  };
+
+  const clearCurrentVerseStartTime = () => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        column[lineIndex].start_time = undefined;
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      verse.start_time = undefined;
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
+  const clearCurrentVerseEndTime = () => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        column[lineIndex].end_time = undefined;
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      verse.end_time = undefined;
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
+  const clearCurrentVerseBothTimes = () => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        column[lineIndex].start_time = undefined;
+        column[lineIndex].end_time = undefined;
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      verse.start_time = undefined;
+      verse.end_time = undefined;
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
   // Keyboard event handler
   const handleKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
@@ -528,6 +740,26 @@ export function useLyricsEditor(
 
     const isMac = navigator.platform.toLowerCase().includes("mac");
     const cmdOrCtrl = isMac ? event.metaKey : event.ctrlKey;
+
+    // Handle key sequence state first
+    if (keySequenceState.value.isWaitingForArrow) {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        const delta = event.key === "ArrowLeft" ? -0.1 : 0.1;
+
+        if (keySequenceState.value.targetType === "start") {
+          adjustCurrentVerseStartTime(delta);
+        } else if (keySequenceState.value.targetType === "end") {
+          adjustCurrentVerseEndTime(delta);
+        }
+
+        resetKeySequenceState();
+        return;
+      } else if (event.key !== "Meta" && event.key !== "Control" && event.key !== "Shift") {
+        // Any other key cancels the sequence
+        resetKeySequenceState();
+      }
+    }
 
     // Smart backspace for empty verses
     if (event.key === "Backspace" && !cmdOrCtrl) {
@@ -619,12 +851,51 @@ export function useLyricsEditor(
     }
 
     // Save operation
-    else if (event.key === "s" && cmdOrCtrl && !event.shiftKey) {
+    else if (
+      event.key === "s" &&
+      cmdOrCtrl &&
+      !event.shiftKey &&
+      !keySequenceState.value.isWaitingForArrow
+    ) {
       event.preventDefault();
       if (onSave) {
         onSave();
       }
     }
+
+    // Timestamp operations
+    else if (event.key === "," && cmdOrCtrl && event.shiftKey) {
+      event.preventDefault();
+      setCurrentVerseStartTime();
+    } else if (event.key === "." && cmdOrCtrl && event.shiftKey) {
+      event.preventDefault();
+      setCurrentVerseEndTime();
+    }
+
+    // Complex timestamp adjustment shortcuts
+    else if (event.key === "s" && cmdOrCtrl && event.shiftKey) {
+      event.preventDefault();
+      startKeySequence("start");
+    } else if (event.key === "e" && cmdOrCtrl && event.shiftKey) {
+      event.preventDefault();
+      startKeySequence("end");
+    }
+
+    // Clear timestamp operations
+    else if (event.key === "," && cmdOrCtrl && event.altKey && !event.shiftKey) {
+      event.preventDefault();
+      clearCurrentVerseStartTime();
+    } else if (event.key === "." && cmdOrCtrl && event.altKey && !event.shiftKey) {
+      event.preventDefault();
+      clearCurrentVerseEndTime();
+    } else if (event.key === "/" && cmdOrCtrl && event.altKey && !event.shiftKey) {
+      event.preventDefault();
+      clearCurrentVerseBothTimes();
+    }
+
+    // Timestamp adjustments - using different key combinations since we can't detect multiple keys at once
+    // For now, let's use simpler shortcuts that can be triggered by buttons
+    // The complex multi-key shortcuts will be handled by a state machine or separate implementation
   };
 
   // Handle input focus
@@ -765,6 +1036,7 @@ export function useLyricsEditor(
 
   onUnmounted(() => {
     document.removeEventListener("keydown", handleKeydown);
+    resetKeySequenceState();
   });
 
   return {
@@ -786,6 +1058,14 @@ export function useLyricsEditor(
     setCurrentVerseColors,
     copyColorFromMode: computed(() => copyColorFromMode.value),
     toggleCopyColorFromMode,
-    copyColorsFromVerse
+    copyColorsFromVerse,
+    // Timestamp operations
+    setCurrentVerseStartTime,
+    setCurrentVerseEndTime,
+    adjustCurrentVerseStartTime,
+    adjustCurrentVerseEndTime,
+    clearCurrentVerseStartTime,
+    clearCurrentVerseEndTime,
+    clearCurrentVerseBothTimes
   };
 }
