@@ -1,148 +1,107 @@
 <script setup lang="ts">
 import { Save, X } from "lucide-vue-next";
-import { Mode, createAjvValidator } from "vanilla-jsoneditor";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
-import JsonEditor from "@/components/JsonEditor.vue";
-import lyricSchema from "@/data/lyric-schema.json";
+import LyricsJsonTab from "@/components/LyricsJsonTab.vue";
+import LyricsTab from "@/components/LyricsTab.vue";
+import SongTab from "@/components/SongTab.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
 const authStore = useAuthStore();
-const { saveLyrics, updateLocalLyrics } = store;
 
 const emit = defineEmits<{
   "toggle-edit": [];
 }>();
 
-const showLoginModal = ref(false);
+const activeTab = ref("json");
+const lyricsJsonTabRef = ref<any>(null);
 const hasValidationErrors = ref(false);
-const editorRef = ref<any>(null);
-
-const initialContent = {
-  text: JSON.stringify(store.localLyrics.value, null, 2)
-};
-
-// Watch for song changes and update the editor content
-watch(
-  () => store.currentSong,
-  (newSong) => {
-    if (editorRef.value && newSong) {
-      const newContent = { text: JSON.stringify(newSong.lyrics ?? [], null, 2) };
-      editorRef.value.set(newContent);
-    } else if (editorRef.value && !newSong) {
-      // Clear editor when no song is selected
-      const newContent = { text: JSON.stringify([], null, 2) };
-      editorRef.value.set(newContent);
-    }
-  },
-  { immediate: false }
-);
-
-const validator = createAjvValidator({ schema: lyricSchema });
-
-let validationTimeout: NodeJS.Timeout | null = null;
-const VALIDATION_DELAY = 200;
-
-const isSaveDisabled = computed(() => {
-  return (
-    !authStore.isAuthenticated ||
-    !store.localLyrics.isDirty ||
-    store.localLyrics.isSaving ||
-    hasValidationErrors.value
-  );
-});
 
 const handleSaveClick = () => {
-  if (hasValidationErrors.value) {
-    toast.error("Cannot save: Please fix validation errors first");
-    return;
-  }
-
-  if (authStore.isAuthenticated) {
-    try {
-      if (editorRef.value) {
-        const currentContent = editorRef.value.get();
-        if (currentContent && currentContent.text) {
-          const parsedLyrics = JSON.parse(currentContent.text);
-          updateLocalLyrics(parsedLyrics);
-        }
-      }
-      saveLyrics();
-    } catch (error) {
-      toast.error(`Error al guardar letras: ${error}`);
-    }
+  if (activeTab.value === "json" && lyricsJsonTabRef.value) {
+    lyricsJsonTabRef.value.handleSaveClick();
   } else {
-    showLoginModal.value = true;
+    toast.info("Funcionalidad de guardado no disponible para esta pestaña");
   }
 };
 
-const handleEditorChange = (content: any, previousContent: any, { contentErrors }: any) => {
-  // Clear existing timeout
-  if (validationTimeout) {
-    clearTimeout(validationTimeout);
+// Move the save button state logic to parent component for proper reactivity
+const isSaveDisabled = computed(() => {
+  if (activeTab.value === "json") {
+    return (
+      !authStore.isAuthenticated ||
+      !store.localLyrics.isDirty ||
+      store.localLyrics.isSaving ||
+      hasValidationErrors.value
+    );
+  } else {
+    return true;
   }
+});
 
-  // Always update store for valid JSON immediately
-  if (!contentErrors?.parseErrors?.length && content && content.text) {
-    try {
-      const parsedLyrics = JSON.parse(content.text);
-      // Only validate schema after delay, but update store immediately for valid JSON
-      const schemaErrors = validator(parsedLyrics);
-      if (schemaErrors.length === 0) {
-        updateLocalLyrics(parsedLyrics);
-      }
-    } catch (error) {
-      // JSON parse error - don't update store
-    }
-  }
-
-  // Debounce validation error state updates
-  validationTimeout = setTimeout(() => {
-    hasValidationErrors.value =
-      contentErrors && contentErrors.validationErrors && contentErrors.validationErrors.length > 0;
-  }, VALIDATION_DELAY);
+// Handle validation errors from child component
+const handleValidationChange = (hasErrors: boolean) => {
+  hasValidationErrors.value = hasErrors;
 };
 </script>
 
 <template>
   <div class="h-screen flex flex-col">
     <div class="flex items-center justify-between p-1.5">
-      <button
-        class="btn btn-xs btn-primary"
-        :disabled="isSaveDisabled"
-        :class="{ 'btn-error': hasValidationErrors }"
-        @click="handleSaveClick"
-      >
-        <template v-if="store.localLyrics.isSaving">
-          <span class="loading loading-spinner loading-xs"></span>
-          <span>Guardando...</span>
-        </template>
-        <template v-else-if="hasValidationErrors">
-          <X class="size-3.5" />
-          <span class="hidden md:block">Validation errors</span>
-        </template>
-        <template v-else>
-          <Save class="size-3.5" />
-          <span class="hidden md:block">Guardar cambios</span>
-        </template>
-      </button>
+      <div class="tabs tabs-border tabs-xs">
+        <a class="tab" :class="{ 'tab-active': activeTab === 'song' }" @click="activeTab = 'song'">
+          Canción
+        </a>
+        <a
+          class="tab"
+          :class="{ 'tab-active': activeTab === 'lyrics' }"
+          @click="activeTab = 'lyrics'"
+        >
+          Letra
+        </a>
+        <a class="tab" :class="{ 'tab-active': activeTab === 'json' }" @click="activeTab = 'json'">
+          Letra (JSON)
+        </a>
+      </div>
 
-      <button class="btn btn-xs btn-square btn-soft" @click="emit('toggle-edit')">
-        <X class="size-3.5" />
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          class="btn btn-xs btn-primary"
+          :disabled="isSaveDisabled"
+          :class="{ 'btn-error': hasValidationErrors }"
+          @click="handleSaveClick"
+        >
+          <template v-if="store.localLyrics.isSaving">
+            <span class="loading loading-spinner loading-xs"></span>
+            <span>Guardando...</span>
+          </template>
+          <template v-else-if="hasValidationErrors">
+            <X class="size-3.5" />
+            <span class="hidden md:block">Hay errores</span>
+          </template>
+          <template v-else>
+            <Save class="size-3.5" />
+            <span class="hidden md:block">Guardar cambios</span>
+          </template>
+        </button>
+
+        <button class="btn btn-xs btn-square btn-soft" @click="emit('toggle-edit')">
+          <X class="size-3.5" />
+        </button>
+      </div>
     </div>
-    <JsonEditor
-      ref="editorRef"
-      :content="initialContent"
-      :mode="Mode.text"
-      :main-menu-bar="true"
-      :navigation-bar="true"
-      :validator="validator"
-      :on-change="handleEditorChange"
-      class="json-editor flex-1 min-h-0"
-    />
+
+    <div class="flex-1 min-h-0">
+      <SongTab v-if="activeTab === 'song'" />
+      <LyricsTab v-if="activeTab === 'lyrics'" />
+      <LyricsJsonTab
+        v-if="activeTab === 'json'"
+        ref="lyricsJsonTabRef"
+        @validation-change="handleValidationChange"
+      />
+    </div>
   </div>
 </template>
