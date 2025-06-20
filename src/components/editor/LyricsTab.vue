@@ -187,14 +187,16 @@ const handleToggleCopyAudioTrackFrom = () => {
 };
 
 const focusTextareaAndMoveCursorToEnd = (event: Event) => {
-  const textarea = (event.target as HTMLElement)
-    .closest("[data-lyric-hitbox]")
-    ?.querySelector("textarea");
+  const target = event.target as HTMLElement;
+  const textarea = target.closest("[data-lyric-hitbox]")?.querySelector("textarea");
+
   if (textarea) {
     textarea.focus();
-    // Move cursor to end
-    const length = textarea.value.length;
-    textarea.setSelectionRange(length, length);
+    // Only move cursor to end if the click target is not the textarea itself
+    if (target !== textarea) {
+      const length = textarea.value.length;
+      textarea.setSelectionRange(length, length);
+    }
   }
 };
 
