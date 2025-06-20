@@ -11,6 +11,7 @@ import { useLyricsEditor, type FocusPosition } from "@/composables/useLyricsEdit
 import type { LyricVerse } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
+import { formatTime } from "@/utils/datetime-utils";
 import KeyboardHelpModal from "./KeyboardHelpModal.vue";
 import LyricsTextarea from "./LyricsTextarea.vue";
 import LyricsToolbar from "./LyricsToolbar.vue";
@@ -41,6 +42,16 @@ const lyricsToDisplay = computed(() => {
   }
   return lyrics;
 });
+
+const formatTimestamp = (verse: LyricVerse): string | null => {
+  if (verse.start_time !== undefined) {
+    if (verse.end_time !== undefined) {
+      return `${formatTime(verse.start_time)} - ${formatTime(verse.end_time)}`;
+    }
+    return formatTime(verse.start_time);
+  }
+  return null;
+};
 
 const {
   showHelp,
@@ -187,7 +198,7 @@ defineExpose({
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <div
               v-if="!Array.isArray(item)"
-              class="flex focus-within:bg-base-content/8 px-5"
+              class="flex flex-col focus-within:bg-base-content/8 px-5"
               :class="{
                 'cursor-text': !copyColorFromMode,
                 'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyColorFromMode
@@ -198,6 +209,18 @@ defineExpose({
                   : focusTextareaAndMoveCursorToEnd($event)
               "
             >
+              <div
+                v-if="item.start_time || item.end_time"
+                class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
+              >
+                <span v-if="item.start_time">
+                  {{ item.start_time }}
+                </span>
+                <span v-if="item.end_time">-</span>
+                <span v-if="item.end_time">
+                  {{ item.end_time }}
+                </span>
+              </div>
               <LyricsTextarea
                 v-model="createVerseModel(i, j).value"
                 :data-input="`${i}-${j}`"
@@ -216,7 +239,7 @@ defineExpose({
                 <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="flex focus-within:bg-base-content/8 px-3"
+                  class="flex flex-col focus-within:bg-base-content/8 px-3"
                   :class="{
                     'pl-5': k === 0,
                     'pr-5': k === column.length - 1,
@@ -234,6 +257,18 @@ defineExpose({
                       : focusTextareaAndMoveCursorToEnd($event)
                   "
                 >
+                  <div
+                    v-if="line.start_time || line.end_time"
+                    class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
+                  >
+                    <span v-if="line.start_time">
+                      {{ line.start_time }}
+                    </span>
+                    <span v-if="line.end_time">-</span>
+                    <span v-if="line.end_time">
+                      {{ line.end_time }}
+                    </span>
+                  </div>
                   <LyricsTextarea
                     v-model="createColumnModel(i, j, k, l).value"
                     :data-input="`${i}-${j}-${k}-${l}`"

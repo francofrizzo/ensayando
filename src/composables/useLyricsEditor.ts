@@ -556,14 +556,20 @@ export function useLyricsEditor(
     } else if (event.key === "ArrowLeft") {
       // Only navigate horizontally if cursor is at the beginning of the input
       const inputElement = target as HTMLInputElement;
-      if (inputElement.selectionStart === 0) {
+      if (
+        inputElement.selectionStart === 0 &&
+        inputElement.selectionEnd === inputElement.selectionStart
+      ) {
         event.preventDefault();
         navigateHorizontal("left");
       }
     } else if (event.key === "ArrowRight") {
       // Only navigate horizontally if cursor is at the end of the input
       const inputElement = target as HTMLInputElement;
-      if (inputElement.selectionStart === inputElement.value.length) {
+      if (
+        inputElement.selectionStart === inputElement.value.length &&
+        inputElement.selectionEnd === inputElement.selectionStart
+      ) {
         event.preventDefault();
         navigateHorizontal("right");
       }

@@ -184,7 +184,7 @@ const keydownHandler = (event: KeyboardEvent) => {
   if (
     target &&
     (target.closest(".jse-modal") || target.closest("input") || target.closest("textarea")) &&
-    !event.shiftKey
+    !event.altKey
   ) {
     return;
   }
