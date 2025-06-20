@@ -1,18 +1,4 @@
 <script setup lang="ts">
-import { useCurrentCollection } from "@/composables/useCurrentCollection";
-import { useCurrentSong } from "@/composables/useCurrentSong";
-import { useNavigation } from "@/composables/useNavigation";
-import {
-  deleteAudioTracks,
-  insertAudioTrack,
-  insertSong,
-  updateAudioTrack,
-  updateSongBasicInfo
-} from "@/data/supabase";
-import type { AudioTrack } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
-import { useCollectionsStore } from "@/stores/collections";
-import { selectMostContrasting } from "@/utils/utils";
 import {
   ArrowDown,
   ArrowUp,
@@ -28,7 +14,23 @@ import {
 } from "lucide-vue-next";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { toast } from "vue-sonner";
-import SafeTeleport from "../ui/SafeTeleport.vue";
+
+import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
+import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useCurrentCollection } from "@/composables/useCurrentCollection";
+import { useCurrentSong } from "@/composables/useCurrentSong";
+import { useNavigation } from "@/composables/useNavigation";
+import {
+  deleteAudioTracks,
+  insertAudioTrack,
+  insertSong,
+  updateAudioTrack,
+  updateSongBasicInfo
+} from "@/data/supabase";
+import type { AudioTrack } from "@/data/types";
+import { useAuthStore } from "@/stores/auth";
+import { useCollectionsStore } from "@/stores/collections";
+import { selectMostContrasting } from "@/utils/utils";
 
 // Constants
 const VALIDATION_RULES = {
@@ -60,6 +62,7 @@ const isSaving = ref(false);
 const isDirty = ref(false);
 const isCreateMode = ref(false);
 const trackKeyCounter = ref(0);
+const uploadingTrackIndex = ref<number | null>(null);
 const errors = reactive({
   title: "",
   slug: "",
@@ -184,6 +187,23 @@ const handleTrackUrlInput = (index: number, event: Event) => {
 
 const handleColorChange = (index: number, colorKey: string) => {
   updateTrackField(index, "color_key", colorKey);
+};
+
+const handleUploadStart = (index: number) => {
+  uploadingTrackIndex.value = index;
+};
+
+const handleUploadEnd = () => {
+  uploadingTrackIndex.value = null;
+};
+
+const handleUploadSuccess = (index: number, data: { url: string; suggestedTitle: string }) => {
+  updateTrackField(index, "audio_file_url", data.url);
+
+  const track = formData.audio_tracks[index];
+  if (track && !track.title) {
+    updateTrackField(index, "title", data.suggestedTitle);
+  }
 };
 
 // Validation
@@ -618,14 +638,23 @@ const tracksForRendering = computed(() =>
                       />
                     </label>
                   </div>
-                </div>
 
-                <div class="shrink-0">
+                  <AudioTrackUploader
+                    v-if="currentCollection"
+                    :track="formData.audio_tracks[track.renderIndex]!"
+                    :collection="currentCollection"
+                    :song="currentSong || { slug: formData.slug }"
+                    :disabled="!formData.slug && isCreateMode"
+                    @upload-start="handleUploadStart(track.renderIndex)"
+                    @upload-end="handleUploadEnd"
+                    @upload-success="(data: any) => handleUploadSuccess(track.renderIndex, data)"
+                  />
+
                   <button
-                    class="btn btn-sm btn-error btn-soft btn-square"
+                    class="btn btn-sm btn-error btn-soft btn-square shrink-0"
                     @click="removeAudioTrack(track.renderIndex)"
                   >
-                    <Trash2 class="size-3" />
+                    <Trash2 class="size-3.5" />
                   </button>
                 </div>
               </div>
