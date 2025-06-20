@@ -5,6 +5,7 @@ import {
   ArrowLeftToLine,
   ArrowRightToLine,
   ArrowUpToLine,
+  Clock,
   Columns,
   Copy,
   Droplet,
@@ -29,6 +30,9 @@ interface Props {
   copyColorFromMode: boolean;
   onColorsChange: (colors: string[]) => void;
   onToggleCopyColorFrom: () => void;
+  // Timestamp visibility
+  showTimestamps: boolean;
+  onToggleTimestamps: () => void;
 }
 
 const props = defineProps<Props>();
@@ -162,6 +166,21 @@ const altKey = isMac ? "⌥" : "Alt";
       >
         <Droplet class="size-3" />
         <span class="sr-only">Copiar color de otro verso</span>
+      </button>
+    </div>
+
+    <!-- Timestamp visibility -->
+    <div class="divider divider-horizontal mx-0"></div>
+
+    <div class="lg:tooltip lg:tooltip-bottom">
+      <div class="tooltip-content">Mostrar/ocultar marcas de tiempo</div>
+      <button
+        class="btn btn-xs btn-circle btn-ghost"
+        :class="{ 'btn-active': showTimestamps }"
+        @click="onToggleTimestamps"
+      >
+        <Clock class="size-3" />
+        <span class="sr-only">Mostrar/ocultar marcas de tiempo</span>
       </button>
     </div>
 

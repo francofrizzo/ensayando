@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
 import { HelpCircle, Save } from "lucide-vue-next";
@@ -69,6 +69,13 @@ const {
   toggleCopyColorFromMode,
   copyColorsFromVerse
 } = useLyricsEditor(lyricsToDisplay, store.updateLocalLyrics, handleSaveClick);
+
+// Timestamp visibility state
+const showTimestamps = ref(true);
+
+const toggleTimestamps = () => {
+  showTimestamps.value = !showTimestamps.value;
+};
 
 const createVerseModel = (stanzaIndex: number, itemIndex: number) => {
   return computed({
@@ -186,6 +193,8 @@ defineExpose({
         :copy-color-from-mode="copyColorFromMode"
         :on-colors-change="handleColorsChange"
         :on-toggle-copy-color-from="handleToggleCopyColorFrom"
+        :show-timestamps="showTimestamps"
+        :on-toggle-timestamps="toggleTimestamps"
       />
     </div>
     <div class="flex-1 flex flex-col pb-3">
@@ -198,7 +207,7 @@ defineExpose({
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <div
               v-if="!Array.isArray(item)"
-              class="flex flex-col focus-within:bg-base-content/8 px-5"
+              class="flex flex-col items-start focus-within:bg-base-content/8 px-5"
               :class="{
                 'cursor-text': !copyColorFromMode,
                 'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyColorFromMode
@@ -210,7 +219,7 @@ defineExpose({
               "
             >
               <div
-                v-if="item.start_time || item.end_time"
+                v-if="(item.start_time || item.end_time) && showTimestamps"
                 class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
               >
                 <span v-if="item.start_time">
@@ -239,7 +248,7 @@ defineExpose({
                 <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="flex flex-col focus-within:bg-base-content/8 px-3"
+                  class="flex flex-col items-start focus-within:bg-base-content/8 px-3"
                   :class="{
                     'pl-5': k === 0,
                     'pr-5': k === column.length - 1,
@@ -258,7 +267,7 @@ defineExpose({
                   "
                 >
                   <div
-                    v-if="line.start_time || line.end_time"
+                    v-if="(line.start_time || line.end_time) && showTimestamps"
                     class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
                   >
                     <span v-if="line.start_time">
