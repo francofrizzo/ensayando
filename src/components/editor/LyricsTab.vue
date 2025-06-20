@@ -31,9 +31,19 @@ const handleSaveClick = () => {
   }
 };
 
+// Computed property to ensure we always have at least one stanza with one verse
+const lyricsToDisplay = computed(() => {
+  const lyrics = store.localLyrics.value;
+  if (lyrics.length === 0) {
+    // Return a single stanza with one empty verse
+    return [[{ text: "", start_time: undefined, end_time: undefined }]];
+  }
+  return lyrics;
+});
+
 // Initialize keyboard navigation
-const { currentFocus, showHelp, handleInputFocus } = useKeyboardLyricsNavigation(
-  computed(() => store.localLyrics.value),
+const { showHelp, handleInputFocus } = useKeyboardLyricsNavigation(
+  lyricsToDisplay,
   store.updateLocalLyrics,
   handleSaveClick
 );
@@ -49,7 +59,13 @@ const createVerseModel = (stanzaIndex: number, itemIndex: number) => {
       return "";
     },
     set: (newText: string) => {
-      const currentLyrics = [...store.localLyrics.value];
+      let currentLyrics = [...store.localLyrics.value];
+
+      // If lyrics are empty, initialize with the default structure
+      if (currentLyrics.length === 0) {
+        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
+      }
+
       const stanza = currentLyrics[stanzaIndex];
       if (stanza && !Array.isArray(stanza[itemIndex])) {
         (stanza[itemIndex] as LyricVerse).text = newText;
@@ -77,7 +93,13 @@ const createColumnModel = (
       return "";
     },
     set: (newText: string) => {
-      const currentLyrics = [...store.localLyrics.value];
+      let currentLyrics = [...store.localLyrics.value];
+
+      // If lyrics are empty, initialize with the default structure
+      if (currentLyrics.length === 0) {
+        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
+      }
+
       const stanza = currentLyrics[stanzaIndex];
       if (stanza && Array.isArray(stanza[itemIndex])) {
         const columns = stanza[itemIndex] as LyricVerse[][];
@@ -102,58 +124,43 @@ defineExpose({
 </script>
 
 <template>
-  <div class="h-full flex flex-col py-2 pl-3 pr-2 min-w-0">
-    <div class="flex-1 flex flex-col gap-4">
+  <div class="h-full flex flex-col pl-3 pr-2 min-w-0">
+    <div class="flex-1 flex flex-col pt-2 pb-3">
       <div
-        v-for="(stanza, i) in store.localLyrics.value"
+        v-for="(stanza, i) in lyricsToDisplay"
         :key="i"
-        class="card bg-base-200 border border-base-300 shadow-sm"
+        class="border-1 not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none border-base-content/15 rounded-box px-5 py-4"
       >
-        <div class="card-body p-5">
-          <div class="flex flex-col gap-1 items-start">
-            <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
-              <input
-                v-if="!Array.isArray(item)"
-                v-model="createVerseModel(i, j).value"
-                :data-input="`${i}-${j}`"
-                type="text"
-                class="grow w-full"
-                :class="{
-                  'ring-2 ring-primary ring-opacity-50':
-                    currentFocus?.stanzaIndex === i &&
-                    currentFocus?.itemIndex === j &&
-                    currentFocus?.columnIndex === undefined
-                }"
-                @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
-              />
-              <div v-else class="flex flex-row gap-4 items-start">
-                <div
-                  v-for="(column, k) in item"
-                  :key="`${i}-${j}-${k}`"
-                  class="flex flex-col gap-1 items-start"
-                >
-                  <input
-                    v-for="(line, l) in column"
-                    :key="`${i}-${j}-${k}-${l}`"
-                    v-model="createColumnModel(i, j, k, l).value"
-                    :data-input="`${i}-${j}-${k}-${l}`"
-                    type="text"
-                    class="grow"
-                    :class="{
-                      'ring-2 ring-primary ring-opacity-50':
-                        currentFocus?.stanzaIndex === i &&
-                        currentFocus?.itemIndex === j &&
-                        currentFocus?.columnIndex === k &&
-                        currentFocus?.lineIndex === l
-                    }"
-                    @focus="
-                      onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
-                    "
-                  />
-                </div>
+        <div class="flex flex-col gap-1 items-start">
+          <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
+            <input
+              v-if="!Array.isArray(item)"
+              v-model="createVerseModel(i, j).value"
+              :data-input="`${i}-${j}`"
+              type="text"
+              class="grow w-full font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1"
+              @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
+            />
+            <div v-else class="flex flex-row w-full gap-4 items-stretch">
+              <div
+                v-for="(column, k) in item"
+                :key="`${i}-${j}-${k}`"
+                class="flex-1 flex flex-col gap-1 items-start not-last:border-r-1 border-base-content/20"
+              >
+                <input
+                  v-for="(line, l) in column"
+                  :key="`${i}-${j}-${k}-${l}`"
+                  v-model="createColumnModel(i, j, k, l).value"
+                  :data-input="`${i}-${j}-${k}-${l}`"
+                  type="text"
+                  class="grow w-full font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1"
+                  @focus="
+                    onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
+                  "
+                />
               </div>
-            </template>
-          </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -181,7 +188,6 @@ defineExpose({
       </button>
     </SafeTeleport>
 
-    <!-- Help Modal -->
     <KeyboardHelpModal :show="showHelp" @close="showHelp = false" />
   </div>
 </template>
