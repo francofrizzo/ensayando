@@ -11,6 +11,7 @@ const emit = defineEmits<{
 
 const isMac = navigator.platform.toLowerCase().includes("mac");
 const modKey = isMac ? "⌘" : "Ctrl";
+const altKey = isMac ? "⌥" : "Alt";
 </script>
 
 <template>
@@ -31,7 +32,7 @@ const modKey = isMac ? "⌘" : "Ctrl";
 
       <div class="p-6 space-y-6">
         <div>
-          <h3 class="font-medium uppercase tracking-wide mb-3 text-primary">Navegación</h3>
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">Navegación</h3>
           <div class="space-y-2">
             <div class="flex justify-between items-center">
               <span>Navegar entre líneas</span>
@@ -44,6 +45,18 @@ const modKey = isMac ? "⌘" : "Ctrl";
               <span>Moverse dentro del texto</span>
               <div class="flex gap-1">
                 <kbd class="kbd kbd-sm">←</kbd>
+                <kbd class="kbd kbd-sm">→</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Navegar entre columnas</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">←</kbd>
+                <span class="text-base-content/60">/</span>
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">→</kbd>
               </div>
             </div>
@@ -61,30 +74,26 @@ const modKey = isMac ? "⌘" : "Ctrl";
         </div>
 
         <div>
-          <h3 class="font-medium uppercase tracking-wide mb-3 text-primary">
-            Operaciones de líneas
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
+            Operaciones de versos
           </h3>
           <div class="space-y-2">
             <div class="flex justify-between items-center">
-              <span>Insertar nueva línea después</span>
+              <span>Insertar nuevo verso después del actual</span>
               <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <kbd class="kbd kbd-sm">Enter</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Insertar nuevo verso antes del actual</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">Enter</kbd>
               </div>
             </div>
             <div class="flex justify-between items-center">
-              <span>Insertar nueva línea antes</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Duplicar línea actual</span>
+              <span>Duplicar verso actual</span>
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
@@ -92,7 +101,7 @@ const modKey = isMac ? "⌘" : "Ctrl";
               </div>
             </div>
             <div class="flex justify-between items-center">
-              <span>Eliminar línea actual</span>
+              <span>Eliminar verso actual</span>
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
@@ -103,12 +112,17 @@ const modKey = isMac ? "⌘" : "Ctrl";
         </div>
 
         <div>
-          <h3 class="font-medium uppercase tracking-wide mb-3 text-primary">
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
             Operaciones de columnas
           </h3>
           <div class="space-y-2">
-            <div class="text-sm text-base-content/70 mb-2">
-              <em>Disponibles solo en versos con múltiples columnas</em>
+            <div class="flex justify-between items-center">
+              <span>Convertir en un verso con múltiples columnas</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">\</kbd>
+              </div>
             </div>
             <div class="flex justify-between items-center">
               <span>Insertar columna a la derecha</span>
@@ -130,7 +144,7 @@ const modKey = isMac ? "⌘" : "Ctrl";
         </div>
 
         <div>
-          <h3 class="font-medium uppercase tracking-wide mb-3 text-primary">
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
             Operaciones de estrofas
           </h3>
           <div class="space-y-2">
@@ -139,16 +153,16 @@ const modKey = isMac ? "⌘" : "Ctrl";
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">N</kbd>
+                <kbd class="kbd kbd-sm">Enter</kbd>
               </div>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 class="font-medium uppercase tracking-wide mb-3 text-primary">Acciones rápidas</h3>
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
+            Acciones rápidas
+          </h3>
           <div class="space-y-2">
             <div class="flex justify-between items-center">
               <span>Guardar cambios</span>

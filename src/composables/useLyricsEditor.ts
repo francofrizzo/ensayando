@@ -8,7 +8,7 @@ export interface FocusPosition {
   lineIndex?: number;
 }
 
-export function useKeyboardLyricsNavigation(
+export function useLyricsEditor(
   lyrics: Ref<LyricStanza[]>,
   updateLyrics: (newLyrics: LyricStanza[]) => void,
   onSave?: () => void
@@ -36,6 +36,53 @@ export function useKeyboardLyricsNavigation(
     const element = getInputElement(position);
     if (element) {
       element.focus();
+    }
+  };
+
+  // Navigate between columns horizontally
+  const navigateHorizontal = (direction: "left" | "right") => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+
+    // Only works in column context
+    if (columnIndex === undefined) return;
+
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    const item = stanza[itemIndex] as LyricVerse[][];
+    if (!Array.isArray(item)) return;
+
+    if (direction === "right") {
+      // Move to next column
+      if (columnIndex + 1 < item.length) {
+        const nextColumn = item[columnIndex + 1];
+        if (nextColumn) {
+          const targetLineIndex = Math.min(lineIndex || 0, nextColumn.length - 1);
+          focusInput({
+            stanzaIndex,
+            itemIndex,
+            columnIndex: columnIndex + 1,
+            lineIndex: targetLineIndex
+          });
+        }
+      }
+    } else {
+      // Move to previous column
+      if (columnIndex > 0) {
+        const prevColumn = item[columnIndex - 1];
+        if (prevColumn) {
+          const targetLineIndex = Math.min(lineIndex || 0, prevColumn.length - 1);
+          focusInput({
+            stanzaIndex,
+            itemIndex,
+            columnIndex: columnIndex - 1,
+            lineIndex: targetLineIndex
+          });
+        }
+      }
     }
   };
 
@@ -193,7 +240,40 @@ export function useKeyboardLyricsNavigation(
       if (!column) return;
 
       if (column.length <= 1) {
-        // Don't delete the last line in a column
+        // Delete the entire column if it has only one verse
+        item.splice(columnIndex, 1);
+
+        // If only one column remains, convert back to flat shape
+        if (item.length === 1) {
+          const remainingColumn = item[0];
+          if (remainingColumn && remainingColumn.length === 1) {
+            const remainingVerse = remainingColumn[0];
+            if (remainingVerse) {
+              stanza[itemIndex] = remainingVerse;
+              updateLyrics(currentLyrics);
+              nextTick(() => {
+                focusInput({ stanzaIndex, itemIndex });
+              });
+              return;
+            }
+          }
+        }
+
+        updateLyrics(currentLyrics);
+        // Focus the previous column or first column if we deleted the first one
+        const newColumnIndex = columnIndex > 0 ? columnIndex - 1 : 0;
+        const targetColumn = item[newColumnIndex];
+        if (targetColumn) {
+          const targetLineIndex = Math.min(lineIndex, targetColumn.length - 1);
+          nextTick(() => {
+            focusInput({
+              stanzaIndex,
+              itemIndex,
+              columnIndex: newColumnIndex,
+              lineIndex: targetLineIndex
+            });
+          });
+        }
         return;
       }
 
@@ -208,7 +288,40 @@ export function useKeyboardLyricsNavigation(
     } else {
       // Deleting a regular verse
       if (stanza.length <= 1) {
-        // Don't delete the last item in a stanza
+        // Delete the entire stanza if it has only one verse
+        if (currentLyrics.length <= 1) {
+          // Don't delete the last stanza, just clear its content
+          stanza[0] = { text: "" };
+          updateLyrics(currentLyrics);
+          nextTick(() => {
+            focusInput({ stanzaIndex, itemIndex: 0 });
+          });
+          return;
+        }
+
+        currentLyrics.splice(stanzaIndex, 1);
+        updateLyrics(currentLyrics);
+
+        // Focus the previous stanza or next stanza if we deleted the first one
+        const newStanzaIndex = stanzaIndex > 0 ? stanzaIndex - 1 : 0;
+        const targetStanza = currentLyrics[newStanzaIndex];
+        if (targetStanza && targetStanza.length > 0) {
+          const targetItemIndex = stanzaIndex > 0 ? targetStanza.length - 1 : 0;
+          const targetItem = targetStanza[targetItemIndex];
+
+          nextTick(() => {
+            if (Array.isArray(targetItem)) {
+              focusInput({
+                stanzaIndex: newStanzaIndex,
+                itemIndex: targetItemIndex,
+                columnIndex: 0,
+                lineIndex: 0
+              });
+            } else {
+              focusInput({ stanzaIndex: newStanzaIndex, itemIndex: targetItemIndex });
+            }
+          });
+        }
         return;
       }
 
@@ -229,18 +342,58 @@ export function useKeyboardLyricsNavigation(
     }
   };
 
+  // Convert regular verse to column layout
+  const convertToColumns = () => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
+    // Only works on regular verses (not already in column layout)
+    if (columnIndex !== undefined) return;
+
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    const currentVerse = stanza[itemIndex] as LyricVerse;
+    if (Array.isArray(currentVerse)) return; // Already columns
+
+    // Convert to column layout with two columns
+    const newColumnLayout: LyricVerse[][] = [
+      [
+        {
+          text: currentVerse.text,
+          start_time: currentVerse.start_time,
+          end_time: currentVerse.end_time
+        }
+      ],
+      [{ text: "" }]
+    ];
+
+    stanza[itemIndex] = newColumnLayout;
+    updateLyrics(currentLyrics);
+
+    nextTick(() => {
+      focusInput({ stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 });
+    });
+  };
+
   // Insert new column
   const insertColumn = (before: boolean = false) => {
     if (!currentFocus.value) return;
 
     const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
-    if (columnIndex === undefined) return;
 
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
-    const item = stanza[itemIndex] as LyricVerse[][];
 
+    // If not in column context, convert to columns first
+    if (columnIndex === undefined) {
+      convertToColumns();
+      return;
+    }
+
+    const item = stanza[itemIndex] as LyricVerse[][];
     const newColumn: LyricVerse[] = [{ text: "" }];
     const insertIndex = before ? columnIndex : columnIndex + 1;
 
@@ -303,6 +456,42 @@ export function useKeyboardLyricsNavigation(
     }
   };
 
+  // Smart backspace: delete empty verse
+  const handleSmartBackspace = () => {
+    if (!currentFocus.value) return false;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return false;
+
+    // Check if current verse/line is empty
+    let isEmpty = false;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        isEmpty = !column[lineIndex].text?.trim();
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      isEmpty = !verse.text?.trim();
+    }
+
+    // If empty and cursor is at start of input, delete the verse/line
+    if (isEmpty) {
+      const inputElement = getInputElement(currentFocus.value);
+      if (inputElement && inputElement.selectionStart === 0) {
+        deleteLine();
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Keyboard event handler
   const handleKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
@@ -312,6 +501,14 @@ export function useKeyboardLyricsNavigation(
 
     const isMac = navigator.platform.toLowerCase().includes("mac");
     const cmdOrCtrl = isMac ? event.metaKey : event.ctrlKey;
+
+    // Smart backspace for empty verses
+    if (event.key === "Backspace" && !cmdOrCtrl) {
+      if (handleSmartBackspace()) {
+        event.preventDefault();
+        return;
+      }
+    }
 
     // Help toggle
     if (event.key === "?" && event.shiftKey) {
@@ -327,12 +524,21 @@ export function useKeyboardLyricsNavigation(
     } else if (event.key === "ArrowDown" && !cmdOrCtrl) {
       event.preventDefault();
       navigateVertical("down");
+    } else if (event.key === "ArrowLeft" && cmdOrCtrl) {
+      event.preventDefault();
+      navigateHorizontal("left");
+    } else if (event.key === "ArrowRight" && cmdOrCtrl) {
+      event.preventDefault();
+      navigateHorizontal("right");
     }
 
     // Line operations
-    else if (event.key === "Enter" && cmdOrCtrl) {
+    else if (event.key === "Enter" && !cmdOrCtrl && !event.altKey) {
       event.preventDefault();
-      insertLine(event.shiftKey);
+      insertLine(false); // Insert line after
+    } else if (event.key === "Enter" && event.altKey && !cmdOrCtrl) {
+      event.preventDefault();
+      insertLine(true); // Insert line before
     } else if (event.key === "Backspace" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       deleteLine();
@@ -341,19 +547,30 @@ export function useKeyboardLyricsNavigation(
       duplicateLine();
     }
 
-    // Column operations (only in multi-column contexts)
-    else if (event.key === "]" && cmdOrCtrl && currentFocus.value?.columnIndex !== undefined) {
+    // Column operations
+    else if (event.key === "]" && cmdOrCtrl) {
       event.preventDefault();
       insertColumn(!event.shiftKey);
-    } else if (event.key === "[" && cmdOrCtrl && currentFocus.value?.columnIndex !== undefined) {
+    } else if (event.key === "[" && cmdOrCtrl) {
       event.preventDefault();
       insertColumn(true);
+    } else if (event.key === "\\" && cmdOrCtrl && !event.shiftKey) {
+      event.preventDefault();
+      convertToColumns();
     }
 
     // Stanza operations
-    else if (event.key === "n" && cmdOrCtrl && event.shiftKey) {
+    else if (event.key === "Enter" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       insertStanza();
+    }
+
+    // Save operation
+    else if (event.key === "s" && cmdOrCtrl && !event.shiftKey) {
+      event.preventDefault();
+      if (onSave) {
+        onSave();
+      }
     }
   };
 
@@ -374,6 +591,15 @@ export function useKeyboardLyricsNavigation(
     currentFocus: computed(() => currentFocus.value),
     showHelp,
     handleInputFocus,
-    focusInput
+    focusInput,
+    // Expose individual functions for button usage
+    insertLine,
+    deleteLine,
+    duplicateLine,
+    insertColumn,
+    insertStanza,
+    convertToColumns,
+    navigateVertical,
+    navigateHorizontal
   };
 }
