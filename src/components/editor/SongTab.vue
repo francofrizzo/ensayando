@@ -446,6 +446,11 @@ const tracksForRendering = computed(() =>
     stableKey: `track-${Math.abs(track.id)}-${index}`
   }))
 );
+
+// Expose isDirty to parent component
+defineExpose({
+  isDirty
+});
 </script>
 
 <template>

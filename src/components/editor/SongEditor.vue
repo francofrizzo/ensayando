@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Braces, Music, X } from "lucide-vue-next";
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
 import LyricsTab from "@/components/editor/LyricsTab.vue";
@@ -11,6 +11,57 @@ const emit = defineEmits<{
 }>();
 
 const activeTab = ref("song");
+const songTabRef = ref<InstanceType<typeof SongTab> | null>(null);
+const lyricsJsonTabRef = ref<InstanceType<typeof LyricsJsonTab> | null>(null);
+
+// Unsaved changes tracking
+const hasUnsavedChanges = () => {
+  // Check if SongTab has unsaved changes (isDirty)
+  const songTabHasChanges = songTabRef.value?.isDirty ?? false;
+
+  // Check if LyricsJsonTab has unsaved changes
+  const lyricsTabHasChanges = lyricsJsonTabRef.value?.hasUnsavedChanges ?? false;
+
+  return songTabHasChanges || lyricsTabHasChanges;
+};
+
+const confirmCloseEditor = (): boolean => {
+  if (!hasUnsavedChanges()) {
+    return true;
+  }
+
+  return confirm("Hay cambios sin guardar. ¿Deseas cerrar el editor? Los cambios se perderán.");
+};
+
+const handleCloseEditor = () => {
+  if (confirmCloseEditor()) {
+    emit("toggle-edit");
+  }
+};
+
+const handleTabChange = (newTab: string) => {
+  // Allow tab switching without confirmation
+  // The unsaved changes warning will only apply when closing the entire editor
+  activeTab.value = newTab;
+};
+
+// Browser navigation protection
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges()) {
+    event.preventDefault();
+    // Modern browsers ignore custom messages and show a standard message
+    event.returnValue = "";
+    return "";
+  }
+};
+
+onMounted(() => {
+  window.addEventListener("beforeunload", handleBeforeUnload);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+});
 </script>
 
 <template>
@@ -23,7 +74,7 @@ const activeTab = ref("song");
           role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'song' }"
-          @click="activeTab = 'song'"
+          @click="handleTabChange('song')"
         >
           <Music class="size-3.5" /> Canción
         </a>
@@ -31,7 +82,7 @@ const activeTab = ref("song");
           role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'lyrics' }"
-          @click="activeTab = 'lyrics'"
+          @click="handleTabChange('lyrics')"
         >
           <MicVocal class="size-3.5" /> Letra
         </a> -->
@@ -39,7 +90,7 @@ const activeTab = ref("song");
           role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'lyrics-json' }"
-          @click="activeTab = 'lyrics-json'"
+          @click="handleTabChange('lyrics-json')"
         >
           <Braces class="size-3.5" />
           Letra (JSON)
@@ -48,16 +99,16 @@ const activeTab = ref("song");
 
       <div class="flex items-center gap-2">
         <div data-song-editor-actions></div>
-        <button class="btn btn-xs btn-square btn-soft" @click="emit('toggle-edit')">
+        <button class="btn btn-xs btn-square btn-soft" @click="handleCloseEditor">
           <X class="size-3.5" />
         </button>
       </div>
     </div>
 
     <div class="flex-1 min-h-0">
-      <SongTab v-if="activeTab === 'song'" />
+      <SongTab v-if="activeTab === 'song'" ref="songTabRef" />
       <LyricsTab v-if="activeTab === 'lyrics'" />
-      <LyricsJsonTab v-if="activeTab === 'lyrics-json'" />
+      <LyricsJsonTab v-if="activeTab === 'lyrics-json'" ref="lyricsJsonTabRef" />
     </div>
   </div>
 </template>

@@ -101,6 +101,11 @@ onBeforeUnmount(() => {
     validationTimeout = null;
   }
 });
+
+// Expose hasUnsavedChanges to parent component
+defineExpose({
+  hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
+});
 </script>
 
 <template>
