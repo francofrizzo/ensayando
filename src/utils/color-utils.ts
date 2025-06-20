@@ -1,10 +1,5 @@
 import { clampChroma, formatCss, lch, wcagContrast } from "culori";
 
-export const formatTime = (time: number): string => {
-  const [minutes, seconds] = [Math.floor(time / 60), Math.floor(time % 60)];
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
-
 export const darken = (colorStr: string, amount: number) => {
   const colorLch = lch(colorStr);
   if (!colorLch) return colorStr;
@@ -26,6 +21,14 @@ export const transparentize = (colorStr: string, amount: number) => {
   if (!colorLch) return colorStr;
   const currentAlpha = colorLch.alpha ?? 1;
   return formatCss(clampChroma({ ...colorLch, alpha: Math.max(0, currentAlpha - amount) }));
+};
+
+export const average = (colors: string[]) => {
+  const colorLch = colors.map((color) => lch(color));
+  const averageL = colorLch.reduce((sum, color) => sum + (color?.l ?? 0), 0) / colorLch.length;
+  const averageC = colorLch.reduce((sum, color) => sum + (color?.c ?? 0), 0) / colorLch.length;
+  const averageH = colorLch.reduce((sum, color) => sum + (color?.h ?? 0), 0) / colorLch.length;
+  return formatCss(clampChroma({ mode: "lch", l: averageL, c: averageC, h: averageH }));
 };
 
 export const selectMostContrasting = (colorStr: string, choicesStr: string[]) => {

@@ -6,7 +6,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 
 import type { AudioTrack, Collection } from "@/data/types";
-import { darken, lighten } from "@/utils/utils";
+import { darken, lighten } from "@/utils/color-utils";
 
 const props = defineProps<{
   collection: Collection;

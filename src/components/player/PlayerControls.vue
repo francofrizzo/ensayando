@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Copy, Pause, Play } from "lucide-vue-next";
 
-import { formatTime } from "@/utils/utils";
+import { formatTime } from "@/utils/datetime-utils";
 
 const props = defineProps<{
   currentTime: number;

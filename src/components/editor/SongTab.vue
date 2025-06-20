@@ -16,6 +16,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
 import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
+import ColorPicker from "@/components/ui/ColorPicker.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
@@ -30,7 +31,6 @@ import {
 import type { AudioTrack } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
-import { selectMostContrasting } from "@/utils/utils";
 
 // Constants
 const VALIDATION_RULES = {
@@ -425,14 +425,6 @@ const colorOptions = computed(() =>
   }))
 );
 
-const getColorStyle = (colorKey: string) => {
-  const value = currentCollection.value?.track_colors?.[colorKey];
-  return {
-    backgroundColor: value,
-    color: value ? selectMostContrasting(value, ["#ffffff", "#000000"]) : undefined
-  };
-};
-
 const canSave = computed(() => authStore.isAuthenticated && isDirty.value && !isSaving.value);
 
 const canCreateNewSong = computed(
@@ -583,37 +575,18 @@ defineExpose({
                 <div class="flex flex-1 flex-row gap-2">
                   <div class="form-control">
                     <label class="label sr-only">Color</label>
-                    <div class="dropdown">
-                      <div
-                        :style="getColorStyle(formData.audio_tracks[track.renderIndex]!.color_key)"
-                        tabindex="0"
-                        role="button"
-                        class="btn btn-sm btn-square shadow-xs"
-                      >
-                        {{ formData.audio_tracks[track.renderIndex]!.color_key }}
-                      </div>
-                      <div
-                        tabindex="0"
-                        class="dropdown-content menu bg-base-100 min-w-max rounded-box border border-base-300"
-                      >
-                        <div class="grid grid-cols-4 gap-2 p-2 min-w-fit">
-                          <div
-                            v-for="color in colorOptions"
-                            :key="color.value"
-                            class="flex-shrink-0"
-                          >
-                            <button
-                              type="button"
-                              class="w-6 h-6 shadow-xs rounded-field text-xs font-medium hover:scale-110 transition-transform duration-200 cursor-pointer flex-shrink-0"
-                              :style="getColorStyle(color.key)"
-                              @click="handleColorChange(track.renderIndex, color.key)"
-                            >
-                              {{ color.key }}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <ColorPicker
+                      :selected-colors="[formData.audio_tracks[track.renderIndex]!.color_key]"
+                      :available-colors="colorOptions"
+                      :multiple="false"
+                      @update:selected-colors="
+                        (colors: string[]) =>
+                          handleColorChange(
+                            track.renderIndex,
+                            colors[0] || colorOptions[0]?.key || 'blue'
+                          )
+                      "
+                    />
                   </div>
 
                   <div class="form-control flex-1">

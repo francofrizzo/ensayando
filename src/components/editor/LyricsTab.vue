@@ -12,6 +12,7 @@ import type { LyricVerse } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import KeyboardHelpModal from "./KeyboardHelpModal.vue";
+import LyricsTextarea from "./LyricsTextarea.vue";
 import LyricsToolbar from "./LyricsToolbar.vue";
 
 const store = useCollectionsStore();
@@ -50,7 +51,12 @@ const {
   duplicateLine,
   insertColumn,
   insertStanza,
-  convertToColumns
+  convertToColumns,
+  getCurrentVerseColors,
+  setCurrentVerseColors,
+  copyColorFromMode,
+  toggleCopyColorFromMode,
+  copyColorsFromVerse
 } = useLyricsEditor(lyricsToDisplay, store.updateLocalLyrics, handleSaveClick);
 
 const createVerseModel = (stanzaIndex: number, itemIndex: number) => {
@@ -120,6 +126,24 @@ const onInputFocus = (position: FocusPosition) => {
   handleInputFocus(position);
 };
 
+// Color functionality
+const currentVerseColors = computed(() => getCurrentVerseColors());
+
+const availableColors = computed(() =>
+  Object.entries(currentCollection.value?.track_colors ?? {}).map(([key, value]) => ({
+    key,
+    value
+  }))
+);
+
+const handleColorsChange = (colors: string[]) => {
+  setCurrentVerseColors(colors);
+};
+
+const handleToggleCopyColorFrom = () => {
+  toggleCopyColorFromMode();
+};
+
 defineExpose({
   hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
 });
@@ -127,7 +151,7 @@ defineExpose({
 
 <template>
   <div class="h-full flex flex-col gap-2 pl-3 pr-2 min-w-0 overflow-y-auto">
-    <div class="sticky top-0 z-10 flex justify-center">
+    <div class="sticky top-0 z-10 flex flex-col items-center gap-2">
       <LyricsToolbar
         :current-focus="currentFocus"
         :on-insert-stanza="insertStanza"
@@ -136,6 +160,11 @@ defineExpose({
         :on-delete-line="deleteLine"
         :on-insert-column="insertColumn"
         :on-convert-to-columns="convertToColumns"
+        :current-verse-colors="currentVerseColors"
+        :available-colors="availableColors"
+        :copy-color-from-mode="copyColorFromMode"
+        :on-colors-change="handleColorsChange"
+        :on-toggle-copy-color-from="handleToggleCopyColorFrom"
       />
     </div>
     <div class="flex-1 flex flex-col pb-3">
@@ -148,31 +177,24 @@ defineExpose({
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <div
               v-if="!Array.isArray(item)"
-              class="flex focus-within:bg-base-content/8 px-5 cursor-text"
-              @click="($event.target as HTMLElement).querySelector('textarea')?.focus()"
+              class="flex focus-within:bg-base-content/8 px-5"
+              :class="{
+                'cursor-text': !copyColorFromMode,
+                'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyColorFromMode
+              }"
+              @click="
+                copyColorFromMode
+                  ? copyColorsFromVerse({ stanzaIndex: i, itemIndex: j })
+                  : ($event.target as HTMLElement).querySelector('textarea')?.focus()
+              "
             >
-              <textarea
+              <LyricsTextarea
                 v-model="createVerseModel(i, j).value"
                 :data-input="`${i}-${j}`"
-                :style="getVerseStyles(item, currentCollection)"
-                rows="1"
-                class="font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1 resize-none overflow-hidden bg-size-content"
-                style="field-sizing: content"
+                :verse-styles="getVerseStyles(item, currentCollection)"
+                :readonly="copyColorFromMode"
+                :class="{ 'cursor-pointer': copyColorFromMode }"
                 @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
-                @keydown="
-                  (e) => {
-                    if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                      e.preventDefault();
-                    }
-                  }
-                "
-                @input="
-                  (e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = target.scrollHeight + 'px';
-                  }
-                "
               />
             </div>
             <div v-else class="flex flex-row w-full items-stretch">
@@ -184,33 +206,32 @@ defineExpose({
                 <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="flex focus-within:bg-base-content/8 px-3 cursor-text"
-                  :class="{ 'pl-5': k === 0, 'pr-5': k === column.length - 1 }"
-                  @click="($event.target as HTMLElement).querySelector('textarea')?.focus()"
+                  class="flex focus-within:bg-base-content/8 px-3"
+                  :class="{
+                    'pl-5': k === 0,
+                    'pr-5': k === column.length - 1,
+                    'cursor-text': !copyColorFromMode,
+                    'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyColorFromMode
+                  }"
+                  @click="
+                    copyColorFromMode
+                      ? copyColorsFromVerse({
+                          stanzaIndex: i,
+                          itemIndex: j,
+                          columnIndex: k,
+                          lineIndex: l
+                        })
+                      : ($event.target as HTMLElement).querySelector('textarea')?.focus()
+                  "
                 >
-                  <textarea
+                  <LyricsTextarea
                     v-model="createColumnModel(i, j, k, l).value"
                     :data-input="`${i}-${j}-${k}-${l}`"
-                    :style="getVerseStyles(line, currentCollection)"
-                    rows="1"
-                    class="font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1 resize-none overflow-hidden"
-                    style="field-sizing: content"
+                    :verse-styles="getVerseStyles(line, currentCollection)"
+                    :readonly="copyColorFromMode"
+                    :class="{ 'cursor-pointer': copyColorFromMode }"
                     @focus="
                       onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
-                    "
-                    @keydown="
-                      (e) => {
-                        if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                          e.preventDefault();
-                        }
-                      }
-                    "
-                    @input="
-                      (e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = target.scrollHeight + 'px';
-                      }
                     "
                   />
                 </div>

@@ -535,16 +535,16 @@ export function useLyricsEditor(
     // Line operations
     else if (event.key === "Enter" && !cmdOrCtrl && !event.altKey) {
       event.preventDefault();
-      insertLine(false); // Insert line after
+      insertLineWithColorInheritance(false); // Insert line after
     } else if (event.key === "Enter" && event.altKey && !cmdOrCtrl) {
       event.preventDefault();
-      insertLine(true); // Insert line before
+      insertLineWithColorInheritance(true); // Insert line before
     } else if (event.key === "Backspace" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       deleteLine();
     } else if (event.key === "d" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
-      duplicateLine();
+      duplicateLineWithColors();
     }
 
     // Column operations
@@ -572,11 +572,140 @@ export function useLyricsEditor(
         onSave();
       }
     }
+
+    // Color operations are now handled through the UI picker
   };
 
   // Handle input focus
   const handleInputFocus = (position: FocusPosition) => {
     currentFocus.value = position;
+  };
+
+  // Color operations
+  const getCurrentVerseColors = (): string[] => {
+    if (!currentFocus.value) return [];
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return [];
+
+    let verse: LyricVerse | undefined;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        verse = column[lineIndex];
+      }
+    } else {
+      // Regular verse
+      verse = stanza[itemIndex] as LyricVerse;
+    }
+
+    return verse?.color_keys || [];
+  };
+
+  const setCurrentVerseColors = (colors: string[]) => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        if (colors.length === 0) {
+          delete column[lineIndex].color_keys;
+        } else {
+          column[lineIndex].color_keys = colors;
+        }
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      if (colors.length === 0) {
+        delete verse.color_keys;
+      } else {
+        verse.color_keys = colors;
+      }
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
+  // Copy color from mode
+  const copyColorFromMode = ref(false);
+
+  const toggleCopyColorFromMode = () => {
+    copyColorFromMode.value = !copyColorFromMode.value;
+  };
+
+  const copyColorsFromVerse = (sourcePosition: FocusPosition) => {
+    if (!currentFocus.value || !copyColorFromMode.value) return;
+
+    // Store the original focus to restore later
+    const originalFocus = { ...currentFocus.value };
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = sourcePosition;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    let sourceColors: string[] = [];
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // Source is in column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        sourceColors = column[lineIndex].color_keys || [];
+      }
+    } else {
+      // Source is regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      sourceColors = verse.color_keys || [];
+    }
+
+    // Apply the colors to the current verse
+    setCurrentVerseColors([...sourceColors]);
+
+    // Exit copy mode after copying
+    copyColorFromMode.value = false;
+
+    // Restore focus to the original verse
+    nextTick(() => {
+      focusInput(originalFocus);
+    });
+  };
+
+  const getColorsForInheritance = (): string[] => {
+    if (!currentFocus.value) return [];
+    return getCurrentVerseColors();
+  };
+
+  // Update insertLine to inherit colors
+  const originalInsertLine = insertLine;
+  const insertLineWithColorInheritance = (before: boolean = false) => {
+    const colorsToInherit = getColorsForInheritance();
+    originalInsertLine(before);
+
+    // Apply inherited colors to the newly created line
+    if (colorsToInherit.length > 0) {
+      nextTick(() => {
+        setCurrentVerseColors(colorsToInherit);
+      });
+    }
+  };
+
+  // Update duplicateLine to preserve colors
+  const originalDuplicateLine = duplicateLine;
+  const duplicateLineWithColors = () => {
+    originalDuplicateLine();
+    // Colors are already preserved in the duplication logic
   };
 
   onMounted(() => {
@@ -593,13 +722,19 @@ export function useLyricsEditor(
     handleInputFocus,
     focusInput,
     // Expose individual functions for button usage
-    insertLine,
+    insertLine: insertLineWithColorInheritance,
     deleteLine,
-    duplicateLine,
+    duplicateLine: duplicateLineWithColors,
     insertColumn,
     insertStanza,
     convertToColumns,
     navigateVertical,
-    navigateHorizontal
+    navigateHorizontal,
+    // Color operations
+    getCurrentVerseColors,
+    setCurrentVerseColors,
+    copyColorFromMode: computed(() => copyColorFromMode.value),
+    toggleCopyColorFromMode,
+    copyColorsFromVerse
   };
 }

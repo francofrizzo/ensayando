@@ -7,10 +7,13 @@ import {
   ArrowUpToLine,
   Columns,
   Copy,
+  Droplet,
   ListPlus,
   Trash2
 } from "lucide-vue-next";
 import { computed } from "vue";
+
+import ColorPicker from "@/components/ui/ColorPicker.vue";
 
 interface Props {
   currentFocus: FocusPosition | null;
@@ -20,6 +23,12 @@ interface Props {
   onDeleteLine: () => void;
   onInsertColumn: (before?: boolean) => void;
   onConvertToColumns: () => void;
+  // Color operations
+  currentVerseColors: string[];
+  availableColors: { key: string; value: string }[];
+  copyColorFromMode: boolean;
+  onColorsChange: (colors: string[]) => void;
+  onToggleCopyColorFrom: () => void;
 }
 
 const props = defineProps<Props>();
@@ -125,6 +134,34 @@ const altKey = isMac ? "⌥" : "Alt";
       >
         <ArrowRightToLine class="size-3" />
         <span class="sr-only">Insertar columna a la derecha</span>
+      </button>
+    </div>
+
+    <!-- Color operations -->
+    <div class="divider divider-horizontal mx-0"></div>
+
+    <div class="lg:tooltip lg:tooltip-bottom">
+      <div class="tooltip-content">Cambiar colores del verso</div>
+      <ColorPicker
+        :selected-colors="currentVerseColors"
+        :available-colors="availableColors"
+        :multiple="true"
+        :disabled="!canPerformActions"
+        btn-class="btn-xs"
+        @update:selected-colors="onColorsChange"
+      />
+    </div>
+
+    <div class="lg:tooltip lg:tooltip-bottom">
+      <div class="tooltip-content">Copiar color de otro verso</div>
+      <button
+        class="btn btn-xs btn-circle btn-ghost"
+        :class="{ 'btn-active': copyColorFromMode }"
+        :disabled="!canPerformActions"
+        @click="onToggleCopyColorFrom"
+      >
+        <Droplet class="size-3" />
+        <span class="sr-only">Copiar color de otro verso</span>
       </button>
     </div>
 
