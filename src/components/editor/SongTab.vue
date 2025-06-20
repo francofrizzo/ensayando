@@ -16,7 +16,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
 import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
-import ColorPicker from "@/components/ui/ColorPicker.vue";
+import ColorPicker from "@/components/editor/ColorPicker.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";

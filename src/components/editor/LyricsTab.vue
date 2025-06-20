@@ -4,6 +4,7 @@ import { toast } from "vue-sonner";
 
 import { HelpCircle, Save } from "lucide-vue-next";
 
+import LyricsTimestamps from "@/components/editor/LyricsTimestamps.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { usePlayerState } from "@/composables/useCurrentTime";
@@ -19,7 +20,7 @@ import LyricsToolbar from "./LyricsToolbar.vue";
 const store = useCollectionsStore();
 const authStore = useAuthStore();
 const { currentCollection } = useCurrentCollection();
-const { currentTime, isPlaying } = usePlayerState();
+const { currentTime } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
 const { saveLyrics } = store;
 
@@ -59,12 +60,15 @@ const {
   copyColorFromMode,
   toggleCopyColorFromMode,
   copyColorsFromVerse,
+  getCurrentVerseAudioTrackIds,
+  setCurrentVerseAudioTrackIds,
+  copyAudioTrackFromMode,
+  toggleCopyAudioTrackFromMode,
+  copyAudioTrackIdsFromVerse,
   setCurrentVerseStartTime,
   setCurrentVerseEndTime,
   adjustCurrentVerseStartTime,
   adjustCurrentVerseEndTime,
-  clearCurrentVerseStartTime,
-  clearCurrentVerseEndTime,
   clearCurrentVerseBothTimes
 } = useLyricsEditor(
   lyricsToDisplay,
@@ -165,8 +169,27 @@ const handleToggleCopyColorFrom = () => {
   toggleCopyColorFromMode();
 };
 
+// Audio track functionality
+const currentVerseAudioTrackIds = computed(() => getCurrentVerseAudioTrackIds());
+
+const availableAudioTracks = computed(() => {
+  const currentSong = store.currentSong;
+  if (!currentSong) return [];
+  return [...currentSong.audio_tracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+});
+
+const handleAudioTrackIdsChange = (trackIds: number[]) => {
+  setCurrentVerseAudioTrackIds(trackIds);
+};
+
+const handleToggleCopyAudioTrackFrom = () => {
+  toggleCopyAudioTrackFromMode();
+};
+
 const focusTextareaAndMoveCursorToEnd = (event: Event) => {
-  const textarea = (event.target as HTMLElement).querySelector("textarea");
+  const textarea = (event.target as HTMLElement)
+    .closest("[data-lyric-hitbox]")
+    ?.querySelector("textarea");
   if (textarea) {
     textarea.focus();
     // Move cursor to end
@@ -196,6 +219,11 @@ defineExpose({
         :copy-color-from-mode="copyColorFromMode"
         :on-colors-change="handleColorsChange"
         :on-toggle-copy-color-from="handleToggleCopyColorFrom"
+        :current-verse-audio-track-ids="currentVerseAudioTrackIds"
+        :available-audio-tracks="availableAudioTracks"
+        :copy-audio-track-from-mode="copyAudioTrackFromMode"
+        :on-audio-track-ids-change="handleAudioTrackIdsChange"
+        :on-toggle-copy-audio-track-from="handleToggleCopyAudioTrackFrom"
         :show-timestamps="showTimestamps"
         :on-toggle-timestamps="toggleTimestamps"
         :on-set-start-time="setCurrentVerseStartTime"
@@ -216,36 +244,31 @@ defineExpose({
             <div
               v-if="!Array.isArray(item)"
               class="flex flex-col items-start focus-within:bg-base-content/8 px-5"
+              data-lyric-hitbox
               :class="{
-                'cursor-text': !copyColorFromMode,
-                'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyColorFromMode
+                'cursor-text': !copyColorFromMode && !copyAudioTrackFromMode,
+                'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
+                  copyColorFromMode || copyAudioTrackFromMode
               }"
               @click="
                 copyColorFromMode
                   ? copyColorsFromVerse({ stanzaIndex: i, itemIndex: j })
-                  : focusTextareaAndMoveCursorToEnd($event)
+                  : copyAudioTrackFromMode
+                    ? copyAudioTrackIdsFromVerse({ stanzaIndex: i, itemIndex: j })
+                    : focusTextareaAndMoveCursorToEnd($event)
               "
             >
-              <div
-                v-if="
-                  (item.start_time !== undefined || item.end_time !== undefined) && showTimestamps
-                "
-                class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
-              >
-                <span v-if="item.start_time !== undefined">
-                  {{ item.start_time }}
-                </span>
-                <span v-if="item.end_time !== undefined">-</span>
-                <span v-if="item.end_time !== undefined">
-                  {{ item.end_time }}
-                </span>
-              </div>
+              <LyricsTimestamps
+                v-if="showTimestamps"
+                :verse="item"
+                :available-audio-tracks="availableAudioTracks"
+              />
               <LyricsTextarea
                 v-model="createVerseModel(i, j).value"
                 :data-input="`${i}-${j}`"
                 :verse-styles="getVerseStyles(item, currentCollection)"
-                :readonly="copyColorFromMode"
-                :class="{ 'cursor-pointer': copyColorFromMode }"
+                :readonly="copyColorFromMode || copyAudioTrackFromMode"
+                :class="{ 'cursor-pointer': copyColorFromMode || copyAudioTrackFromMode }"
                 @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
               />
             </div>
@@ -259,11 +282,13 @@ defineExpose({
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
                   class="flex flex-col items-start focus-within:bg-base-content/8 px-3"
+                  data-lyric-hitbox
                   :class="{
                     'pl-5': k === 0,
                     'pr-5': k === column.length - 1,
-                    'cursor-text': !copyColorFromMode,
-                    'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyColorFromMode
+                    'cursor-text': !copyColorFromMode && !copyAudioTrackFromMode,
+                    'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
+                      copyColorFromMode || copyAudioTrackFromMode
                   }"
                   @click="
                     copyColorFromMode
@@ -273,30 +298,28 @@ defineExpose({
                           columnIndex: k,
                           lineIndex: l
                         })
-                      : focusTextareaAndMoveCursorToEnd($event)
+                      : copyAudioTrackFromMode
+                        ? copyAudioTrackIdsFromVerse({
+                            stanzaIndex: i,
+                            itemIndex: j,
+                            columnIndex: k,
+                            lineIndex: l
+                          })
+                        : focusTextareaAndMoveCursorToEnd($event)
                   "
                 >
-                  <div
-                    v-if="
-                      (line.start_time !== undefined || line.end_time !== undefined) &&
-                      showTimestamps
-                    "
-                    class="flex flex-row gap-1 text-xs text-base-content/40 font-mono mr-3 px-1"
-                  >
-                    <span v-if="line.start_time !== undefined">
-                      {{ line.start_time }}
-                    </span>
-                    <span v-if="line.end_time !== undefined">-</span>
-                    <span v-if="line.end_time !== undefined">
-                      {{ line.end_time }}
-                    </span>
-                  </div>
+                  <LyricsTimestamps
+                    v-if="showTimestamps"
+                    :verse="line"
+                    :available-audio-tracks="availableAudioTracks"
+                    :max-tracks="1"
+                  />
                   <LyricsTextarea
                     v-model="createColumnModel(i, j, k, l).value"
                     :data-input="`${i}-${j}-${k}-${l}`"
                     :verse-styles="getVerseStyles(line, currentCollection)"
-                    :readonly="copyColorFromMode"
-                    :class="{ 'cursor-pointer': copyColorFromMode }"
+                    :readonly="copyColorFromMode || copyAudioTrackFromMode"
+                    :class="{ 'cursor-pointer': copyColorFromMode || copyAudioTrackFromMode }"
                     @focus="
                       onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
                     "

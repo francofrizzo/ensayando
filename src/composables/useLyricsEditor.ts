@@ -808,10 +808,10 @@ export function useLyricsEditor(
     // Line operations
     else if (event.key === "Enter" && !cmdOrCtrl && !event.altKey && !event.shiftKey) {
       event.preventDefault();
-      insertLineWithColorInheritance(false); // Insert line after
+      insertLineWithInheritance(false); // Insert line after
     } else if (event.key === "Enter" && event.altKey && !cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
-      insertLineWithColorInheritance(true); // Insert line before
+      insertLineWithInheritance(true); // Insert line before
     } else if (event.key === "Enter" && event.shiftKey && !cmdOrCtrl && !event.altKey) {
       event.preventDefault();
       insertLineOutsideColumn(false); // Insert line after, outside column context
@@ -823,7 +823,7 @@ export function useLyricsEditor(
       deleteLine();
     } else if (event.key === "d" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
-      duplicateLineWithColors();
+      duplicateLineWithInheritance();
     }
 
     // Column operations
@@ -848,6 +848,12 @@ export function useLyricsEditor(
     else if (event.key === "k" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       toggleCopyColorFromMode();
+    }
+
+    // Audio track operations
+    else if (event.key === "i" && cmdOrCtrl && !event.shiftKey) {
+      event.preventDefault();
+      toggleCopyAudioTrackFromMode();
     }
 
     // Save operation
@@ -1009,25 +1015,135 @@ export function useLyricsEditor(
     return getCurrentVerseColors();
   };
 
-  // Update insertLine to inherit colors
-  const originalInsertLine = insertLine;
-  const insertLineWithColorInheritance = (before: boolean = false) => {
-    const colorsToInherit = getColorsForInheritance();
-    originalInsertLine(before);
+  // Audio track operations
+  const getCurrentVerseAudioTrackIds = (): number[] => {
+    if (!currentFocus.value) return [];
 
-    // Apply inherited colors to the newly created line
-    if (colorsToInherit.length > 0) {
-      nextTick(() => {
-        setCurrentVerseColors(colorsToInherit);
-      });
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return [];
+
+    let verse: LyricVerse | undefined;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        verse = column[lineIndex];
+      }
+    } else {
+      // Regular verse
+      verse = stanza[itemIndex] as LyricVerse;
     }
+
+    return verse?.audio_track_ids || [];
   };
 
-  // Update duplicateLine to preserve colors
+  const setCurrentVerseAudioTrackIds = (trackIds: number[]) => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        if (trackIds.length === 0) {
+          delete column[lineIndex].audio_track_ids;
+        } else {
+          column[lineIndex].audio_track_ids = trackIds;
+        }
+      }
+    } else {
+      // Regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      if (trackIds.length === 0) {
+        delete verse.audio_track_ids;
+      } else {
+        verse.audio_track_ids = trackIds;
+      }
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
+  // Copy audio track from mode
+  const copyAudioTrackFromMode = ref(false);
+
+  const toggleCopyAudioTrackFromMode = () => {
+    copyAudioTrackFromMode.value = !copyAudioTrackFromMode.value;
+  };
+
+  const copyAudioTrackIdsFromVerse = (sourcePosition: FocusPosition) => {
+    if (!currentFocus.value || !copyAudioTrackFromMode.value) return;
+
+    // Store the original focus to restore later
+    const originalFocus = { ...currentFocus.value };
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = sourcePosition;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    let sourceTrackIds: number[] = [];
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // Source is in column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        sourceTrackIds = column[lineIndex].audio_track_ids || [];
+      }
+    } else {
+      // Source is regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      sourceTrackIds = verse.audio_track_ids || [];
+    }
+
+    // Apply the track IDs to the current verse
+    setCurrentVerseAudioTrackIds([...sourceTrackIds]);
+
+    // Exit copy mode after copying
+    copyAudioTrackFromMode.value = false;
+
+    // Restore focus to the original verse
+    nextTick(() => {
+      focusInput(originalFocus);
+    });
+  };
+
+  const getAudioTrackIdsForInheritance = (): number[] => {
+    if (!currentFocus.value) return [];
+    return getCurrentVerseAudioTrackIds();
+  };
+
+  // Update insertLine to inherit colors and audio tracks
+  const originalInsertLine = insertLine;
+  const insertLineWithInheritance = (before: boolean = false) => {
+    const colorsToInherit = getColorsForInheritance();
+    const trackIdsToInherit = getAudioTrackIdsForInheritance();
+    originalInsertLine(before);
+
+    // Apply inherited colors and track IDs to the newly created line
+    nextTick(() => {
+      if (colorsToInherit.length > 0) {
+        setCurrentVerseColors(colorsToInherit);
+      }
+      if (trackIdsToInherit.length > 0) {
+        setCurrentVerseAudioTrackIds(trackIdsToInherit);
+      }
+    });
+  };
+
+  // Update duplicateLine to preserve colors and audio tracks
   const originalDuplicateLine = duplicateLine;
-  const duplicateLineWithColors = () => {
+  const duplicateLineWithInheritance = () => {
     originalDuplicateLine();
-    // Colors are already preserved in the duplication logic
+    // Colors and audio track IDs are already preserved in the duplication logic
   };
 
   onMounted(() => {
@@ -1045,9 +1161,9 @@ export function useLyricsEditor(
     handleInputFocus,
     focusInput,
     // Expose individual functions for button usage
-    insertLine: insertLineWithColorInheritance,
+    insertLine: insertLineWithInheritance,
     deleteLine,
-    duplicateLine: duplicateLineWithColors,
+    duplicateLine: duplicateLineWithInheritance,
     insertColumn,
     insertStanza,
     convertToColumns,
@@ -1059,6 +1175,12 @@ export function useLyricsEditor(
     copyColorFromMode: computed(() => copyColorFromMode.value),
     toggleCopyColorFromMode,
     copyColorsFromVerse,
+    // Audio track operations
+    getCurrentVerseAudioTrackIds,
+    setCurrentVerseAudioTrackIds,
+    copyAudioTrackFromMode: computed(() => copyAudioTrackFromMode.value),
+    toggleCopyAudioTrackFromMode,
+    copyAudioTrackIdsFromVerse,
     // Timestamp operations
     setCurrentVerseStartTime,
     setCurrentVerseEndTime,

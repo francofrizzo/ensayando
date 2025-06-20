@@ -84,3 +84,7 @@
 @source inline("{bg,text,border,from,to,via}-{red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,pastelrose,pastelsky,pastelyellow,zinc}-{400,500,600}");
 
 @import "./json-editor.css";
+
+body {
+  @apply selection:bg-base-content/10;
+}

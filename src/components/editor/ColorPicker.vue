@@ -122,17 +122,17 @@ const isColorSelected = (colorKey: string) => {
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 min-w-max rounded-box border border-base-300 shadow-lg z-50"
+      class="dropdown-content menu bg-base-100 rounded-box min-w-max z-50 p-2 shadow-lg border border-base-content/10"
     >
-      <div class="p-2 flex flex-col gap-1">
+      <div class="flex flex-col gap-1">
         <div class="grid grid-cols-4 gap-2 mb-2">
           <button
             v-for="color in availableColors"
             :key="color.key"
             type="button"
-            class="w-6 h-6 shadow-xs rounded-field text-xs font-medium hover:scale-110 transition-transform duration-200 cursor-pointer flex-shrink-0 border-2"
+            class="w-6 h-6 shadow-xs rounded-field text-xs font-medium opacity-80 hover:opacity-100 transition-opacity duration-200 cursor-pointer flex-shrink-0 border-2"
             :class="{
-              'border-base-content': isColorSelected(color.key),
+              'border-base-content opacity-100': isColorSelected(color.key),
               'border-transparent': !isColorSelected(color.key)
             }"
             :style="getColorStyle(color.key)"

@@ -192,6 +192,22 @@ const altKey = isMac ? "⌥" : "Alt";
 
         <div>
           <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
+            Operaciones de pistas de audio
+          </h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span>Activar/desactivar modo copiar pistas de audio</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">I</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
             Marcas de tiempo
           </h3>
           <div class="space-y-2">
