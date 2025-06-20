@@ -1,5 +1,6 @@
-import type { Collection, Song } from "@/data/types";
 import { useRouter } from "vue-router";
+
+import type { Collection, Song } from "@/data/types";
 
 export function useNavigation() {
   const router = useRouter();

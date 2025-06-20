@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import ErrorMessage from "@/components/ErrorMessage.vue";
-import LoadingScreen from "@/components/LoadingScreen.vue";
-import MultitrackPlayer from "@/components/MultitrackPlayer.vue";
+import { computed, onMounted } from "vue";
+
+import MultitrackPlayer from "@/components/player/MultitrackPlayer.vue";
+import ErrorMessage from "@/components/ui/ErrorMessage.vue";
+import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useCollectionsStore } from "@/stores/collections";
-import { computed, onMounted } from "vue";
 
 const collectionsStore = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();

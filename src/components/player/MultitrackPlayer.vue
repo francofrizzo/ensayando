@@ -2,12 +2,12 @@
 import { ChevronDown, Loader2, MicVocal } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
-import LyricsViewer from "@/components/LyricsViewer.vue";
-import PlayerControls from "@/components/PlayerControls.vue";
-import PlayerHeader from "@/components/PlayerHeader.vue";
-import SongEditor from "@/components/SongEditor.vue";
-import TimeCopier from "@/components/TimeCopier.vue";
-import TrackPlayer from "@/components/TrackPlayer.vue";
+import SongEditor from "@/components/editor/SongEditor.vue";
+import TimeCopier from "@/components/editor/TimeCopier.vue";
+import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
+import PlayerControls from "@/components/player/PlayerControls.vue";
+import PlayerHeader from "@/components/player/PlayerHeader.vue";
+import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { Collection, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";

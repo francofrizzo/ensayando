@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "@/stores/auth";
 import { LogIn, LogOut, User } from "lucide-vue-next";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
-import LoginModal from "./LoginModal.vue";
+
+import LoginModal from "@/components/auth/LoginModal.vue";
+import { useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
 const showLoginModal = ref(false);

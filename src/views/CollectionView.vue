@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import ErrorMessage from "@/components/ErrorMessage.vue";
-import LoadingScreen from "@/components/LoadingScreen.vue";
+import { computed, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
+
+import ErrorMessage from "@/components/ui/ErrorMessage.vue";
+import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useNavigation } from "@/composables/useNavigation";
 import { useCollectionsStore } from "@/stores/collections";
-import { computed, onMounted, watch } from "vue";
-import { useRoute } from "vue-router";
 
 const route = useRoute();
 const collectionsStore = useCollectionsStore();

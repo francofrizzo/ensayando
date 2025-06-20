@@ -2,11 +2,11 @@
 import { Edit, LockKeyhole, Menu, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
+import AuthStatus from "@/components/auth/AuthStatus.vue";
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import type { Collection } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
-import AuthStatus from "./AuthStatus.vue";
 
 const props = defineProps<{
   collection: Collection;

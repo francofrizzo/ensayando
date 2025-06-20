@@ -1,3 +1,4 @@
+import { inject } from "@vercel/analytics";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 
@@ -5,8 +6,6 @@ import App from "@/App.vue";
 import "@/assets/styles.css";
 import router from "@/router";
 import { useAuthStore } from "@/stores/auth";
-
-import { inject } from "@vercel/analytics";
 
 const app = createApp(App);
 const pinia = createPinia();

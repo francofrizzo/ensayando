@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import ErrorMessage from "@/components/ErrorMessage.vue";
-import LoadingScreen from "@/components/LoadingScreen.vue";
+import { onMounted } from "vue";
+
+import ErrorMessage from "@/components/ui/ErrorMessage.vue";
+import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useNavigation } from "@/composables/useNavigation";
 import { useCollectionsStore } from "@/stores/collections";
-import { onMounted } from "vue";
 
 const collectionsStore = useCollectionsStore();
 const { replaceToCollection } = useNavigation();

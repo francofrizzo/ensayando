@@ -3,7 +3,7 @@ import { Mode, createAjvValidator } from "vanilla-jsoneditor";
 import { computed, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
-import JsonEditor from "@/components/JsonEditor.vue";
+import JsonEditor from "@/components/editor/JsonEditor.vue";
 import lyricSchema from "@/data/lyric-schema.json";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";

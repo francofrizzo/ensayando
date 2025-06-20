@@ -1,6 +1,7 @@
-import { useCollectionsStore } from "@/stores/collections";
 import { computed } from "vue";
-import { useRouteParams } from "./useRouteParams";
+
+import { useRouteParams } from "@/composables/useRouteParams";
+import { useCollectionsStore } from "@/stores/collections";
 
 export function useCurrentCollection() {
   const { collectionSlug } = useRouteParams();

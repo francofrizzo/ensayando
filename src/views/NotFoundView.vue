@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ErrorMessage from "@/components/ErrorMessage.vue";
+import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 </script>
 
 <template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { Collection, LyricStanza, LyricVerse } from "@/data/types";
 import { computed, ref, watch } from "vue";
+
+import type { Collection, LyricStanza, LyricVerse } from "@/data/types";
 
 const props = defineProps<{
   collection: Collection;

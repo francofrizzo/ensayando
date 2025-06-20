@@ -1,9 +1,10 @@
-import * as supabase from "@/data/supabase";
-import { type Collection, type LyricStanza, type Song } from "@/data/types";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useAuthStore } from "./auth";
+
+import * as supabase from "@/data/supabase";
+import type { Collection, LyricStanza, Song } from "@/data/types";
+import { useAuthStore } from "@/stores/auth";
 
 export const useCollectionsStore = defineStore("collections", () => {
   // Data state

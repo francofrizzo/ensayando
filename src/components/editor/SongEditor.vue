@@ -3,9 +3,9 @@ import { Braces, MicVocal, Music, Save, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
-import LyricsJsonTab from "@/components/LyricsJsonTab.vue";
-import LyricsTab from "@/components/LyricsTab.vue";
-import SongTab from "@/components/SongTab.vue";
+import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
+import LyricsTab from "@/components/editor/LyricsTab.vue";
+import SongTab from "@/components/editor/SongTab.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 

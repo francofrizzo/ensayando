@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useAuthStore } from "@/stores/auth";
 import { Key, LogIn, Mail, UserPlus, X } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
+
+import { useAuthStore } from "@/stores/auth";
 
 const emit = defineEmits<{
   close: [];

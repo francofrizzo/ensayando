@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { AudioTrack, Collection } from "@/data/types";
-import { darken, lighten } from "@/utils/utils";
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
 import { Hash, MicVocal, Volume2Icon, VolumeX } from "lucide-vue-next";
 import type { PartialWaveSurferOptions } from "node_modules/@meersagor/wavesurfer-vue/dist/types/types";
 import { computed, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
+
+import type { AudioTrack, Collection } from "@/data/types";
+import { darken, lighten } from "@/utils/utils";
 
 const props = defineProps<{
   collection: Collection;

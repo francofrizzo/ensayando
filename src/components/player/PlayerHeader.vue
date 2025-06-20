@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SongMenu from "@/components/SongMenu.vue";
+import SongMenu from "@/components/navigation/SongMenu.vue";
 import type { Collection, Song } from "@/data/types";
 
 const props = defineProps<{

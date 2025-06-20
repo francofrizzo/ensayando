@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
-import { useAuthStore } from "./auth";
+
+import { useAuthStore } from "@/stores/auth";
 
 export const useUIStore = defineStore("ui", () => {
   const editMode = ref(false);
