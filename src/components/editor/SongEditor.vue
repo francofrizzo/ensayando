@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="flex items-center gap-2">
-        <div data-song-editor-actions></div>
+        <div class="flex items-center gap-2" data-song-editor-actions></div>
         <button class="btn btn-xs btn-square btn-soft" @click="handleCloseEditor">
           <X class="size-3.5" />
         </button>

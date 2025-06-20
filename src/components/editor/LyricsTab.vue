@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { Save } from "lucide-vue-next";
+import { HelpCircle, Save } from "lucide-vue-next";
 import { computed } from "vue";
 import { toast } from "vue-sonner";
 
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import {
+  useKeyboardLyricsNavigation,
+  type FocusPosition
+} from "@/composables/useKeyboardLyricsNavigation";
 import type { LyricVerse } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
+import KeyboardHelpModal from "./KeyboardHelpModal.vue";
 
 const store = useCollectionsStore();
 const authStore = useAuthStore();
@@ -25,6 +30,13 @@ const handleSaveClick = () => {
     toast.error(`Error al guardar letras: ${error}`);
   }
 };
+
+// Initialize keyboard navigation
+const { currentFocus, showHelp, handleInputFocus } = useKeyboardLyricsNavigation(
+  computed(() => store.localLyrics.value),
+  store.updateLocalLyrics,
+  handleSaveClick
+);
 
 // Create computed properties for two-way binding
 const createVerseModel = (stanzaIndex: number, itemIndex: number) => {
@@ -78,6 +90,11 @@ const createColumnModel = (
   });
 };
 
+// Focus handler for inputs
+const onInputFocus = (position: FocusPosition) => {
+  handleInputFocus(position);
+};
+
 // Expose hasUnsavedChanges to parent component
 defineExpose({
   hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
@@ -98,8 +115,16 @@ defineExpose({
               <input
                 v-if="!Array.isArray(item)"
                 v-model="createVerseModel(i, j).value"
+                :data-input="`${i}-${j}`"
                 type="text"
                 class="grow w-full"
+                :class="{
+                  'ring-2 ring-primary ring-opacity-50':
+                    currentFocus?.stanzaIndex === i &&
+                    currentFocus?.itemIndex === j &&
+                    currentFocus?.columnIndex === undefined
+                }"
+                @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
               />
               <div v-else class="flex flex-row gap-4 items-start">
                 <div
@@ -111,8 +136,19 @@ defineExpose({
                     v-for="(line, l) in column"
                     :key="`${i}-${j}-${k}-${l}`"
                     v-model="createColumnModel(i, j, k, l).value"
+                    :data-input="`${i}-${j}-${k}-${l}`"
                     type="text"
                     class="grow"
+                    :class="{
+                      'ring-2 ring-primary ring-opacity-50':
+                        currentFocus?.stanzaIndex === i &&
+                        currentFocus?.itemIndex === j &&
+                        currentFocus?.columnIndex === k &&
+                        currentFocus?.lineIndex === l
+                    }"
+                    @focus="
+                      onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
+                    "
                   />
                 </div>
               </div>
@@ -123,6 +159,15 @@ defineExpose({
     </div>
 
     <SafeTeleport to="[data-song-editor-actions]">
+      <button
+        class="btn btn-xs btn-ghost"
+        title="Keyboard shortcuts (Shift + ?)"
+        @click="showHelp = !showHelp"
+      >
+        <HelpCircle class="size-3.5" />
+        <span class="hidden md:block">Ayuda</span>
+      </button>
+
       <button class="btn btn-xs btn-primary" :disabled="isSaveDisabled" @click="handleSaveClick">
         <template v-if="store.localLyrics.isSaving">
           <span class="loading loading-spinner loading-xs" />
@@ -135,5 +180,8 @@ defineExpose({
         </template>
       </button>
     </SafeTeleport>
+
+    <!-- Help Modal -->
+    <KeyboardHelpModal :show="showHelp" @close="showHelp = false" />
   </div>
 </template>
