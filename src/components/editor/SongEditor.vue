@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Braces, Music, X } from "lucide-vue-next";
+import { Braces, MicVocal, Music, X } from "lucide-vue-next";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
@@ -14,14 +14,9 @@ const activeTab = ref("song");
 const songTabRef = ref<InstanceType<typeof SongTab> | null>(null);
 const lyricsJsonTabRef = ref<InstanceType<typeof LyricsJsonTab> | null>(null);
 
-// Unsaved changes tracking
 const hasUnsavedChanges = () => {
-  // Check if SongTab has unsaved changes (isDirty)
   const songTabHasChanges = songTabRef.value?.isDirty ?? false;
-
-  // Check if LyricsJsonTab has unsaved changes
   const lyricsTabHasChanges = lyricsJsonTabRef.value?.hasUnsavedChanges ?? false;
-
   return songTabHasChanges || lyricsTabHasChanges;
 };
 
@@ -49,7 +44,6 @@ const handleTabChange = (newTab: string) => {
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   if (hasUnsavedChanges()) {
     event.preventDefault();
-    // Modern browsers ignore custom messages and show a standard message
     event.returnValue = "";
     return "";
   }
@@ -78,14 +72,14 @@ onBeforeUnmount(() => {
         >
           <Music class="size-3.5" /> Canción
         </a>
-        <!-- <a
+        <a
           role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'lyrics' }"
           @click="handleTabChange('lyrics')"
         >
           <MicVocal class="size-3.5" /> Letra
-        </a> -->
+        </a>
         <a
           role="tab"
           class="tab gap-1"
