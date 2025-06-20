@@ -1,58 +1,26 @@
 <script setup lang="ts">
-import { Braces, MicVocal, Music, Save, X } from "lucide-vue-next";
-import { computed, ref } from "vue";
-import { toast } from "vue-sonner";
+import { Braces, MicVocal, Music, X } from "lucide-vue-next";
+import { ref } from "vue";
 
 import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
 import LyricsTab from "@/components/editor/LyricsTab.vue";
 import SongTab from "@/components/editor/SongTab.vue";
-import { useAuthStore } from "@/stores/auth";
-import { useCollectionsStore } from "@/stores/collections";
-
-const store = useCollectionsStore();
-const authStore = useAuthStore();
 
 const emit = defineEmits<{
   "toggle-edit": [];
 }>();
 
-const activeTab = ref("json");
-const lyricsJsonTabRef = ref<any>(null);
-const hasValidationErrors = ref(false);
-
-const handleSaveClick = () => {
-  if (activeTab.value === "json" && lyricsJsonTabRef.value) {
-    lyricsJsonTabRef.value.handleSaveClick();
-  } else {
-    toast.info("Funcionalidad de guardado no disponible para esta pestaña");
-  }
-};
-
-// Move the save button state logic to parent component for proper reactivity
-const isSaveDisabled = computed(() => {
-  if (activeTab.value === "json") {
-    return (
-      !authStore.isAuthenticated ||
-      !store.localLyrics.isDirty ||
-      store.localLyrics.isSaving ||
-      hasValidationErrors.value
-    );
-  } else {
-    return true;
-  }
-});
-
-// Handle validation errors from child component
-const handleValidationChange = (hasErrors: boolean) => {
-  hasValidationErrors.value = hasErrors;
-};
+const activeTab = ref("lyrics-json");
 </script>
 
 <template>
-  <div class="h-screen flex flex-col">
-    <div class="flex items-center justify-between p-1.5">
-      <div class="tabs tabs-border tabs-xs">
+  <div class="h-screen flex flex-col overflow-y-auto">
+    <div
+      class="flex items-center justify-between p-1.5 sticky top-0 bg-base-100/50 backdrop-blur-sm z-10"
+    >
+      <div role="tablist" class="tabs tabs-border tabs-xs">
         <a
+          role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'song' }"
           @click="activeTab = 'song'"
@@ -60,6 +28,7 @@ const handleValidationChange = (hasErrors: boolean) => {
           <Music class="size-3.5" /> Canción
         </a>
         <a
+          role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'lyrics' }"
           @click="activeTab = 'lyrics'"
@@ -67,9 +36,10 @@ const handleValidationChange = (hasErrors: boolean) => {
           <MicVocal class="size-3.5" /> Letra
         </a>
         <a
+          role="tab"
           class="tab gap-1"
-          :class="{ 'tab-active': activeTab === 'json' }"
-          @click="activeTab = 'json'"
+          :class="{ 'tab-active': activeTab === 'lyrics-json' }"
+          @click="activeTab = 'lyrics-json'"
         >
           <Braces class="size-3.5" />
           Letra (JSON)
@@ -77,26 +47,7 @@ const handleValidationChange = (hasErrors: boolean) => {
       </div>
 
       <div class="flex items-center gap-2">
-        <button
-          class="btn btn-xs btn-primary"
-          :disabled="isSaveDisabled"
-          :class="{ 'btn-error': hasValidationErrors }"
-          @click="handleSaveClick"
-        >
-          <template v-if="store.localLyrics.isSaving">
-            <span class="loading loading-spinner loading-xs"></span>
-            <span>Guardando...</span>
-          </template>
-          <template v-else-if="hasValidationErrors">
-            <X class="size-3.5" />
-            <span class="hidden md:block">Hay errores</span>
-          </template>
-          <template v-else>
-            <Save class="size-3.5" />
-            <span class="hidden md:block">Guardar cambios</span>
-          </template>
-        </button>
-
+        <div data-song-editor-actions></div>
         <button class="btn btn-xs btn-square btn-soft" @click="emit('toggle-edit')">
           <X class="size-3.5" />
         </button>
@@ -106,11 +57,7 @@ const handleValidationChange = (hasErrors: boolean) => {
     <div class="flex-1 min-h-0">
       <SongTab v-if="activeTab === 'song'" />
       <LyricsTab v-if="activeTab === 'lyrics'" />
-      <LyricsJsonTab
-        v-if="activeTab === 'json'"
-        ref="lyricsJsonTabRef"
-        @validation-change="handleValidationChange"
-      />
+      <LyricsJsonTab v-if="activeTab === 'lyrics-json'" />
     </div>
   </div>
 </template>
