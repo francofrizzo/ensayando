@@ -5,6 +5,8 @@ import { toast } from "vue-sonner";
 import { HelpCircle, Save } from "lucide-vue-next";
 
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useCurrentCollection } from "@/composables/useCurrentCollection";
+import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useLyricsEditor, type FocusPosition } from "@/composables/useLyricsEditor";
 import type { LyricVerse } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
@@ -14,6 +16,8 @@ import LyricsToolbar from "./LyricsToolbar.vue";
 
 const store = useCollectionsStore();
 const authStore = useAuthStore();
+const { currentCollection } = useCurrentCollection();
+const { getVerseStyles } = useLyricsColoring();
 const { saveLyrics } = store;
 
 const isSaveDisabled = computed(() => {
@@ -112,7 +116,6 @@ const createColumnModel = (
   });
 };
 
-// Focus handler for   inputs
 const onInputFocus = (position: FocusPosition) => {
   handleInputFocus(position);
 };
@@ -139,65 +142,78 @@ defineExpose({
       <div
         v-for="(stanza, i) in lyricsToDisplay"
         :key="i"
-        class="border-1 not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none border-base-content/15 rounded-box px-5 py-4"
+        class="border-1 not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none border-base-content/15 rounded-box py-4"
       >
         <div class="flex flex-col items-stretch gap-1">
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
-            <textarea
+            <div
               v-if="!Array.isArray(item)"
-              v-model="createVerseModel(i, j).value"
-              :data-input="`${i}-${j}`"
-              rows="1"
-              class="font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1 resize-none overflow-hidden"
-              style="field-sizing: content"
-              @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
-              @keydown="
-                (e) => {
-                  if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                    e.preventDefault();
+              class="flex focus-within:bg-base-content/8 px-5 cursor-text"
+              @click="($event.target as HTMLElement).querySelector('textarea')?.focus()"
+            >
+              <textarea
+                v-model="createVerseModel(i, j).value"
+                :data-input="`${i}-${j}`"
+                :style="getVerseStyles(item, currentCollection)"
+                rows="1"
+                class="font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1 resize-none overflow-hidden bg-size-content"
+                style="field-sizing: content"
+                @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
+                @keydown="
+                  (e) => {
+                    if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                      e.preventDefault();
+                    }
                   }
-                }
-              "
-              @input="
-                (e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = target.scrollHeight + 'px';
-                }
-              "
-            />
-            <div v-else class="flex flex-row w-full gap-4 items-stretch">
+                "
+                @input="
+                  (e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = target.scrollHeight + 'px';
+                  }
+                "
+              />
+            </div>
+            <div v-else class="flex flex-row w-full items-stretch">
               <div
                 v-for="(column, k) in item"
                 :key="`${i}-${j}-${k}`"
                 class="flex-1 flex flex-col gap-1 justify-center not-last:border-r-1 border-base-content/20"
               >
-                <textarea
+                <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  v-model="createColumnModel(i, j, k, l).value"
-                  :data-input="`${i}-${j}-${k}-${l}`"
-                  rows="1"
-                  class="font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1 resize-none overflow-hidden"
-                  style="field-sizing: content"
-                  @focus="
-                    onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
-                  "
-                  @keydown="
-                    (e) => {
-                      if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                        e.preventDefault();
+                  class="flex focus-within:bg-base-content/8 px-3 cursor-text"
+                  :class="{ 'pl-5': k === 0, 'pr-5': k === column.length - 1 }"
+                  @click="($event.target as HTMLElement).querySelector('textarea')?.focus()"
+                >
+                  <textarea
+                    v-model="createColumnModel(i, j, k, l).value"
+                    :data-input="`${i}-${j}-${k}-${l}`"
+                    :style="getVerseStyles(line, currentCollection)"
+                    rows="1"
+                    class="font-mono text-sm focus:outline-none focus:ring-0 focus:bg-base-content/15 rounded-sm px-1 resize-none overflow-hidden"
+                    style="field-sizing: content"
+                    @focus="
+                      onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
+                    "
+                    @keydown="
+                      (e) => {
+                        if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                          e.preventDefault();
+                        }
                       }
-                    }
-                  "
-                  @input="
-                    (e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = target.scrollHeight + 'px';
-                    }
-                  "
-                />
+                    "
+                    @input="
+                      (e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }
+                    "
+                  />
+                </div>
               </div>
             </div>
           </template>

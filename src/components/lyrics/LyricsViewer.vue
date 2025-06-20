@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
+import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import type { Collection, LyricStanza, LyricVerse } from "@/data/types";
 
 const props = defineProps<{
@@ -26,34 +27,7 @@ type RegularizedLyricLine = {
 };
 type RegularizedLyricStanza = RegularizedLyricLine[];
 
-const getVerseStyles = (lyric: LyricVerseWithStatus) => {
-  const defaultColor = props.collection.main_color;
-  let color: string | undefined;
-  let gradientColors: string[] = [];
-
-  if (lyric.status === "past") {
-    color = `var(--color-zinc-400)`;
-  } else {
-    const { track_colors: trackColors } = props.collection;
-    if (lyric.color_keys && lyric.color_keys.length > 1) {
-      gradientColors = lyric.color_keys.map((colorKey) => trackColors[colorKey] ?? defaultColor);
-    } else if (lyric.color_keys && lyric.color_keys.length === 1) {
-      color = trackColors[lyric.color_keys[0]!];
-    } else {
-      color = defaultColor;
-    }
-  }
-
-  color = color ?? gradientColors[0] ?? defaultColor;
-  gradientColors = gradientColors.length > 0 ? gradientColors : [color, color];
-  return {
-    color,
-    "background-image": `linear-gradient(to right, ${gradientColors.join(", ")})`,
-    "-webkit-background-clip": "text",
-    "-webkit-text-fill-color": "transparent",
-    "background-clip": "text"
-  };
-};
+const { getVerseStyles } = useLyricsColoring();
 
 const isVerseVisible = (verse: LyricVerse) => {
   return (
@@ -263,7 +237,7 @@ watch(
                   }
                 }
               "
-              :style="getVerseStyles(verse)"
+              :style="getVerseStyles(verse, collection)"
               :class="{
                 'text-primary': verse.status === 'active',
                 'font-semibold': verse.status === 'active',
