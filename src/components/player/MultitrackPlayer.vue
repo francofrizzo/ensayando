@@ -183,7 +183,8 @@ const keydownHandler = (event: KeyboardEvent) => {
   const target = event.target as HTMLElement;
   if (
     target &&
-    (target.closest(".jse-modal") || target.closest("input") || target.closest("textarea"))
+    (target.closest(".jse-modal") || target.closest("input") || target.closest("textarea")) &&
+    !event.shiftKey
   ) {
     return;
   }

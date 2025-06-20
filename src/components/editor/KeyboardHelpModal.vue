@@ -51,13 +51,10 @@ const altKey = isMac ? "⌥" : "Alt";
             <div class="flex justify-between items-center">
               <span>Navegar entre columnas</span>
               <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">←</kbd>
                 <span class="text-base-content/60">/</span>
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">→</kbd>
+                <span class="text-xs text-base-content/50">(al inicio/final del texto)</span>
               </div>
             </div>
             <div class="flex justify-between items-center">
@@ -87,6 +84,24 @@ const altKey = isMac ? "⌥" : "Alt";
             <div class="flex justify-between items-center">
               <span>Insertar nuevo verso antes del actual</span>
               <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">Enter</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Insertar verso fuera de columnas (después)</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">Shift</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">Enter</kbd>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Insertar verso fuera de columnas (antes)</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">Shift</kbd>
+                <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">Enter</kbd>
@@ -161,6 +176,22 @@ const altKey = isMac ? "⌥" : "Alt";
 
         <div>
           <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
+            Operaciones de colores
+          </h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span>Activar/desactivar modo copiar color</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">K</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
             Acciones rápidas
           </h3>
           <div class="space-y-2">
@@ -175,9 +206,7 @@ const altKey = isMac ? "⌥" : "Alt";
             <div class="flex justify-between items-center">
               <span>Mostrar/ocultar esta ayuda</span>
               <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">?</kbd>
+                <kbd class="kbd kbd-sm">F1</kbd>
               </div>
             </div>
           </div>

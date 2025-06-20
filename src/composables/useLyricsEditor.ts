@@ -421,6 +421,35 @@ export function useLyricsEditor(
     });
   };
 
+  // Insert new line outside column context (for Shift+Enter in columns)
+  const insertLineOutsideColumn = (before: boolean = false) => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
+
+    // Only works when in column context
+    if (columnIndex === undefined) return;
+
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    const colorsToInherit = getColorsForInheritance();
+    const newVerse: LyricVerse = {
+      text: "",
+      ...(colorsToInherit.length > 0 ? { color_keys: colorsToInherit } : {})
+    };
+    const insertIndex = before ? itemIndex : itemIndex + 1;
+
+    // Insert the new verse outside the column structure
+    stanza.splice(insertIndex, 0, newVerse);
+    updateLyrics(currentLyrics);
+
+    nextTick(() => {
+      focusInput({ stanzaIndex, itemIndex: insertIndex });
+    });
+  };
+
   // Duplicate current line
   const duplicateLine = () => {
     if (!currentFocus.value) return;
@@ -511,7 +540,7 @@ export function useLyricsEditor(
     }
 
     // Help toggle
-    if (event.key === "?" && event.shiftKey) {
+    if (event.key === "F1") {
       event.preventDefault();
       showHelp.value = !showHelp.value;
       return;
@@ -524,21 +553,35 @@ export function useLyricsEditor(
     } else if (event.key === "ArrowDown" && !cmdOrCtrl) {
       event.preventDefault();
       navigateVertical("down");
-    } else if (event.key === "ArrowLeft" && cmdOrCtrl) {
-      event.preventDefault();
-      navigateHorizontal("left");
-    } else if (event.key === "ArrowRight" && cmdOrCtrl) {
-      event.preventDefault();
-      navigateHorizontal("right");
+    } else if (event.key === "ArrowLeft") {
+      // Only navigate horizontally if cursor is at the beginning of the input
+      const inputElement = target as HTMLInputElement;
+      if (inputElement.selectionStart === 0) {
+        event.preventDefault();
+        navigateHorizontal("left");
+      }
+    } else if (event.key === "ArrowRight") {
+      // Only navigate horizontally if cursor is at the end of the input
+      const inputElement = target as HTMLInputElement;
+      if (inputElement.selectionStart === inputElement.value.length) {
+        event.preventDefault();
+        navigateHorizontal("right");
+      }
     }
 
     // Line operations
-    else if (event.key === "Enter" && !cmdOrCtrl && !event.altKey) {
+    else if (event.key === "Enter" && !cmdOrCtrl && !event.altKey && !event.shiftKey) {
       event.preventDefault();
       insertLineWithColorInheritance(false); // Insert line after
-    } else if (event.key === "Enter" && event.altKey && !cmdOrCtrl) {
+    } else if (event.key === "Enter" && event.altKey && !cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       insertLineWithColorInheritance(true); // Insert line before
+    } else if (event.key === "Enter" && event.shiftKey && !cmdOrCtrl && !event.altKey) {
+      event.preventDefault();
+      insertLineOutsideColumn(false); // Insert line after, outside column context
+    } else if (event.key === "Enter" && event.shiftKey && event.altKey && !cmdOrCtrl) {
+      event.preventDefault();
+      insertLineOutsideColumn(true); // Insert line before, outside column context
     } else if (event.key === "Backspace" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       deleteLine();
@@ -563,6 +606,12 @@ export function useLyricsEditor(
     else if (event.key === "Enter" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       insertStanza();
+    }
+
+    // Color operations
+    else if (event.key === "k" && cmdOrCtrl && !event.shiftKey) {
+      event.preventDefault();
+      toggleCopyColorFromMode();
     }
 
     // Save operation

@@ -144,6 +144,16 @@ const handleToggleCopyColorFrom = () => {
   toggleCopyColorFromMode();
 };
 
+const focusTextareaAndMoveCursorToEnd = (event: Event) => {
+  const textarea = (event.target as HTMLElement).querySelector("textarea");
+  if (textarea) {
+    textarea.focus();
+    // Move cursor to end
+    const length = textarea.value.length;
+    textarea.setSelectionRange(length, length);
+  }
+};
+
 defineExpose({
   hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
 });
@@ -185,7 +195,7 @@ defineExpose({
               @click="
                 copyColorFromMode
                   ? copyColorsFromVerse({ stanzaIndex: i, itemIndex: j })
-                  : ($event.target as HTMLElement).querySelector('textarea')?.focus()
+                  : focusTextareaAndMoveCursorToEnd($event)
               "
             >
               <LyricsTextarea
@@ -221,7 +231,7 @@ defineExpose({
                           columnIndex: k,
                           lineIndex: l
                         })
-                      : ($event.target as HTMLElement).querySelector('textarea')?.focus()
+                      : focusTextareaAndMoveCursorToEnd($event)
                   "
                 >
                   <LyricsTextarea
