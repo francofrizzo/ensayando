@@ -753,7 +753,13 @@ export function useLyricsEditor(
           adjustCurrentVerseEndTime(delta);
         }
 
-        resetKeySequenceState();
+        // Keep the sequence active and refresh the timeout
+        if (keySequenceState.value.timeout) {
+          clearTimeout(keySequenceState.value.timeout);
+        }
+        keySequenceState.value.timeout = setTimeout(() => {
+          resetKeySequenceState();
+        }, 2000);
         return;
       } else if (event.key !== "Meta" && event.key !== "Control" && event.key !== "Shift") {
         // Any other key cancels the sequence

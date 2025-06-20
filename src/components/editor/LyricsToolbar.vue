@@ -161,17 +161,15 @@ const altKey = isMac ? "⌥" : "Alt";
     <!-- Color operations -->
     <div class="divider divider-horizontal mx-0"></div>
 
-    <div class="tooltip tooltip-right">
-      <div class="tooltip-content">Cambiar colores del verso</div>
-      <ColorPicker
-        :selected-colors="currentVerseColors"
-        :available-colors="availableColors"
-        :multiple="true"
-        :disabled="!canPerformActions || copyColorFromMode || copyAudioTrackFromMode"
-        btn-class="btn-xs"
-        @update:selected-colors="onColorsChange"
-      />
-    </div>
+    <ColorPicker
+      title="Colores del verso"
+      :selected-colors="currentVerseColors"
+      :available-colors="availableColors"
+      :multiple="true"
+      :disabled="!canPerformActions || copyColorFromMode || copyAudioTrackFromMode"
+      btn-class="btn-xs"
+      @update:selected-colors="onColorsChange"
+    />
 
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content">

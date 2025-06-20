@@ -114,6 +114,7 @@ const getColorStyle = (colorKey: string) => {
       </div>
 
       <div v-else class="flex flex-col gap-1">
+        <div class="text-xs p-1">Pistas de audio del verso</div>
         <button
           v-for="track in sortedTracks"
           :key="track.id"

@@ -9,6 +9,7 @@ interface Props {
   multiple?: boolean;
   disabled?: boolean;
   btnClass?: string;
+  title?: string;
 }
 
 interface Emits {
@@ -108,7 +109,7 @@ const isColorSelected = (colorKey: string) => {
 </script>
 
 <template>
-  <div class="dropdown dropdown-hover">
+  <div class="dropdown dropdown-hover" :title="title">
     <div
       :style="buttonStyle"
       tabindex="0"
@@ -125,7 +126,10 @@ const isColorSelected = (colorKey: string) => {
       class="dropdown-content menu bg-base-100 rounded-box min-w-max z-50 p-2 shadow-lg border border-base-content/10"
     >
       <div class="flex flex-col gap-1">
-        <div class="grid grid-cols-4 gap-2 mb-2">
+        <div v-if="title" class="text-xs p-1">
+          {{ title }}
+        </div>
+        <div class="grid grid-cols-4 gap-2 mb-2 px-1">
           <button
             v-for="color in availableColors"
             :key="color.key"
