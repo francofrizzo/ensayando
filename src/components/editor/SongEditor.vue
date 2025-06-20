@@ -16,7 +16,7 @@ const activeTab = ref("song");
 <template>
   <div class="h-screen flex flex-col overflow-y-auto">
     <div
-      class="flex items-center justify-between p-1.5 sticky top-0 bg-base-100/50 backdrop-blur-sm z-10"
+      class="flex items-center justify-between p-2 sticky top-0 bg-base-100/50 backdrop-blur-sm z-10"
     >
       <div role="tablist" class="tabs tabs-border tabs-xs">
         <a

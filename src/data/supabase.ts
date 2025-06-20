@@ -62,6 +62,15 @@ export const updateSongBasicInfo = async (
   return await supabase.from("songs").update(updates).eq("id", songId);
 };
 
+export const insertSong = async (songData: {
+  collection_id: number;
+  title: string;
+  slug: string;
+  visible: boolean;
+}): Promise<PostgrestSingleResponse<Song[]>> => {
+  return await supabase.from("songs").insert(songData).select("*, audio_tracks(*)");
+};
+
 export const updateSongLyrics = async (
   songId: number,
   lyrics: LyricStanza[]
