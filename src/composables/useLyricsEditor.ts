@@ -572,8 +572,6 @@ export function useLyricsEditor(
         onSave();
       }
     }
-
-    // Color operations are now handled through the UI picker
   };
 
   // Handle input focus

@@ -57,10 +57,19 @@ const buttonContent = computed(() => {
   }
 });
 
-const toggleColor = (colorKey: string) => {
+const toggleColor = (colorKey: string, event?: MouseEvent) => {
   if (props.disabled) return;
 
+  // Check for Cmd (Mac) or Ctrl (Windows/Linux) key
+  const isModifierPressed = event && (event.metaKey || event.ctrlKey);
+
   if (props.multiple) {
+    // If modifier key is pressed, make this the only selected color
+    if (isModifierPressed) {
+      emit("update:selectedColors", [colorKey]);
+      return;
+    }
+
     const currentColors = [...props.selectedColors];
     const index = currentColors.indexOf(colorKey);
 
@@ -127,7 +136,7 @@ const isColorSelected = (colorKey: string) => {
               'border-transparent': !isColorSelected(color.key)
             }"
             :style="getColorStyle(color.key)"
-            @click="toggleColor(color.key)"
+            @click="toggleColor(color.key, $event)"
           >
             {{ color.key }}
           </button>
