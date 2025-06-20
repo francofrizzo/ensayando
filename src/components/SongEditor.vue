@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Save, X } from "lucide-vue-next";
+import { Braces, MicVocal, Music, Save, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
@@ -52,17 +52,26 @@ const handleValidationChange = (hasErrors: boolean) => {
   <div class="h-screen flex flex-col">
     <div class="flex items-center justify-between p-1.5">
       <div class="tabs tabs-border tabs-xs">
-        <a class="tab" :class="{ 'tab-active': activeTab === 'song' }" @click="activeTab = 'song'">
-          Canción
+        <a
+          class="tab gap-1"
+          :class="{ 'tab-active': activeTab === 'song' }"
+          @click="activeTab = 'song'"
+        >
+          <Music class="size-3.5" /> Canción
         </a>
         <a
-          class="tab"
+          class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'lyrics' }"
           @click="activeTab = 'lyrics'"
         >
-          Letra
+          <MicVocal class="size-3.5" /> Letra
         </a>
-        <a class="tab" :class="{ 'tab-active': activeTab === 'json' }" @click="activeTab = 'json'">
+        <a
+          class="tab gap-1"
+          :class="{ 'tab-active': activeTab === 'json' }"
+          @click="activeTab = 'json'"
+        >
+          <Braces class="size-3.5" />
           Letra (JSON)
         </a>
       </div>
