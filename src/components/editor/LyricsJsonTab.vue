@@ -105,7 +105,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col h-full">
-    {{ hasValidationErrors }}
     <JsonEditor
       ref="editorRef"
       :content="initialContent"

@@ -181,7 +181,7 @@ const onSeekToTime = (time: number) => {
 const keydownHandler = (event: KeyboardEvent) => {
   // Check if the event originates from a JSON editor component
   const target = event.target as HTMLElement;
-  if (target && target.closest(".jse-modal")) {
+  if (target && (target.closest(".jse-modal") || target.closest("input"))) {
     return;
   }
 

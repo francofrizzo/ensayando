@@ -30,10 +30,12 @@ export const transparentize = (colorStr: string, amount: number) => {
 
 export const selectMostContrasting = (colorStr: string, choicesStr: string[]) => {
   let color: string | undefined;
-  const contrast = -Infinity;
+  let maxContrast = -Infinity;
   for (const choice of choicesStr) {
-    if (wcagContrast(colorStr, choice) > contrast) {
+    const contrast = wcagContrast(colorStr, choice);
+    if (contrast > maxContrast) {
       color = choice;
+      maxContrast = contrast;
     }
   }
   return color;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Braces, MicVocal, Music, X } from "lucide-vue-next";
+import { Braces, Music, X } from "lucide-vue-next";
 import { ref } from "vue";
 
 import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
@@ -10,7 +10,7 @@ const emit = defineEmits<{
   "toggle-edit": [];
 }>();
 
-const activeTab = ref("lyrics-json");
+const activeTab = ref("song");
 </script>
 
 <template>
@@ -27,14 +27,14 @@ const activeTab = ref("lyrics-json");
         >
           <Music class="size-3.5" /> Canción
         </a>
-        <a
+        <!-- <a
           role="tab"
           class="tab gap-1"
           :class="{ 'tab-active': activeTab === 'lyrics' }"
           @click="activeTab = 'lyrics'"
         >
           <MicVocal class="size-3.5" /> Letra
-        </a>
+        </a> -->
         <a
           role="tab"
           class="tab gap-1"
