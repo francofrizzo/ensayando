@@ -3,7 +3,7 @@ import { Rabbit, Search } from "lucide-vue-next";
 import { computed } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 
-interface Props {
+type Props = {
   type: "not-found" | "collection-not-found" | "song-not-found" | "no-collections" | "no-songs";
   backLink?: {
     to: RouteLocationRaw;

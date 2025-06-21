@@ -10,6 +10,9 @@ module.exports = {
     "@vue/eslint-config-typescript",
     "@vue/eslint-config-prettier/skip-formatting"
   ],
+  rules: {
+    "@typescript-eslint/consistent-type-definitions": ["error", "type"]
+  },
   parserOptions: {
     ecmaVersion: "latest"
   }

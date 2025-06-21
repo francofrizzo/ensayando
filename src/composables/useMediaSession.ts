@@ -1,6 +1,6 @@
 import { ref, watch, type Ref } from "vue";
 
-export interface MediaSessionOptions {
+export type MediaSessionOptions = {
   title: string;
   artist: string;
   album: string;
@@ -8,7 +8,7 @@ export interface MediaSessionOptions {
   duration: number;
 }
 
-export interface MediaSessionEvents {
+export type MediaSessionEvents = {
   onPlay?: () => void;
   onPause?: () => void;
   onSeek?: (time: number) => void;

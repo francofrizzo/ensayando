@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTeleportTarget } from "@/composables/useTeleportTarget";
 
-interface Props {
+type Props = {
   to: string;
   disabled?: boolean;
 }

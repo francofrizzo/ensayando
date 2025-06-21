@@ -1,6 +1,6 @@
 import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from "vue";
 
-export interface PlayerState {
+export type PlayerState = {
   currentTime: Ref<number>;
   totalDuration: Ref<number>;
   isPlaying: Ref<boolean>;

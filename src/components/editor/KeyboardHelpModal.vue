@@ -4,7 +4,7 @@ import { computed, onMounted, onUnmounted } from "vue";
 import type { CommandRegistry } from "@/composables/useCommands";
 import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
 
-interface Props {
+type Props = {
   show: boolean;
   commandRegistry: CommandRegistry;
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-interface Props {
+type Props = {
   modelValue: string;
   dataInput: string;
   verseStyles: Record<string, any>;
@@ -9,7 +9,7 @@ interface Props {
   placeholder?: string;
 }
 
-interface Emits {
+type Emits = {
   (e: "update:modelValue", value: string): void;
   (e: "focus"): void;
 }

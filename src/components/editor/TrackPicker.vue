@@ -4,7 +4,7 @@ import { selectMostContrasting } from "@/utils/color-utils";
 import { MicVocal, X } from "lucide-vue-next";
 import { computed } from "vue";
 
-interface Props {
+type Props = {
   selectedTrackIds: number[];
   availableTracks: AudioTrack[];
   availableColors: { key: string; value: string }[];
@@ -13,7 +13,7 @@ interface Props {
   btnClass?: string;
 }
 
-interface Emits {
+type Emits = {
   (e: "update:selectedTrackIds", trackIds: number[]): void;
 }
 

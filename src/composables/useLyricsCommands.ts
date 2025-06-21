@@ -2,7 +2,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useCommands, type Command } from "./useCommands";
 import type { FocusPosition } from "./useLyricsNavigation";
 
-export interface LyricsCommandActions {
+export type LyricsCommandActions = {
   navigateVertical: (direction: "up" | "down") => void;
   navigateHorizontal: (direction: "left" | "right") => void;
   insertLineWithInheritance: (before?: boolean) => void;

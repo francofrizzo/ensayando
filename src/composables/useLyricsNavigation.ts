@@ -1,7 +1,7 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
 import { computed, nextTick, ref, type Ref } from "vue";
 
-export interface FocusPosition {
+export type FocusPosition = {
   stanzaIndex: number;
   itemIndex: number;
   columnIndex?: number;

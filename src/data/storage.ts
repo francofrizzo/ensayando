@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export interface UploadResult {
+export type UploadResult = {
   url: string;
   filename: string;
   size: number;

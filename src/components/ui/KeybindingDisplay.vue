@@ -1,5 +1,5 @@
 <script setup lang="ts">
-interface Props {
+type Props = {
   keyParts: string[];
   size?: "xs" | "sm" | "md" | "lg";
 }

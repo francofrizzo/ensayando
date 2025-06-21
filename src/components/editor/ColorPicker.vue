@@ -3,23 +3,24 @@ import { average, selectMostContrasting } from "@/utils/color-utils";
 import { Palette, X } from "lucide-vue-next";
 import { computed } from "vue";
 
-interface Props {
+type Props = {
   selectedColors: string[];
   availableColors: { key: string; value: string }[];
   multiple?: boolean;
   disabled?: boolean;
   btnClass?: string;
   title?: string;
-}
+};
 
-interface Emits {
+type Emits = {
   (e: "update:selectedColors", colors: string[]): void;
-}
+};
 
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
   disabled: false,
-  btnClass: "btn-sm"
+  btnClass: "btn-sm",
+  title: undefined
 });
 
 const emit = defineEmits<Emits>();
@@ -109,7 +110,7 @@ const isColorSelected = (colorKey: string) => {
 </script>
 
 <template>
-  <div class="dropdown" :title="title">
+  <div class="dropdown" :title="props.title">
     <div
       :style="buttonStyle"
       tabindex="0"

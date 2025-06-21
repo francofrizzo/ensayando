@@ -21,7 +21,7 @@ import type { FocusPosition } from "@/composables/useLyricsEditor";
 import type { CommandRegistry } from "@/composables/useCommands";
 import type { AudioTrack } from "@/data/types";
 
-interface Props {
+type Props = {
   currentFocus: FocusPosition | null;
   commandRegistry: CommandRegistry;
   // Color operations
