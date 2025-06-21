@@ -13,11 +13,13 @@ const emit = defineEmits<{
 const activeTab = ref("song");
 const songTabRef = ref<InstanceType<typeof SongTab> | null>(null);
 const lyricsJsonTabRef = ref<InstanceType<typeof LyricsJsonTab> | null>(null);
+const lyricsTabRef = ref<InstanceType<typeof LyricsTab> | null>(null);
 
 const hasUnsavedChanges = () => {
   const songTabHasChanges = songTabRef.value?.isDirty ?? false;
-  const lyricsTabHasChanges = lyricsJsonTabRef.value?.hasUnsavedChanges ?? false;
-  return songTabHasChanges || lyricsTabHasChanges;
+  const lyricsTabHasChanges = lyricsTabRef.value?.hasUnsavedChanges ?? false;
+  const lyricsJsonTabHasChanges = lyricsJsonTabRef.value?.hasUnsavedChanges ?? false;
+  return songTabHasChanges || lyricsTabHasChanges || lyricsJsonTabHasChanges;
 };
 
 const confirmCloseEditor = (): boolean => {
@@ -101,7 +103,7 @@ onBeforeUnmount(() => {
 
     <div class="flex-1 min-h-0">
       <SongTab v-if="activeTab === 'song'" ref="songTabRef" />
-      <LyricsTab v-if="activeTab === 'lyrics'" />
+      <LyricsTab v-if="activeTab === 'lyrics'" ref="lyricsTabRef" />
       <LyricsJsonTab v-if="activeTab === 'lyrics-json'" ref="lyricsJsonTabRef" />
     </div>
   </div>

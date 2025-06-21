@@ -20,8 +20,6 @@ export type LyricsCommandActions = {
   clearCurrentVerseStartTime: () => void;
   clearCurrentVerseEndTime: () => void;
   clearCurrentVerseBothTimes: () => void;
-  adjustCurrentVerseStartTime: (deltaSeconds: number) => void;
-  adjustCurrentVerseEndTime: (deltaSeconds: number) => void;
 };
 
 export function useLyricsCommands(
@@ -284,34 +282,6 @@ export function useLyricsCommands(
         key: "/",
         modifiers: { ctrl: true }
       }
-    },
-    {
-      id: "adjust-start-time-forward",
-      description: "Ajustar tiempo de inicio hacia adelante",
-      category: "Marcas de tiempo",
-      execute: () => actions.adjustCurrentVerseStartTime(0.1),
-      canExecute: () => canPerformActions.value
-    },
-    {
-      id: "adjust-start-time-backward",
-      description: "Ajustar tiempo de inicio hacia atrás",
-      category: "Marcas de tiempo",
-      execute: () => actions.adjustCurrentVerseStartTime(-0.1),
-      canExecute: () => canPerformActions.value
-    },
-    {
-      id: "adjust-end-time-forward",
-      description: "Ajustar tiempo final hacia adelante",
-      category: "Marcas de tiempo",
-      execute: () => actions.adjustCurrentVerseEndTime(0.1),
-      canExecute: () => canPerformActions.value
-    },
-    {
-      id: "adjust-end-time-backward",
-      description: "Ajustar tiempo final hacia atrás",
-      category: "Marcas de tiempo",
-      execute: () => actions.adjustCurrentVerseEndTime(-0.1),
-      canExecute: () => canPerformActions.value
     },
 
     {

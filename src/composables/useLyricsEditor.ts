@@ -135,11 +135,7 @@ export function useLyricsEditor(
     setCurrentVerseEndTime: () => timestamps.setCurrentVerseEndTime(currentFocus.value),
     clearCurrentVerseStartTime: () => timestamps.clearCurrentVerseStartTime(currentFocus.value),
     clearCurrentVerseEndTime: () => timestamps.clearCurrentVerseEndTime(currentFocus.value),
-    clearCurrentVerseBothTimes: () => timestamps.clearCurrentVerseBothTimes(currentFocus.value),
-    adjustCurrentVerseStartTime: (deltaSeconds: number) =>
-      timestamps.adjustCurrentVerseStartTime(currentFocus.value, deltaSeconds),
-    adjustCurrentVerseEndTime: (deltaSeconds: number) =>
-      timestamps.adjustCurrentVerseEndTime(currentFocus.value, deltaSeconds)
+    clearCurrentVerseBothTimes: () => timestamps.clearCurrentVerseBothTimes(currentFocus.value)
   };
 
   // Initialize commands composable

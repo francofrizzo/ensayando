@@ -23,29 +23,6 @@ export function useLyricsTimestamps(
     });
   };
 
-  const adjustCurrentVerseStartTime = (
-    currentFocus: FocusPosition | null,
-    deltaSeconds: number
-  ) => {
-    if (!currentFocus || !updateCurrentVerse) return;
-
-    updateCurrentVerse(currentFocus, (verse) => {
-      if (verse.start_time !== undefined) {
-        verse.start_time = Math.max(0, verse.start_time + deltaSeconds);
-      }
-    });
-  };
-
-  const adjustCurrentVerseEndTime = (currentFocus: FocusPosition | null, deltaSeconds: number) => {
-    if (!currentFocus || !updateCurrentVerse) return;
-
-    updateCurrentVerse(currentFocus, (verse) => {
-      if (verse.end_time !== undefined) {
-        verse.end_time = Math.max(0, verse.end_time + deltaSeconds);
-      }
-    });
-  };
-
   const clearCurrentVerseStartTime = (currentFocus: FocusPosition | null) => {
     if (!currentFocus || !updateCurrentVerse) return;
 
@@ -74,8 +51,6 @@ export function useLyricsTimestamps(
   return {
     setCurrentVerseStartTime,
     setCurrentVerseEndTime,
-    adjustCurrentVerseStartTime,
-    adjustCurrentVerseEndTime,
     clearCurrentVerseStartTime,
     clearCurrentVerseEndTime,
     clearCurrentVerseBothTimes

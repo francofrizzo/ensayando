@@ -166,8 +166,10 @@ const handleAudioTrackIdsChange = (trackIds: number[]) => {
 
 const focusTextareaAndMoveCursorToEnd = (event: Event) => {
   const target = event.target as HTMLElement;
+  if (target.closest("input")) {
+    return;
+  }
   const textarea = target.closest("[data-lyric-hitbox]")?.querySelector("textarea");
-
   if (textarea) {
     textarea.focus();
     // Only move cursor to end if the click target is not the textarea itself
@@ -176,6 +178,89 @@ const focusTextareaAndMoveCursorToEnd = (event: Event) => {
       textarea.setSelectionRange(length, length);
     }
   }
+};
+
+// Timestamp update functions
+const createTimestampUpdateFunction = (
+  stanzaIndex: number,
+  itemIndex: number,
+  columnIndex?: number,
+  lineIndex?: number
+) => {
+  return {
+    onUpdateStartTime: (value: number | undefined) => {
+      let currentLyrics = [...store.localLyrics.value];
+
+      if (currentLyrics.length === 0) {
+        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
+      }
+
+      const stanza = currentLyrics[stanzaIndex];
+      if (stanza) {
+        let verse: LyricVerse;
+
+        if (columnIndex !== undefined && lineIndex !== undefined) {
+          // Multi-column verse
+          if (Array.isArray(stanza[itemIndex])) {
+            const columns = stanza[itemIndex] as LyricVerse[][];
+            if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
+              verse = columns[columnIndex][lineIndex];
+            } else {
+              return;
+            }
+          } else {
+            return;
+          }
+        } else {
+          // Single verse
+          if (!Array.isArray(stanza[itemIndex])) {
+            verse = stanza[itemIndex] as LyricVerse;
+          } else {
+            return;
+          }
+        }
+
+        verse.start_time = value;
+        store.updateLocalLyrics(currentLyrics);
+      }
+    },
+    onUpdateEndTime: (value: number | undefined) => {
+      let currentLyrics = [...store.localLyrics.value];
+
+      if (currentLyrics.length === 0) {
+        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
+      }
+
+      const stanza = currentLyrics[stanzaIndex];
+      if (stanza) {
+        let verse: LyricVerse;
+
+        if (columnIndex !== undefined && lineIndex !== undefined) {
+          // Multi-column verse
+          if (Array.isArray(stanza[itemIndex])) {
+            const columns = stanza[itemIndex] as LyricVerse[][];
+            if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
+              verse = columns[columnIndex][lineIndex];
+            } else {
+              return;
+            }
+          } else {
+            return;
+          }
+        } else {
+          // Single verse
+          if (!Array.isArray(stanza[itemIndex])) {
+            verse = stanza[itemIndex] as LyricVerse;
+          } else {
+            return;
+          }
+        }
+
+        verse.end_time = value;
+        store.updateLocalLyrics(currentLyrics);
+      }
+    }
+  };
 };
 
 defineExpose({
@@ -226,6 +311,7 @@ defineExpose({
                 v-if="showTimestamps"
                 :verse="item"
                 :available-audio-tracks="availableAudioTracks"
+                v-bind="createTimestampUpdateFunction(i, j)"
               />
               <LyricsTextarea
                 v-model="createVerseModel(i, j).value"
@@ -270,6 +356,7 @@ defineExpose({
                     :verse="line"
                     :available-audio-tracks="availableAudioTracks"
                     :max-tracks="1"
+                    v-bind="createTimestampUpdateFunction(i, j, k, l)"
                   />
                   <LyricsTextarea
                     v-model="createColumnModel(i, j, k, l).value"
