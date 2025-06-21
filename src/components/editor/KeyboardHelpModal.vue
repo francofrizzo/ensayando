@@ -192,8 +192,6 @@ const altKey = isMac ? "⌥" : "Alt";
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">,</kbd>
               </div>
             </div>
@@ -201,8 +199,6 @@ const altKey = isMac ? "⌥" : "Alt";
               <span>Establecer tiempo de finalización del verso</span>
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">.</kbd>
               </div>
@@ -240,7 +236,7 @@ const altKey = isMac ? "⌥" : "Alt";
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
+                <kbd class="kbd kbd-sm">Shift</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">,</kbd>
               </div>
@@ -250,7 +246,7 @@ const altKey = isMac ? "⌥" : "Alt";
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
+                <kbd class="kbd kbd-sm">Shift</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">.</kbd>
               </div>
@@ -259,8 +255,6 @@ const altKey = isMac ? "⌥" : "Alt";
               <span>Limpiar ambos tiempos</span>
               <div class="flex gap-1 items-center text-sm">
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">/</kbd>
               </div>

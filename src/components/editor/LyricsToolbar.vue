@@ -222,7 +222,7 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content">
         Establecer tiempo de inicio<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">Shift</kbd>+<kbd class="kbd kbd-xs">,</kbd>
+        >+<kbd class="kbd kbd-xs">,</kbd>
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
@@ -237,7 +237,7 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content">
         Establecer tiempo de finalización<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">Shift</kbd>+<kbd class="kbd kbd-xs">.</kbd>
+        >+<kbd class="kbd kbd-xs">.</kbd>
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
@@ -252,7 +252,6 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content">
         Limpiar tiempos<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">{{ altKey }}</kbd
         >+<kbd class="kbd kbd-xs">/</kbd>
       </div>
       <button

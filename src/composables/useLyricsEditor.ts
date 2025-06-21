@@ -869,11 +869,11 @@ export function useLyricsEditor(
       }
     }
 
-    // Timestamp operations
-    else if (event.key === "," && cmdOrCtrl && event.shiftKey) {
+    // Timestamp operations - SET (without shift)
+    else if (event.key === "," && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       setCurrentVerseStartTime();
-    } else if (event.key === "." && cmdOrCtrl && event.shiftKey) {
+    } else if (event.key === "." && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
       setCurrentVerseEndTime();
     }
@@ -887,14 +887,14 @@ export function useLyricsEditor(
       startKeySequence("end");
     }
 
-    // Clear timestamp operations
-    else if (event.key === "," && cmdOrCtrl && event.altKey && !event.shiftKey) {
+    // Clear timestamp operations - CLEAR (with shift)
+    else if (event.key === "," && cmdOrCtrl && event.shiftKey && !event.altKey) {
       event.preventDefault();
       clearCurrentVerseStartTime();
-    } else if (event.key === "." && cmdOrCtrl && event.altKey && !event.shiftKey) {
+    } else if (event.key === "." && cmdOrCtrl && event.shiftKey && !event.altKey) {
       event.preventDefault();
       clearCurrentVerseEndTime();
-    } else if (event.key === "/" && cmdOrCtrl && event.altKey && !event.shiftKey) {
+    } else if (event.key === "/" && cmdOrCtrl && !event.altKey && !event.shiftKey) {
       event.preventDefault();
       clearCurrentVerseBothTimes();
     }
