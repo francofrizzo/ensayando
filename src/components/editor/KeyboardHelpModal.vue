@@ -1,17 +1,66 @@
 <script setup lang="ts">
 import { X } from "lucide-vue-next";
+import { computed, onMounted, onUnmounted } from "vue";
+import type { CommandRegistry } from "@/composables/useCommands";
+import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
 
-defineProps<{
+interface Props {
   show: boolean;
-}>();
+  commandRegistry: CommandRegistry;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
 }>();
 
-const isMac = navigator.platform.toLowerCase().includes("mac");
-const modKey = isMac ? "⌘" : "Ctrl";
-const altKey = isMac ? "⌥" : "Alt";
+// Handle Escape key to close modal
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === "Escape" && props.show) {
+    emit("close");
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("keydown", handleKeydown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("keydown", handleKeydown);
+});
+
+// Group commands with keybindings by category
+const keybindingGroups = computed(() => {
+  const commands = props.commandRegistry.getCommandsByCategory();
+
+  // Group by category
+  const groups: Array<{
+    category: string;
+    items: Array<{
+      description: string;
+      keyParts: string[];
+    }>;
+  }> = [];
+
+  Object.entries(commands).forEach(([category, categoryCommands]) => {
+    const items = categoryCommands
+      .filter((command) => command.keybinding) // Only include commands with keybindings
+      .map((command) => ({
+        description: command.description,
+        keyParts: props.commandRegistry.getKeybindingParts(command)
+      }));
+
+    if (items.length > 0) {
+      groups.push({
+        category,
+        items
+      });
+    }
+  });
+
+  return groups;
+});
 </script>
 
 <template>
@@ -31,255 +80,18 @@ const altKey = isMac ? "⌥" : "Alt";
       </div>
 
       <div class="p-6 space-y-6">
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">Navegación</h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Navegar entre líneas</span>
-              <div class="flex gap-1">
-                <kbd class="kbd kbd-sm">↑</kbd>
-                <kbd class="kbd kbd-sm">↓</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Moverse dentro del texto</span>
-              <div class="flex gap-1">
-                <kbd class="kbd kbd-sm">←</kbd>
-                <kbd class="kbd kbd-sm">→</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Navegar entre columnas</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">←</kbd>
-                <span class="text-base-content/60">/</span>
-                <kbd class="kbd kbd-sm">→</kbd>
-                <span class="text-xs text-base-content/50">(al inicio/final del texto)</span>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Campo siguiente/anterior</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">Tab</kbd>
-                <span class="text-base-content/60">/</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Tab</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
+        <div v-for="group in keybindingGroups" :key="group.category">
           <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Operaciones de versos
+            {{ group.category }}
           </h3>
           <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Insertar nuevo verso después del actual</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Insertar nuevo verso antes del actual</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Insertar verso fuera de columnas (después)</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Insertar verso fuera de columnas (antes)</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">{{ altKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Duplicar verso actual</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">D</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Eliminar verso actual</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Backspace</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Copiar colores y pistas de audio de otro verso</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">K</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Operaciones de columnas
-          </h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Convertir en un verso con múltiples columnas</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">\</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Insertar columna a la derecha</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">]</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Insertar columna a la izquierda</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">[</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Operaciones de estrofas
-          </h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Insertar nueva estrofa</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Marcas de tiempo
-          </h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Establecer tiempo de inicio del verso</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">,</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Establecer tiempo de finalización del verso</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">.</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Ajustar tiempo de inicio (-0.1s / +0.1s)</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">S</kbd>
-                <span class="text-base-content/60">→</span>
-                <kbd class="kbd kbd-sm">←</kbd>
-                <span class="text-base-content/60">/</span>
-                <kbd class="kbd kbd-sm">→</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Ajustar tiempo de finalización (-0.1s / +0.1s)</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">E</kbd>
-                <span class="text-base-content/60">→</span>
-                <kbd class="kbd kbd-sm">←</kbd>
-                <span class="text-base-content/60">/</span>
-                <kbd class="kbd kbd-sm">→</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Limpiar tiempo de inicio</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">,</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Limpiar tiempo de finalización</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">Shift</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">.</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Limpiar ambos tiempos</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">/</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Acciones rápidas
-          </h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Guardar cambios</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">S</kbd>
-              </div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Mostrar/ocultar esta ayuda</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">F1</kbd>
-              </div>
+            <div
+              v-for="item in group.items"
+              :key="item.description"
+              class="flex justify-between items-center"
+            >
+              <span>{{ item.description }}</span>
+              <KeybindingDisplay :key-parts="item.keyParts" size="sm" />
             </div>
           </div>
         </div>

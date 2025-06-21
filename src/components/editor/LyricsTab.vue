@@ -49,29 +49,18 @@ const {
   showHelp,
   handleInputFocus,
   currentFocus,
-  insertLine,
-  deleteLine,
-  duplicateLine,
-  insertColumn,
-  insertStanza,
-  convertToColumns,
+  commandRegistry,
   getCurrentVerseColors,
   setCurrentVerseColors,
   getCurrentVerseAudioTrackIds,
   setCurrentVerseAudioTrackIds,
   copyPropertiesFromMode,
-  toggleCopyPropertiesFromMode,
-  copyPropertiesFromVerse,
-  setCurrentVerseStartTime,
-  setCurrentVerseEndTime,
-  adjustCurrentVerseStartTime,
-  adjustCurrentVerseEndTime,
-  clearCurrentVerseBothTimes
+  copyPropertiesFromVerse
 } = useLyricsEditor(
   lyricsToDisplay,
   store.updateLocalLyrics,
   handleSaveClick,
-  () => currentTime.value - 0.2 // adjustment for human latency
+  () => Math.max(0, currentTime.value - 0.2) // adjustment for human latency
 );
 
 // Timestamp visibility state
@@ -175,10 +164,6 @@ const handleAudioTrackIdsChange = (trackIds: number[]) => {
   setCurrentVerseAudioTrackIds(trackIds);
 };
 
-const handleToggleCopyPropertiesFrom = () => {
-  toggleCopyPropertiesFromMode();
-};
-
 const focusTextareaAndMoveCursorToEnd = (event: Event) => {
   const target = event.target as HTMLElement;
   const textarea = target.closest("[data-lyric-hitbox]")?.querySelector("textarea");
@@ -203,12 +188,7 @@ defineExpose({
     <div class="sticky top-0 z-10 flex flex-col items-center gap-2">
       <LyricsToolbar
         :current-focus="currentFocus"
-        :on-insert-stanza="insertStanza"
-        :on-insert-line="insertLine"
-        :on-duplicate-line="duplicateLine"
-        :on-delete-line="deleteLine"
-        :on-insert-column="insertColumn"
-        :on-convert-to-columns="convertToColumns"
+        :command-registry="commandRegistry"
         :current-verse-colors="currentVerseColors"
         :available-colors="availableColors"
         :on-colors-change="handleColorsChange"
@@ -216,14 +196,8 @@ defineExpose({
         :available-audio-tracks="availableAudioTracks"
         :on-audio-track-ids-change="handleAudioTrackIdsChange"
         :copy-properties-from-mode="copyPropertiesFromMode"
-        :on-toggle-copy-properties-from="handleToggleCopyPropertiesFrom"
         :show-timestamps="showTimestamps"
         :on-toggle-timestamps="toggleTimestamps"
-        :on-set-start-time="setCurrentVerseStartTime"
-        :on-set-end-time="setCurrentVerseEndTime"
-        :on-adjust-start-time="adjustCurrentVerseStartTime"
-        :on-adjust-end-time="adjustCurrentVerseEndTime"
-        :on-clear-both-times="clearCurrentVerseBothTimes"
       />
     </div>
     <div class="flex-1 flex flex-col pb-3">
@@ -338,6 +312,10 @@ defineExpose({
       </button>
     </SafeTeleport>
 
-    <KeyboardHelpModal :show="showHelp" @close="showHelp = false" />
+    <KeyboardHelpModal
+      :show="showHelp"
+      :command-registry="commandRegistry"
+      @close="showHelp = false"
+    />
   </div>
 </template>

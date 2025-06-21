@@ -16,17 +16,14 @@ import { computed } from "vue";
 
 import ColorPicker from "@/components/editor/ColorPicker.vue";
 import TrackPicker from "@/components/editor/TrackPicker.vue";
+import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
 import type { FocusPosition } from "@/composables/useLyricsEditor";
+import type { CommandRegistry } from "@/composables/useCommands";
 import type { AudioTrack } from "@/data/types";
 
 interface Props {
   currentFocus: FocusPosition | null;
-  onInsertStanza: () => void;
-  onInsertLine: (before?: boolean) => void;
-  onDuplicateLine: () => void;
-  onDeleteLine: () => void;
-  onInsertColumn: (before?: boolean) => void;
-  onConvertToColumns: () => void;
+  commandRegistry: CommandRegistry;
   // Color operations
   currentVerseColors: string[];
   availableColors: { key: string; value: string }[];
@@ -35,18 +32,11 @@ interface Props {
   currentVerseAudioTrackIds: number[];
   availableAudioTracks: AudioTrack[];
   onAudioTrackIdsChange: (trackIds: number[]) => void;
-  // Unified copy properties operations
+  // Copy properties mode
   copyPropertiesFromMode: boolean;
-  onToggleCopyPropertiesFrom: () => void;
   // Timestamp visibility
   showTimestamps: boolean;
   onToggleTimestamps: () => void;
-  // Timestamp operations
-  onSetStartTime: () => void;
-  onSetEndTime: () => void;
-  onAdjustStartTime: (delta: number) => void;
-  onAdjustEndTime: (delta: number) => void;
-  onClearBothTimes: () => void;
 }
 
 const props = defineProps<Props>();
@@ -59,9 +49,21 @@ const canPerformActions = computed(() => {
   return props.currentFocus !== null;
 });
 
-const isMac = navigator.platform.toLowerCase().includes("mac");
-const modKey = isMac ? "⌘" : "Ctrl";
-const altKey = isMac ? "⌥" : "Alt";
+const getCommand = (commandId: string) => {
+  return props.commandRegistry.getCommand(commandId);
+};
+
+const executeCommand = (commandId: string) => {
+  const command = getCommand(commandId);
+  if (command && command.canExecute()) {
+    command.execute();
+  }
+};
+
+const getKeybindingParts = (commandId: string): string[] => {
+  const command = getCommand(commandId);
+  return command ? props.commandRegistry.getKeybindingParts(command) : [];
+};
 </script>
 
 <template>
@@ -70,13 +72,14 @@ const altKey = isMac ? "⌥" : "Alt";
   >
     <!-- Line operations -->
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Agregar verso después<br /><kbd class="kbd kbd-xs">Enter</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Agregar verso después<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('insert-line')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="() => onInsertLine(false)"
+        @click="() => executeCommand('insert-line')"
       >
         <ArrowDownToLine class="size-3" />
         <span class="sr-only">Agregar verso después</span>
@@ -84,14 +87,14 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Agregar verso antes<br /><kbd class="kbd kbd-xs">{{ altKey }}</kbd
-        >+<kbd class="kbd kbd-xs">Enter</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Agregar verso antes<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('insert-line-before')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="() => onInsertLine(true)"
+        @click="() => executeCommand('insert-line-before')"
       >
         <ArrowUpToLine class="size-3" />
         <span class="sr-only">Agregar verso antes</span>
@@ -99,14 +102,14 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Duplicar verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">D</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Duplicar verso<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('duplicate-line')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onDuplicateLine"
+        @click="() => executeCommand('duplicate-line')"
       >
         <Copy class="size-3" />
         <span class="sr-only">Duplicar verso</span>
@@ -117,14 +120,14 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="divider divider-horizontal mx-0"></div>
 
     <div v-if="!hasColumnContext" class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Convertir a columnas<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">\</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Convertir a columnas<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('convert-to-columns')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onConvertToColumns"
+        @click="() => executeCommand('convert-to-columns')"
       >
         <Columns class="size-3" />
         <span class="sr-only">Convertir a columnas</span>
@@ -132,25 +135,29 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div v-if="hasColumnContext" class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Insertar columna a la izquierda<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">[</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Insertar columna a la izquierda<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('insert-column-left')" size="xs" />
       </div>
-      <button class="btn btn-xs btn-square btn-ghost" @click="() => onInsertColumn(true)">
+      <button
+        class="btn btn-xs btn-square btn-ghost"
+        :disabled="!canPerformActions"
+        @click="() => executeCommand('insert-column-left')"
+      >
         <ArrowLeftToLine class="size-3" />
         <span class="sr-only">Insertar columna a la izquierda</span>
       </button>
     </div>
 
     <div v-if="hasColumnContext" class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Insertar columna a la derecha<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">]</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Insertar columna a la derecha<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('insert-column-right')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="() => onInsertColumn(false)"
+        @click="() => executeCommand('insert-column-right')"
       >
         <ArrowRightToLine class="size-3" />
         <span class="sr-only">Insertar columna a la derecha</span>
@@ -171,7 +178,9 @@ const altKey = isMac ? "⌥" : "Alt";
     />
 
     <div class="tooltip tooltip-right">
-      <div class="tooltip-content">Cambiar pistas de audio del verso</div>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Cambiar pistas de audio del verso
+      </div>
       <TrackPicker
         :selected-track-ids="currentVerseAudioTrackIds"
         :available-tracks="availableAudioTracks"
@@ -184,15 +193,15 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Copiar propiedades de otro verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">K</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Copiar propiedades de otro verso<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('copy-properties')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :class="{ 'btn-active': copyPropertiesFromMode }"
         :disabled="!canPerformActions"
-        @click="onToggleCopyPropertiesFrom"
+        @click="() => executeCommand('copy-properties')"
       >
         <PaintRoller class="size-3" />
         <span class="sr-only">Copiar propiedades de otro verso</span>
@@ -203,7 +212,9 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">Mostrar/ocultar marcas de tiempo</div>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Mostrar/ocultar marcas de tiempo
+      </div>
       <button
         class="btn btn-xs btn-square"
         :class="{
@@ -220,14 +231,14 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <!-- Timestamp operations -->
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Establecer tiempo de inicio<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">,</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Establecer tiempo de inicio<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('set-start-time')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onSetStartTime"
+        @click="() => executeCommand('set-start-time')"
       >
         <ArrowLeftToLine class="size-3" />
         <span class="sr-only">Establecer tiempo de inicio</span>
@@ -235,14 +246,14 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Establecer tiempo de finalización<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">.</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Establecer tiempo de finalización<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('set-end-time')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onSetEndTime"
+        @click="() => executeCommand('set-end-time')"
       >
         <ArrowRightToLine class="size-3" />
         <span class="sr-only">Establecer tiempo de finalización</span>
@@ -250,14 +261,14 @@ const altKey = isMac ? "⌥" : "Alt";
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Limpiar tiempos<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">/</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Limpiar tiempos<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('clear-both-times')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onClearBothTimes"
+        @click="() => executeCommand('clear-both-times')"
       >
         <X class="size-3" />
         <span class="sr-only">Limpiar ambos tiempos</span>
@@ -268,14 +279,14 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Agregar estrofa<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">Enter</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Agregar estrofa<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('insert-stanza')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onInsertStanza"
+        @click="() => executeCommand('insert-stanza')"
       >
         <ListPlus class="size-3" />
         <span class="sr-only">Agregar estrofa</span>
@@ -286,14 +297,14 @@ const altKey = isMac ? "⌥" : "Alt";
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Eliminar verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">⌫</kbd>
+      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+        Eliminar verso<br />
+        <KeybindingDisplay :key-parts="getKeybindingParts('delete-line')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
         :disabled="!canPerformActions"
-        @click="onDeleteLine"
+        @click="() => executeCommand('delete-line')"
       >
         <Trash2 class="size-3" />
         <span class="sr-only">Eliminar verso</span>

@@ -1,5 +1,6 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
 import { computed, nextTick, onMounted, onUnmounted, ref, type Ref } from "vue";
+import { useCommands, type Command } from "./useCommands";
 
 export interface FocusPosition {
   stanzaIndex: number;
@@ -17,39 +18,6 @@ export function useLyricsEditor(
   const currentFocus = ref<FocusPosition | null>(null);
   const showHelp = ref(false);
 
-  // State machine for complex keyboard shortcuts
-  const keySequenceState = ref<{
-    isWaitingForArrow: boolean;
-    targetType: "start" | "end" | null;
-    timeout: NodeJS.Timeout | null;
-  }>({
-    isWaitingForArrow: false,
-    targetType: null,
-    timeout: null
-  });
-
-  const resetKeySequenceState = () => {
-    if (keySequenceState.value.timeout) {
-      clearTimeout(keySequenceState.value.timeout);
-    }
-    keySequenceState.value = {
-      isWaitingForArrow: false,
-      targetType: null,
-      timeout: null
-    };
-  };
-
-  const startKeySequence = (targetType: "start" | "end") => {
-    resetKeySequenceState();
-    keySequenceState.value.isWaitingForArrow = true;
-    keySequenceState.value.targetType = targetType;
-    // Reset state after 2 seconds if no arrow key is pressed
-    keySequenceState.value.timeout = setTimeout(() => {
-      resetKeySequenceState();
-    }, 2000);
-  };
-
-  // Get input element for a given position
   const getInputElement = (position: FocusPosition): HTMLInputElement | null => {
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
     let selector = `[data-input="${stanzaIndex}-${itemIndex}`;
@@ -62,7 +30,6 @@ export function useLyricsEditor(
     return document.querySelector<HTMLInputElement>(selector);
   };
 
-  // Focus an input element
   const focusInput = async (position: FocusPosition) => {
     currentFocus.value = position;
     await nextTick();
@@ -72,13 +39,11 @@ export function useLyricsEditor(
     }
   };
 
-  // Navigate between columns horizontally
   const navigateHorizontal = (direction: "left" | "right") => {
     if (!currentFocus.value) return;
 
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
 
-    // Only works in column context
     if (columnIndex === undefined) return;
 
     const currentLyrics = lyrics.value;
@@ -119,7 +84,6 @@ export function useLyricsEditor(
     }
   };
 
-  // Navigate to next/previous input
   const navigateVertical = (direction: "up" | "down") => {
     if (!currentFocus.value) return;
 
@@ -199,325 +163,323 @@ export function useLyricsEditor(
       // Try to move to last item of previous stanza
       if (stanzaIndex > 0) {
         const prevStanza = currentLyrics[stanzaIndex - 1];
-        if (!prevStanza) return;
-        const lastItemIndex = prevStanza.length - 1;
-        if (lastItemIndex >= 0) {
-          const lastItem = prevStanza[lastItemIndex];
+        if (prevStanza && prevStanza.length > 0) {
+          const lastItem = prevStanza[prevStanza.length - 1];
           if (Array.isArray(lastItem)) {
             const columns = lastItem as LyricVerse[][];
             const lastColumn = columns.length - 1;
             const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
             focusInput({
               stanzaIndex: stanzaIndex - 1,
-              itemIndex: lastItemIndex,
+              itemIndex: prevStanza.length - 1,
               columnIndex: lastColumn,
               lineIndex: lastLine
             });
           } else {
-            focusInput({ stanzaIndex: stanzaIndex - 1, itemIndex: lastItemIndex });
+            focusInput({ stanzaIndex: stanzaIndex - 1, itemIndex: prevStanza.length - 1 });
           }
         }
       }
     }
   };
 
-  // Insert new verse/line
   const insertLine = (before: boolean = false) => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const { stanzaIndex, itemIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
-
     if (!stanza) return;
 
-    const newVerse: LyricVerse = { text: "" };
-    const insertIndex = before ? itemIndex : itemIndex + 1;
+    const newVerse: LyricVerse = {
+      text: "",
+      start_time: undefined,
+      end_time: undefined
+    };
 
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Inserting in a column
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (!column) return;
-      const newLineIndex = before ? lineIndex : lineIndex + 1;
-      column.splice(newLineIndex, 0, newVerse);
-
+    if (before) {
+      stanza.splice(itemIndex, 0, newVerse);
       updateLyrics(currentLyrics);
-      nextTick(() => {
-        focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: newLineIndex });
-      });
+      // Focus the newly inserted line
+      focusInput({ stanzaIndex, itemIndex });
     } else {
-      // Inserting a regular verse
-      stanza.splice(insertIndex, 0, newVerse);
+      stanza.splice(itemIndex + 1, 0, newVerse);
       updateLyrics(currentLyrics);
-      nextTick(() => {
-        focusInput({ stanzaIndex, itemIndex: insertIndex });
-      });
+      // Focus the newly inserted line
+      focusInput({ stanzaIndex, itemIndex: itemIndex + 1 });
     }
   };
 
-  // Delete current line
   const deleteLine = () => {
     if (!currentFocus.value) return;
 
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
-
     if (!stanza) return;
 
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Deleting from a column
+      // Delete from column
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (!column) return;
+      if (Array.isArray(item) && item[columnIndex]) {
+        item[columnIndex].splice(lineIndex, 1);
 
-      if (column.length <= 1) {
-        // Delete the entire column if it has only one verse
-        item.splice(columnIndex, 1);
+        // If column is empty, remove it
+        if (item[columnIndex].length === 0) {
+          item.splice(columnIndex, 1);
 
-        // If only one column remains, convert back to flat shape
-        if (item.length === 1) {
-          const remainingColumn = item[0];
-          if (remainingColumn && remainingColumn.length === 1) {
-            const remainingVerse = remainingColumn[0];
-            if (remainingVerse) {
-              stanza[itemIndex] = remainingVerse;
-              updateLyrics(currentLyrics);
-              nextTick(() => {
-                focusInput({ stanzaIndex, itemIndex });
-              });
-              return;
+          // If all columns are empty, remove the entire item
+          if (item.length === 0) {
+            stanza.splice(itemIndex, 1);
+            updateLyrics(currentLyrics);
+
+            // Focus previous item if possible
+            if (itemIndex > 0) {
+              const prevItem = stanza[itemIndex - 1];
+              if (Array.isArray(prevItem)) {
+                const columns = prevItem as LyricVerse[][];
+                const lastColumn = columns.length - 1;
+                const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
+                focusInput({
+                  stanzaIndex,
+                  itemIndex: itemIndex - 1,
+                  columnIndex: lastColumn,
+                  lineIndex: lastLine
+                });
+              } else {
+                focusInput({ stanzaIndex, itemIndex: itemIndex - 1 });
+              }
+            } else if (stanza.length > 0) {
+              const nextItem = stanza[0];
+              if (Array.isArray(nextItem)) {
+                focusInput({ stanzaIndex, itemIndex: 0, columnIndex: 0, lineIndex: 0 });
+              } else {
+                focusInput({ stanzaIndex, itemIndex: 0 });
+              }
             }
-          }
-        }
-
-        updateLyrics(currentLyrics);
-        // Focus the previous column or first column if we deleted the first one
-        const newColumnIndex = columnIndex > 0 ? columnIndex - 1 : 0;
-        const targetColumn = item[newColumnIndex];
-        if (targetColumn) {
-          const targetLineIndex = Math.min(lineIndex, targetColumn.length - 1);
-          nextTick(() => {
+            return;
+          } else {
+            // Focus the next available column
+            const targetColumn = Math.min(columnIndex, item.length - 1);
+            const targetColumnArray = item[targetColumn];
+            const targetLine = Math.min(
+              lineIndex,
+              targetColumnArray ? targetColumnArray.length - 1 : 0
+            );
             focusInput({
               stanzaIndex,
               itemIndex,
-              columnIndex: newColumnIndex,
-              lineIndex: targetLineIndex
+              columnIndex: targetColumn,
+              lineIndex: targetLine
             });
+          }
+        } else {
+          // Focus the next available line in the same column
+          const columnArray = item[columnIndex];
+          const targetLine = Math.min(lineIndex, columnArray ? columnArray.length - 1 : 0);
+          focusInput({
+            stanzaIndex,
+            itemIndex,
+            columnIndex,
+            lineIndex: targetLine
           });
         }
-        return;
       }
-
-      column.splice(lineIndex, 1);
-      updateLyrics(currentLyrics);
-
-      // Focus previous line or next line if at beginning
-      const newLineIndex = lineIndex > 0 ? lineIndex - 1 : 0;
-      nextTick(() => {
-        focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: newLineIndex });
-      });
     } else {
-      // Deleting a regular verse
-      if (stanza.length <= 1) {
-        // Delete the entire stanza if it has only one verse
-        if (currentLyrics.length <= 1) {
-          // Don't delete the last stanza, just clear its content
-          stanza[0] = { text: "" };
-          updateLyrics(currentLyrics);
-          nextTick(() => {
-            focusInput({ stanzaIndex, itemIndex: 0 });
-          });
-          return;
-        }
+      // Delete regular verse
+      stanza.splice(itemIndex, 1);
 
+      // If stanza is empty after deletion, remove it
+      if (stanza.length === 0) {
         currentLyrics.splice(stanzaIndex, 1);
         updateLyrics(currentLyrics);
 
-        // Focus the previous stanza or next stanza if we deleted the first one
-        const newStanzaIndex = stanzaIndex > 0 ? stanzaIndex - 1 : 0;
-        const targetStanza = currentLyrics[newStanzaIndex];
-        if (targetStanza && targetStanza.length > 0) {
-          const targetItemIndex = stanzaIndex > 0 ? targetStanza.length - 1 : 0;
-          const targetItem = targetStanza[targetItemIndex];
-
-          nextTick(() => {
-            if (Array.isArray(targetItem)) {
+        // Focus previous stanza if possible
+        if (stanzaIndex > 0 && currentLyrics[stanzaIndex - 1]) {
+          const prevStanza = currentLyrics[stanzaIndex - 1]!;
+          if (prevStanza.length > 0) {
+            const lastItem = prevStanza[prevStanza.length - 1];
+            if (Array.isArray(lastItem)) {
+              const columns = lastItem as LyricVerse[][];
+              const lastColumn = columns.length - 1;
+              const lastColumnArray = columns[lastColumn];
+              const lastLine = lastColumnArray ? lastColumnArray.length - 1 : 0;
               focusInput({
-                stanzaIndex: newStanzaIndex,
-                itemIndex: targetItemIndex,
-                columnIndex: 0,
-                lineIndex: 0
+                stanzaIndex: stanzaIndex - 1,
+                itemIndex: prevStanza.length - 1,
+                columnIndex: lastColumn,
+                lineIndex: lastLine
               });
             } else {
-              focusInput({ stanzaIndex: newStanzaIndex, itemIndex: targetItemIndex });
+              focusInput({ stanzaIndex: stanzaIndex - 1, itemIndex: prevStanza.length - 1 });
             }
-          });
+          }
+        } else if (currentLyrics.length > 0) {
+          // Focus first stanza
+          const firstStanza = currentLyrics[0];
+          if (firstStanza && firstStanza.length > 0) {
+            const firstItem = firstStanza[0];
+            if (Array.isArray(firstItem)) {
+              focusInput({ stanzaIndex: 0, itemIndex: 0, columnIndex: 0, lineIndex: 0 });
+            } else {
+              focusInput({ stanzaIndex: 0, itemIndex: 0 });
+            }
+          }
         }
         return;
       }
 
-      stanza.splice(itemIndex, 1);
-      updateLyrics(currentLyrics);
-
-      // Focus previous item or next item if at beginning
-      const newItemIndex = itemIndex > 0 ? itemIndex - 1 : 0;
-      const newItem = stanza[newItemIndex];
-
-      nextTick(() => {
-        if (Array.isArray(newItem)) {
-          focusInput({ stanzaIndex, itemIndex: newItemIndex, columnIndex: 0, lineIndex: 0 });
+      // Focus the previous item first (better UX for smart backspace)
+      if (itemIndex > 0) {
+        const prevItem = stanza[itemIndex - 1];
+        if (Array.isArray(prevItem)) {
+          const columns = prevItem as LyricVerse[][];
+          const lastColumn = columns.length - 1;
+          const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
+          focusInput({
+            stanzaIndex,
+            itemIndex: itemIndex - 1,
+            columnIndex: lastColumn,
+            lineIndex: lastLine
+          });
         } else {
-          focusInput({ stanzaIndex, itemIndex: newItemIndex });
+          focusInput({ stanzaIndex, itemIndex: itemIndex - 1 });
         }
-      });
+      } else if (itemIndex < stanza.length) {
+        // Only go to next item if there's no previous item
+        const nextItem = stanza[itemIndex];
+        if (Array.isArray(nextItem)) {
+          focusInput({ stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 });
+        } else {
+          focusInput({ stanzaIndex, itemIndex });
+        }
+      }
     }
+
+    updateLyrics(currentLyrics);
   };
 
-  // Convert regular verse to column layout
   const convertToColumns = () => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
-    // Only works on regular verses (not already in column layout)
-    if (columnIndex !== undefined) return;
-
+    const { stanzaIndex, itemIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
-    const currentVerse = stanza[itemIndex] as LyricVerse;
-    if (Array.isArray(currentVerse)) return; // Already columns
+    const currentItem = stanza[itemIndex];
 
-    // Convert to column layout with two columns
-    const newColumnLayout: LyricVerse[][] = [
-      [
-        {
-          ...currentVerse // Copy all properties from the original verse
-        }
-      ],
-      [{ text: "" }]
-    ];
+    // Only convert if it's not already in column format
+    if (Array.isArray(currentItem)) return;
 
-    stanza[itemIndex] = newColumnLayout;
+    const verse = currentItem as LyricVerse;
+    const newColumns: LyricVerse[][] = [[{ ...verse }]];
+
+    stanza[itemIndex] = newColumns;
     updateLyrics(currentLyrics);
 
-    nextTick(() => {
-      focusInput({ stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 });
-    });
+    // Focus the converted item
+    focusInput({ stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 });
   };
 
-  // Insert new column
   const insertColumn = (before: boolean = false) => {
     if (!currentFocus.value) return;
 
     const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
 
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    // If not in column context, convert to columns first
-    if (columnIndex === undefined) {
-      convertToColumns();
-      return;
-    }
-
-    const item = stanza[itemIndex] as LyricVerse[][];
-    const newColumn: LyricVerse[] = [{ text: "" }];
-    const insertIndex = before ? columnIndex : columnIndex + 1;
-
-    item.splice(insertIndex, 0, newColumn);
-    updateLyrics(currentLyrics);
-
-    nextTick(() => {
-      focusInput({ stanzaIndex, itemIndex, columnIndex: insertIndex, lineIndex: 0 });
-    });
-  };
-
-  // Insert new stanza
-  const insertStanza = () => {
-    if (!currentFocus.value) return;
-
-    const { stanzaIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const newStanza: (LyricVerse | LyricVerse[][])[] = [{ text: "" }];
-
-    currentLyrics.splice(stanzaIndex + 1, 0, newStanza);
-    updateLyrics(currentLyrics);
-
-    nextTick(() => {
-      focusInput({ stanzaIndex: stanzaIndex + 1, itemIndex: 0 });
-    });
-  };
-
-  // Insert new line outside column context (for Shift+Enter in columns)
-  const insertLineOutsideColumn = (before: boolean = false) => {
-    if (!currentFocus.value) return;
-
-    const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
-
-    // Only works when in column context
     if (columnIndex === undefined) return;
 
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
-    const colorsToInherit = getColorsForInheritance();
-    const newVerse: LyricVerse = {
-      text: "",
-      ...(colorsToInherit.length > 0 ? { color_keys: colorsToInherit } : {})
-    };
-    const insertIndex = before ? itemIndex : itemIndex + 1;
+    const item = stanza[itemIndex] as LyricVerse[][];
+    if (!Array.isArray(item)) return;
 
-    // Insert the new verse outside the column structure
-    stanza.splice(insertIndex, 0, newVerse);
-    updateLyrics(currentLyrics);
+    const newColumn: LyricVerse[] = [{ text: "", start_time: undefined, end_time: undefined }];
 
-    nextTick(() => {
-      focusInput({ stanzaIndex, itemIndex: insertIndex });
-    });
+    if (before) {
+      item.splice(columnIndex, 0, newColumn);
+      updateLyrics(currentLyrics);
+      focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: 0 });
+    } else {
+      item.splice(columnIndex + 1, 0, newColumn);
+      updateLyrics(currentLyrics);
+      focusInput({ stanzaIndex, itemIndex, columnIndex: columnIndex + 1, lineIndex: 0 });
+    }
   };
 
-  // Duplicate current line
+  const insertStanza = () => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+
+    const newStanza: LyricStanza = [{ text: "", start_time: undefined, end_time: undefined }];
+
+    currentLyrics.splice(stanzaIndex + 1, 0, newStanza);
+    updateLyrics(currentLyrics);
+
+    // Focus the first item of the new stanza
+    focusInput({ stanzaIndex: stanzaIndex + 1, itemIndex: 0 });
+  };
+
+  const insertLineOutsideColumn = (before: boolean = false) => {
+    if (!currentFocus.value) return;
+
+    const { stanzaIndex, itemIndex } = currentFocus.value;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    const newVerse: LyricVerse = {
+      text: "",
+      start_time: undefined,
+      end_time: undefined
+    };
+
+    if (before) {
+      stanza.splice(itemIndex, 0, newVerse);
+      updateLyrics(currentLyrics);
+      focusInput({ stanzaIndex, itemIndex });
+    } else {
+      stanza.splice(itemIndex + 1, 0, newVerse);
+      updateLyrics(currentLyrics);
+      focusInput({ stanzaIndex, itemIndex: itemIndex + 1 });
+    }
+  };
+
   const duplicateLine = () => {
     if (!currentFocus.value) return;
 
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
-
     if (!stanza) return;
 
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Duplicating in a column
+      // Duplicate in column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (!column || !column[lineIndex]) return;
-      const lineToDuplicate = { ...column[lineIndex], text: column[lineIndex].text || "" };
-
-      column.splice(lineIndex + 1, 0, lineToDuplicate);
-      updateLyrics(currentLyrics);
-
-      nextTick(() => {
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        const originalVerse = item[columnIndex][lineIndex];
+        const duplicatedVerse = { ...originalVerse };
+        item[columnIndex].splice(lineIndex + 1, 0, duplicatedVerse);
+        updateLyrics(currentLyrics);
         focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: lineIndex + 1 });
-      });
+      }
     } else {
-      // Duplicating a regular verse
-      const itemToDuplicate = { ...(stanza[itemIndex] as LyricVerse) };
-      stanza.splice(itemIndex + 1, 0, itemToDuplicate);
-      updateLyrics(currentLyrics);
-
-      nextTick(() => {
+      // Duplicate regular verse
+      const originalVerse = stanza[itemIndex] as LyricVerse;
+      if (originalVerse) {
+        const duplicatedVerse = { ...originalVerse };
+        stanza.splice(itemIndex + 1, 0, duplicatedVerse);
+        updateLyrics(currentLyrics);
         focusInput({ stanzaIndex, itemIndex: itemIndex + 1 });
-      });
+      }
     }
   };
 
-  // Smart backspace: delete empty verse
-  const handleSmartBackspace = () => {
+  const handleSmartBackspace = (): boolean => {
     if (!currentFocus.value) return false;
 
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
@@ -525,52 +487,47 @@ export function useLyricsEditor(
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return false;
 
-    // Check if current verse/line is empty
-    let isEmpty = false;
+    let currentText = "";
+
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
+      // Check text in column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        isEmpty = !column[lineIndex].text?.trim();
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        currentText = item[columnIndex][lineIndex].text;
       }
     } else {
-      // Regular verse
+      // Check text in regular verse
       const verse = stanza[itemIndex] as LyricVerse;
-      isEmpty = !verse.text?.trim();
+      currentText = verse.text;
     }
 
-    // If empty and cursor is at start of input, delete the verse/line
-    if (isEmpty) {
-      const inputElement = getInputElement(currentFocus.value);
-      if (inputElement && inputElement.selectionStart === 0) {
-        deleteLine();
-        return true;
-      }
+    // Only delete if the text is empty
+    if (currentText === "") {
+      deleteLine();
+      return true;
     }
 
     return false;
   };
 
-  // Timestamp operations
   const setCurrentVerseStartTime = () => {
     if (!currentFocus.value || !getCurrentTime) return;
 
-    const currentTime = Math.round(getCurrentTime() * 100) / 100;
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
+    const currentTime = getCurrentTime();
+
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
+      // Set in column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        column[lineIndex].start_time = currentTime;
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        item[columnIndex][lineIndex].start_time = currentTime;
       }
     } else {
-      // Regular verse
+      // Set in regular verse
       const verse = stanza[itemIndex] as LyricVerse;
       verse.start_time = currentTime;
     }
@@ -581,21 +538,21 @@ export function useLyricsEditor(
   const setCurrentVerseEndTime = () => {
     if (!currentFocus.value || !getCurrentTime) return;
 
-    const currentTime = Math.round(getCurrentTime() * 100) / 100;
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
+    const currentTime = getCurrentTime();
+
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
+      // Set in column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        column[lineIndex].end_time = currentTime;
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        item[columnIndex][lineIndex].end_time = currentTime;
       }
     } else {
-      // Regular verse
+      // Set in regular verse
       const verse = stanza[itemIndex] as LyricVerse;
       verse.end_time = currentTime;
     }
@@ -613,14 +570,11 @@ export function useLyricsEditor(
 
     let verse: LyricVerse | undefined;
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        verse = column[lineIndex];
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        verse = item[columnIndex][lineIndex];
       }
     } else {
-      // Regular verse
       verse = stanza[itemIndex] as LyricVerse;
     }
 
@@ -640,14 +594,11 @@ export function useLyricsEditor(
 
     let verse: LyricVerse | undefined;
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        verse = column[lineIndex];
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        verse = item[columnIndex][lineIndex];
       }
     } else {
-      // Regular verse
       verse = stanza[itemIndex] as LyricVerse;
     }
 
@@ -666,14 +617,11 @@ export function useLyricsEditor(
     if (!stanza) return;
 
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        column[lineIndex].start_time = undefined;
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        item[columnIndex][lineIndex].start_time = undefined;
       }
     } else {
-      // Regular verse
       const verse = stanza[itemIndex] as LyricVerse;
       verse.start_time = undefined;
     }
@@ -690,14 +638,11 @@ export function useLyricsEditor(
     if (!stanza) return;
 
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        column[lineIndex].end_time = undefined;
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        item[columnIndex][lineIndex].end_time = undefined;
       }
     } else {
-      // Regular verse
       const verse = stanza[itemIndex] as LyricVerse;
       verse.end_time = undefined;
     }
@@ -714,15 +659,12 @@ export function useLyricsEditor(
     if (!stanza) return;
 
     if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
       const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        column[lineIndex].start_time = undefined;
-        column[lineIndex].end_time = undefined;
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        item[columnIndex][lineIndex].start_time = undefined;
+        item[columnIndex][lineIndex].end_time = undefined;
       }
     } else {
-      // Regular verse
       const verse = stanza[itemIndex] as LyricVerse;
       verse.start_time = undefined;
       verse.end_time = undefined;
@@ -731,185 +673,52 @@ export function useLyricsEditor(
     updateLyrics(currentLyrics);
   };
 
-  // Keyboard event handler
-  const handleKeydown = (event: KeyboardEvent) => {
-    const target = event.target as HTMLElement;
+  const getColorsForInheritance = (): string[] => {
+    if (!currentFocus.value) return [];
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return [];
 
-    // Only handle events from our input fields
-    if (!target.hasAttribute("data-input")) return;
-
-    const isMac = navigator.platform.toLowerCase().includes("mac");
-    const cmdOrCtrl = isMac ? event.metaKey : event.ctrlKey;
-
-    // Handle key sequence state first
-    if (keySequenceState.value.isWaitingForArrow) {
-      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        event.preventDefault();
-        const delta = event.key === "ArrowLeft" ? -0.1 : 0.1;
-
-        if (keySequenceState.value.targetType === "start") {
-          adjustCurrentVerseStartTime(delta);
-        } else if (keySequenceState.value.targetType === "end") {
-          adjustCurrentVerseEndTime(delta);
-        }
-
-        // Keep the sequence active and refresh the timeout
-        if (keySequenceState.value.timeout) {
-          clearTimeout(keySequenceState.value.timeout);
-        }
-        keySequenceState.value.timeout = setTimeout(() => {
-          resetKeySequenceState();
-        }, 2000);
-        return;
-      } else if (event.key !== "Meta" && event.key !== "Control" && event.key !== "Shift") {
-        // Any other key cancels the sequence
-        resetKeySequenceState();
+    let verse: LyricVerse | undefined;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        verse = column[lineIndex];
       }
+    } else {
+      // Regular verse
+      verse = stanza[itemIndex] as LyricVerse;
     }
 
-    // Smart backspace for empty verses
-    if (event.key === "Backspace" && !cmdOrCtrl) {
-      if (handleSmartBackspace()) {
-        event.preventDefault();
-        return;
-      }
-    }
-
-    // Help toggle
-    if (event.key === "F1") {
-      event.preventDefault();
-      showHelp.value = !showHelp.value;
-      return;
-    }
-
-    // Navigation
-    if (event.key === "ArrowUp" && !cmdOrCtrl) {
-      event.preventDefault();
-      navigateVertical("up");
-    } else if (event.key === "ArrowDown" && !cmdOrCtrl) {
-      event.preventDefault();
-      navigateVertical("down");
-    } else if (event.key === "ArrowLeft") {
-      // Only navigate horizontally if cursor is at the beginning of the input
-      const inputElement = target as HTMLInputElement;
-      if (
-        inputElement.selectionStart === 0 &&
-        inputElement.selectionEnd === inputElement.selectionStart
-      ) {
-        event.preventDefault();
-        navigateHorizontal("left");
-      }
-    } else if (event.key === "ArrowRight") {
-      // Only navigate horizontally if cursor is at the end of the input
-      const inputElement = target as HTMLInputElement;
-      if (
-        inputElement.selectionStart === inputElement.value.length &&
-        inputElement.selectionEnd === inputElement.selectionStart
-      ) {
-        event.preventDefault();
-        navigateHorizontal("right");
-      }
-    }
-
-    // Line operations
-    else if (event.key === "Enter" && !cmdOrCtrl && !event.altKey && !event.shiftKey) {
-      event.preventDefault();
-      insertLineWithInheritance(false); // Insert line after
-    } else if (event.key === "Enter" && event.altKey && !cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      insertLineWithInheritance(true); // Insert line before
-    } else if (event.key === "Enter" && event.shiftKey && !cmdOrCtrl && !event.altKey) {
-      event.preventDefault();
-      insertLineOutsideColumn(false); // Insert line after, outside column context
-    } else if (event.key === "Enter" && event.shiftKey && event.altKey && !cmdOrCtrl) {
-      event.preventDefault();
-      insertLineOutsideColumn(true); // Insert line before, outside column context
-    } else if (event.key === "Backspace" && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      deleteLine();
-    } else if (event.key === "d" && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      duplicateLineWithInheritance();
-    }
-
-    // Column operations
-    else if (event.key === "]" && cmdOrCtrl) {
-      event.preventDefault();
-      insertColumn(!event.shiftKey);
-    } else if (event.key === "[" && cmdOrCtrl) {
-      event.preventDefault();
-      insertColumn(true);
-    } else if (event.key === "\\" && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      convertToColumns();
-    }
-
-    // Stanza operations
-    else if (event.key === "Enter" && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      insertStanza();
-    }
-
-    // Copy properties operations (colors and audio tracks)
-    else if (event.key === "k" && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      toggleCopyPropertiesFromMode();
-    }
-
-    // Save operation
-    else if (
-      event.key === "s" &&
-      cmdOrCtrl &&
-      !event.shiftKey &&
-      !keySequenceState.value.isWaitingForArrow
-    ) {
-      event.preventDefault();
-      if (onSave) {
-        onSave();
-      }
-    }
-
-    // Timestamp operations - SET (without shift)
-    else if (event.key === "," && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      setCurrentVerseStartTime();
-    } else if (event.key === "." && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      setCurrentVerseEndTime();
-    }
-
-    // Complex timestamp adjustment shortcuts
-    else if (event.key === "s" && cmdOrCtrl && event.shiftKey) {
-      event.preventDefault();
-      startKeySequence("start");
-    } else if (event.key === "e" && cmdOrCtrl && event.shiftKey) {
-      event.preventDefault();
-      startKeySequence("end");
-    }
-
-    // Clear timestamp operations - CLEAR (with shift)
-    else if (event.key === "," && cmdOrCtrl && event.shiftKey && !event.altKey) {
-      event.preventDefault();
-      clearCurrentVerseStartTime();
-    } else if (event.key === "." && cmdOrCtrl && event.shiftKey && !event.altKey) {
-      event.preventDefault();
-      clearCurrentVerseEndTime();
-    } else if (event.key === "/" && cmdOrCtrl && !event.altKey && !event.shiftKey) {
-      event.preventDefault();
-      clearCurrentVerseBothTimes();
-    }
-
-    // Timestamp adjustments - using different key combinations since we can't detect multiple keys at once
-    // For now, let's use simpler shortcuts that can be triggered by buttons
-    // The complex multi-key shortcuts will be handled by a state machine or separate implementation
+    return verse?.color_keys || [];
   };
 
-  // Handle input focus
-  const handleInputFocus = (position: FocusPosition) => {
-    currentFocus.value = position;
+  const getAudioTrackIdsForInheritance = (): number[] => {
+    if (!currentFocus.value) return [];
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return [];
+
+    let verse: LyricVerse | undefined;
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // In column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        verse = column[lineIndex];
+      }
+    } else {
+      // Regular verse
+      verse = stanza[itemIndex] as LyricVerse;
+    }
+
+    return verse?.audio_track_ids || [];
   };
 
-  // Color operations
   const getCurrentVerseColors = (): string[] => {
     if (!currentFocus.value) return [];
 
@@ -966,61 +775,6 @@ export function useLyricsEditor(
     updateLyrics(currentLyrics);
   };
 
-  // Copy properties from mode (unified for colors and audio tracks)
-  const copyPropertiesFromMode = ref(false);
-
-  const toggleCopyPropertiesFromMode = () => {
-    copyPropertiesFromMode.value = !copyPropertiesFromMode.value;
-  };
-
-  const copyPropertiesFromVerse = (sourcePosition: FocusPosition) => {
-    if (!currentFocus.value || !copyPropertiesFromMode.value) return;
-
-    // Store the original focus to restore later
-    const originalFocus = { ...currentFocus.value };
-
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = sourcePosition;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    let sourceColors: string[] = [];
-    let sourceTrackIds: number[] = [];
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Source is in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        sourceColors = column[lineIndex].color_keys || [];
-        sourceTrackIds = column[lineIndex].audio_track_ids || [];
-      }
-    } else {
-      // Source is regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
-      sourceColors = verse.color_keys || [];
-      sourceTrackIds = verse.audio_track_ids || [];
-    }
-
-    // Apply both colors and track IDs to the current verse
-    setCurrentVerseColors([...sourceColors]);
-    setCurrentVerseAudioTrackIds([...sourceTrackIds]);
-
-    // Exit copy mode after copying
-    copyPropertiesFromMode.value = false;
-
-    // Restore focus to the original verse
-    nextTick(() => {
-      focusInput(originalFocus);
-    });
-  };
-
-  const getColorsForInheritance = (): string[] => {
-    if (!currentFocus.value) return [];
-    return getCurrentVerseColors();
-  };
-
-  // Audio track operations
   const getCurrentVerseAudioTrackIds = (): number[] => {
     if (!currentFocus.value) return [];
 
@@ -1077,17 +831,58 @@ export function useLyricsEditor(
     updateLyrics(currentLyrics);
   };
 
-  const getAudioTrackIdsForInheritance = (): number[] => {
-    if (!currentFocus.value) return [];
-    return getCurrentVerseAudioTrackIds();
+  const copyPropertiesFromMode = ref(false);
+
+  const toggleCopyPropertiesFromMode = () => {
+    copyPropertiesFromMode.value = !copyPropertiesFromMode.value;
   };
 
-  // Update insertLine to inherit colors and audio tracks
-  const originalInsertLine = insertLine;
+  const copyPropertiesFromVerse = (sourcePosition: FocusPosition) => {
+    if (!currentFocus.value || !copyPropertiesFromMode.value) return;
+
+    // Store the original focus to restore later
+    const originalFocus = { ...currentFocus.value };
+
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = sourcePosition;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    let sourceColors: string[] = [];
+    let sourceTrackIds: number[] = [];
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // Source is in column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      const column = item[columnIndex];
+      if (column && column[lineIndex]) {
+        sourceColors = column[lineIndex].color_keys || [];
+        sourceTrackIds = column[lineIndex].audio_track_ids || [];
+      }
+    } else {
+      // Source is regular verse
+      const verse = stanza[itemIndex] as LyricVerse;
+      sourceColors = verse.color_keys || [];
+      sourceTrackIds = verse.audio_track_ids || [];
+    }
+
+    // Apply both colors and track IDs to the current verse
+    setCurrentVerseColors([...sourceColors]);
+    setCurrentVerseAudioTrackIds([...sourceTrackIds]);
+
+    // Exit copy mode after copying
+    copyPropertiesFromMode.value = false;
+
+    // Restore focus to the original verse
+    nextTick(() => {
+      focusInput(originalFocus);
+    });
+  };
+
   const insertLineWithInheritance = (before: boolean = false) => {
     const colorsToInherit = getColorsForInheritance();
     const trackIdsToInherit = getAudioTrackIdsForInheritance();
-    originalInsertLine(before);
+    insertLine(before);
 
     // Apply inherited colors and track IDs to the newly created line
     nextTick(() => {
@@ -1100,11 +895,320 @@ export function useLyricsEditor(
     });
   };
 
-  // Update duplicateLine to preserve colors and audio tracks
-  const originalDuplicateLine = duplicateLine;
   const duplicateLineWithInheritance = () => {
-    originalDuplicateLine();
-    // Colors and audio track IDs are already preserved in the duplication logic
+    duplicateLine();
+  };
+
+  const commandRegistry = useCommands();
+  const canPerformActions = computed(() => currentFocus.value !== null);
+  const hasColumnContext = computed(() => currentFocus.value?.columnIndex !== undefined);
+
+  const commands: Command[] = [
+    {
+      id: "navigate-up",
+      description: "Navegar hacia arriba",
+      category: "Navegación",
+      execute: () => navigateVertical("up"),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowUp"
+      }
+    },
+    {
+      id: "navigate-down",
+      description: "Navegar hacia abajo",
+      category: "Navegación",
+      execute: () => navigateVertical("down"),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowDown"
+      }
+    },
+    {
+      id: "navigate-left",
+      description: "Moverse dentro del texto / Navegar entre columnas",
+      category: "Navegación",
+      execute: () => navigateHorizontal("left"),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowLeft",
+        preventDefault: false
+      }
+    },
+    {
+      id: "navigate-right",
+      description: "Moverse dentro del texto / Navegar entre columnas",
+      category: "Navegación",
+      execute: () => navigateHorizontal("right"),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowRight",
+        preventDefault: false
+      }
+    },
+
+    {
+      id: "insert-line",
+      description: "Insertar nuevo verso después del actual",
+      category: "Operaciones de versos",
+      execute: () => insertLineWithInheritance(false),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Enter"
+      }
+    },
+    {
+      id: "insert-line-before",
+      description: "Insertar nuevo verso antes del actual",
+      category: "Operaciones de versos",
+      execute: () => insertLineWithInheritance(true),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Enter",
+        modifiers: { alt: true }
+      }
+    },
+    {
+      id: "insert-line-outside-after",
+      description: "Insertar verso fuera de columnas (después)",
+      category: "Operaciones de versos",
+      execute: () => insertLineOutsideColumn(false),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Enter",
+        modifiers: { shift: true }
+      }
+    },
+    {
+      id: "insert-line-outside-before",
+      description: "Insertar verso fuera de columnas (antes)",
+      category: "Operaciones de versos",
+      execute: () => insertLineOutsideColumn(true),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Enter",
+        modifiers: { shift: true, alt: true }
+      }
+    },
+    {
+      id: "delete-line",
+      description: "Eliminar verso actual",
+      category: "Operaciones de versos",
+      execute: () => deleteLine(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Backspace",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "smart-backspace",
+      description: "Eliminar verso vacío automáticamente",
+      category: "Operaciones de versos",
+      execute: () => {
+        const handled = handleSmartBackspace();
+        if (handled) {
+          return true;
+        }
+        return false;
+      },
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Backspace",
+        preventDefault: false
+      }
+    },
+    {
+      id: "duplicate-line",
+      description: "Duplicar verso actual",
+      category: "Operaciones de versos",
+      execute: () => duplicateLineWithInheritance(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "d",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "copy-properties",
+      description: "Copiar colores y pistas de audio de otro verso",
+      category: "Operaciones de versos",
+      execute: () => toggleCopyPropertiesFromMode(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "k",
+        modifiers: { ctrl: true }
+      }
+    },
+
+    {
+      id: "convert-to-columns",
+      description: "Convertir en un verso con múltiples columnas",
+      category: "Operaciones de columnas",
+      execute: () => convertToColumns(),
+      canExecute: () => canPerformActions.value && !hasColumnContext.value,
+      keybinding: {
+        key: "\\",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "insert-column-right",
+      description: "Insertar columna a la derecha",
+      category: "Operaciones de columnas",
+      execute: () => insertColumn(false),
+      canExecute: () => canPerformActions.value && hasColumnContext.value,
+      keybinding: {
+        key: "]",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "insert-column-left",
+      description: "Insertar columna a la izquierda",
+      category: "Operaciones de columnas",
+      execute: () => insertColumn(true),
+      canExecute: () => canPerformActions.value && hasColumnContext.value,
+      keybinding: {
+        key: "[",
+        modifiers: { ctrl: true }
+      }
+    },
+
+    {
+      id: "insert-stanza",
+      description: "Insertar nueva estrofa",
+      category: "Operaciones de estrofas",
+      execute: () => insertStanza(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "Enter",
+        modifiers: { ctrl: true }
+      }
+    },
+
+    {
+      id: "set-start-time",
+      description: "Establecer tiempo de inicio del verso",
+      category: "Marcas de tiempo",
+      execute: () => setCurrentVerseStartTime(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: ",",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "set-end-time",
+      description: "Establecer tiempo de finalización del verso",
+      category: "Marcas de tiempo",
+      execute: () => setCurrentVerseEndTime(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: ".",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "clear-start-time",
+      description: "Limpiar tiempo de inicio",
+      category: "Marcas de tiempo",
+      execute: () => clearCurrentVerseStartTime(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: ",",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+    {
+      id: "clear-end-time",
+      description: "Limpiar tiempo de finalización",
+      category: "Marcas de tiempo",
+      execute: () => clearCurrentVerseEndTime(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: ".",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+    {
+      id: "clear-both-times",
+      description: "Limpiar ambos tiempos",
+      category: "Marcas de tiempo",
+      execute: () => clearCurrentVerseBothTimes(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "/",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "adjust-start-time-forward",
+      description: "Ajustar tiempo de inicio hacia adelante",
+      category: "Marcas de tiempo",
+      execute: () => adjustCurrentVerseStartTime(0.1),
+      canExecute: () => canPerformActions.value
+    },
+    {
+      id: "adjust-start-time-backward",
+      description: "Ajustar tiempo de inicio hacia atrás",
+      category: "Marcas de tiempo",
+      execute: () => adjustCurrentVerseStartTime(-0.1),
+      canExecute: () => canPerformActions.value
+    },
+    {
+      id: "adjust-end-time-forward",
+      description: "Ajustar tiempo final hacia adelante",
+      category: "Marcas de tiempo",
+      execute: () => adjustCurrentVerseEndTime(0.1),
+      canExecute: () => canPerformActions.value
+    },
+    {
+      id: "adjust-end-time-backward",
+      description: "Ajustar tiempo final hacia atrás",
+      category: "Marcas de tiempo",
+      execute: () => adjustCurrentVerseEndTime(-0.1),
+      canExecute: () => canPerformActions.value
+    },
+
+    {
+      id: "save",
+      description: "Guardar cambios",
+      category: "Acciones rápidas",
+      execute: () => onSave?.(),
+      canExecute: () => !!onSave,
+      keybinding: {
+        key: "s",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "toggle-help",
+      description: "Mostrar/ocultar esta ayuda",
+      category: "Acciones rápidas",
+      execute: () => {
+        showHelp.value = !showHelp.value;
+      },
+      keybinding: {
+        key: "F1"
+      }
+    }
+  ];
+
+  commands.forEach((command) => {
+    commandRegistry.register(command);
+  });
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+
+    if (!target.hasAttribute("data-input")) return;
+
+    commandRegistry.handleKeyboardEvent(event);
+  };
+
+  const handleInputFocus = (position: FocusPosition) => {
+    currentFocus.value = position;
   };
 
   onMounted(() => {
@@ -1113,7 +1217,6 @@ export function useLyricsEditor(
 
   onUnmounted(() => {
     document.removeEventListener("keydown", handleKeydown);
-    resetKeySequenceState();
   });
 
   return {
@@ -1121,32 +1224,14 @@ export function useLyricsEditor(
     showHelp,
     handleInputFocus,
     focusInput,
-    // Expose individual functions for button usage
-    insertLine: insertLineWithInheritance,
-    deleteLine,
-    duplicateLine: duplicateLineWithInheritance,
-    insertColumn,
-    insertStanza,
-    convertToColumns,
-    navigateVertical,
-    navigateHorizontal,
-    // Color operations
+
+    commandRegistry,
+
     getCurrentVerseColors,
     setCurrentVerseColors,
-    // Audio track operations
     getCurrentVerseAudioTrackIds,
     setCurrentVerseAudioTrackIds,
-    // Unified copy properties operations
     copyPropertiesFromMode: computed(() => copyPropertiesFromMode.value),
-    toggleCopyPropertiesFromMode,
-    copyPropertiesFromVerse,
-    // Timestamp operations
-    setCurrentVerseStartTime,
-    setCurrentVerseEndTime,
-    adjustCurrentVerseStartTime,
-    adjustCurrentVerseEndTime,
-    clearCurrentVerseStartTime,
-    clearCurrentVerseEndTime,
-    clearCurrentVerseBothTimes
+    copyPropertiesFromVerse
   };
 }
