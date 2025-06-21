@@ -42,7 +42,8 @@ const copyTimeToClipboard = async (type: "start_time" | "end_time") => {
 };
 
 const keydownHandler = (event: KeyboardEvent) => {
-  if (event.metaKey) {
+  // Only handle events when no alt key is pressed to avoid conflicts with clearing timestamps
+  if (event.metaKey && !event.altKey) {
     if (event.key === ",") {
       event.preventDefault();
       isVisible.value = true;
