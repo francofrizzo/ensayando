@@ -18,6 +18,62 @@ export function useLyricsEditor(
   const currentFocus = ref<FocusPosition | null>(null);
   const showHelp = ref(false);
 
+  // Helper functions to abstract verse access patterns
+  const getCurrentVerse = (position: FocusPosition): LyricVerse | null => {
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
+    const currentLyrics = lyrics.value;
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return null;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // Column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        return item[columnIndex][lineIndex];
+      }
+    } else {
+      // Regular context
+      const verse = stanza[itemIndex] as LyricVerse;
+      if (verse) return verse;
+    }
+    return null;
+  };
+
+  const updateCurrentVerse = (
+    position: FocusPosition,
+    updater: (verse: LyricVerse) => void
+  ): boolean => {
+    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return false;
+
+    let verse: LyricVerse | null = null;
+
+    if (columnIndex !== undefined && lineIndex !== undefined) {
+      // Column context
+      const item = stanza[itemIndex] as LyricVerse[][];
+      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
+        verse = item[columnIndex][lineIndex];
+      }
+    } else {
+      // Regular context
+      verse = stanza[itemIndex] as LyricVerse;
+    }
+
+    if (verse) {
+      updater(verse);
+      updateLyrics(currentLyrics);
+      return true;
+    }
+    return false;
+  };
+
+  const getVerseText = (position: FocusPosition): string => {
+    const verse = getCurrentVerse(position);
+    return verse?.text || "";
+  };
+
   const getInputElement = (position: FocusPosition): HTMLInputElement | null => {
     const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
     let selector = `[data-input="${stanzaIndex}-${itemIndex}`;
@@ -482,24 +538,7 @@ export function useLyricsEditor(
   const handleSmartBackspace = (): boolean => {
     if (!currentFocus.value) return false;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return false;
-
-    let currentText = "";
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Check text in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        currentText = item[columnIndex][lineIndex].text;
-      }
-    } else {
-      // Check text in regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
-      currentText = verse.text;
-    }
+    const currentText = getVerseText(currentFocus.value);
 
     // Only delete if the text is empty
     if (currentText === "") {
@@ -513,322 +552,112 @@ export function useLyricsEditor(
   const setCurrentVerseStartTime = () => {
     if (!currentFocus.value || !getCurrentTime) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
     const currentTime = getCurrentTime();
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Set in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        item[columnIndex][lineIndex].start_time = currentTime;
-      }
-    } else {
-      // Set in regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       verse.start_time = currentTime;
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const setCurrentVerseEndTime = () => {
     if (!currentFocus.value || !getCurrentTime) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
     const currentTime = getCurrentTime();
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Set in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        item[columnIndex][lineIndex].end_time = currentTime;
-      }
-    } else {
-      // Set in regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       verse.end_time = currentTime;
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const adjustCurrentVerseStartTime = (deltaSeconds: number) => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    let verse: LyricVerse | undefined;
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        verse = item[columnIndex][lineIndex];
+    updateCurrentVerse(currentFocus.value, (verse) => {
+      if (verse.start_time !== undefined) {
+        verse.start_time = Math.max(0, verse.start_time + deltaSeconds);
       }
-    } else {
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
-    if (verse && verse.start_time !== undefined) {
-      verse.start_time = Math.max(0, verse.start_time + deltaSeconds);
-      updateLyrics(currentLyrics);
-    }
+    });
   };
 
   const adjustCurrentVerseEndTime = (deltaSeconds: number) => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    let verse: LyricVerse | undefined;
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        verse = item[columnIndex][lineIndex];
+    updateCurrentVerse(currentFocus.value, (verse) => {
+      if (verse.end_time !== undefined) {
+        verse.end_time = Math.max(0, verse.end_time + deltaSeconds);
       }
-    } else {
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
-    if (verse && verse.end_time !== undefined) {
-      verse.end_time = Math.max(0, verse.end_time + deltaSeconds);
-      updateLyrics(currentLyrics);
-    }
+    });
   };
 
   const clearCurrentVerseStartTime = () => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        item[columnIndex][lineIndex].start_time = undefined;
-      }
-    } else {
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       verse.start_time = undefined;
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const clearCurrentVerseEndTime = () => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        item[columnIndex][lineIndex].end_time = undefined;
-      }
-    } else {
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       verse.end_time = undefined;
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const clearCurrentVerseBothTimes = () => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        item[columnIndex][lineIndex].start_time = undefined;
-        item[columnIndex][lineIndex].end_time = undefined;
-      }
-    } else {
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       verse.start_time = undefined;
       verse.end_time = undefined;
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const getColorsForInheritance = (): string[] => {
     if (!currentFocus.value) return [];
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return [];
-
-    let verse: LyricVerse | undefined;
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        verse = column[lineIndex];
-      }
-    } else {
-      // Regular verse
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
+    const verse = getCurrentVerse(currentFocus.value);
     return verse?.color_keys || [];
   };
 
   const getAudioTrackIdsForInheritance = (): number[] => {
     if (!currentFocus.value) return [];
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return [];
-
-    let verse: LyricVerse | undefined;
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        verse = column[lineIndex];
-      }
-    } else {
-      // Regular verse
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
+    const verse = getCurrentVerse(currentFocus.value);
     return verse?.audio_track_ids || [];
   };
 
   const getCurrentVerseColors = (): string[] => {
     if (!currentFocus.value) return [];
-
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return [];
-
-    let verse: LyricVerse | undefined;
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        verse = column[lineIndex];
-      }
-    } else {
-      // Regular verse
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
+    const verse = getCurrentVerse(currentFocus.value);
     return verse?.color_keys || [];
   };
 
   const setCurrentVerseColors = (colors: string[]) => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        if (colors.length === 0) {
-          delete column[lineIndex].color_keys;
-        } else {
-          column[lineIndex].color_keys = colors;
-        }
-      }
-    } else {
-      // Regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       if (colors.length === 0) {
         delete verse.color_keys;
       } else {
         verse.color_keys = colors;
       }
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const getCurrentVerseAudioTrackIds = (): number[] => {
     if (!currentFocus.value) return [];
-
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return [];
-
-    let verse: LyricVerse | undefined;
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        verse = column[lineIndex];
-      }
-    } else {
-      // Regular verse
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
+    const verse = getCurrentVerse(currentFocus.value);
     return verse?.audio_track_ids || [];
   };
 
   const setCurrentVerseAudioTrackIds = (trackIds: number[]) => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // In column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        if (trackIds.length === 0) {
-          delete column[lineIndex].audio_track_ids;
-        } else {
-          column[lineIndex].audio_track_ids = trackIds;
-        }
-      }
-    } else {
-      // Regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
+    updateCurrentVerse(currentFocus.value, (verse) => {
       if (trackIds.length === 0) {
         delete verse.audio_track_ids;
       } else {
         verse.audio_track_ids = trackIds;
       }
-    }
-
-    updateLyrics(currentLyrics);
+    });
   };
 
   const copyPropertiesFromMode = ref(false);
@@ -843,28 +672,11 @@ export function useLyricsEditor(
     // Store the original focus to restore later
     const originalFocus = { ...currentFocus.value };
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = sourcePosition;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
+    const sourceVerse = getCurrentVerse(sourcePosition);
+    if (!sourceVerse) return;
 
-    let sourceColors: string[] = [];
-    let sourceTrackIds: number[] = [];
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Source is in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        sourceColors = column[lineIndex].color_keys || [];
-        sourceTrackIds = column[lineIndex].audio_track_ids || [];
-      }
-    } else {
-      // Source is regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
-      sourceColors = verse.color_keys || [];
-      sourceTrackIds = verse.audio_track_ids || [];
-    }
+    const sourceColors = sourceVerse.color_keys || [];
+    const sourceTrackIds = sourceVerse.audio_track_ids || [];
 
     // Apply both colors and track IDs to the current verse
     setCurrentVerseColors([...sourceColors]);
