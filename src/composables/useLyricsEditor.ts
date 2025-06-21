@@ -1,7 +1,8 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
+import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 import { nextTick, type Ref } from "vue";
 import { useLyricsCommands, type LyricsCommandActions } from "./useLyricsCommands";
-import { useLyricsNavigation, type FocusPosition } from "./useLyricsNavigation";
+import { useLyricsNavigation } from "./useLyricsNavigation";
 import { useLyricsOperations } from "./useLyricsOperations";
 import { useLyricsProperties } from "./useLyricsProperties";
 import { useLyricsTimestamps } from "./useLyricsTimestamps";
@@ -23,7 +24,6 @@ export function useLyricsEditor(
     getVerseText,
     focusInput,
     isColumnContext,
-    getItemAtPosition,
     findPositionAfterDeletion,
     navigateHorizontal,
     navigateVertical,
@@ -50,9 +50,7 @@ export function useLyricsEditor(
     lyrics,
     updateLyrics,
     focusInput,
-    findPositionAfterDeletion,
-    isColumnContext,
-    getItemAtPosition
+    findPositionAfterDeletion
   );
 
   // Initialize timestamps composable

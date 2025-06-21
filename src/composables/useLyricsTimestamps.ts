@@ -1,5 +1,5 @@
 import type { LyricVerse } from "@/data/types";
-import type { FocusPosition } from "./useLyricsNavigation";
+import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 
 export function useLyricsTimestamps(
   getCurrentTime?: () => number,

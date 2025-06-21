@@ -1,17 +1,16 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
+import {
+  type FocusPosition,
+  getItemAtPosition,
+  isColumnContext
+} from "@/utils/lyricsPositionUtils";
 import { type Ref } from "vue";
-import type { FocusPosition } from "./useLyricsNavigation";
 
 export function useLyricsOperations(
   lyrics: Ref<LyricStanza[]>,
   updateLyrics: (newLyrics: LyricStanza[]) => void,
   focusInput: (position: FocusPosition) => Promise<void>,
-  findPositionAfterDeletion: (originalPosition: FocusPosition) => FocusPosition | null,
-  isColumnContext: (position: FocusPosition) => boolean,
-  getItemAtPosition: (
-    position: FocusPosition,
-    lyricsState?: LyricStanza[]
-  ) => LyricVerse | LyricVerse[][] | null
+  findPositionAfterDeletion: (originalPosition: FocusPosition) => FocusPosition | null
 ) {
   const createEmptyVerse = (): LyricVerse => ({
     text: "",
@@ -26,10 +25,7 @@ export function useLyricsOperations(
     if (!stanza) return;
 
     if (isColumnContext(currentFocus)) {
-      const { columnIndex, lineIndex } = currentFocus as FocusPosition & {
-        columnIndex: number;
-        lineIndex: number;
-      };
+      const { columnIndex, lineIndex } = currentFocus;
       const item = getItemAtPosition(currentFocus, currentLyrics);
 
       if (Array.isArray(item) && item[columnIndex]) {
@@ -70,10 +66,7 @@ export function useLyricsOperations(
     if (!stanza) return;
 
     if (isColumnContext(currentFocus)) {
-      const { columnIndex, lineIndex } = currentFocus as FocusPosition & {
-        columnIndex: number;
-        lineIndex: number;
-      };
+      const { columnIndex, lineIndex } = currentFocus;
       const item = getItemAtPosition(currentFocus, currentLyrics);
       if (Array.isArray(item) && item[columnIndex]) {
         const targetColumn = item[columnIndex];
@@ -137,10 +130,7 @@ export function useLyricsOperations(
 
     if (!isColumnContext(currentFocus)) return;
 
-    const { columnIndex } = currentFocus as FocusPosition & {
-      columnIndex: number;
-      lineIndex: number;
-    };
+    const { columnIndex } = currentFocus;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
@@ -209,10 +199,7 @@ export function useLyricsOperations(
     if (!stanza) return;
 
     if (isColumnContext(currentFocus)) {
-      const { columnIndex, lineIndex } = currentFocus as FocusPosition & {
-        columnIndex: number;
-        lineIndex: number;
-      };
+      const { columnIndex, lineIndex } = currentFocus;
       const item = getItemAtPosition(currentFocus, currentLyrics);
       if (Array.isArray(item) && item[columnIndex] && item[columnIndex]![lineIndex]) {
         const originalVerse = item[columnIndex]![lineIndex];

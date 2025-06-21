@@ -1,6 +1,6 @@
 import type { LyricVerse } from "@/data/types";
+import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 import { nextTick, ref } from "vue";
-import type { FocusPosition } from "./useLyricsNavigation";
 
 export function useLyricsProperties(
   getCurrentVerse?: (position: FocusPosition) => LyricVerse | null,

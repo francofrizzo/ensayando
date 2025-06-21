@@ -1,6 +1,6 @@
+import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useCommands, type Command } from "./useCommands";
-import type { FocusPosition } from "./useLyricsNavigation";
 
 export type LyricsCommandActions = {
   navigateVertical: (direction: "up" | "down") => void;
@@ -21,7 +21,7 @@ export type LyricsCommandActions = {
   clearCurrentVerseBothTimes: () => void;
   adjustCurrentVerseStartTime: (deltaSeconds: number) => void;
   adjustCurrentVerseEndTime: (deltaSeconds: number) => void;
-}
+};
 
 export function useLyricsCommands(
   currentFocus: () => FocusPosition | null,
