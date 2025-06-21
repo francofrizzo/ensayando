@@ -109,7 +109,7 @@ const isColorSelected = (colorKey: string) => {
 </script>
 
 <template>
-  <div class="dropdown dropdown-hover" :title="title">
+  <div class="dropdown" :title="title">
     <div
       :style="buttonStyle"
       tabindex="0"

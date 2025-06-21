@@ -90,7 +90,7 @@ const getColorStyle = (colorKey: string) => {
 </script>
 
 <template>
-  <div class="dropdown dropdown-hover">
+  <div class="dropdown dropdown">
     <div
       tabindex="0"
       role="button"
