@@ -99,7 +99,10 @@ const onTimeUpdate = (trackIndex: number, time: number) => {
 };
 
 const onFinish = (trackIndex: number) => {
-  if (trackIndex === 0) {
+  // Stop playback when any audible track finishes
+  // (all tracks should finish at the same time, so we can stop on any finish event)
+  const trackVolume = state.trackStates.value[trackIndex]?.volume ?? 0;
+  if (trackVolume > 0) {
     state.playing.value = false;
   }
 };
