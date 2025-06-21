@@ -18,6 +18,15 @@ export function useLyricsOperations(
     end_time: undefined
   });
 
+  const createVerseWithInheritance = (sourceVerse: LyricVerse): LyricVerse => ({
+    text: "",
+    start_time: undefined,
+    end_time: undefined,
+    color_keys: sourceVerse.color_keys ? [...sourceVerse.color_keys] : undefined,
+    audio_track_ids: sourceVerse.audio_track_ids ? [...sourceVerse.audio_track_ids] : undefined,
+    comment: undefined
+  });
+
   const insertLine = (currentFocus: FocusPosition, before: boolean = false) => {
     const { stanzaIndex, itemIndex } = currentFocus;
     const currentLyrics = [...lyrics.value];
@@ -117,7 +126,7 @@ export function useLyricsOperations(
     if (Array.isArray(currentItem)) return;
 
     const verse = currentItem as LyricVerse;
-    const newColumns: LyricVerse[][] = [[{ ...verse }], [createEmptyVerse()]];
+    const newColumns: LyricVerse[][] = [[{ ...verse }], [createVerseWithInheritance(verse)]];
 
     stanza[itemIndex] = newColumns;
     updateLyrics(currentLyrics);
@@ -130,7 +139,7 @@ export function useLyricsOperations(
 
     if (!isColumnContext(currentFocus)) return;
 
-    const { columnIndex } = currentFocus;
+    const { columnIndex, lineIndex } = currentFocus;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
@@ -138,7 +147,11 @@ export function useLyricsOperations(
     const item = stanza[itemIndex] as LyricVerse[][];
     if (!Array.isArray(item)) return;
 
-    const newColumn: LyricVerse[] = [createEmptyVerse()];
+    // Get the current verse to inherit properties from
+    const currentVerse = item[columnIndex] && item[columnIndex][lineIndex];
+    if (!currentVerse) return;
+
+    const newColumn: LyricVerse[] = [createVerseWithInheritance(currentVerse)];
 
     if (before) {
       item.splice(columnIndex, 0, newColumn);

@@ -97,6 +97,34 @@ export function useLyricsEditor(
     operations.duplicateLine(currentFocus.value);
   };
 
+  const insertColumnWithInheritance = (before: boolean = false) => {
+    if (!currentFocus.value) return;
+    operations.insertColumn(currentFocus.value, before);
+  };
+
+  const convertToColumnsWithInheritance = () => {
+    if (!currentFocus.value) return;
+    operations.convertToColumns(currentFocus.value);
+  };
+
+  const insertStanzaWithInheritance = () => {
+    if (!currentFocus.value) return;
+
+    const colorsToInherit = properties.getColorsForInheritance(currentFocus.value);
+    const trackIdsToInherit = properties.getAudioTrackIdsForInheritance(currentFocus.value);
+
+    operations.insertStanza(currentFocus.value);
+
+    nextTick(() => {
+      if (colorsToInherit.length > 0) {
+        properties.setCurrentVerseColors(currentFocus.value, colorsToInherit);
+      }
+      if (trackIdsToInherit.length > 0) {
+        properties.setCurrentVerseAudioTrackIds(currentFocus.value, trackIdsToInherit);
+      }
+    });
+  };
+
   // Create action functions for commands
   const commandActions: LyricsCommandActions = {
     navigateVertical,
@@ -117,19 +145,13 @@ export function useLyricsEditor(
     toggleCopyPropertiesToMode: () => properties.toggleCopyPropertiesToMode(currentFocus.value),
     exitCopyPropertiesToMode: properties.exitCopyPropertiesToMode,
     convertToColumns: () => {
-      if (currentFocus.value) {
-        operations.convertToColumns(currentFocus.value);
-      }
+      convertToColumnsWithInheritance();
     },
     insertColumn: (before?: boolean) => {
-      if (currentFocus.value) {
-        operations.insertColumn(currentFocus.value, before);
-      }
+      insertColumnWithInheritance(before);
     },
     insertStanza: () => {
-      if (currentFocus.value) {
-        operations.insertStanza(currentFocus.value);
-      }
+      insertStanzaWithInheritance();
     },
     setCurrentVerseStartTime: () => timestamps.setCurrentVerseStartTime(currentFocus.value),
     setCurrentVerseEndTime: () => timestamps.setCurrentVerseEndTime(currentFocus.value),
