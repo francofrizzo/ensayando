@@ -33,6 +33,24 @@ export type CommandRegistry = {
 
 const isMac = navigator.platform.toLowerCase().includes("mac");
 
+const keyMap: Record<string, string> = {
+  " ": "Space",
+  Enter: "Enter",
+  Backspace: "Backspace",
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+  F1: "F1",
+  Tab: "Tab",
+  ",": ",",
+  ".": ".",
+  "/": "/",
+  "\\": "\\",
+  "[": "[",
+  "]": "]"
+};
+
 export function useCommands(): CommandRegistry {
   const commands = new Map<string, Command>();
 
@@ -77,8 +95,18 @@ export function useCommands(): CommandRegistry {
     return Array.from(commands.values());
   };
 
+  const canCommandExecute = (command: Command): boolean => {
+    if (command.keybinding?.condition && !command.keybinding.condition()) {
+      return false;
+    }
+    if (command.canExecute && !command.canExecute()) {
+      return false;
+    }
+    return true;
+  };
+
   const matchKeybinding = (event: KeyboardEvent): Command | undefined => {
-    return Array.from(commands.values()).find((command) => {
+    const matchingCommands = Array.from(commands.values()).filter((command) => {
       if (!command.keybinding) return false;
 
       if (command.keybinding.key.toLowerCase() !== event.key.toLowerCase()) {
@@ -87,10 +115,9 @@ export function useCommands(): CommandRegistry {
 
       const { modifiers = {} } = command.keybinding;
 
-      // On Mac, Ctrl modifier maps to Cmd key (metaKey)
-      // On other platforms, Ctrl modifier maps to ctrlKey
+      // On Mac, Ctrl modifier maps to Cmd key (metaKey), on other platforms to ctrlKey
       const expectedCtrl = isMac ? event.metaKey : event.ctrlKey;
-      const expectedMeta = isMac ? false : event.metaKey; // Meta key is rarely used on Mac
+      const expectedMeta = isMac ? false : event.metaKey;
 
       return (
         !!modifiers.ctrl === expectedCtrl &&
@@ -99,23 +126,20 @@ export function useCommands(): CommandRegistry {
         !!modifiers.meta === expectedMeta
       );
     });
+
+    // Prioritize commands that can execute
+    const executableCommand = matchingCommands.find(canCommandExecute);
+    return executableCommand || matchingCommands[0];
   };
 
   const handleKeyboardEvent = (event: KeyboardEvent): boolean => {
     const command = matchKeybinding(event);
     if (!command || !command.keybinding) return false;
 
-    // Check keybinding condition if it exists
-    if (command.keybinding.condition && !command.keybinding.condition()) {
+    if (!canCommandExecute(command)) {
       return false;
     }
 
-    // Check command canExecute condition
-    if (command.canExecute && !command.canExecute()) {
-      return false;
-    }
-
-    // Execute the command
     const result = command.execute();
     const success = result !== false;
 
@@ -146,24 +170,6 @@ export function useCommands(): CommandRegistry {
       parts.push("Meta");
     }
 
-    const keyMap: Record<string, string> = {
-      " ": "Space",
-      Enter: "Enter",
-      Backspace: isMac ? "⌫" : "Backspace",
-      ArrowUp: "↑",
-      ArrowDown: "↓",
-      ArrowLeft: "←",
-      ArrowRight: "→",
-      F1: "F1",
-      Tab: "Tab",
-      ",": ",",
-      ".": ".",
-      "/": "/",
-      "\\": "\\",
-      "[": "[",
-      "]": "]"
-    };
-
     const keyName = keyMap[command.keybinding.key] || command.keybinding.key.toUpperCase();
     parts.push(keyName);
 
@@ -188,24 +194,6 @@ export function useCommands(): CommandRegistry {
     if (modifiers.meta && !isMac) {
       parts.push("Meta");
     }
-
-    const keyMap: Record<string, string> = {
-      " ": "Space",
-      Enter: "Enter",
-      Backspace: isMac ? "⌫" : "Backspace",
-      ArrowUp: "↑",
-      ArrowDown: "↓",
-      ArrowLeft: "←",
-      ArrowRight: "→",
-      F1: "F1",
-      Tab: "Tab",
-      ",": ",",
-      ".": ".",
-      "/": "/",
-      "\\": "\\",
-      "[": "[",
-      "]": "]"
-    };
 
     const keyName = keyMap[command.keybinding.key] || command.keybinding.key.toUpperCase();
     parts.push(keyName);

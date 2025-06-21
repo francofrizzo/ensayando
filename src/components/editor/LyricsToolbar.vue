@@ -177,20 +177,15 @@ const getKeybindingParts = (commandId: string): string[] => {
       @update:selected-colors="onColorsChange"
     />
 
-    <div class="tooltip tooltip-right">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
-        Cambiar pistas de audio del verso
-      </div>
-      <TrackPicker
-        :selected-track-ids="currentVerseAudioTrackIds"
-        :available-tracks="availableAudioTracks"
-        :available-colors="availableColors"
-        :multiple="true"
-        :disabled="!canPerformActions || copyPropertiesFromMode"
-        btn-class="btn-xs"
-        @update:selected-track-ids="onAudioTrackIdsChange"
-      />
-    </div>
+    <TrackPicker
+      :selected-track-ids="currentVerseAudioTrackIds"
+      :available-tracks="availableAudioTracks"
+      :available-colors="availableColors"
+      :multiple="true"
+      :disabled="!canPerformActions || copyPropertiesFromMode"
+      btn-class="btn-xs"
+      @update:selected-track-ids="onAudioTrackIdsChange"
+    />
 
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content flex flex-col gap-0.5 items-center">

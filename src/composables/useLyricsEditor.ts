@@ -18,23 +18,17 @@ export function useLyricsEditor(
   const currentFocus = ref<FocusPosition | null>(null);
   const showHelp = ref(false);
 
-  // Helper functions to abstract verse access patterns
   const getCurrentVerse = (position: FocusPosition): LyricVerse | null => {
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return null;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        return item[columnIndex][lineIndex];
+    if (isColumnContext(position)) {
+      const item = getItemAtPosition(position);
+      if (Array.isArray(item)) {
+        return item[position.columnIndex]?.[position.lineIndex] || null;
       }
     } else {
-      // Regular context
-      const verse = stanza[itemIndex] as LyricVerse;
-      if (verse) return verse;
+      const verse = getItemAtPosition(position);
+      if (verse && !Array.isArray(verse)) {
+        return verse;
+      }
     }
     return null;
   };
@@ -43,25 +37,9 @@ export function useLyricsEditor(
     position: FocusPosition,
     updater: (verse: LyricVerse) => void
   ): boolean => {
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
-    const currentLyrics = [...lyrics.value];
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return false;
-
-    let verse: LyricVerse | null = null;
-
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        verse = item[columnIndex][lineIndex];
-      }
-    } else {
-      // Regular context
-      verse = stanza[itemIndex] as LyricVerse;
-    }
-
+    const verse = getCurrentVerse(position);
     if (verse) {
+      const currentLyrics = [...lyrics.value];
       updater(verse);
       updateLyrics(currentLyrics);
       return true;
@@ -75,11 +53,11 @@ export function useLyricsEditor(
   };
 
   const getInputElement = (position: FocusPosition): HTMLInputElement | null => {
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = position;
+    const { stanzaIndex, itemIndex } = position;
     let selector = `[data-input="${stanzaIndex}-${itemIndex}`;
 
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      selector += `-${columnIndex}-${lineIndex}`;
+    if (isColumnContext(position)) {
+      selector += `-${position.columnIndex}-${position.lineIndex}`;
     }
     selector += '"]';
 
@@ -95,147 +73,303 @@ export function useLyricsEditor(
     }
   };
 
-  const navigateHorizontal = (direction: "left" | "right") => {
-    if (!currentFocus.value) return;
+  const isColumnContext = (
+    position: FocusPosition
+  ): position is FocusPosition & { columnIndex: number; lineIndex: number } => {
+    return position.columnIndex !== undefined && position.lineIndex !== undefined;
+  };
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+  const getItemAtPosition = (
+    position: FocusPosition,
+    lyricsState: LyricStanza[] = lyrics.value
+  ): LyricVerse | LyricVerse[][] | null => {
+    const stanza = lyricsState[position.stanzaIndex];
+    return stanza?.[position.itemIndex] || null;
+  };
 
-    if (columnIndex === undefined) return;
+  const getLastPositionInItem = (
+    item: LyricVerse | LyricVerse[][] | undefined,
+    stanzaIndex: number,
+    itemIndex: number
+  ): FocusPosition | null => {
+    if (!item) return null;
 
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
+    if (Array.isArray(item)) {
+      const columns = item as LyricVerse[][];
+      const lastColumn = columns.length - 1;
+      const lastLine = columns[lastColumn]?.length ? columns[lastColumn].length - 1 : 0;
+      return {
+        stanzaIndex,
+        itemIndex,
+        columnIndex: lastColumn,
+        lineIndex: lastLine
+      };
+    } else {
+      return { stanzaIndex, itemIndex };
+    }
+  };
 
-    const item = stanza[itemIndex] as LyricVerse[][];
-    if (!Array.isArray(item)) return;
+  const getFirstPositionInItem = (
+    item: LyricVerse | LyricVerse[][] | undefined,
+    stanzaIndex: number,
+    itemIndex: number
+  ): FocusPosition | null => {
+    if (!item) return null;
 
-    if (direction === "right") {
-      // Move to next column
-      if (columnIndex + 1 < item.length) {
-        const nextColumn = item[columnIndex + 1];
-        if (nextColumn) {
-          const targetLineIndex = Math.min(lineIndex || 0, nextColumn.length - 1);
-          focusInput({
-            stanzaIndex,
-            itemIndex,
-            columnIndex: columnIndex + 1,
-            lineIndex: targetLineIndex
-          });
+    if (Array.isArray(item)) {
+      return {
+        stanzaIndex,
+        itemIndex,
+        columnIndex: 0,
+        lineIndex: 0
+      };
+    } else {
+      return { stanzaIndex, itemIndex };
+    }
+  };
+
+  // Unified navigation function that works with any lyrics state
+  const findNavigationPosition = (
+    current: FocusPosition,
+    direction: "up" | "down" | "left" | "right",
+    lyricsState: LyricStanza[] = lyrics.value
+  ): FocusPosition | null => {
+    const { stanzaIndex, itemIndex } = current;
+
+    // Horizontal navigation
+    if (direction === "left" || direction === "right") {
+      // Horizontal navigation (only works in column context)
+      if (!isColumnContext(current)) return null;
+
+      // TypeScript now knows columnIndex and lineIndex are defined
+      const stanza = lyricsState[stanzaIndex];
+      if (!stanza) return null;
+
+      const item = stanza[itemIndex] as LyricVerse[][];
+      if (!Array.isArray(item)) return null;
+
+      if (direction === "right") {
+        // Move to next column
+        if (current.columnIndex + 1 < item.length) {
+          const nextColumn = item[current.columnIndex + 1];
+          if (nextColumn) {
+            const targetLineIndex = Math.min(current.lineIndex, nextColumn.length - 1);
+            return {
+              stanzaIndex,
+              itemIndex,
+              columnIndex: current.columnIndex + 1,
+              lineIndex: targetLineIndex
+            };
+          }
+        }
+      } else {
+        // Move to previous column
+        if (current.columnIndex > 0) {
+          const prevColumn = item[current.columnIndex - 1];
+          if (prevColumn) {
+            const targetLineIndex = Math.min(current.lineIndex, prevColumn.length - 1);
+            return {
+              stanzaIndex,
+              itemIndex,
+              columnIndex: current.columnIndex - 1,
+              lineIndex: targetLineIndex
+            };
+          }
+        }
+      }
+      return null;
+    }
+
+    // Vertical navigation
+    if (direction === "down") {
+      // Try to move to next line in same column
+      if (isColumnContext(current)) {
+        const item = lyricsState[stanzaIndex]?.[itemIndex];
+        if (Array.isArray(item)) {
+          const columns = item as LyricVerse[][];
+          if (
+            columns[current.columnIndex] &&
+            current.lineIndex + 1 < columns[current.columnIndex]!.length
+          ) {
+            return {
+              stanzaIndex,
+              itemIndex,
+              columnIndex: current.columnIndex,
+              lineIndex: current.lineIndex + 1
+            };
+          }
+        }
+      }
+
+      // Try to move to next item in same stanza
+      const stanza = lyricsState[stanzaIndex];
+      if (stanza && itemIndex + 1 < stanza.length) {
+        const nextItem = stanza[itemIndex + 1];
+        const position = getFirstPositionInItem(nextItem, stanzaIndex, itemIndex + 1);
+        if (position) return position;
+      }
+
+      // Try to move to first item of next stanza
+      if (stanzaIndex + 1 < lyricsState.length) {
+        const nextStanza = lyricsState[stanzaIndex + 1];
+        if (nextStanza && nextStanza.length > 0) {
+          const firstItem = nextStanza[0];
+          const position = getFirstPositionInItem(firstItem, stanzaIndex + 1, 0);
+          if (position) return position;
         }
       }
     } else {
-      // Move to previous column
-      if (columnIndex > 0) {
-        const prevColumn = item[columnIndex - 1];
-        if (prevColumn) {
-          const targetLineIndex = Math.min(lineIndex || 0, prevColumn.length - 1);
-          focusInput({
-            stanzaIndex,
-            itemIndex,
-            columnIndex: columnIndex - 1,
-            lineIndex: targetLineIndex
-          });
+      // direction === "up"
+      // Try to move to previous line in same column
+      if (isColumnContext(current) && current.lineIndex > 0) {
+        return {
+          stanzaIndex,
+          itemIndex,
+          columnIndex: current.columnIndex,
+          lineIndex: current.lineIndex - 1
+        };
+      }
+
+      // Try to move to previous item in same stanza
+      if (itemIndex > 0) {
+        const stanza = lyricsState[stanzaIndex];
+        if (!stanza) return null;
+        const prevItem = stanza[itemIndex - 1];
+        const position = getLastPositionInItem(prevItem, stanzaIndex, itemIndex - 1);
+        if (position) return position;
+      }
+
+      // Try to move to last item of previous stanza
+      if (stanzaIndex > 0) {
+        const prevStanza = lyricsState[stanzaIndex - 1];
+        if (prevStanza && prevStanza.length > 0) {
+          const lastItem = prevStanza[prevStanza.length - 1];
+          const position = getLastPositionInItem(lastItem, stanzaIndex - 1, prevStanza.length - 1);
+          if (position) return position;
         }
       }
+    }
+
+    return null;
+  };
+
+  // Simple wrapper for regular navigation
+  const findNextPosition = (
+    current: FocusPosition,
+    direction: "up" | "down" | "left" | "right"
+  ): FocusPosition | null => {
+    return findNavigationPosition(current, direction);
+  };
+
+  // Simple function to find a good position after deletion using actual post-deletion state
+  const findPositionAfterDeletion = (originalPosition: FocusPosition): FocusPosition | null => {
+    const { stanzaIndex, itemIndex } = originalPosition;
+
+    // Handle column context specially
+    if (isColumnContext(originalPosition)) {
+      const { columnIndex, lineIndex } = originalPosition;
+      const currentStanza = lyrics.value[stanzaIndex];
+      const item = currentStanza?.[itemIndex];
+
+      if (Array.isArray(item)) {
+        const column = item[columnIndex];
+        if (column && column.length > 0) {
+          // Column still exists and has content
+          if (lineIndex > 0 && column[lineIndex - 1]) {
+            // Focus previous line in same column
+            return { stanzaIndex, itemIndex, columnIndex, lineIndex: lineIndex - 1 };
+          } else if (column[lineIndex]) {
+            // Focus current line index (something moved up)
+            return { stanzaIndex, itemIndex, columnIndex, lineIndex };
+          } else if (column[0]) {
+            // Focus first line in column
+            return { stanzaIndex, itemIndex, columnIndex, lineIndex: 0 };
+          }
+        }
+
+        // Column was deleted or is empty, try to find another column
+        if (columnIndex > 0 && item[columnIndex - 1]) {
+          const prevColumn = item[columnIndex - 1];
+          if (prevColumn) {
+            const lastLineIndex = prevColumn.length - 1;
+            return {
+              stanzaIndex,
+              itemIndex,
+              columnIndex: columnIndex - 1,
+              lineIndex: lastLineIndex
+            };
+          }
+        } else if (item[columnIndex]) {
+          // Next column moved to current index
+          return { stanzaIndex, itemIndex, columnIndex, lineIndex: 0 };
+        } else if (item[0]) {
+          // Focus first column
+          return { stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 };
+        }
+
+        // All columns were deleted, fall through to regular item logic
+      } else if (item) {
+        // Item was converted from column to regular verse - focus the regular verse
+        return { stanzaIndex, itemIndex };
+      }
+    }
+
+    // Regular item context or fallback from column context
+    const currentStanza = lyrics.value[stanzaIndex];
+
+    if (!currentStanza || currentStanza.length === 0) {
+      // Stanza was deleted or is empty, try to go to previous or next stanza
+      if (stanzaIndex > 0) {
+        const prevStanza = lyrics.value[stanzaIndex - 1];
+        if (prevStanza && prevStanza.length > 0) {
+          const lastItemIndex = prevStanza.length - 1;
+          const lastItem = prevStanza[lastItemIndex];
+          return getLastPositionInItem(lastItem, stanzaIndex - 1, lastItemIndex);
+        }
+      } else if (lyrics.value[stanzaIndex]) {
+        // Next stanza moved to current index
+        const nextStanza = lyrics.value[stanzaIndex];
+        if (nextStanza.length > 0) {
+          const firstItem = nextStanza[0];
+          return getFirstPositionInItem(firstItem, stanzaIndex, 0);
+        }
+      }
+      return null;
+    }
+
+    // Stanza still exists, try to find a good position
+    // First priority: try to focus the previous item
+    if (itemIndex > 0 && currentStanza[itemIndex - 1]) {
+      const prevItem = currentStanza[itemIndex - 1];
+      return getLastPositionInItem(prevItem, stanzaIndex, itemIndex - 1);
+    } else if (itemIndex < currentStanza.length) {
+      // Second priority: item at same index exists (something after the deleted item)
+      const targetItem = currentStanza[itemIndex];
+      return getFirstPositionInItem(targetItem, stanzaIndex, itemIndex);
+    } else if (currentStanza[0]) {
+      // Last resort: focus the first item in the stanza
+      const firstItem = currentStanza[0];
+      return getFirstPositionInItem(firstItem, stanzaIndex, 0);
+    }
+
+    return null;
+  };
+
+  const navigateHorizontal = (direction: "left" | "right") => {
+    if (!currentFocus.value) return;
+
+    const nextPosition = findNextPosition(currentFocus.value, direction);
+    if (nextPosition) {
+      focusInput(nextPosition);
     }
   };
 
   const navigateVertical = (direction: "up" | "down") => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
-    const currentLyrics = lyrics.value;
-
-    if (direction === "down") {
-      // Try to move to next line in same column
-      if (columnIndex !== undefined && lineIndex !== undefined) {
-        const stanza = currentLyrics[stanzaIndex];
-        if (stanza && Array.isArray(stanza[itemIndex])) {
-          const columns = stanza[itemIndex] as LyricVerse[][];
-          if (columns[columnIndex] && lineIndex + 1 < columns[columnIndex].length) {
-            focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: lineIndex + 1 });
-            return;
-          }
-        }
-      }
-
-      // Try to move to next item in same stanza
-      const stanza = currentLyrics[stanzaIndex];
-      if (stanza && itemIndex + 1 < stanza.length) {
-        const nextItem = stanza[itemIndex + 1];
-        if (Array.isArray(nextItem)) {
-          focusInput({ stanzaIndex, itemIndex: itemIndex + 1, columnIndex: 0, lineIndex: 0 });
-        } else {
-          focusInput({ stanzaIndex, itemIndex: itemIndex + 1 });
-        }
-        return;
-      }
-
-      // Try to move to first item of next stanza
-      if (stanzaIndex + 1 < currentLyrics.length) {
-        const nextStanza = currentLyrics[stanzaIndex + 1];
-        if (nextStanza && nextStanza.length > 0) {
-          const firstItem = nextStanza[0];
-          if (Array.isArray(firstItem)) {
-            focusInput({
-              stanzaIndex: stanzaIndex + 1,
-              itemIndex: 0,
-              columnIndex: 0,
-              lineIndex: 0
-            });
-          } else {
-            focusInput({ stanzaIndex: stanzaIndex + 1, itemIndex: 0 });
-          }
-        }
-      }
-    } else {
-      // Try to move to previous line in same column
-      if (columnIndex !== undefined && lineIndex !== undefined && lineIndex > 0) {
-        focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: lineIndex - 1 });
-        return;
-      }
-
-      // Try to move to previous item in same stanza
-      if (itemIndex > 0) {
-        const stanza = currentLyrics[stanzaIndex];
-        if (!stanza) return;
-        const prevItem = stanza[itemIndex - 1];
-        if (Array.isArray(prevItem)) {
-          const columns = prevItem as LyricVerse[][];
-          const lastColumn = columns.length - 1;
-          const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
-          focusInput({
-            stanzaIndex,
-            itemIndex: itemIndex - 1,
-            columnIndex: lastColumn,
-            lineIndex: lastLine
-          });
-        } else {
-          focusInput({ stanzaIndex, itemIndex: itemIndex - 1 });
-        }
-        return;
-      }
-
-      // Try to move to last item of previous stanza
-      if (stanzaIndex > 0) {
-        const prevStanza = currentLyrics[stanzaIndex - 1];
-        if (prevStanza && prevStanza.length > 0) {
-          const lastItem = prevStanza[prevStanza.length - 1];
-          if (Array.isArray(lastItem)) {
-            const columns = lastItem as LyricVerse[][];
-            const lastColumn = columns.length - 1;
-            const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
-            focusInput({
-              stanzaIndex: stanzaIndex - 1,
-              itemIndex: prevStanza.length - 1,
-              columnIndex: lastColumn,
-              lineIndex: lastLine
-            });
-          } else {
-            focusInput({ stanzaIndex: stanzaIndex - 1, itemIndex: prevStanza.length - 1 });
-          }
-        }
-      }
+    const nextPosition = findNextPosition(currentFocus.value, direction);
+    if (nextPosition) {
+      focusInput(nextPosition);
     }
   };
 
@@ -247,98 +381,93 @@ export function useLyricsEditor(
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
-    const newVerse: LyricVerse = {
-      text: "",
-      start_time: undefined,
-      end_time: undefined
-    };
+    if (isColumnContext(currentFocus.value)) {
+      // Insert within column context
+      const { columnIndex, lineIndex } = currentFocus.value;
+      const item = getItemAtPosition(currentFocus.value, currentLyrics);
 
-    if (before) {
-      stanza.splice(itemIndex, 0, newVerse);
-      updateLyrics(currentLyrics);
-      // Focus the newly inserted line
-      focusInput({ stanzaIndex, itemIndex });
+      if (Array.isArray(item) && item[columnIndex]) {
+        const targetColumn = item[columnIndex];
+        if (targetColumn) {
+          const newVerse: LyricVerse = {
+            text: "",
+            start_time: undefined,
+            end_time: undefined
+          };
+
+          if (before) {
+            targetColumn.splice(lineIndex, 0, newVerse);
+            updateLyrics(currentLyrics);
+            // Focus the newly inserted line
+            focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex });
+          } else {
+            targetColumn.splice(lineIndex + 1, 0, newVerse);
+            updateLyrics(currentLyrics);
+            // Focus the newly inserted line
+            focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: lineIndex + 1 });
+          }
+        }
+      }
     } else {
-      stanza.splice(itemIndex + 1, 0, newVerse);
-      updateLyrics(currentLyrics);
-      // Focus the newly inserted line
-      focusInput({ stanzaIndex, itemIndex: itemIndex + 1 });
+      // Insert regular verse (outside column context)
+      const newVerse: LyricVerse = {
+        text: "",
+        start_time: undefined,
+        end_time: undefined
+      };
+
+      if (before) {
+        stanza.splice(itemIndex, 0, newVerse);
+        updateLyrics(currentLyrics);
+        // Focus the newly inserted line
+        focusInput({ stanzaIndex, itemIndex });
+      } else {
+        stanza.splice(itemIndex + 1, 0, newVerse);
+        updateLyrics(currentLyrics);
+        // Focus the newly inserted line
+        focusInput({ stanzaIndex, itemIndex: itemIndex + 1 });
+      }
     }
   };
 
   const deleteLine = () => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const { stanzaIndex, itemIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
-    if (columnIndex !== undefined && lineIndex !== undefined) {
+    if (isColumnContext(currentFocus.value)) {
       // Delete from column
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex]) {
-        item[columnIndex].splice(lineIndex, 1);
+      const item = getItemAtPosition(currentFocus.value, currentLyrics);
+      if (Array.isArray(item) && item[currentFocus.value.columnIndex]) {
+        const targetColumn = item[currentFocus.value.columnIndex];
+        if (targetColumn) {
+          targetColumn.splice(currentFocus.value.lineIndex, 1);
 
-        // If column is empty, remove it
-        if (item[columnIndex].length === 0) {
-          item.splice(columnIndex, 1);
+          // If column is empty, remove it
+          if (targetColumn.length === 0) {
+            item.splice(currentFocus.value.columnIndex, 1);
 
-          // If all columns are empty, remove the entire item
-          if (item.length === 0) {
-            stanza.splice(itemIndex, 1);
-            updateLyrics(currentLyrics);
-
-            // Focus previous item if possible
-            if (itemIndex > 0) {
-              const prevItem = stanza[itemIndex - 1];
-              if (Array.isArray(prevItem)) {
-                const columns = prevItem as LyricVerse[][];
-                const lastColumn = columns.length - 1;
-                const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
-                focusInput({
-                  stanzaIndex,
-                  itemIndex: itemIndex - 1,
-                  columnIndex: lastColumn,
-                  lineIndex: lastLine
-                });
-              } else {
-                focusInput({ stanzaIndex, itemIndex: itemIndex - 1 });
-              }
-            } else if (stanza.length > 0) {
-              const nextItem = stanza[0];
-              if (Array.isArray(nextItem)) {
-                focusInput({ stanzaIndex, itemIndex: 0, columnIndex: 0, lineIndex: 0 });
-              } else {
-                focusInput({ stanzaIndex, itemIndex: 0 });
+            // If all columns are empty, remove the entire item
+            if (item.length === 0) {
+              stanza.splice(itemIndex, 1);
+            } else if (item.length === 1) {
+              // If only one column remains, convert back to regular verse
+              const remainingColumn = item[0];
+              if (remainingColumn && remainingColumn.length === 1) {
+                // Single verse in single column - convert to regular verse
+                const singleVerse = remainingColumn[0];
+                if (singleVerse) {
+                  stanza[itemIndex] = singleVerse;
+                }
+              } else if (remainingColumn && remainingColumn.length > 1) {
+                // Multiple verses in single column - keep as column for now
+                // (This preserves the structure when there are multiple lines in the remaining column)
               }
             }
-            return;
-          } else {
-            // Focus the next available column
-            const targetColumn = Math.min(columnIndex, item.length - 1);
-            const targetColumnArray = item[targetColumn];
-            const targetLine = Math.min(
-              lineIndex,
-              targetColumnArray ? targetColumnArray.length - 1 : 0
-            );
-            focusInput({
-              stanzaIndex,
-              itemIndex,
-              columnIndex: targetColumn,
-              lineIndex: targetLine
-            });
           }
-        } else {
-          // Focus the next available line in the same column
-          const columnArray = item[columnIndex];
-          const targetLine = Math.min(lineIndex, columnArray ? columnArray.length - 1 : 0);
-          focusInput({
-            stanzaIndex,
-            itemIndex,
-            columnIndex,
-            lineIndex: targetLine
-          });
         }
       }
     } else {
@@ -348,71 +477,16 @@ export function useLyricsEditor(
       // If stanza is empty after deletion, remove it
       if (stanza.length === 0) {
         currentLyrics.splice(stanzaIndex, 1);
-        updateLyrics(currentLyrics);
-
-        // Focus previous stanza if possible
-        if (stanzaIndex > 0 && currentLyrics[stanzaIndex - 1]) {
-          const prevStanza = currentLyrics[stanzaIndex - 1]!;
-          if (prevStanza.length > 0) {
-            const lastItem = prevStanza[prevStanza.length - 1];
-            if (Array.isArray(lastItem)) {
-              const columns = lastItem as LyricVerse[][];
-              const lastColumn = columns.length - 1;
-              const lastColumnArray = columns[lastColumn];
-              const lastLine = lastColumnArray ? lastColumnArray.length - 1 : 0;
-              focusInput({
-                stanzaIndex: stanzaIndex - 1,
-                itemIndex: prevStanza.length - 1,
-                columnIndex: lastColumn,
-                lineIndex: lastLine
-              });
-            } else {
-              focusInput({ stanzaIndex: stanzaIndex - 1, itemIndex: prevStanza.length - 1 });
-            }
-          }
-        } else if (currentLyrics.length > 0) {
-          // Focus first stanza
-          const firstStanza = currentLyrics[0];
-          if (firstStanza && firstStanza.length > 0) {
-            const firstItem = firstStanza[0];
-            if (Array.isArray(firstItem)) {
-              focusInput({ stanzaIndex: 0, itemIndex: 0, columnIndex: 0, lineIndex: 0 });
-            } else {
-              focusInput({ stanzaIndex: 0, itemIndex: 0 });
-            }
-          }
-        }
-        return;
-      }
-
-      // Focus the previous item first (better UX for smart backspace)
-      if (itemIndex > 0) {
-        const prevItem = stanza[itemIndex - 1];
-        if (Array.isArray(prevItem)) {
-          const columns = prevItem as LyricVerse[][];
-          const lastColumn = columns.length - 1;
-          const lastLine = columns[lastColumn] ? columns[lastColumn].length - 1 : 0;
-          focusInput({
-            stanzaIndex,
-            itemIndex: itemIndex - 1,
-            columnIndex: lastColumn,
-            lineIndex: lastLine
-          });
-        } else {
-          focusInput({ stanzaIndex, itemIndex: itemIndex - 1 });
-        }
-      } else if (itemIndex < stanza.length) {
-        // Only go to next item if there's no previous item
-        const nextItem = stanza[itemIndex];
-        if (Array.isArray(nextItem)) {
-          focusInput({ stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 });
-        } else {
-          focusInput({ stanzaIndex, itemIndex });
-        }
       }
     }
 
     updateLyrics(currentLyrics);
+
+    // Find a good position to focus after deletion
+    const nextPosition = findPositionAfterDeletion(currentFocus.value);
+    if (nextPosition) {
+      focusInput(nextPosition);
+    }
   };
 
   const convertToColumns = () => {
@@ -429,21 +503,25 @@ export function useLyricsEditor(
     if (Array.isArray(currentItem)) return;
 
     const verse = currentItem as LyricVerse;
-    const newColumns: LyricVerse[][] = [[{ ...verse }]];
+    // Create two columns: first with the original verse, second empty
+    const newColumns: LyricVerse[][] = [
+      [{ ...verse }], // Original verse in first column
+      [{ text: "" }] // Empty verse in second column
+    ];
 
     stanza[itemIndex] = newColumns;
     updateLyrics(currentLyrics);
 
-    // Focus the converted item
-    focusInput({ stanzaIndex, itemIndex, columnIndex: 0, lineIndex: 0 });
+    // Focus the empty column on the right so user can start typing
+    focusInput({ stanzaIndex, itemIndex, columnIndex: 1, lineIndex: 0 });
   };
 
   const insertColumn = (before: boolean = false) => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex } = currentFocus.value;
+    const { stanzaIndex, itemIndex } = currentFocus.value;
 
-    if (columnIndex === undefined) return;
+    if (!isColumnContext(currentFocus.value)) return;
 
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
@@ -455,13 +533,23 @@ export function useLyricsEditor(
     const newColumn: LyricVerse[] = [{ text: "", start_time: undefined, end_time: undefined }];
 
     if (before) {
-      item.splice(columnIndex, 0, newColumn);
+      item.splice(currentFocus.value.columnIndex, 0, newColumn);
       updateLyrics(currentLyrics);
-      focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: 0 });
+      focusInput({
+        stanzaIndex,
+        itemIndex,
+        columnIndex: currentFocus.value.columnIndex,
+        lineIndex: 0
+      });
     } else {
-      item.splice(columnIndex + 1, 0, newColumn);
+      item.splice(currentFocus.value.columnIndex + 1, 0, newColumn);
       updateLyrics(currentLyrics);
-      focusInput({ stanzaIndex, itemIndex, columnIndex: columnIndex + 1, lineIndex: 0 });
+      focusInput({
+        stanzaIndex,
+        itemIndex,
+        columnIndex: currentFocus.value.columnIndex + 1,
+        lineIndex: 0
+      });
     }
   };
 
@@ -508,20 +596,43 @@ export function useLyricsEditor(
   const duplicateLine = () => {
     if (!currentFocus.value) return;
 
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = currentFocus.value;
+    const { stanzaIndex, itemIndex } = currentFocus.value;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
 
-    if (columnIndex !== undefined && lineIndex !== undefined) {
+    if (isColumnContext(currentFocus.value)) {
       // Duplicate in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      if (Array.isArray(item) && item[columnIndex] && item[columnIndex][lineIndex]) {
-        const originalVerse = item[columnIndex][lineIndex];
-        const duplicatedVerse = { ...originalVerse };
-        item[columnIndex].splice(lineIndex + 1, 0, duplicatedVerse);
-        updateLyrics(currentLyrics);
-        focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: lineIndex + 1 });
+      const item = getItemAtPosition(currentFocus.value, currentLyrics);
+      if (
+        Array.isArray(item) &&
+        item[currentFocus.value.columnIndex] &&
+        item[currentFocus.value.columnIndex]![currentFocus.value.lineIndex]
+      ) {
+        const originalVerse = item[currentFocus.value.columnIndex]![currentFocus.value.lineIndex];
+        if (originalVerse) {
+          const duplicatedVerse: LyricVerse = {
+            text: originalVerse.text,
+            start_time: originalVerse.start_time,
+            end_time: originalVerse.end_time,
+            comment: originalVerse.comment,
+            audio_track_ids: originalVerse.audio_track_ids
+              ? [...originalVerse.audio_track_ids]
+              : undefined,
+            color_keys: originalVerse.color_keys ? [...originalVerse.color_keys] : undefined
+          };
+          const targetColumn = item[currentFocus.value.columnIndex];
+          if (targetColumn) {
+            targetColumn.splice(currentFocus.value.lineIndex + 1, 0, duplicatedVerse);
+          }
+          updateLyrics(currentLyrics);
+          focusInput({
+            stanzaIndex,
+            itemIndex,
+            columnIndex: currentFocus.value.columnIndex,
+            lineIndex: currentFocus.value.lineIndex + 1
+          });
+        }
       }
     } else {
       // Duplicate regular verse
@@ -713,7 +824,9 @@ export function useLyricsEditor(
 
   const commandRegistry = useCommands();
   const canPerformActions = computed(() => currentFocus.value !== null);
-  const hasColumnContext = computed(() => currentFocus.value?.columnIndex !== undefined);
+  const hasColumnContext = computed(() =>
+    currentFocus.value ? isColumnContext(currentFocus.value) : false
+  );
 
   const commands: Command[] = [
     {
@@ -819,15 +932,13 @@ export function useLyricsEditor(
       category: "Operaciones de versos",
       execute: () => {
         const handled = handleSmartBackspace();
-        if (handled) {
-          return true;
-        }
-        return false;
+        // If we handled the deletion, we should prevent default to avoid double deletion
+        return handled;
       },
       canExecute: () => canPerformActions.value,
       keybinding: {
-        key: "Backspace",
-        preventDefault: false
+        key: "Backspace"
+        // Don't set preventDefault: false - let the command system handle it based on return value
       }
     },
     {
@@ -860,7 +971,7 @@ export function useLyricsEditor(
       execute: () => convertToColumns(),
       canExecute: () => canPerformActions.value && !hasColumnContext.value,
       keybinding: {
-        key: "\\",
+        key: "]",
         modifiers: { ctrl: true }
       }
     },
