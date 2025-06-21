@@ -57,7 +57,7 @@ export function useLyricsEditor(
   const timestamps = useLyricsTimestamps(getCurrentTime, updateCurrentVerse);
 
   // Initialize properties composable
-  const properties = useLyricsProperties(getCurrentVerse, updateCurrentVerse, focusInput);
+  const properties = useLyricsProperties(getCurrentVerse, updateCurrentVerse);
 
   // Smart backspace handler
   const handleSmartBackspace = (): boolean => {
@@ -114,7 +114,8 @@ export function useLyricsEditor(
     },
     handleSmartBackspace,
     duplicateLineWithInheritance,
-    toggleCopyPropertiesFromMode: properties.toggleCopyPropertiesFromMode,
+    toggleCopyPropertiesToMode: () => properties.toggleCopyPropertiesToMode(currentFocus.value),
+    exitCopyPropertiesToMode: properties.exitCopyPropertiesToMode,
     convertToColumns: () => {
       if (currentFocus.value) {
         operations.convertToColumns(currentFocus.value);
@@ -146,7 +147,8 @@ export function useLyricsEditor(
     () => currentFocus.value,
     isColumnContext,
     commandActions,
-    onSave
+    onSave,
+    () => properties.copyPropertiesToMode.value
   );
 
   // Return the public API
@@ -164,8 +166,11 @@ export function useLyricsEditor(
     getCurrentVerseAudioTrackIds: () => properties.getCurrentVerseAudioTrackIds(currentFocus.value),
     setCurrentVerseAudioTrackIds: (trackIds: number[]) =>
       properties.setCurrentVerseAudioTrackIds(currentFocus.value, trackIds),
-    copyPropertiesFromMode: properties.copyPropertiesFromMode,
-    copyPropertiesFromVerse: (sourcePosition: FocusPosition) =>
-      properties.copyPropertiesFromVerse(sourcePosition, currentFocus.value)
+    copyPropertiesToMode: properties.copyPropertiesToMode,
+    sourcePosition: properties.sourcePosition,
+    toggleCopyPropertiesToMode: () => properties.toggleCopyPropertiesToMode(currentFocus.value),
+    exitCopyPropertiesToMode: properties.exitCopyPropertiesToMode,
+    copyPropertiesToVerse: (targetPosition: FocusPosition) =>
+      properties.copyPropertiesToVerse(targetPosition)
   };
 }

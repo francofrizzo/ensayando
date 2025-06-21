@@ -17,8 +17,8 @@ import { computed } from "vue";
 import ColorPicker from "@/components/editor/ColorPicker.vue";
 import TrackPicker from "@/components/editor/TrackPicker.vue";
 import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
-import type { FocusPosition } from "@/composables/useLyricsEditor";
 import type { CommandRegistry } from "@/composables/useCommands";
+import type { FocusPosition } from "@/composables/useLyricsEditor";
 import type { AudioTrack } from "@/data/types";
 
 type Props = {
@@ -33,11 +33,11 @@ type Props = {
   availableAudioTracks: AudioTrack[];
   onAudioTrackIdsChange: (trackIds: number[]) => void;
   // Copy properties mode
-  copyPropertiesFromMode: boolean;
+  copyPropertiesToMode: boolean;
   // Timestamp visibility
   showTimestamps: boolean;
   onToggleTimestamps: () => void;
-}
+};
 
 const props = defineProps<Props>();
 
@@ -55,7 +55,7 @@ const getCommand = (commandId: string) => {
 
 const executeCommand = (commandId: string) => {
   const command = getCommand(commandId);
-  if (command && command.canExecute()) {
+  if (command && (!command.canExecute || command.canExecute())) {
     command.execute();
   }
 };
@@ -172,7 +172,7 @@ const getKeybindingParts = (commandId: string): string[] => {
       :selected-colors="currentVerseColors"
       :available-colors="availableColors"
       :multiple="true"
-      :disabled="!canPerformActions || copyPropertiesFromMode"
+      :disabled="!canPerformActions || copyPropertiesToMode"
       btn-class="btn-xs"
       @update:selected-colors="onColorsChange"
     />
@@ -182,24 +182,24 @@ const getKeybindingParts = (commandId: string): string[] => {
       :available-tracks="availableAudioTracks"
       :available-colors="availableColors"
       :multiple="true"
-      :disabled="!canPerformActions || copyPropertiesFromMode"
+      :disabled="!canPerformActions || copyPropertiesToMode"
       btn-class="btn-xs"
       @update:selected-track-ids="onAudioTrackIdsChange"
     />
 
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content flex flex-col gap-0.5 items-center">
-        Copiar propiedades de otro verso<br />
+        Copiar propiedades a otros versos<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('copy-properties')" size="xs" />
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
-        :class="{ 'btn-active': copyPropertiesFromMode }"
+        :class="{ 'btn-active': copyPropertiesToMode }"
         :disabled="!canPerformActions"
         @click="() => executeCommand('copy-properties')"
       >
         <PaintRoller class="size-3" />
-        <span class="sr-only">Copiar propiedades de otro verso</span>
+        <span class="sr-only">Copiar propiedades a otros versos</span>
       </button>
     </div>
 

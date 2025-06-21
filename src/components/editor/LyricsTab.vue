@@ -46,16 +46,16 @@ const lyricsToDisplay = computed(() => {
 });
 
 const {
+  currentFocus,
   showHelp,
   handleInputFocus,
-  currentFocus,
   commandRegistry,
   getCurrentVerseColors,
   setCurrentVerseColors,
   getCurrentVerseAudioTrackIds,
   setCurrentVerseAudioTrackIds,
-  copyPropertiesFromMode,
-  copyPropertiesFromVerse
+  copyPropertiesToMode,
+  copyPropertiesToVerse
 } = useLyricsEditor(
   lyricsToDisplay,
   store.updateLocalLyrics,
@@ -195,7 +195,7 @@ defineExpose({
         :current-verse-audio-track-ids="currentVerseAudioTrackIds"
         :available-audio-tracks="availableAudioTracks"
         :on-audio-track-ids-change="handleAudioTrackIdsChange"
-        :copy-properties-from-mode="copyPropertiesFromMode"
+        :copy-properties-to-mode="copyPropertiesToMode"
         :show-timestamps="showTimestamps"
         :on-toggle-timestamps="toggleTimestamps"
       />
@@ -213,12 +213,12 @@ defineExpose({
               class="flex flex-col items-start focus-within:bg-base-content/8 px-5"
               data-lyric-hitbox
               :class="{
-                'cursor-text': !copyPropertiesFromMode,
-                'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyPropertiesFromMode
+                'cursor-text': !copyPropertiesToMode,
+                'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyPropertiesToMode
               }"
               @click="
-                copyPropertiesFromMode
-                  ? copyPropertiesFromVerse({ stanzaIndex: i, itemIndex: j })
+                copyPropertiesToMode
+                  ? copyPropertiesToVerse({ stanzaIndex: i, itemIndex: j })
                   : focusTextareaAndMoveCursorToEnd($event)
               "
             >
@@ -231,8 +231,8 @@ defineExpose({
                 v-model="createVerseModel(i, j).value"
                 :data-input="`${i}-${j}`"
                 :verse-styles="getVerseStyles(item, currentCollection)"
-                :readonly="copyPropertiesFromMode"
-                :class="{ 'cursor-pointer': copyPropertiesFromMode }"
+                :readonly="copyPropertiesToMode"
+                :class="{ 'cursor-pointer': copyPropertiesToMode }"
                 @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
               />
             </div>
@@ -250,13 +250,13 @@ defineExpose({
                   :class="{
                     'pl-5': k === 0,
                     'pr-5': k === column.length - 1,
-                    'cursor-text': !copyPropertiesFromMode,
+                    'cursor-text': !copyPropertiesToMode,
                     'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
-                      copyPropertiesFromMode
+                      copyPropertiesToMode
                   }"
                   @click="
-                    copyPropertiesFromMode
-                      ? copyPropertiesFromVerse({
+                    copyPropertiesToMode
+                      ? copyPropertiesToVerse({
                           stanzaIndex: i,
                           itemIndex: j,
                           columnIndex: k,
@@ -275,8 +275,8 @@ defineExpose({
                     v-model="createColumnModel(i, j, k, l).value"
                     :data-input="`${i}-${j}-${k}-${l}`"
                     :verse-styles="getVerseStyles(line, currentCollection)"
-                    :readonly="copyPropertiesFromMode"
-                    :class="{ 'cursor-pointer': copyPropertiesFromMode }"
+                    :readonly="copyPropertiesToMode"
+                    :class="{ 'cursor-pointer': copyPropertiesToMode }"
                     @focus="
                       onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
                     "

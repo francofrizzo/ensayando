@@ -41,6 +41,7 @@ const keyMap: Record<string, string> = {
   ArrowDown: "↓",
   ArrowLeft: "←",
   ArrowRight: "→",
+  Escape: "Esc",
   F1: "F1",
   Tab: "Tab",
   ",": ",",

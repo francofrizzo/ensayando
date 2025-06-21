@@ -10,7 +10,8 @@ export type LyricsCommandActions = {
   deleteLine: () => void;
   handleSmartBackspace: () => boolean;
   duplicateLineWithInheritance: () => void;
-  toggleCopyPropertiesFromMode: () => void;
+  toggleCopyPropertiesToMode: () => void;
+  exitCopyPropertiesToMode: () => void;
   convertToColumns: () => void;
   insertColumn: (before?: boolean) => void;
   insertStanza: () => void;
@@ -27,7 +28,8 @@ export function useLyricsCommands(
   currentFocus: () => FocusPosition | null,
   isColumnContext: (position: FocusPosition) => boolean,
   actions: LyricsCommandActions,
-  onSave?: () => void
+  onSave?: () => void,
+  isCopyModeActive?: () => boolean
 ) {
   const showHelp = ref(false);
   const commandRegistry = useCommands();
@@ -162,13 +164,23 @@ export function useLyricsCommands(
     },
     {
       id: "copy-properties",
-      description: "Copiar colores y pistas de audio de otro verso",
+      description: "Copiar colores y pistas de audio a otros versos",
       category: "Operaciones de versos",
-      execute: () => actions.toggleCopyPropertiesFromMode(),
+      execute: () => actions.toggleCopyPropertiesToMode(),
       canExecute: () => canPerformActions.value,
       keybinding: {
         key: "k",
         modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "exit-copy-mode",
+      description: "Salir del modo copiar propiedades",
+      category: "Operaciones de versos",
+      execute: () => actions.exitCopyPropertiesToMode(),
+      canExecute: () => canPerformActions.value && (isCopyModeActive ? isCopyModeActive() : false),
+      keybinding: {
+        key: "Escape"
       }
     },
 
@@ -333,6 +345,13 @@ export function useLyricsCommands(
   const handleKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
 
+    // Allow ESC key to work globally (not just on input elements)
+    if (event.key === "Escape") {
+      commandRegistry.handleKeyboardEvent(event);
+      return;
+    }
+
+    // For other keys, only handle when focused on input elements
     if (!target.hasAttribute("data-input")) return;
 
     commandRegistry.handleKeyboardEvent(event);

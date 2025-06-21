@@ -1,13 +1,13 @@
 import type { LyricVerse } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
-import { nextTick, ref } from "vue";
+import { ref } from "vue";
 
 export function useLyricsProperties(
   getCurrentVerse?: (position: FocusPosition) => LyricVerse | null,
-  updateCurrentVerse?: (position: FocusPosition, updater: (verse: LyricVerse) => void) => boolean,
-  focusInput?: (position: FocusPosition) => Promise<void>
+  updateCurrentVerse?: (position: FocusPosition, updater: (verse: LyricVerse) => void) => boolean
 ) {
-  const copyPropertiesFromMode = ref(false);
+  const copyPropertiesToMode = ref(false);
+  const sourcePosition = ref<FocusPosition | null>(null);
 
   const getColorsForInheritance = (currentFocus: FocusPosition | null): string[] => {
     if (!currentFocus || !getCurrentVerse) return [];
@@ -57,43 +57,47 @@ export function useLyricsProperties(
     });
   };
 
-  const toggleCopyPropertiesFromMode = () => {
-    copyPropertiesFromMode.value = !copyPropertiesFromMode.value;
+  const toggleCopyPropertiesToMode = (currentFocus: FocusPosition | null) => {
+    if (!copyPropertiesToMode.value) {
+      // Entering copy mode - store the source position
+      sourcePosition.value = currentFocus ? { ...currentFocus } : null;
+      copyPropertiesToMode.value = true;
+    } else {
+      // Exiting copy mode - clear source position
+      sourcePosition.value = null;
+      copyPropertiesToMode.value = false;
+    }
   };
 
-  const copyPropertiesFromVerse = (
-    sourcePosition: FocusPosition,
-    currentFocus: FocusPosition | null
-  ) => {
-    if (!currentFocus || !copyPropertiesFromMode.value || !getCurrentVerse || !focusInput) return;
+  const exitCopyPropertiesToMode = () => {
+    sourcePosition.value = null;
+    copyPropertiesToMode.value = false;
+  };
 
-    const originalFocus = { ...currentFocus };
+  const copyPropertiesToVerse = (targetPosition: FocusPosition) => {
+    if (!copyPropertiesToMode.value || !sourcePosition.value || !getCurrentVerse) return;
 
-    const sourceVerse = getCurrentVerse(sourcePosition);
+    const sourceVerse = getCurrentVerse(sourcePosition.value);
     if (!sourceVerse) return;
 
     const sourceColors = sourceVerse.color_keys || [];
     const sourceTrackIds = sourceVerse.audio_track_ids || [];
 
-    setCurrentVerseColors(currentFocus, [...sourceColors]);
-    setCurrentVerseAudioTrackIds(currentFocus, [...sourceTrackIds]);
-
-    copyPropertiesFromMode.value = false;
-
-    nextTick(() => {
-      focusInput(originalFocus);
-    });
+    setCurrentVerseColors(targetPosition, [...sourceColors]);
+    setCurrentVerseAudioTrackIds(targetPosition, [...sourceTrackIds]);
   };
 
   return {
-    copyPropertiesFromMode,
+    copyPropertiesToMode,
+    sourcePosition,
     getColorsForInheritance,
     getAudioTrackIdsForInheritance,
     getCurrentVerseColors,
     setCurrentVerseColors,
     getCurrentVerseAudioTrackIds,
     setCurrentVerseAudioTrackIds,
-    toggleCopyPropertiesFromMode,
-    copyPropertiesFromVerse
+    toggleCopyPropertiesToMode,
+    exitCopyPropertiesToMode,
+    copyPropertiesToVerse
   };
 }
