@@ -22,23 +22,49 @@ const { columnIndex, lineIndex } = currentFocus as FocusPosition & {
 };
 ```
 
-**Solution**: Create dedicated position utility class
+**Solution**: Create dedicated position utility functions
 
 ```typescript
-// utils/LyricsPositionManager.ts
-export class LyricsPositionManager {
-  static isColumnContext(position: FocusPosition): position is ColumnPosition;
-  static validatePosition(position: FocusPosition, lyrics: LyricStanza[]): boolean;
-  static getItemAtPosition(
-    position: FocusPosition,
-    lyrics: LyricStanza[]
-  ): LyricVerse | LyricVerse[][];
-  static findNextValidPosition(current: FocusPosition, direction: Direction): FocusPosition | null;
-  static calculatePositionAfterDeletion(
-    original: FocusPosition,
-    lyrics: LyricStanza[]
-  ): FocusPosition | null;
-}
+// utils/lyricsPositionUtils.ts
+export const isColumnContext = (position: FocusPosition): position is ColumnPosition => {
+  return "columnIndex" in position && "lineIndex" in position;
+};
+
+export const validatePosition = (position: FocusPosition, lyrics: LyricStanza[]): boolean => {
+  // Position validation logic
+};
+
+export const getItemAtPosition = (
+  position: FocusPosition,
+  lyrics: LyricStanza[]
+): LyricVerse | LyricVerse[][] => {
+  // Item retrieval logic
+};
+
+export const findNextValidPosition = (
+  current: FocusPosition,
+  direction: Direction
+): FocusPosition | null => {
+  // Next position calculation
+};
+
+export const calculatePositionAfterDeletion = (
+  original: FocusPosition,
+  lyrics: LyricStanza[]
+): FocusPosition | null => {
+  // Position adjustment after deletion
+};
+
+// Optional: Create a composable for position management
+export const useLyricsPositionUtils = () => {
+  return {
+    isColumnContext,
+    validatePosition,
+    getItemAtPosition,
+    findNextValidPosition,
+    calculatePositionAfterDeletion
+  };
+};
 ```
 
 **Benefits**:
@@ -111,7 +137,10 @@ export function isColumnPosition(pos: LyricsPosition): pos is ColumnPosition {
 // tests/composables/useLyricsTimestamps.test.ts
 // tests/composables/useLyricsProperties.test.ts
 // tests/composables/useLyricsCommands.test.ts
-// tests/utils/LyricsPositionManager.test.ts
+// tests/utils/lyricsPositionUtils.test.ts
+// tests/utils/navigationStrategies.test.ts
+// tests/utils/lyricsOperationFactories.test.ts
+// tests/utils/verseUtils.test.ts
 ```
 
 **Test Categories**:
@@ -133,7 +162,7 @@ export function isColumnPosition(pos: LyricsPosition): pos is ColumnPosition {
 
 ## Medium Priority Refactorings
 
-### 4. **Simplify Navigation Logic with Strategy Pattern** 🎯 _MEDIUM IMPACT_
+### 4. **Simplify Navigation Logic with Functional Strategies** 🎯 _MEDIUM IMPACT_
 
 **Status**: Not Started  
 **Effort**: Medium (3-4 days)  
@@ -153,27 +182,56 @@ if (direction === "left" || direction === "right") {
 }
 ```
 
-**Solution**: Strategy pattern for navigation
+**Solution**: Functional navigation strategies
 
 ```typescript
-// strategies/NavigationStrategies.ts
-interface NavigationStrategy {
-  findNext(current: LyricsPosition, lyrics: LyricStanza[]): LyricsPosition | null;
-}
+// utils/navigationStrategies.ts
+export type NavigationStrategy = (
+  current: LyricsPosition,
+  lyrics: LyricStanza[]
+) => LyricsPosition | null;
 
-class HorizontalNavigationStrategy implements NavigationStrategy {
-  constructor(private direction: "left" | "right") {}
-  findNext(current: LyricsPosition, lyrics: LyricStanza[]): LyricsPosition | null {
+export const createHorizontalNavigation = (direction: "left" | "right"): NavigationStrategy => {
+  return (current: LyricsPosition, lyrics: LyricStanza[]) => {
     // Clean horizontal navigation logic
-  }
-}
+    return null; // placeholder
+  };
+};
 
-class VerticalNavigationStrategy implements NavigationStrategy {
-  constructor(private direction: "up" | "down") {}
-  findNext(current: LyricsPosition, lyrics: LyricStanza[]): LyricsPosition | null {
+export const createVerticalNavigation = (direction: "up" | "down"): NavigationStrategy => {
+  return (current: LyricsPosition, lyrics: LyricStanza[]) => {
     // Clean vertical navigation logic
+    return null; // placeholder
+  };
+};
+
+// Navigation strategy factory
+export const getNavigationStrategy = (direction: NavigationDirection): NavigationStrategy => {
+  switch (direction) {
+    case "left":
+    case "right":
+      return createHorizontalNavigation(direction);
+    case "up":
+    case "down":
+      return createVerticalNavigation(direction);
+    default:
+      throw new Error(`Unknown navigation direction: ${direction}`);
   }
-}
+};
+
+// Optional: Create a composable for navigation strategies
+export const useNavigationStrategies = () => {
+  const navigate = (
+    direction: NavigationDirection,
+    current: LyricsPosition,
+    lyrics: LyricStanza[]
+  ) => {
+    const strategy = getNavigationStrategy(direction);
+    return strategy(current, lyrics);
+  };
+
+  return { navigate, getNavigationStrategy };
+};
 ```
 
 **Benefits**:
@@ -181,9 +239,10 @@ class VerticalNavigationStrategy implements NavigationStrategy {
 - Cleaner, more focused navigation logic
 - Easier to add new navigation modes (e.g., jump to timestamp)
 - Better separation of concerns
-- More testable individual strategies
+- More testable individual functions
+- Leverages Vue 3's reactivity system naturally
 
-### 5. **Create Operation Factories** 🎯 _MEDIUM IMPACT_
+### 5. **Create Functional Operation Factories** 🎯 _MEDIUM IMPACT_
 
 **Status**: Not Started  
 **Effort**: Medium (2-3 days)  
@@ -199,23 +258,98 @@ updateLyrics(currentLyrics);
 focusInput(newPosition);
 ```
 
-**Solution**: Operation factory pattern
+**Solution**: Functional operation factories
 
 ```typescript
-// factories/LyricsOperationFactory.ts
-export class LyricsOperationFactory {
-  static createInsertOperation(type: "line" | "column" | "stanza") {
-    return (position: LyricsPosition, before: boolean = false) => {
-      // Unified insert logic with type-specific behavior
-    };
-  }
+// utils/lyricsOperationFactories.ts
+export type OperationType = "line" | "column" | "stanza";
 
-  static createDeleteOperation(type: "line" | "column" | "stanza") {
-    return (position: LyricsPosition) => {
-      // Unified delete logic with type-specific behavior
-    };
-  }
-}
+export type InsertOperation = (
+  position: LyricsPosition,
+  lyrics: LyricStanza[],
+  before?: boolean
+) => { updatedLyrics: LyricStanza[]; newPosition: LyricsPosition };
+
+export type DeleteOperation = (
+  position: LyricsPosition,
+  lyrics: LyricStanza[]
+) => { updatedLyrics: LyricStanza[]; newPosition: LyricsPosition | null };
+
+export const createInsertOperation = (type: OperationType): InsertOperation => {
+  return (position: LyricsPosition, lyrics: LyricStanza[], before = false) => {
+    // Unified insert logic with type-specific behavior
+    switch (type) {
+      case "line":
+        return insertLine(position, lyrics, before);
+      case "column":
+        return insertColumn(position, lyrics, before);
+      case "stanza":
+        return insertStanza(position, lyrics, before);
+    }
+  };
+};
+
+export const createDeleteOperation = (type: OperationType): DeleteOperation => {
+  return (position: LyricsPosition, lyrics: LyricStanza[]) => {
+    // Unified delete logic with type-specific behavior
+    switch (type) {
+      case "line":
+        return deleteLine(position, lyrics);
+      case "column":
+        return deleteColumn(position, lyrics);
+      case "stanza":
+        return deleteStanza(position, lyrics);
+    }
+  };
+};
+
+// Helper functions (to be implemented)
+const insertLine = (position: LyricsPosition, lyrics: LyricStanza[], before: boolean) => {
+  // Implementation details
+  return { updatedLyrics: lyrics, newPosition: position };
+};
+
+const insertColumn = (position: LyricsPosition, lyrics: LyricStanza[], before: boolean) => {
+  // Implementation details
+  return { updatedLyrics: lyrics, newPosition: position };
+};
+
+const insertStanza = (position: LyricsPosition, lyrics: LyricStanza[], before: boolean) => {
+  // Implementation details
+  return { updatedLyrics: lyrics, newPosition: position };
+};
+
+const deleteLine = (position: LyricsPosition, lyrics: LyricStanza[]) => {
+  // Implementation details
+  return { updatedLyrics: lyrics, newPosition: position };
+};
+
+const deleteColumn = (position: LyricsPosition, lyrics: LyricStanza[]) => {
+  // Implementation details
+  return { updatedLyrics: lyrics, newPosition: position };
+};
+
+const deleteStanza = (position: LyricsPosition, lyrics: LyricStanza[]) => {
+  // Implementation details
+  return { updatedLyrics: lyrics, newPosition: position };
+};
+
+// Composable for operations
+export const useLyricsOperationFactories = () => {
+  const insertOperations = {
+    line: createInsertOperation("line"),
+    column: createInsertOperation("column"),
+    stanza: createInsertOperation("stanza")
+  };
+
+  const deleteOperations = {
+    line: createDeleteOperation("line"),
+    column: createDeleteOperation("column"),
+    stanza: createDeleteOperation("stanza")
+  };
+
+  return { insertOperations, deleteOperations };
+};
 ```
 
 **Benefits**:
@@ -224,6 +358,8 @@ export class LyricsOperationFactory {
 - Consistent operation behavior
 - Easier to add new operation types
 - Better error handling and validation
+- Tree-shakable and composable architecture
+- Works seamlessly with Vue 3's reactivity
 
 ### 6. **Performance Optimizations** 🎯 _MEDIUM IMPACT_
 
@@ -240,26 +376,59 @@ export class LyricsOperationFactory {
 **Solutions**:
 
 ```typescript
-// Optimize lyrics updates with structural sharing
-const optimizedUpdateLyrics = useCallback((updater: (lyrics: LyricStanza[]) => void) => {
-  // Use immer or similar for efficient immutable updates
-}, []);
+// Optimize lyrics updates with structural sharing (Vue 3 composable)
+export const useOptimizedLyricsUpdates = () => {
+  const updateLyrics = (updater: (lyrics: LyricStanza[]) => LyricStanza[]) => {
+    // Use immer or similar for efficient immutable updates
+    // In Vue 3, we can use readonly/reactive patterns
+    return updater;
+  };
 
-// Memoize expensive computations
-const memoizedNavigation = useMemo(() => {
-  return computeNavigationGraph(lyrics.value);
-}, [lyrics.value]);
+  return { updateLyrics };
+};
 
-// Optimize command registry
-const stableCommandRegistry = useMemo(() => createCommandRegistry(), []);
+// Memoize expensive computations (Vue 3 computed)
+export const useNavigationMemo = (lyrics: Ref<LyricStanza[]>) => {
+  const navigationGraph = computed(() => {
+    return computeNavigationGraph(lyrics.value);
+  });
+
+  return { navigationGraph };
+};
+
+// Optimize command registry with Vue 3 patterns
+export const useStableCommandRegistry = () => {
+  const commandRegistry = readonly(createCommandRegistry());
+
+  return { commandRegistry };
+};
+
+// Or use a provide/inject pattern for global command registry
+export const COMMAND_REGISTRY_KEY = Symbol("commandRegistry");
+
+export const provideCommandRegistry = () => {
+  const registry = readonly(createCommandRegistry());
+  provide(COMMAND_REGISTRY_KEY, registry);
+  return registry;
+};
+
+export const useCommandRegistry = () => {
+  const registry = inject(COMMAND_REGISTRY_KEY);
+  if (!registry) {
+    throw new Error("Command registry not provided");
+  }
+  return registry;
+};
 ```
 
 **Benefits**:
 
 - Faster response times with large lyrics files
-- Reduced memory usage
-- Better user experience
+- Reduced memory usage through Vue 3's efficient reactivity
+- Better user experience with smooth interactions
 - Scalability for complex songs
+- Leverages Vue 3's computed caching and shallow watching
+- Tree-shaking eliminates unused performance utilities
 
 ## Low Priority Refactorings
 
@@ -284,31 +453,55 @@ export const lyricsCommandConfig: CommandConfig[] = [
 ];
 ```
 
-### 8. **Create Verse Factory Utilities** 🎯 _LOW IMPACT_
+### 8. **Create Functional Verse Utilities** 🎯 _LOW IMPACT_
 
 **Status**: Not Started  
 **Effort**: Small (1 day)  
 **Impact**: Low - Consistency, slight reduction in duplication
 
-**Solution**: Centralized verse creation
+**Solution**: Functional verse creation utilities
 
 ```typescript
-// utils/VerseFactory.ts
-export class VerseFactory {
-  static createEmpty(): LyricVerse {
-    return { text: "", start_time: undefined, end_time: undefined };
-  }
+// utils/verseUtils.ts
+export const createEmptyVerse = (): LyricVerse => ({
+  text: "",
+  start_time: undefined,
+  end_time: undefined
+});
 
-  static createWithInheritance(source: LyricVerse): LyricVerse {
-    return {
-      text: "",
-      start_time: undefined,
-      end_time: undefined,
-      color_keys: source.color_keys ? [...source.color_keys] : undefined,
-      audio_track_ids: source.audio_track_ids ? [...source.audio_track_ids] : undefined
-    };
-  }
-}
+export const createVerseWithInheritance = (source: LyricVerse): LyricVerse => ({
+  text: "",
+  start_time: undefined,
+  end_time: undefined,
+  color_keys: source.color_keys ? [...source.color_keys] : undefined,
+  audio_track_ids: source.audio_track_ids ? [...source.audio_track_ids] : undefined
+});
+
+export const cloneVerse = (verse: LyricVerse): LyricVerse => ({
+  ...verse,
+  color_keys: verse.color_keys ? [...verse.color_keys] : undefined,
+  audio_track_ids: verse.audio_track_ids ? [...verse.audio_track_ids] : undefined
+});
+
+// Composable for verse operations
+export const useVerseUtils = () => {
+  return {
+    createEmpty: createEmptyVerse,
+    createWithInheritance: createVerseWithInheritance,
+    clone: cloneVerse
+  };
+};
+
+// Higher-order function for creating verse factories
+export const createVerseFactory = (defaultProperties?: Partial<LyricVerse>) => {
+  return (overrides?: Partial<LyricVerse>): LyricVerse => ({
+    text: "",
+    start_time: undefined,
+    end_time: undefined,
+    ...defaultProperties,
+    ...overrides
+  });
+};
 ```
 
 ### 9. **Enhanced Command System** 🎯 _LOW IMPACT_
@@ -332,21 +525,21 @@ interface EnhancedCommand extends Command {
 
 ### Phase 1: Foundation (Week 1-2)
 
-1. **Position Management Utilities** - Establish solid foundation
-2. **Type Safety Improvements** - Prevent bugs early
+1. **Position Management Utilities** - Establish solid functional foundation
+2. **Type Safety Improvements** - Prevent bugs with strong typing
 3. **Basic Unit Tests** - Safety net for further refactoring
 
 ### Phase 2: Architecture (Week 3-4)
 
-4. **Navigation Strategy Pattern** - Clean up complex logic
-5. **Operation Factories** - Reduce duplication
-6. **Performance Optimizations** - Improve user experience
+4. **Functional Navigation Strategies** - Clean up complex logic with composables
+5. **Functional Operation Factories** - Reduce duplication with pure functions
+6. **Performance Optimizations** - Leverage Vue 3's reactivity optimizations
 
 ### Phase 3: Polish (Week 5)
 
-7. **Command Configuration** - Better organization
-8. **Verse Factory** - Final consistency improvements
-9. **Enhanced Command System** - Future extensibility
+7. **Command Configuration** - Better organization with functional approaches
+8. **Functional Verse Utilities** - Final consistency improvements
+9. **Enhanced Composable Command System** - Future extensibility with Vue 3 patterns
 
 ## Success Metrics
 
@@ -359,10 +552,11 @@ interface EnhancedCommand extends Command {
 
 ### Developer Experience
 
-- **Build Time**: Maintain or improve current build performance
-- **IDE Support**: Better autocomplete and error detection
-- **Onboarding**: New developers productive in <2 days
-- **Debugging**: Clear error messages and stack traces
+- **Build Time**: Maintain or improve current build performance with tree-shaking
+- **IDE Support**: Better autocomplete and error detection with TypeScript composables
+- **Onboarding**: New developers productive in <2 days with clear functional patterns
+- **Debugging**: Clear error messages and stack traces with pure functions
+- **Vue DevTools**: Better composable tracking and reactive debugging
 
 ### Runtime Performance
 
@@ -387,4 +581,40 @@ interface EnhancedCommand extends Command {
 - **Navigation Strategy Pattern**: Complex logic changes
   - _Mitigation_: Feature flags for gradual rollout
 
-This plan prioritizes high-impact improvements that build on the successful modular foundation already established, ensuring continued maintainability and developer productivity.
+## Functional Approach Benefits
+
+This refactoring plan embraces **functional programming** and **Vue 3 composables** over class-based patterns for several key reasons:
+
+### ✅ **Composability**
+
+- Functions can be easily composed and reused across different composables
+- Pure functions are predictable and testable in isolation
+- Vue 3's composition API works naturally with functional patterns
+
+### ✅ **Tree-Shaking**
+
+- Unused utility functions are eliminated during build
+- Smaller bundle sizes compared to class-based approaches
+- Better performance for end users
+
+### ✅ **TypeScript Integration**
+
+- Function signatures provide clear contracts
+- Type inference works better with functional patterns
+- Less boilerplate than class-based type definitions
+
+### ✅ **Vue 3 Reactivity**
+
+- Composables integrate seamlessly with Vue's reactivity system
+- `computed`, `watch`, and `ref` work naturally with functional utilities
+- Better performance through selective reactivity
+
+### ✅ **Testing & Debugging**
+
+- Pure functions are easier to unit test
+- No complex class hierarchies or state management
+- Clear input/output contracts for all utilities
+
+---
+
+This plan prioritizes high-impact improvements that build on the successful modular foundation already established, ensuring continued maintainability and developer productivity while embracing modern Vue 3 and functional programming best practices.
