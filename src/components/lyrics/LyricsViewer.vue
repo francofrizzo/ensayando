@@ -237,7 +237,7 @@ watch(
                   }
                 }
               "
-              :style="getVerseStyles(verse, collection)"
+              :style="getVerseStyles(verse, collection, verse.status)"
               :class="{
                 'text-primary': verse.status === 'active',
                 'font-semibold': verse.status === 'active',

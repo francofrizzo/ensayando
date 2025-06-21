@@ -57,14 +57,11 @@ const {
   convertToColumns,
   getCurrentVerseColors,
   setCurrentVerseColors,
-  copyColorFromMode,
-  toggleCopyColorFromMode,
-  copyColorsFromVerse,
   getCurrentVerseAudioTrackIds,
   setCurrentVerseAudioTrackIds,
-  copyAudioTrackFromMode,
-  toggleCopyAudioTrackFromMode,
-  copyAudioTrackIdsFromVerse,
+  copyPropertiesFromMode,
+  toggleCopyPropertiesFromMode,
+  copyPropertiesFromVerse,
   setCurrentVerseStartTime,
   setCurrentVerseEndTime,
   adjustCurrentVerseStartTime,
@@ -74,7 +71,7 @@ const {
   lyricsToDisplay,
   store.updateLocalLyrics,
   handleSaveClick,
-  () => currentTime.value
+  () => currentTime.value - 0.2 // adjustment for human latency
 );
 
 // Timestamp visibility state
@@ -165,10 +162,6 @@ const handleColorsChange = (colors: string[]) => {
   setCurrentVerseColors(colors);
 };
 
-const handleToggleCopyColorFrom = () => {
-  toggleCopyColorFromMode();
-};
-
 // Audio track functionality
 const currentVerseAudioTrackIds = computed(() => getCurrentVerseAudioTrackIds());
 
@@ -182,8 +175,8 @@ const handleAudioTrackIdsChange = (trackIds: number[]) => {
   setCurrentVerseAudioTrackIds(trackIds);
 };
 
-const handleToggleCopyAudioTrackFrom = () => {
-  toggleCopyAudioTrackFromMode();
+const handleToggleCopyPropertiesFrom = () => {
+  toggleCopyPropertiesFromMode();
 };
 
 const focusTextareaAndMoveCursorToEnd = (event: Event) => {
@@ -218,14 +211,12 @@ defineExpose({
         :on-convert-to-columns="convertToColumns"
         :current-verse-colors="currentVerseColors"
         :available-colors="availableColors"
-        :copy-color-from-mode="copyColorFromMode"
         :on-colors-change="handleColorsChange"
-        :on-toggle-copy-color-from="handleToggleCopyColorFrom"
         :current-verse-audio-track-ids="currentVerseAudioTrackIds"
         :available-audio-tracks="availableAudioTracks"
-        :copy-audio-track-from-mode="copyAudioTrackFromMode"
         :on-audio-track-ids-change="handleAudioTrackIdsChange"
-        :on-toggle-copy-audio-track-from="handleToggleCopyAudioTrackFrom"
+        :copy-properties-from-mode="copyPropertiesFromMode"
+        :on-toggle-copy-properties-from="handleToggleCopyPropertiesFrom"
         :show-timestamps="showTimestamps"
         :on-toggle-timestamps="toggleTimestamps"
         :on-set-start-time="setCurrentVerseStartTime"
@@ -248,16 +239,13 @@ defineExpose({
               class="flex flex-col items-start focus-within:bg-base-content/8 px-5"
               data-lyric-hitbox
               :class="{
-                'cursor-text': !copyColorFromMode && !copyAudioTrackFromMode,
-                'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
-                  copyColorFromMode || copyAudioTrackFromMode
+                'cursor-text': !copyPropertiesFromMode,
+                'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyPropertiesFromMode
               }"
               @click="
-                copyColorFromMode
-                  ? copyColorsFromVerse({ stanzaIndex: i, itemIndex: j })
-                  : copyAudioTrackFromMode
-                    ? copyAudioTrackIdsFromVerse({ stanzaIndex: i, itemIndex: j })
-                    : focusTextareaAndMoveCursorToEnd($event)
+                copyPropertiesFromMode
+                  ? copyPropertiesFromVerse({ stanzaIndex: i, itemIndex: j })
+                  : focusTextareaAndMoveCursorToEnd($event)
               "
             >
               <LyricsTimestamps
@@ -269,8 +257,8 @@ defineExpose({
                 v-model="createVerseModel(i, j).value"
                 :data-input="`${i}-${j}`"
                 :verse-styles="getVerseStyles(item, currentCollection)"
-                :readonly="copyColorFromMode || copyAudioTrackFromMode"
-                :class="{ 'cursor-pointer': copyColorFromMode || copyAudioTrackFromMode }"
+                :readonly="copyPropertiesFromMode"
+                :class="{ 'cursor-pointer': copyPropertiesFromMode }"
                 @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
               />
             </div>
@@ -288,26 +276,19 @@ defineExpose({
                   :class="{
                     'pl-5': k === 0,
                     'pr-5': k === column.length - 1,
-                    'cursor-text': !copyColorFromMode && !copyAudioTrackFromMode,
+                    'cursor-text': !copyPropertiesFromMode,
                     'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
-                      copyColorFromMode || copyAudioTrackFromMode
+                      copyPropertiesFromMode
                   }"
                   @click="
-                    copyColorFromMode
-                      ? copyColorsFromVerse({
+                    copyPropertiesFromMode
+                      ? copyPropertiesFromVerse({
                           stanzaIndex: i,
                           itemIndex: j,
                           columnIndex: k,
                           lineIndex: l
                         })
-                      : copyAudioTrackFromMode
-                        ? copyAudioTrackIdsFromVerse({
-                            stanzaIndex: i,
-                            itemIndex: j,
-                            columnIndex: k,
-                            lineIndex: l
-                          })
-                        : focusTextareaAndMoveCursorToEnd($event)
+                      : focusTextareaAndMoveCursorToEnd($event)
                   "
                 >
                   <LyricsTimestamps
@@ -320,8 +301,8 @@ defineExpose({
                     v-model="createColumnModel(i, j, k, l).value"
                     :data-input="`${i}-${j}-${k}-${l}`"
                     :verse-styles="getVerseStyles(line, currentCollection)"
-                    :readonly="copyColorFromMode || copyAudioTrackFromMode"
-                    :class="{ 'cursor-pointer': copyColorFromMode || copyAudioTrackFromMode }"
+                    :readonly="copyPropertiesFromMode"
+                    :class="{ 'cursor-pointer': copyPropertiesFromMode }"
                     @focus="
                       onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
                     "

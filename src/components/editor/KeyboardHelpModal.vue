@@ -123,6 +123,14 @@ const altKey = isMac ? "⌥" : "Alt";
                 <kbd class="kbd kbd-sm">Backspace</kbd>
               </div>
             </div>
+            <div class="flex justify-between items-center">
+              <span>Copiar colores y pistas de audio de otro verso</span>
+              <div class="flex gap-1 items-center text-sm">
+                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
+                <span class="text-base-content/60">+</span>
+                <kbd class="kbd kbd-sm">K</kbd>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -169,38 +177,6 @@ const altKey = isMac ? "⌥" : "Alt";
                 <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
                 <span class="text-base-content/60">+</span>
                 <kbd class="kbd kbd-sm">Enter</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Operaciones de colores
-          </h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Activar/desactivar modo copiar color</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">K</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
-            Operaciones de pistas de audio
-          </h3>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <span>Activar/desactivar modo copiar pistas de audio</span>
-              <div class="flex gap-1 items-center text-sm">
-                <kbd class="kbd kbd-sm">{{ modKey }}</kbd>
-                <span class="text-base-content/60">+</span>
-                <kbd class="kbd kbd-sm">I</kbd>
               </div>
             </div>
           </div>

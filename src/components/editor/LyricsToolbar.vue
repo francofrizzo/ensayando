@@ -7,8 +7,8 @@ import {
   Clock,
   Columns,
   Copy,
-  Droplet,
   ListPlus,
+  PaintRoller,
   Trash2,
   X
 } from "lucide-vue-next";
@@ -30,15 +30,14 @@ interface Props {
   // Color operations
   currentVerseColors: string[];
   availableColors: { key: string; value: string }[];
-  copyColorFromMode: boolean;
   onColorsChange: (colors: string[]) => void;
-  onToggleCopyColorFrom: () => void;
   // Audio track operations
   currentVerseAudioTrackIds: number[];
   availableAudioTracks: AudioTrack[];
-  copyAudioTrackFromMode: boolean;
   onAudioTrackIdsChange: (trackIds: number[]) => void;
-  onToggleCopyAudioTrackFrom: () => void;
+  // Unified copy properties operations
+  copyPropertiesFromMode: boolean;
+  onToggleCopyPropertiesFrom: () => void;
   // Timestamp visibility
   showTimestamps: boolean;
   onToggleTimestamps: () => void;
@@ -158,7 +157,7 @@ const altKey = isMac ? "⌥" : "Alt";
       </button>
     </div>
 
-    <!-- Color operations -->
+    <!-- Color and audio track operations -->
     <div class="divider divider-horizontal mx-0"></div>
 
     <ColorPicker
@@ -166,29 +165,10 @@ const altKey = isMac ? "⌥" : "Alt";
       :selected-colors="currentVerseColors"
       :available-colors="availableColors"
       :multiple="true"
-      :disabled="!canPerformActions || copyColorFromMode || copyAudioTrackFromMode"
+      :disabled="!canPerformActions || copyPropertiesFromMode"
       btn-class="btn-xs"
       @update:selected-colors="onColorsChange"
     />
-
-    <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content">
-        Copiar color de otro verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
-        >+<kbd class="kbd kbd-xs">K</kbd>
-      </div>
-      <button
-        class="btn btn-xs btn-square btn-ghost"
-        :class="{ 'btn-active': copyColorFromMode }"
-        :disabled="!canPerformActions"
-        @click="onToggleCopyColorFrom"
-      >
-        <Droplet class="size-3" />
-        <span class="sr-only">Copiar color de otro verso</span>
-      </button>
-    </div>
-
-    <!-- Audio track operations -->
-    <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-right">
       <div class="tooltip-content">Cambiar pistas de audio del verso</div>
@@ -197,7 +177,7 @@ const altKey = isMac ? "⌥" : "Alt";
         :available-tracks="availableAudioTracks"
         :available-colors="availableColors"
         :multiple="true"
-        :disabled="!canPerformActions || copyColorFromMode || copyAudioTrackFromMode"
+        :disabled="!canPerformActions || copyPropertiesFromMode"
         btn-class="btn-xs"
         @update:selected-track-ids="onAudioTrackIdsChange"
       />
@@ -205,17 +185,17 @@ const altKey = isMac ? "⌥" : "Alt";
 
     <div class="tooltip tooltip-bottom">
       <div class="tooltip-content">
-        Copiar pistas de otro verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd>
-        <kbd class="kbd kbd-xs">I</kbd>
+        Copiar propiedades de otro verso<br /><kbd class="kbd kbd-xs">{{ modKey }}</kbd
+        >+<kbd class="kbd kbd-xs">K</kbd>
       </div>
       <button
         class="btn btn-xs btn-square btn-ghost"
-        :class="{ 'btn-active': copyAudioTrackFromMode }"
+        :class="{ 'btn-active': copyPropertiesFromMode }"
         :disabled="!canPerformActions"
-        @click="onToggleCopyAudioTrackFrom"
+        @click="onToggleCopyPropertiesFrom"
       >
-        <Droplet class="size-3" />
-        <span class="sr-only">Copiar pistas de otro verso</span>
+        <PaintRoller class="size-3" />
+        <span class="sr-only">Copiar propiedades de otro verso</span>
       </button>
     </div>
 

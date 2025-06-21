@@ -850,16 +850,10 @@ export function useLyricsEditor(
       insertStanza();
     }
 
-    // Color operations
+    // Copy properties operations (colors and audio tracks)
     else if (event.key === "k" && cmdOrCtrl && !event.shiftKey) {
       event.preventDefault();
-      toggleCopyColorFromMode();
-    }
-
-    // Audio track operations
-    else if (event.key === "i" && cmdOrCtrl && !event.shiftKey) {
-      event.preventDefault();
-      toggleCopyAudioTrackFromMode();
+      toggleCopyPropertiesFromMode();
     }
 
     // Save operation
@@ -972,15 +966,15 @@ export function useLyricsEditor(
     updateLyrics(currentLyrics);
   };
 
-  // Copy color from mode
-  const copyColorFromMode = ref(false);
+  // Copy properties from mode (unified for colors and audio tracks)
+  const copyPropertiesFromMode = ref(false);
 
-  const toggleCopyColorFromMode = () => {
-    copyColorFromMode.value = !copyColorFromMode.value;
+  const toggleCopyPropertiesFromMode = () => {
+    copyPropertiesFromMode.value = !copyPropertiesFromMode.value;
   };
 
-  const copyColorsFromVerse = (sourcePosition: FocusPosition) => {
-    if (!currentFocus.value || !copyColorFromMode.value) return;
+  const copyPropertiesFromVerse = (sourcePosition: FocusPosition) => {
+    if (!currentFocus.value || !copyPropertiesFromMode.value) return;
 
     // Store the original focus to restore later
     const originalFocus = { ...currentFocus.value };
@@ -991,24 +985,29 @@ export function useLyricsEditor(
     if (!stanza) return;
 
     let sourceColors: string[] = [];
+    let sourceTrackIds: number[] = [];
+
     if (columnIndex !== undefined && lineIndex !== undefined) {
       // Source is in column context
       const item = stanza[itemIndex] as LyricVerse[][];
       const column = item[columnIndex];
       if (column && column[lineIndex]) {
         sourceColors = column[lineIndex].color_keys || [];
+        sourceTrackIds = column[lineIndex].audio_track_ids || [];
       }
     } else {
       // Source is regular verse
       const verse = stanza[itemIndex] as LyricVerse;
       sourceColors = verse.color_keys || [];
+      sourceTrackIds = verse.audio_track_ids || [];
     }
 
-    // Apply the colors to the current verse
+    // Apply both colors and track IDs to the current verse
     setCurrentVerseColors([...sourceColors]);
+    setCurrentVerseAudioTrackIds([...sourceTrackIds]);
 
     // Exit copy mode after copying
-    copyColorFromMode.value = false;
+    copyPropertiesFromMode.value = false;
 
     // Restore focus to the original verse
     nextTick(() => {
@@ -1078,50 +1077,6 @@ export function useLyricsEditor(
     updateLyrics(currentLyrics);
   };
 
-  // Copy audio track from mode
-  const copyAudioTrackFromMode = ref(false);
-
-  const toggleCopyAudioTrackFromMode = () => {
-    copyAudioTrackFromMode.value = !copyAudioTrackFromMode.value;
-  };
-
-  const copyAudioTrackIdsFromVerse = (sourcePosition: FocusPosition) => {
-    if (!currentFocus.value || !copyAudioTrackFromMode.value) return;
-
-    // Store the original focus to restore later
-    const originalFocus = { ...currentFocus.value };
-
-    const { stanzaIndex, itemIndex, columnIndex, lineIndex } = sourcePosition;
-    const currentLyrics = lyrics.value;
-    const stanza = currentLyrics[stanzaIndex];
-    if (!stanza) return;
-
-    let sourceTrackIds: number[] = [];
-    if (columnIndex !== undefined && lineIndex !== undefined) {
-      // Source is in column context
-      const item = stanza[itemIndex] as LyricVerse[][];
-      const column = item[columnIndex];
-      if (column && column[lineIndex]) {
-        sourceTrackIds = column[lineIndex].audio_track_ids || [];
-      }
-    } else {
-      // Source is regular verse
-      const verse = stanza[itemIndex] as LyricVerse;
-      sourceTrackIds = verse.audio_track_ids || [];
-    }
-
-    // Apply the track IDs to the current verse
-    setCurrentVerseAudioTrackIds([...sourceTrackIds]);
-
-    // Exit copy mode after copying
-    copyAudioTrackFromMode.value = false;
-
-    // Restore focus to the original verse
-    nextTick(() => {
-      focusInput(originalFocus);
-    });
-  };
-
   const getAudioTrackIdsForInheritance = (): number[] => {
     if (!currentFocus.value) return [];
     return getCurrentVerseAudioTrackIds();
@@ -1178,15 +1133,13 @@ export function useLyricsEditor(
     // Color operations
     getCurrentVerseColors,
     setCurrentVerseColors,
-    copyColorFromMode: computed(() => copyColorFromMode.value),
-    toggleCopyColorFromMode,
-    copyColorsFromVerse,
     // Audio track operations
     getCurrentVerseAudioTrackIds,
     setCurrentVerseAudioTrackIds,
-    copyAudioTrackFromMode: computed(() => copyAudioTrackFromMode.value),
-    toggleCopyAudioTrackFromMode,
-    copyAudioTrackIdsFromVerse,
+    // Unified copy properties operations
+    copyPropertiesFromMode: computed(() => copyPropertiesFromMode.value),
+    toggleCopyPropertiesFromMode,
+    copyPropertiesFromVerse,
     // Timestamp operations
     setCurrentVerseStartTime,
     setCurrentVerseEndTime,
