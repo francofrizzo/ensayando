@@ -446,7 +446,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="h-full flex flex-col pl-3 pr-2">
+  <div class="h-full flex flex-col pl-3 pr-2 overflow-y-auto">
     <div class="flex-1 flex flex-col pt-2 pb-3 gap-4">
       <div class="card bg-base-200 border border-base-300 shadow-sm">
         <div class="card-body p-5">
