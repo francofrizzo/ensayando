@@ -460,104 +460,131 @@ const initializeAudioContext = async () => {
 </script>
 
 <template>
-  <div class="flex">
-    <div
-      class="bg-base-200 flex flex-1 h-dvh min-w-0 flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none overflow-hidden"
-    >
-      <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
-        <PlayerHeader :collection="collection" :song="song" @toggle-edit="uiStore.toggleEditMode" />
-        <PlayerControls
-          :current-time="state.currentTime.value"
-          :total-duration="state.totalDuration.value"
-          :is-playing="state.playing.value"
-          :is-ready="isReady"
-          :edit-mode="uiStore.editMode"
-          @play-pause="onPlayPause"
-        />
-        <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
-          <TimeCopier :current-time="state.currentTime.value" />
-        </div>
-      </div>
+  <div class="drawer drawer-end" :class="{ 'lg:drawer-open': uiStore.editMode }">
+    <input
+      id="song-editor-drawer"
+      type="checkbox"
+      class="drawer-toggle"
+      :checked="uiStore.editMode"
+      @change="uiStore.setEditMode(($event.target as HTMLInputElement).checked)"
+    />
 
-      <div v-if="lyrics.length > 0" class="flex-grow-1 overflow-auto snap-y px-10 relative">
-        <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
-        <LyricsViewer
-          :lyrics="lyrics"
-          :current-time="state.currentTime.value"
-          :is-disabled="!isReady"
-          :collection="collection"
-          :enabled-track-ids="trackIdsWithLyricsEnabled"
-          @seek="onSeekToTime"
-        />
-
-        <div class="bg-gradient-to-t from-base-200 to-transparent sticky inset-x-0 bottom-0 h-8" />
-      </div>
-      <div v-else class="flex-grow-1 flex flex-col gap-4 p-10 items-center justify-center">
-        <MicVocal class="size-22 opacity-50 mb-4" />
-        <h2 class="text-2xl font-semibold text-base-content/80">Letra faltante</h2>
-        <p class="text-base-content/40">La letra de esta canción todavía no está disponible.</p>
-      </div>
-
+    <div class="drawer-content">
       <div
-        class="relative border-t md:border border-base-300 md:rounded-box bg-base-100 shadow-sm transition-[max-height] duration-300"
-        :class="{ 'max-h-[45%]': tracksVisible, 'max-h-2': !tracksVisible }"
+        class="bg-base-200 flex h-dvh min-w-0 flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none overflow-hidden"
       >
-        <div
-          class="h-full transition-all duration-300 overflow-y-auto p-3"
-          :class="{ 'opacity-0': !tracksVisible }"
-        >
-          <TrackPlayer
-            v-for="(track, index) in sortedTracks"
-            :key="index"
-            :ref="
-              (el: any) => {
-                if (el) trackPlayers[index] = el;
-              }
-            "
-            :track="track"
+        <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
+          <PlayerHeader
             :collection="collection"
+            :song="song"
+            @toggle-edit="uiStore.toggleEditMode"
+          />
+          <PlayerControls
+            :current-time="state.currentTime.value"
+            :total-duration="state.totalDuration.value"
             :is-playing="state.playing.value"
-            :is-ready="state.trackStates.value[index]!.isReady"
-            :volume="state.trackStates.value[index]!.volume"
-            :has-lyrics="state.trackStates.value[index]!.hasLyrics"
-            :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
+            :is-ready="isReady"
             :edit-mode="uiStore.editMode"
-            @ready="(duration: number) => onReady(index, duration)"
-            @time-update="(time: number) => onTimeUpdate(index, time)"
-            @volume-change="(volume: number) => onVolumeChange(index, volume)"
-            @toggle-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
-            @toggle-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
-            @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
+            @play-pause="onPlayPause"
+          />
+          <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
+            <TimeCopier :current-time="state.currentTime.value" />
+          </div>
+        </div>
+
+        <div v-if="lyrics.length > 0" class="flex-grow-1 overflow-auto snap-y px-10 relative">
+          <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
+          <LyricsViewer
+            :lyrics="lyrics"
+            :current-time="state.currentTime.value"
+            :is-disabled="!isReady"
+            :collection="collection"
+            :enabled-track-ids="trackIdsWithLyricsEnabled"
             @seek="onSeekToTime"
-            @finish="onFinish(index)"
+          />
+
+          <div
+            class="bg-gradient-to-t from-base-200 to-transparent sticky inset-x-0 bottom-0 h-8"
           />
         </div>
-
-        <div
-          class="absolute inset-x-0 top-0 -mt-6 h-6 pointer-events-none flex justify-center z-10 cursor-pointer"
-        >
-          <button
-            class="p-2 pointer-events-auto bg-base-100 text-base-content/50 rounded-t-box w-16 flex items-center justify-center border-t border-r border-l border-base-300 cursor-pointer"
-            @click="tracksVisible = !tracksVisible"
-          >
-            <ChevronDown
-              class="w-7 h-7 transition-transform duration-300"
-              :class="{ 'rotate-180': !tracksVisible }"
-            />
-          </button>
+        <div v-else class="flex-grow-1 flex flex-col gap-4 p-10 items-center justify-center">
+          <MicVocal class="size-22 opacity-50 mb-4" />
+          <h2 class="text-2xl font-semibold text-base-content/80">Letra faltante</h2>
+          <p class="text-base-content/40">La letra de esta canción todavía no está disponible.</p>
         </div>
 
         <div
-          v-if="!isReady"
-          class="absolute inset-0 z-10 bg-base-100/80 rounded-box flex gap-4 text-lg items-center justify-center text-base-content/50 select-none"
+          class="relative border-t md:border border-base-300 md:rounded-box bg-base-100 shadow-sm transition-[max-height] duration-300"
+          :class="{ 'max-h-[45%]': tracksVisible, 'max-h-2': !tracksVisible }"
         >
-          <Loader2 class="size-6 animate-spin" />
-          <span class="uppercase tracking-wide">Cargando...</span>
+          <div
+            class="h-full transition-all duration-300 overflow-y-auto p-3"
+            :class="{ 'opacity-0': !tracksVisible }"
+          >
+            <TrackPlayer
+              v-for="(track, index) in sortedTracks"
+              :key="index"
+              :ref="
+                (el: any) => {
+                  if (el) trackPlayers[index] = el;
+                }
+              "
+              :track="track"
+              :collection="collection"
+              :is-playing="state.playing.value"
+              :is-ready="state.trackStates.value[index]!.isReady"
+              :volume="state.trackStates.value[index]!.volume"
+              :has-lyrics="state.trackStates.value[index]!.hasLyrics"
+              :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
+              :edit-mode="uiStore.editMode"
+              @ready="(duration: number) => onReady(index, duration)"
+              @time-update="(time: number) => onTimeUpdate(index, time)"
+              @volume-change="(volume: number) => onVolumeChange(index, volume)"
+              @toggle-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
+              @toggle-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
+              @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
+              @seek="onSeekToTime"
+              @finish="onFinish(index)"
+            />
+          </div>
+
+          <div
+            class="absolute inset-x-0 top-0 -mt-6 h-6 pointer-events-none flex justify-center z-10 cursor-pointer"
+          >
+            <button
+              class="p-2 pointer-events-auto bg-base-100 text-base-content/50 rounded-t-box w-16 flex items-center justify-center border-t border-r border-l border-base-300 cursor-pointer"
+              @click="tracksVisible = !tracksVisible"
+            >
+              <ChevronDown
+                class="w-7 h-7 transition-transform duration-300"
+                :class="{ 'rotate-180': !tracksVisible }"
+              />
+            </button>
+          </div>
+
+          <div
+            v-if="!isReady"
+            class="absolute inset-0 z-10 bg-base-100/80 rounded-box flex gap-4 text-lg items-center justify-center text-base-content/50 select-none"
+          >
+            <Loader2 class="size-6 animate-spin" />
+            <span class="uppercase tracking-wide">Cargando...</span>
+          </div>
         </div>
       </div>
     </div>
-    <div v-if="uiStore.editMode" class="flex-1">
-      <SongEditor @toggle-edit="uiStore.toggleEditMode" />
+
+    <div class="drawer-side z-50">
+      <label
+        for="song-editor-drawer"
+        aria-label="Cerrar editor"
+        class="drawer-overlay sm:right-[calc(100%-2rem)] md:right-[calc(100%-3rem)] lg:right-0"
+        @click="uiStore.setEditMode(false)"
+      ></label>
+      <div
+        class="bg-base-100 min-h-full w-full sm:ml-8 sm:w-[calc(100%-2rem)] md:ml-12 md:w-[calc(100%-3rem)] lg:ml-0 lg:w-[50vw] xl:w-[40vw]"
+      >
+        <SongEditor @toggle-edit="uiStore.toggleEditMode" />
+      </div>
     </div>
   </div>
 </template>
