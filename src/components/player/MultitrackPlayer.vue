@@ -574,12 +574,7 @@ const initializeAudioContext = async () => {
     </div>
 
     <div class="drawer-side z-50">
-      <label
-        for="song-editor-drawer"
-        aria-label="Cerrar editor"
-        class="drawer-overlay"
-        @click="uiStore.setEditMode(false)"
-      ></label>
+      <label for="song-editor-drawer" aria-label="Cerrar editor" class="drawer-overlay"></label>
       <div
         class="bg-base-100 min-h-full w-full sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
       >
