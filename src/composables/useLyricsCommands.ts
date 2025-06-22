@@ -321,8 +321,9 @@ export function useLyricsCommands(
       return;
     }
 
-    // For other keys, only handle when focused on input elements
-    if (!target.hasAttribute("data-input")) return;
+    // For other keys, only handle when focused on lyrics input elements
+    if (!target.hasAttribute("data-lyrics-input") && !target.hasAttribute("data-timestamps-input"))
+      return;
 
     commandRegistry.handleKeyboardEvent(event);
   };

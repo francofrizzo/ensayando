@@ -35,7 +35,7 @@ export function useLyricsNavigation(lyrics: Ref<LyricStanza[]>) {
 
   const getInputElement = (position: FocusPosition): HTMLInputElement | null => {
     const { stanzaIndex, itemIndex } = position;
-    let selector = `[data-input="${stanzaIndex}-${itemIndex}`;
+    let selector = `[data-lyrics-input="${stanzaIndex}-${itemIndex}`;
 
     if (isColumnContext(position)) {
       selector += `-${position.columnIndex}-${position.lineIndex}`;

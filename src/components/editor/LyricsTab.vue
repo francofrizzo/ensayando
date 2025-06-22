@@ -56,11 +56,8 @@ const {
   setCurrentVerseAudioTrackIds,
   copyPropertiesToMode,
   copyPropertiesToVerse
-} = useLyricsEditor(
-  lyricsToDisplay,
-  store.updateLocalLyrics,
-  handleSaveClick,
-  () => Math.max(0, currentTime.value - 0.2) // adjustment for human latency
+} = useLyricsEditor(lyricsToDisplay, store.updateLocalLyrics, handleSaveClick, () =>
+  Math.max(0, Math.round((currentTime.value - 0.2) * 100) / 100)
 );
 
 // Timestamp visibility state
@@ -315,7 +312,7 @@ defineExpose({
               />
               <LyricsTextarea
                 v-model="createVerseModel(i, j).value"
-                :data-input="`${i}-${j}`"
+                :data-lyrics-input="`${i}-${j}`"
                 :verse-styles="getVerseStyles(item, currentCollection)"
                 :readonly="copyPropertiesToMode"
                 :class="{ 'cursor-pointer': copyPropertiesToMode }"
@@ -360,7 +357,7 @@ defineExpose({
                   />
                   <LyricsTextarea
                     v-model="createColumnModel(i, j, k, l).value"
-                    :data-input="`${i}-${j}-${k}-${l}`"
+                    :data-lyrics-input="`${i}-${j}-${k}-${l}`"
                     :verse-styles="getVerseStyles(line, currentCollection)"
                     :readonly="copyPropertiesToMode"
                     :class="{ 'cursor-pointer': copyPropertiesToMode }"

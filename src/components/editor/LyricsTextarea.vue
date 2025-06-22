@@ -3,16 +3,16 @@ import { onMounted, ref } from "vue";
 
 type Props = {
   modelValue: string;
-  dataInput: string;
+  dataLyricsInput: string;
   verseStyles: Record<string, any>;
   readonly?: boolean;
   placeholder?: string;
-}
+};
 
 type Emits = {
   (e: "update:modelValue", value: string): void;
   (e: "focus"): void;
-}
+};
 
 const props = withDefaults(defineProps<Props>(), {
   readonly: false,
@@ -57,7 +57,7 @@ onMounted(() => {
   <textarea
     ref="textareaRef"
     :value="modelValue"
-    :data-input="dataInput"
+    :data-lyrics-input="dataLyricsInput"
     :style="verseStyles"
     :readonly="readonly"
     :placeholder="placeholder"

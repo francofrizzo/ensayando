@@ -64,6 +64,7 @@ const formatTimeValue = (time: number | undefined): string => {
         format="0.00"
         :value="props.verse.start_time"
         placeholder="inicio"
+        data-timestamps-input
         class="field-sizing-content no-spinner bg-transparent border-none outline-none text-xs font-mono text-base-content/40 focus:text-base-content/80 hover:text-base-content/60"
         @input="handleStartTimeInput"
         @blur="handleStartTimeInput"
@@ -89,6 +90,7 @@ const formatTimeValue = (time: number | undefined): string => {
         min="0"
         :value="props.verse.end_time"
         placeholder="fin"
+        data-timestamps-input
         class="field-sizing-content no-spinner bg-transparent border-none outline-none text-xs font-mono text-base-content/40 focus:text-base-content/80 hover:text-base-content/60"
         @input="handleEndTimeInput"
         @blur="handleEndTimeInput"
