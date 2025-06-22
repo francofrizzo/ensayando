@@ -12,7 +12,7 @@ const props = withDefaults(defineProps<Props>(), {
 <template>
   <div class="flex gap-1 items-center">
     <template v-for="(keyPart, index) in keyParts" :key="keyPart">
-      <kbd class="kbd kbd-xs text-base-content" :class="props.kbdClass">{{ keyPart }}</kbd>
+      <kbd class="kbd text-base-content" :class="props.kbdClass">{{ keyPart }}</kbd>
       <span v-if="index !== keyParts.length - 1">+</span>
     </template>
   </div>
