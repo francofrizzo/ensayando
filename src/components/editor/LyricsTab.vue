@@ -286,7 +286,7 @@ defineExpose({
       <div
         v-for="(stanza, i) in lyricsToDisplay"
         :key="i"
-        class="bg-base-200/50 border not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none border-base-content/15 rounded-box py-4"
+        class="bg-base-200 border border-base-300 rounded-box not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none not-last:border-b-base-content/20 py-4 shadow-sm"
       >
         <div class="flex flex-col items-stretch gap-1">
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">

@@ -526,7 +526,7 @@ defineExpose({
         </div>
       </div>
 
-      <div class="card bg-base-200 shadow-sm">
+      <div class="card bg-base-200 border border-base-300 shadow-sm">
         <div class="card-body p-5 gap-3">
           <div class="flex items-start justify-between">
             <h3 class="text-base-content font-medium uppercase tracking-wide">Tracks de audio</h3>
