@@ -479,7 +479,7 @@ const initializeAudioContext = async () => {
         </div>
       </div>
 
-      <div v-if="lyrics.length > 0" class="flex-grow-1 overflow-auto px-10 relative">
+      <div v-if="lyrics.length > 0" class="flex-grow-1 overflow-auto snap-y px-10 relative">
         <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
         <LyricsViewer
           :lyrics="lyrics"

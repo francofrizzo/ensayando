@@ -289,7 +289,7 @@ defineExpose({
       <div
         v-for="(stanza, i) in lyricsToDisplay"
         :key="i"
-        class="border-1 not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none border-base-content/15 rounded-box py-4"
+        class="bg-base-200/50 border not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none border-base-content/15 rounded-box py-4"
       >
         <div class="flex flex-col items-stretch gap-1">
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
@@ -326,7 +326,7 @@ defineExpose({
               <div
                 v-for="(column, k) in item"
                 :key="`${i}-${j}-${k}`"
-                class="flex-1 flex flex-col gap-1 justify-center not-last:border-r-1 border-base-content/20"
+                class="flex-1 flex flex-col justify-center not-last:border-r-1 border-dashed border-base-content/20"
               >
                 <div
                   v-for="(line, l) in column"
@@ -335,7 +335,7 @@ defineExpose({
                   data-lyric-hitbox
                   :class="{
                     'pl-5': k === 0,
-                    'pr-5': k === column.length - 1,
+                    'pr-5': k === item.length - 1,
                     'cursor-text': !copyPropertiesToMode,
                     'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
                       copyPropertiesToMode

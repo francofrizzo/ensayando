@@ -221,7 +221,7 @@ watch(
           <div
             v-for="(verse, verseIndex) in column"
             :key="`${stanzaIndex}-${lineIndex}-${columnIndex}-${verseIndex}`"
-            class="flex flex-col items-center text-left gap-1.5"
+            class="flex flex-col items-center text-left gap-1.5 snap-center"
             @click="() => !isDisabled && verse.start_time && emit('seek', verse.start_time)"
           >
             <span

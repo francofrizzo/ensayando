@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
+import type { CommandRegistry } from "@/composables/useCommands";
 import { X } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted } from "vue";
-import type { CommandRegistry } from "@/composables/useCommands";
-import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
 
 type Props = {
   show: boolean;
   commandRegistry: CommandRegistry;
-}
+};
 
 const props = defineProps<Props>();
 
@@ -91,7 +91,7 @@ const keybindingGroups = computed(() => {
               class="flex justify-between items-center"
             >
               <span>{{ item.description }}</span>
-              <KeybindingDisplay :key-parts="item.keyParts" size="sm" />
+              <KeybindingDisplay :key-parts="item.keyParts" kbd-class="kbd-sm" />
             </div>
           </div>
         </div>
