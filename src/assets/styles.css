@@ -100,4 +100,13 @@ body {
     -moz-appearance: textfield;
     appearance: textfield;
   }
+
+  @supports not (field-sizing: content) {
+    .field-sizing-fallback-12 {
+      width: 3rem;
+    }
+    .field-sizing-fallback-full {
+      width: 100%;
+    }
+  }
 }
