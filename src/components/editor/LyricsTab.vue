@@ -266,7 +266,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex h-full min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto pr-2 pl-3">
+  <div class="flex h-full min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto px-2 lg:pl-3">
     <LyricsToolbar
       class="sticky top-2 z-10 mx-3 self-center"
       :current-focus="currentFocus"
