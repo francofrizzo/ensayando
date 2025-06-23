@@ -29,7 +29,7 @@ onMounted(async () => {
 
   <ErrorMessage v-else-if="collectionsStore.collections.length === 0" type="no-collections" />
 
-  <div v-else class="flex items-center justify-center min-h-dvh">
+  <div v-else class="flex min-h-dvh items-center justify-center">
     <LoadingScreen />
   </div>
 </template>

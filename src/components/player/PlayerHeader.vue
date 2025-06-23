@@ -13,14 +13,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+  <div class="flex min-w-0 items-center gap-3 sm:gap-4">
     <SongMenu :collection="props.collection" class="shrink-0" @toggle-edit="emit('toggle-edit')" />
 
-    <div class="flex flex-col tracking-wide min-w-0 gap-1">
-      <span class="text-lg font-semibold text-ellipsis line-clamp-2 leading-tight tracking-tight">{{
+    <div class="flex min-w-0 flex-col gap-1 tracking-wide">
+      <span class="line-clamp-2 text-lg leading-tight font-semibold tracking-tight text-ellipsis">{{
         props.song.title
       }}</span>
-      <span class="text-xs font-medium uppercase text-base-content/50 text-ellipsis line-clamp-1">{{
+      <span class="text-base-content/50 line-clamp-1 text-xs font-medium text-ellipsis uppercase">{{
         props.collection.title
       }}</span>
     </div>

@@ -4,7 +4,7 @@ export type UploadResult = {
   url: string;
   filename: string;
   size: number;
-}
+};
 
 const generateRandomSuffix = (): string => {
   return Math.random().toString(36).substring(2, 8);

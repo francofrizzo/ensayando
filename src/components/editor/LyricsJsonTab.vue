@@ -109,7 +109,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex h-full flex-col">
     <JsonEditor
       ref="editorRef"
       :content="initialContent"
@@ -118,7 +118,7 @@ defineExpose({
       :navigation-bar="true"
       :validator="validator"
       :on-change="handleEditorChange"
-      class="json-editor flex-1 min-h-0"
+      class="json-editor min-h-0 flex-1"
     />
 
     <SafeTeleport to="[data-song-editor-actions]">

@@ -54,8 +54,8 @@ const formatTimeValue = (time: number | undefined): string => {
 </script>
 
 <template>
-  <div class="flex gap-2 justify-between text-xs text-base-content/40 mr-3 px-1 w-full">
-    <div class="flex gap-1 font-mono items-center">
+  <div class="text-base-content/40 mr-3 flex w-full justify-between gap-2 px-1 text-xs">
+    <div class="flex items-center gap-1 font-mono">
       <input
         v-if="props.onUpdateStartTime"
         type="number"
@@ -65,7 +65,7 @@ const formatTimeValue = (time: number | undefined): string => {
         :value="props.verse.start_time"
         placeholder="inicio"
         data-timestamps-input
-        class="field-sizing-content no-spinner bg-transparent border-none outline-none text-xs font-mono text-base-content/40 focus:text-base-content/80 hover:text-base-content/60"
+        class="no-spinner text-base-content/40 focus:text-base-content/80 hover:text-base-content/60 field-sizing-content border-none bg-transparent font-mono text-xs outline-none"
         @input="handleStartTimeInput"
         @blur="handleStartTimeInput"
       />
@@ -91,7 +91,7 @@ const formatTimeValue = (time: number | undefined): string => {
         :value="props.verse.end_time"
         placeholder="fin"
         data-timestamps-input
-        class="field-sizing-content no-spinner bg-transparent border-none outline-none text-xs font-mono text-base-content/40 focus:text-base-content/80 hover:text-base-content/60"
+        class="no-spinner text-base-content/40 focus:text-base-content/80 hover:text-base-content/60 field-sizing-content border-none bg-transparent font-mono text-xs outline-none"
         @input="handleEndTimeInput"
         @blur="handleEndTimeInput"
       />

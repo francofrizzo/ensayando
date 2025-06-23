@@ -11,11 +11,11 @@ type Props = {
   multiple?: boolean;
   disabled?: boolean;
   btnClass?: string;
-}
+};
 
 type Emits = {
   (e: "update:selectedTrackIds", trackIds: number[]): void;
-}
+};
 
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
@@ -107,14 +107,14 @@ const getColorStyle = (colorKey: string) => {
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box z-50 w-64 p-2 shadow-lg border border-base-content/10"
+      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 w-64 border p-2 shadow-lg"
     >
-      <div v-if="sortedTracks.length === 0" class="text-xs text-base-content/50 px-2 py-1">
+      <div v-if="sortedTracks.length === 0" class="text-base-content/50 px-2 py-1 text-xs">
         No hay pistas disponibles
       </div>
 
       <div v-else class="flex flex-col gap-1">
-        <div class="text-xs p-1">Pistas de audio del verso</div>
+        <div class="p-1 text-xs">Pistas de audio del verso</div>
         <button
           v-for="track in sortedTracks"
           :key="track.id"

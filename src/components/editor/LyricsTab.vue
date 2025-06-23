@@ -266,7 +266,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="h-full flex flex-col gap-2 pl-3 pr-2 min-w-0 overflow-y-auto">
+  <div class="flex h-full min-w-0 flex-col gap-2 overflow-y-auto pr-2 pl-3">
     <div class="sticky top-0 z-10 flex flex-col items-center gap-2">
       <LyricsToolbar
         :current-focus="currentFocus"
@@ -282,21 +282,21 @@ defineExpose({
         :on-toggle-timestamps="toggleTimestamps"
       />
     </div>
-    <div class="flex-1 flex flex-col pb-3">
+    <div class="flex flex-1 flex-col pb-3">
       <div
         v-for="(stanza, i) in lyricsToDisplay"
         :key="i"
-        class="bg-base-200 border overflow-x-auto border-base-300 rounded-box not-first:border-t-0 not-first:rounded-t-none not-last:rounded-b-none not-last:border-b-base-content/20 py-4 shadow-sm"
+        class="bg-base-200 border-base-300 rounded-box not-last:border-b-base-content/20 overflow-x-auto border py-4 shadow-sm not-first:rounded-t-none not-first:border-t-0 not-last:rounded-b-none"
       >
         <div class="flex flex-col items-stretch gap-1">
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <div
               v-if="!Array.isArray(item)"
-              class="flex flex-col items-start focus-within:bg-base-content/8 px-5"
+              class="focus-within:bg-base-content/8 flex flex-col items-start px-5"
               data-lyric-hitbox
               :class="{
                 'cursor-text': !copyPropertiesToMode,
-                'cursor-pointer bg-base-content/5 hover:bg-base-content/10': copyPropertiesToMode
+                'bg-base-content/5 hover:bg-base-content/10 cursor-pointer': copyPropertiesToMode
               }"
               @click="
                 copyPropertiesToMode
@@ -319,22 +319,22 @@ defineExpose({
                 @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
               />
             </div>
-            <div v-else class="flex flex-row w-full items-stretch">
+            <div v-else class="flex w-full flex-row items-stretch">
               <div
                 v-for="(column, k) in item"
                 :key="`${i}-${j}-${k}`"
-                class="flex-1 flex flex-col justify-center not-last:border-r-1 border-dashed border-base-content/20"
+                class="border-base-content/20 flex flex-1 flex-col justify-center border-dashed not-last:border-r-1"
               >
                 <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="flex flex-col items-start focus-within:bg-base-content/8 px-3"
+                  class="focus-within:bg-base-content/8 flex flex-col items-start px-3"
                   data-lyric-hitbox
                   :class="{
                     'pl-5': k === 0,
                     'pr-5': k === item.length - 1,
                     'cursor-text': !copyPropertiesToMode,
-                    'cursor-pointer bg-base-content/5 hover:bg-base-content/10':
+                    'bg-base-content/5 hover:bg-base-content/10 cursor-pointer':
                       copyPropertiesToMode
                   }"
                   @click="

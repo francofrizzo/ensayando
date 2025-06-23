@@ -4,9 +4,9 @@ import { Loader2 } from "lucide-vue-next";
 
 <template>
   <div
-    class="w-full h-dvh flex flex-col gap-6 text-lg text-base-content/50 items-center justify-center p-2 select-none"
+    class="text-base-content/50 flex h-dvh w-full flex-col items-center justify-center gap-6 p-2 text-lg select-none"
   >
-    <Loader2 class="w-16 h-16 animate-spin" />
-    <span class="uppercase tracking-wide">Cargando...</span>
+    <Loader2 class="h-16 w-16 animate-spin" />
+    <span class="tracking-wide uppercase">Cargando...</span>
   </div>
 </template>

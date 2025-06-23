@@ -68,11 +68,11 @@ const getKeybindingParts = (commandId: string): string[] => {
 
 <template>
   <div
-    class="flex justify-center self-center rounded-full shadow-sm gap-0.5 bg-base-200 border border-base-300/50 py-0.5 px-2"
+    class="bg-base-200 border-base-300/50 flex justify-center gap-0.5 self-center rounded-full border px-2 py-0.5 shadow-sm"
   >
     <!-- Line operations -->
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Agregar verso después<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('insert-line')" kbd-class="kbd-xs" />
       </div>
@@ -87,7 +87,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Agregar verso antes<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('insert-line-before')" k />
       </div>
@@ -102,7 +102,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Duplicar verso<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('duplicate-line')" k />
       </div>
@@ -120,7 +120,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     <div class="divider divider-horizontal mx-0"></div>
 
     <div v-if="!hasColumnContext" class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Convertir a columnas<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('convert-to-columns')" k />
       </div>
@@ -135,7 +135,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     </div>
 
     <div v-if="hasColumnContext" class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Insertar columna a la izquierda<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('insert-column-left')" k />
       </div>
@@ -150,7 +150,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     </div>
 
     <div v-if="hasColumnContext" class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Insertar columna a la derecha<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('insert-column-right')" k />
       </div>
@@ -188,7 +188,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     />
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Copiar propiedades a otros versos<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('copy-properties')" k />
       </div>
@@ -207,7 +207,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Mostrar/ocultar marcas de tiempo
       </div>
       <button
@@ -226,7 +226,7 @@ const getKeybindingParts = (commandId: string): string[] => {
 
     <!-- Timestamp operations -->
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Establecer tiempo de inicio<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('set-start-time')" k />
       </div>
@@ -241,7 +241,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Establecer tiempo de finalización<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('set-end-time')" k />
       </div>
@@ -256,7 +256,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     </div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Limpiar tiempos<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('clear-both-times')" kbd-class="kbd-sm" />
       </div>
@@ -274,7 +274,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Agregar estrofa<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('insert-stanza')" k />
       </div>
@@ -292,7 +292,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     <div class="divider divider-horizontal mx-0"></div>
 
     <div class="tooltip tooltip-bottom">
-      <div class="tooltip-content flex flex-col gap-0.5 items-center">
+      <div class="tooltip-content flex flex-col items-center gap-0.5">
         Eliminar verso<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('delete-line')" k />
       </div>

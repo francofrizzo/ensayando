@@ -213,13 +213,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-stretch gap-2 w-full">
-    <div class="w-20 sm:w-24 lg:w-32 xl:w-36 flex flex-row flex-shrink-0 gap-1 min-w-0">
+  <div class="flex w-full items-stretch gap-2">
+    <div class="flex w-20 min-w-0 flex-shrink-0 flex-row gap-1 sm:w-24 lg:w-32 xl:w-36">
       <div
-        class="py-2 gap-3 flex flex-col flex-grow-1 w-full items-stretch justify-between min-w-0"
+        class="flex w-full min-w-0 flex-grow-1 flex-col items-stretch justify-between gap-3 py-2"
       >
-        <div class="flex items-center gap-1.5 justify-between">
-          <span class="text-base-content/70 text-sm truncate text-ellipsis">
+        <div class="flex items-center justify-between gap-1.5">
+          <span class="text-base-content/70 truncate text-sm text-ellipsis">
             {{ track.title }}
           </span>
           <span v-if="editMode" class="badge badge-sm badge-soft shrink-0 gap-1 px-1">
@@ -240,7 +240,7 @@ onUnmounted(() => {
           "
         />
       </div>
-      <div class="flex flex-col flex-grow-0 flex-shrink-0 gap-0 items-center justify-center">
+      <div class="flex flex-shrink-0 flex-grow-0 flex-col items-center justify-center gap-0">
         <button
           v-if="props.hasLyrics"
           :disabled="!isReady"
@@ -248,7 +248,7 @@ onUnmounted(() => {
           :style="{ color: props.lyricsEnabled ? trackColor : disabledColor }"
           @click="handleLyricsButtonClick"
         >
-          <MicVocal class="w-4 h-4" />
+          <MicVocal class="h-4 w-4" />
         </button>
         <button
           :disabled="!isReady"
@@ -259,8 +259,8 @@ onUnmounted(() => {
           @touchend="handleMuteButtonTouchEnd"
           @touchcancel="handleMuteButtonTouchCancel"
         >
-          <Volume2Icon v-if="!isMuted" class="w-4 h-4" />
-          <VolumeX v-else class="w-4 h-4" />
+          <Volume2Icon v-if="!isMuted" class="h-4 w-4" />
+          <VolumeX v-else class="h-4 w-4" />
         </button>
       </div>
     </div>

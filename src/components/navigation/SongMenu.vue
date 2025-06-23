@@ -39,18 +39,18 @@ const otherCollectionMenuItems = computed(() => {
       <input id="my-drawer" v-model="isOpen" type="checkbox" class="drawer-toggle" />
       <div class="drawer-content">
         <label class="btn btn-square btn-primary btn-lg flex-shrink-0" htmlFor="my-drawer">
-          <Menu class="w-5 h-5" />
+          <Menu class="h-5 w-5" />
         </label>
       </div>
       <div class="drawer-side z-50">
         <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-        <div class="min-h-full w-80 flex lg:p-3">
+        <div class="flex min-h-full w-80 lg:p-3">
           <div
-            class="bg-base-100/75 backdrop-blur-lg w-full px-3 lg:px-1 py-4 flex flex-col gap-6 text-base-content shadow-lg border border-base-200 lg:rounded-box"
+            class="bg-base-100/75 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
           >
             <div class="flex flex-col gap-2">
-              <div class="flex items-center justify-between gap-2 pl-5 pr-3">
-                <span class="text-base-content/60 font-medium uppercase tracking-wide">{{
+              <div class="flex items-center justify-between gap-2 pr-3 pl-5">
+                <span class="text-base-content/60 font-medium tracking-wide uppercase">{{
                   collection.title
                 }}</span>
                 <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
@@ -72,14 +72,14 @@ const otherCollectionMenuItems = computed(() => {
                     }"
                     @click="isOpen = false"
                   >
-                    <LockKeyhole v-if="!song.visible" class="size-3 text-primary" />
+                    <LockKeyhole v-if="!song.visible" class="text-primary size-3" />
                     {{ song.title }}
                   </router-link>
                 </li>
               </ul>
             </div>
             <div v-if="otherCollectionMenuItems.length > 0" class="flex flex-col gap-2">
-              <span class="text-base-content/60 font-medium uppercase text-sm px-5 tracking-wide"
+              <span class="text-base-content/60 px-5 text-sm font-medium tracking-wide uppercase"
                 >Otras colecciones</span
               >
               <ul class="menu w-full">
@@ -93,14 +93,14 @@ const otherCollectionMenuItems = computed(() => {
                     }"
                     @click="isOpen = false"
                   >
-                    <LockKeyhole v-if="!otherCollection.visible" class="size-3 text-primary" />
+                    <LockKeyhole v-if="!otherCollection.visible" class="text-primary size-3" />
                     {{ otherCollection.title }}
                   </router-link>
                 </li>
               </ul>
             </div>
             <div class="flex-grow-1" />
-            <div class="flex items-center justify-between gap-2 pl-4 pr-3 opacity-60">
+            <div class="flex items-center justify-between gap-2 pr-3 pl-4 opacity-60">
               <AuthStatus class="grow-0" />
               <button
                 v-if="authStore.isAuthenticated"

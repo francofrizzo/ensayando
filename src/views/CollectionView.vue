@@ -72,7 +72,7 @@ watch(
       type="no-songs"
     />
 
-    <div v-else class="flex items-center justify-center min-h-dvh">
+    <div v-else class="flex min-h-dvh items-center justify-center">
       <LoadingScreen />
     </div>
   </div>

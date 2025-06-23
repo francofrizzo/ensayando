@@ -115,7 +115,7 @@ const isColorSelected = (colorKey: string) => {
       :style="buttonStyle"
       tabindex="0"
       role="button"
-      class="btn btn-square shadow-xs text-xs font-medium"
+      class="btn btn-square text-xs font-medium shadow-xs"
       :class="[btnClass, { 'btn-disabled': disabled }]"
     >
       <span v-if="buttonContent">{{ buttonContent }}</span>
@@ -124,18 +124,18 @@ const isColorSelected = (colorKey: string) => {
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box min-w-max z-50 p-2 shadow-lg border border-base-content/10"
+      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 min-w-max border p-2 shadow-lg"
     >
       <div class="flex flex-col gap-1">
-        <div v-if="title" class="text-xs p-1">
+        <div v-if="title" class="p-1 text-xs">
           {{ title }}
         </div>
-        <div class="grid grid-cols-4 gap-2 mb-2 px-1">
+        <div class="mb-2 grid grid-cols-4 gap-2 px-1">
           <button
             v-for="color in availableColors"
             :key="color.key"
             type="button"
-            class="w-6 h-6 shadow-xs rounded-field text-xs font-medium opacity-80 hover:opacity-100 transition-opacity duration-200 cursor-pointer flex-shrink-0 border-2"
+            class="rounded-field h-6 w-6 flex-shrink-0 cursor-pointer border-2 text-xs font-medium opacity-80 shadow-xs transition-opacity duration-200 hover:opacity-100"
             :class="{
               'border-base-content opacity-100': isColorSelected(color.key),
               'border-transparent': !isColorSelected(color.key)

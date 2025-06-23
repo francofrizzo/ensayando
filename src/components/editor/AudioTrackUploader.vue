@@ -99,7 +99,7 @@ const handleFileUpload = async (event: Event) => {
     <input
       type="file"
       accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
-      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
       :disabled="disabled || isUploading"
       @change="handleFileUpload"
     />

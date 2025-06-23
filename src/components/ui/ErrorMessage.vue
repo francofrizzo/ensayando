@@ -9,7 +9,7 @@ type Props = {
     to: RouteLocationRaw;
     text: string;
   };
-}
+};
 
 const props = defineProps<Props>();
 
@@ -49,10 +49,10 @@ const message = computed(() => config[props.type].message);
 
 <template>
   <div
-    class="flex flex-col gap-4 flex-grow-1 min-h-dvh items-center justify-center max-w-md mx-auto text-center"
+    class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col items-center justify-center gap-4 text-center"
   >
-    <component :is="icon" class="size-22 opacity-50 mb-4" />
-    <h2 class="text-2xl font-semibold text-base-content/80">{{ title }}</h2>
+    <component :is="icon" class="mb-4 size-22 opacity-50" />
+    <h2 class="text-base-content/80 text-2xl font-semibold">{{ title }}</h2>
     <p class="text-base-content/40">{{ message }}</p>
     <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary">
       {{ backLink.text }}

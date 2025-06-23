@@ -6,13 +6,13 @@ export type MediaSessionOptions = {
   album: string;
   artwork?: string;
   duration: number;
-}
+};
 
 export type MediaSessionEvents = {
   onPlay?: () => void;
   onPause?: () => void;
   onSeek?: (time: number) => void;
-}
+};
 
 export function useMediaSession(
   options: Ref<MediaSessionOptions>,

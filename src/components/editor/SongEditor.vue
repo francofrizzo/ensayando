@@ -61,7 +61,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col">
+  <div class="flex h-screen flex-col">
     <div class="flex items-center justify-between p-2">
       <div role="tablist" class="tabs tabs-border tabs-xs">
         <a
@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="flex-1 min-h-0">
+    <div class="min-h-0 flex-1">
       <SongTab v-if="activeTab === 'song'" ref="songTabRef" />
       <LyricsTab v-if="activeTab === 'lyrics'" ref="lyricsTabRef" />
       <LyricsJsonTab v-if="activeTab === 'lyrics-json'" ref="lyricsJsonTabRef" />

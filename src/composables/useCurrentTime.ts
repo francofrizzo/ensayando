@@ -5,7 +5,7 @@ export type PlayerState = {
   totalDuration: Ref<number>;
   isPlaying: Ref<boolean>;
   isReady: ComputedRef<boolean>;
-}
+};
 
 const PLAYER_STATE_KEY: InjectionKey<PlayerState> = Symbol("player-state");
 

@@ -68,10 +68,10 @@ const keybindingGroups = computed(() => {
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
 
     <div
-      class="relative bg-base-100/60 backdrop-blur-sm rounded-lg shadow-xl border border-base-300 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto"
+      class="bg-base-100/60 border-base-300 relative mx-4 max-h-[80vh] w-full max-w-2xl overflow-auto rounded-lg border shadow-xl backdrop-blur-sm"
     >
       <div
-        class="sticky top-0 bg-base-100 border-b border-base-200 px-6 py-4 flex items-center justify-between"
+        class="bg-base-100 border-base-200 sticky top-0 flex items-center justify-between border-b px-6 py-4"
       >
         <h2 class="text-xl font-semibold">Atajos de teclado</h2>
         <button class="btn btn-sm btn-circle btn-ghost" @click="emit('close')">
@@ -79,16 +79,16 @@ const keybindingGroups = computed(() => {
         </button>
       </div>
 
-      <div class="p-6 space-y-6">
+      <div class="space-y-6 p-6">
         <div v-for="group in keybindingGroups" :key="group.category">
-          <h3 class="font-medium text-sm uppercase tracking-wide mb-3 text-primary">
+          <h3 class="text-primary mb-3 text-sm font-medium tracking-wide uppercase">
             {{ group.category }}
           </h3>
           <div class="space-y-2">
             <div
               v-for="item in group.items"
               :key="item.description"
-              class="flex justify-between items-center"
+              class="flex items-center justify-between"
             >
               <span>{{ item.description }}</span>
               <KeybindingDisplay :key-parts="item.keyParts" kbd-class="kbd-sm" />

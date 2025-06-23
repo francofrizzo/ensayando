@@ -4,7 +4,7 @@ import { useTeleportTarget } from "@/composables/useTeleportTarget";
 type Props = {
   to: string;
   disabled?: boolean;
-}
+};
 
 const props = withDefaults(defineProps<Props>(), {
   disabled: false

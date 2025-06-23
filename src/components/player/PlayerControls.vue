@@ -23,18 +23,18 @@ const copyTimeToClipboard = () => {
 <template>
   <div class="flex items-center gap-5 text-right tracking-wide tabular-nums">
     <div class="flex items-baseline">
-      <span class="text-base-content/90 text-xl cursor-default transition-colors">{{
+      <span class="text-base-content/90 cursor-default text-xl transition-colors">{{
         formatTime(props.currentTime)
       }}</span>
-      <span class="hidden sm:inline text-base-content/50 text-md cursor-default transition-colors"
+      <span class="text-base-content/50 text-md hidden cursor-default transition-colors sm:inline"
         >.{{ props.currentTime.toFixed(2).split(".")[1] }}</span
       >
 
-      <span class="hidden sm:inline text-base-content/70 text-xl mx-1">/</span>
-      <span class="hidden sm:inline text-base-content/50 cursor-default transition-colors">{{
+      <span class="text-base-content/70 mx-1 hidden text-xl sm:inline">/</span>
+      <span class="text-base-content/50 hidden cursor-default transition-colors sm:inline">{{
         formatTime(props.totalDuration)
       }}</span>
-      <span class="hidden sm:inline text-base-content/30 text-xs cursor-default transition-colors"
+      <span class="text-base-content/30 hidden cursor-default text-xs transition-colors sm:inline"
         >.{{ props.totalDuration.toFixed(2).split(".")[1] }}</span
       >
       <button
@@ -52,8 +52,8 @@ const copyTimeToClipboard = () => {
       aria-label="Play/Pause"
       @click="() => emit('play-pause')"
     >
-      <Pause v-if="props.isPlaying" class="w-5 h-5" />
-      <Play v-else class="w-5 h-5" />
+      <Pause v-if="props.isPlaying" class="h-5 w-5" />
+      <Play v-else class="h-5 w-5" />
     </button>
   </div>
 </template>

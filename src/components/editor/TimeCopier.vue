@@ -67,7 +67,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="bg-base-300 border border-base-200 rounded-box px-2 py-0.5 transition-all duration-300 text-sm"
+    class="bg-base-300 border-base-200 rounded-box border px-2 py-0.5 text-sm transition-all duration-300"
     :class="{
       'opacity-0': !isVisible,
       'scale-110': wasCopied
@@ -79,7 +79,7 @@ onUnmounted(() => {
       </span>
       <Check
         v-if="wasCopied"
-        class="text-success transition-all duration-300 w-4 h-4"
+        class="text-success h-4 w-4 transition-all duration-300"
         :class="{ 'opacity-100': wasCopied, 'opacity-0': !wasCopied }"
       />
     </div>

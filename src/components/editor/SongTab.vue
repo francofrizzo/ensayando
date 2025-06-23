@@ -446,12 +446,12 @@ defineExpose({
 </script>
 
 <template>
-  <div class="h-full flex flex-col pl-3 pr-2 overflow-y-auto">
-    <div class="flex-1 flex flex-col pt-2 pb-3 gap-4">
-      <div class="card bg-base-200 border border-base-300 shadow-sm">
+  <div class="flex h-full flex-col overflow-y-auto pr-2 pl-3">
+    <div class="flex flex-1 flex-col gap-4 pt-2 pb-3">
+      <div class="card bg-base-200 border-base-300 border shadow-sm">
         <div class="card-body p-5">
           <div class="flex items-start justify-between">
-            <h3 class="text-base-content font-medium uppercase tracking-wide">
+            <h3 class="text-base-content font-medium tracking-wide uppercase">
               Información básica
             </h3>
             <div class="form-control">
@@ -478,7 +478,7 @@ defineExpose({
                 <span class="label-text font-medium">Título</span>
               </label>
               <label
-                class="input input-bordered flex items-center gap-2 w-full"
+                class="input input-bordered flex w-full items-center gap-2"
                 :class="{ 'input-error': errors.title }"
               >
                 <Music class="size-4 opacity-70" />
@@ -507,7 +507,7 @@ defineExpose({
                 </button>
               </label>
               <label
-                class="input input-bordered flex items-center gap-2 w-full"
+                class="input input-bordered flex w-full items-center gap-2"
                 :class="{ 'input-error': errors.slug }"
               >
                 <Hash class="size-4 opacity-70" />
@@ -526,10 +526,10 @@ defineExpose({
         </div>
       </div>
 
-      <div class="card bg-base-200 border border-base-300 shadow-sm">
-        <div class="card-body p-5 gap-3">
+      <div class="card bg-base-200 border-base-300 border shadow-sm">
+        <div class="card-body gap-3 p-5">
           <div class="flex items-start justify-between">
-            <h3 class="text-base-content font-medium uppercase tracking-wide">Tracks de audio</h3>
+            <h3 class="text-base-content font-medium tracking-wide uppercase">Tracks de audio</h3>
             <button class="btn btn-square btn-sm btn-soft -mt-1" @click="addAudioTrack">
               <Plus class="size-3.5" />
               <span class="sr-only">Agregar track</span>
@@ -542,9 +542,9 @@ defineExpose({
 
           <div
             v-if="formData.audio_tracks.length === 0"
-            class="text-center py-8 text-base-content/60"
+            class="text-base-content/60 py-8 text-center"
           >
-            <Music class="size-8 mx-auto mb-2 opacity-50" />
+            <Music class="mx-auto mb-2 size-8 opacity-50" />
             <p>Aún no hay pistas de audio configuradas</p>
           </div>
 
@@ -552,10 +552,10 @@ defineExpose({
             <div
               v-for="track in tracksForRendering"
               :key="track.stableKey"
-              class="card bg-base-100 border border-base-300"
+              class="card bg-base-100 border-base-300 border"
             >
-              <div class="card-body p-4 flex flex-row items-center gap-3">
-                <div class="flex flex-col shrink-0 join join-vertical -ml-1 -my-1">
+              <div class="card-body flex flex-row items-center gap-3 p-4">
+                <div class="join join-vertical -my-1 -ml-1 flex shrink-0 flex-col">
                   <button
                     class="btn btn-xs btn-ghost btn-square join-item"
                     :disabled="track.renderIndex === 0"
@@ -603,7 +603,7 @@ defineExpose({
                   <div class="form-control flex-3">
                     <label class="label sr-only">URL del audio</label>
                     <label
-                      class="input input-bordered input-sm flex items-center gap-2 w-full"
+                      class="input input-bordered input-sm flex w-full items-center gap-2"
                       :class="{ 'input-error': errors.slug }"
                     >
                       <Link2 class="size-4 opacity-70" />

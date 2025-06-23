@@ -19,9 +19,9 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="flex items-center gap-2 text-xs min-w-0">
+  <div class="flex min-w-0 items-center gap-2 text-xs">
     <template v-if="authStore.isAuthenticated">
-      <div class="items-center gap-2 flex truncate text-ellipsis">
+      <div class="flex items-center gap-2 truncate text-ellipsis">
         <User class="size-4 shrink-0" />
         <span>{{ authStore.user?.email }}</span>
       </div>

@@ -471,9 +471,9 @@ const initializeAudioContext = async () => {
 
     <div class="drawer-content">
       <div
-        class="bg-base-200 flex h-dvh min-w-0 flex-col md:gap-3 lg:gap-4 md:p-3 lg:p-4 select-none overflow-hidden"
+        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
       >
-        <div class="p-3 md:p-0 md:pb-3 flex items-center justify-between gap-3 relative">
+        <div class="relative flex items-center justify-between gap-3 p-3 md:p-0 md:pb-3">
           <PlayerHeader
             :collection="collection"
             :song="song"
@@ -487,13 +487,13 @@ const initializeAudioContext = async () => {
             :edit-mode="uiStore.editMode"
             @play-pause="onPlayPause"
           />
-          <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-end">
+          <div class="absolute top-2 left-1/2 flex -translate-x-1/2 items-center justify-end">
             <TimeCopier :current-time="state.currentTime.value" />
           </div>
         </div>
 
-        <div v-if="lyrics.length > 0" class="flex-grow-1 overflow-auto snap-y px-10 relative">
-          <div class="bg-gradient-to-b from-base-200 to-transparent sticky inset-x-0 top-0 h-8" />
+        <div v-if="lyrics.length > 0" class="relative flex-grow-1 snap-y overflow-auto px-10">
+          <div class="from-base-200 sticky inset-x-0 top-0 h-8 bg-gradient-to-b to-transparent" />
           <LyricsViewer
             :lyrics="lyrics"
             :current-time="state.currentTime.value"
@@ -504,21 +504,21 @@ const initializeAudioContext = async () => {
           />
 
           <div
-            class="bg-gradient-to-t from-base-200 to-transparent sticky inset-x-0 bottom-0 h-8"
+            class="from-base-200 sticky inset-x-0 bottom-0 h-8 bg-gradient-to-t to-transparent"
           />
         </div>
-        <div v-else class="flex-grow-1 flex flex-col gap-4 p-10 items-center justify-center">
-          <MicVocal class="size-22 opacity-50 mb-4" />
-          <h2 class="text-2xl font-semibold text-base-content/80">Letra faltante</h2>
+        <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
+          <MicVocal class="mb-4 size-22 opacity-50" />
+          <h2 class="text-base-content/80 text-2xl font-semibold">Letra faltante</h2>
           <p class="text-base-content/40">La letra de esta canción todavía no está disponible.</p>
         </div>
 
         <div
-          class="relative border-t md:border border-base-300 md:rounded-box bg-base-100 shadow-sm transition-[max-height] duration-300"
+          class="border-base-300 md:rounded-box bg-base-100 relative border-t shadow-sm transition-[max-height] duration-300 md:border"
           :class="{ 'max-h-[45%]': tracksVisible, 'max-h-2': !tracksVisible }"
         >
           <div
-            class="h-full transition-all duration-300 overflow-y-auto p-3"
+            class="h-full overflow-y-auto p-3 transition-all duration-300"
             :class="{ 'opacity-0': !tracksVisible }"
           >
             <TrackPlayer
@@ -549,14 +549,14 @@ const initializeAudioContext = async () => {
           </div>
 
           <div
-            class="absolute inset-x-0 top-0 -mt-6 h-6 pointer-events-none flex justify-center z-10 cursor-pointer"
+            class="pointer-events-none absolute inset-x-0 top-0 z-10 -mt-6 flex h-6 cursor-pointer justify-center"
           >
             <button
-              class="p-2 pointer-events-auto bg-base-100 text-base-content/50 rounded-t-box w-16 flex items-center justify-center border-t border-r border-l border-base-300 cursor-pointer"
+              class="bg-base-100 text-base-content/50 rounded-t-box border-base-300 pointer-events-auto flex w-16 cursor-pointer items-center justify-center border-t border-r border-l p-2"
               @click="tracksVisible = !tracksVisible"
             >
               <ChevronDown
-                class="w-7 h-7 transition-transform duration-300"
+                class="h-7 w-7 transition-transform duration-300"
                 :class="{ 'rotate-180': !tracksVisible }"
               />
             </button>
@@ -564,10 +564,10 @@ const initializeAudioContext = async () => {
 
           <div
             v-if="!isReady"
-            class="absolute inset-0 z-10 bg-base-100/80 rounded-box flex gap-4 text-lg items-center justify-center text-base-content/50 select-none"
+            class="bg-base-100/80 rounded-box text-base-content/50 absolute inset-0 z-10 flex items-center justify-center gap-4 text-lg select-none"
           >
             <Loader2 class="size-6 animate-spin" />
-            <span class="uppercase tracking-wide">Cargando...</span>
+            <span class="tracking-wide uppercase">Cargando...</span>
           </div>
         </div>
       </div>
@@ -576,7 +576,7 @@ const initializeAudioContext = async () => {
     <div class="drawer-side z-50">
       <label for="song-editor-drawer" aria-label="Cerrar editor" class="drawer-overlay"></label>
       <div
-        class="bg-base-100/75 backdrop-blur-lg lg:bg-base-100 min-h-full w-full sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw] shadow-lg"
+        class="bg-base-100/75 lg:bg-base-100 min-h-full w-full shadow-lg backdrop-blur-lg sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
       >
         <SongEditor @toggle-edit="uiStore.toggleEditMode" />
       </div>

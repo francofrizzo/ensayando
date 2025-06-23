@@ -221,12 +221,12 @@ watch(
           <div
             v-for="(verse, verseIndex) in column"
             :key="`${stanzaIndex}-${lineIndex}-${columnIndex}-${verseIndex}`"
-            class="flex flex-col items-center text-left gap-1.5 snap-center"
+            class="flex snap-center flex-col items-center gap-1.5 text-left"
             @click="() => !isDisabled && verse.start_time && emit('seek', verse.start_time)"
           >
             <span
               v-if="verse.comment"
-              class="text-sm text-base-content/40 uppercase tracking-wide text-center"
+              class="text-base-content/40 text-center text-sm tracking-wide uppercase"
               >{{ verse.comment }}</span
             >
             <span
@@ -242,7 +242,7 @@ watch(
                 'font-semibold': verse.status === 'active',
                 'scale-[1.2]': verse.status === 'active'
               }"
-              class="transition-all transition-duration-500 uppercase tracking-wide text-center drop-shadow-xs dark:drop-shadow-none"
+              class="transition-duration-500 text-center tracking-wide uppercase drop-shadow-xs transition-all dark:drop-shadow-none"
               >{{ verse.text }}</span
             >
           </div>
