@@ -68,7 +68,7 @@ const getKeybindingParts = (commandId: string): string[] => {
 
 <template>
   <div
-    class="bg-base-100/50 border-base-content/10 rounded-box mx-3 flex flex-wrap justify-center gap-0.5 self-center border px-2 py-0.5 backdrop-blur-sm"
+    class="bg-base-100/50 border-base-content/10 rounded-box flex flex-wrap justify-center gap-0.5 border px-2 py-0.5 backdrop-blur-sm"
   >
     <!-- Line operations -->
     <div class="tooltip tooltip-bottom">

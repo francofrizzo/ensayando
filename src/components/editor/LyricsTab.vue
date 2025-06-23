@@ -266,22 +266,22 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex h-full min-w-0 flex-col gap-4 overflow-y-auto pr-2 pl-3">
-    <div class="sticky top-2 z-10 flex flex-col items-center gap-2">
-      <LyricsToolbar
-        :current-focus="currentFocus"
-        :command-registry="commandRegistry"
-        :current-verse-colors="currentVerseColors"
-        :available-colors="availableColors"
-        :on-colors-change="handleColorsChange"
-        :current-verse-audio-track-ids="currentVerseAudioTrackIds"
-        :available-audio-tracks="availableAudioTracks"
-        :on-audio-track-ids-change="handleAudioTrackIdsChange"
-        :copy-properties-to-mode="copyPropertiesToMode"
-        :show-timestamps="showTimestamps"
-        :on-toggle-timestamps="toggleTimestamps"
-      />
-    </div>
+  <div class="flex h-full min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto pr-2 pl-3">
+    <LyricsToolbar
+      class="sticky top-2 z-10 mx-3 self-center"
+      :current-focus="currentFocus"
+      :command-registry="commandRegistry"
+      :current-verse-colors="currentVerseColors"
+      :available-colors="availableColors"
+      :on-colors-change="handleColorsChange"
+      :current-verse-audio-track-ids="currentVerseAudioTrackIds"
+      :available-audio-tracks="availableAudioTracks"
+      :on-audio-track-ids-change="handleAudioTrackIdsChange"
+      :copy-properties-to-mode="copyPropertiesToMode"
+      :show-timestamps="showTimestamps"
+      :on-toggle-timestamps="toggleTimestamps"
+    />
+
     <div class="flex flex-1 flex-col pb-3">
       <div
         v-for="(stanza, i) in lyricsToDisplay"

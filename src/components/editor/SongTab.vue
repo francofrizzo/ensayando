@@ -572,7 +572,7 @@ defineExpose({
                   </button>
                 </div>
 
-                <div class="flex flex-1 flex-row gap-2">
+                <div class="flex flex-1 flex-row flex-wrap justify-end gap-2">
                   <div class="form-control">
                     <label class="label sr-only">Color</label>
                     <ColorPicker
@@ -589,7 +589,7 @@ defineExpose({
                     />
                   </div>
 
-                  <div class="form-control flex-1">
+                  <div class="form-control min-w-16 flex-1">
                     <label class="label sr-only">Título de la pista</label>
                     <input
                       :value="formData.audio_tracks[track.renderIndex]!.title"
@@ -600,7 +600,7 @@ defineExpose({
                     />
                   </div>
 
-                  <div class="form-control flex-3">
+                  <div class="form-control min-w-32 flex-3">
                     <label class="label sr-only">URL del audio</label>
                     <label
                       class="input input-bordered input-sm flex w-full items-center gap-2"
@@ -617,23 +617,25 @@ defineExpose({
                     </label>
                   </div>
 
-                  <AudioTrackUploader
-                    v-if="currentCollection"
-                    :track="formData.audio_tracks[track.renderIndex]!"
-                    :collection="currentCollection"
-                    :song="currentSong || { slug: formData.slug }"
-                    :disabled="!formData.slug && isCreateMode"
-                    @upload-start="handleUploadStart(track.renderIndex)"
-                    @upload-end="handleUploadEnd"
-                    @upload-success="(data: any) => handleUploadSuccess(track.renderIndex, data)"
-                  />
+                  <div class="flex gap-2">
+                    <AudioTrackUploader
+                      v-if="currentCollection"
+                      :track="formData.audio_tracks[track.renderIndex]!"
+                      :collection="currentCollection"
+                      :song="currentSong || { slug: formData.slug }"
+                      :disabled="!formData.slug && isCreateMode"
+                      @upload-start="handleUploadStart(track.renderIndex)"
+                      @upload-end="handleUploadEnd"
+                      @upload-success="(data: any) => handleUploadSuccess(track.renderIndex, data)"
+                    />
 
-                  <button
-                    class="btn btn-sm btn-error btn-soft btn-square shrink-0"
-                    @click="removeAudioTrack(track.renderIndex)"
-                  >
-                    <Trash2 class="size-3.5" />
-                  </button>
+                    <button
+                      class="btn btn-sm btn-error btn-soft btn-square shrink-0"
+                      @click="removeAudioTrack(track.renderIndex)"
+                    >
+                      <Trash2 class="size-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
