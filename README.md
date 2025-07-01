@@ -1,4 +1,4 @@
-# Ensayando
+# 🎤 Ensayando
 
 A web application for playing and editing multitrack songs with synchronized lyrics, designed especially for musical rehearsals and group practice.
 
