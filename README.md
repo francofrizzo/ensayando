@@ -1,39 +1,79 @@
-# multitrack-player
+# Ensayando
 
-This template should help get you started developing with Vue 3 in Vite.
+A web application for playing and editing multitrack songs with synchronized lyrics, designed especially for musical rehearsals and group practice.
 
-## Recommended IDE Setup
+## Features
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **Multitrack audio playback**: Listen to each instrument or voice separately with individual volume controls
+- **Synchronized lyrics**: Follow song lyrics with precise timing associated with each audio track
+- **Integrated editor**: Edit songs, add new audio tracks, and adjust lyrics directly in the application
+- **Collection organization**: Group your songs into themed collections with custom colors
+- **Advanced controls**: Mute, solo, and adjust volume for each track independently
 
-## Type Support for `.vue` Imports in TS
+## Development Environment Setup
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+### Prerequisites
 
-## Customize configuration
+- Node.js 20 or higher
+- npm or yarn
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
+### Installation
 
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Local Development
 
 ```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+### Production Build
 
 ```sh
 npm run build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### Type Checking and Linting
 
 ```sh
+npm run type-check
 npm run lint
 ```
+
+## Technologies Used
+
+- **Vue 3** with Composition API and TypeScript
+- **Vite** as bundler and development server
+- **Tailwind CSS** + **DaisyUI** for the interface
+- **Supabase** for authentication and storage
+- **WaveSurfer** for audio visualization and control
+- **Pinia** for state management
+- **Vue Router** for navigation
+
+## IDE Setup
+
+We recommend using [Cursor](https://cursor.sh/) with the [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) extension for the best TypeScript support in `.vue` files. The extension provides comprehensive Vue 3 and TypeScript integration.
+
+## Project Structure
+
+```
+src/
+├── components/           # Reusable components
+│   ├── auth/            # Authentication
+│   ├── editor/          # Song and lyrics editor
+│   ├── lyrics/          # Lyrics display
+│   ├── navigation/      # Navigation and menus
+│   ├── player/          # Multitrack player
+│   └── ui/              # UI components
+├── composables/         # Reusable Vue logic
+├── data/               # Data types and schemas
+├── stores/             # Global state with Pinia
+├── utils/              # Utilities and helpers
+└── views/              # Main pages
+```
+
+## License
+
+This project is for private use.
