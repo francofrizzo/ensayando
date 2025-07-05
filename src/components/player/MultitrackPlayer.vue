@@ -260,6 +260,11 @@ onUnmounted(() => {
 // UI/Visual related state
 const tracksVisible = ref(true);
 
+// PWA detection
+const isPWA = computed(() => {
+  return window.matchMedia("(display-mode: standalone)").matches;
+});
+
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
 const syncInterval = ref<number | null>(null);
@@ -515,7 +520,7 @@ const initializeAudioContext = async () => {
 
         <div
           class="border-base-300 md:rounded-box bg-base-100 relative border-t shadow-sm transition-[max-height] duration-300 md:border"
-          :class="{ 'max-h-[45%]': tracksVisible, 'max-h-2': !tracksVisible }"
+          :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
         >
           <div
             class="h-full overflow-y-auto p-3 transition-all duration-300"

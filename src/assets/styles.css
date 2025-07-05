@@ -81,12 +81,20 @@
   --noise: 0;
 }
 
-@source inline("{bg,text,border,from,to,via}-{red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,pastelrose,pastelsky,pastelyellow,zinc}-{400,500,600}");
-
 @import "./json-editor.css";
 
 body {
   @apply selection:bg-base-content/10;
+}
+
+/* Handle safe areas for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 @layer utilities {
