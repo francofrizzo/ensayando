@@ -160,6 +160,15 @@ const onPlayPause = async (forcePlay?: boolean) => {
     return;
   }
 
+  // Check if audio context is suspended and prevent playback
+  if (
+    audioContext.value?.state === "suspended" &&
+    (forcePlay === true || forcePlay === undefined)
+  ) {
+    handleAudioError(new Error("Cannot start playback: audio context is suspended"), "onPlayPause");
+    return;
+  }
+
   // Initialize audio context for WebAudio API user gesture requirement
   if (!hasInitializedAudio.value) {
     try {
@@ -244,6 +253,15 @@ onUnmounted(() => {
     handleAudioError(error as Error, "cleanupMediaSession");
   }
 
+  try {
+    cleanupAudioInterruptionListeners();
+  } catch (error) {
+    handleAudioError(error as Error, "cleanupAudioInterruptionListeners");
+  }
+
+  // Clean up audio context reference
+  audioContext.value = null;
+
   if (silentAudio.value) {
     try {
       silentAudio.value.pause();
@@ -272,6 +290,7 @@ const SYNC_CHECK_INTERVAL = 1000;
 const DRIFT_THRESHOLD = 0.05;
 const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
+const audioContext = ref<AudioContext | null>(null);
 
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
@@ -332,6 +351,23 @@ watch(
       startSyncCheck();
     } else {
       stopSyncCheck();
+    }
+  }
+);
+
+watch(
+  () => isReady.value,
+  (ready) => {
+    if (ready && !audioContext.value) {
+      // Set audio context reference from first track for interruption detection
+      const firstTrack = trackPlayers.value[0];
+      if (firstTrack?.waveSurfer) {
+        const ws = firstTrack.waveSurfer as any;
+        if (ws.backend?.audioContext) {
+          audioContext.value = ws.backend.audioContext;
+          setupAudioInterruptionListeners();
+        }
+      }
     }
   }
 );
@@ -401,6 +437,45 @@ watch(
 const handleAudioError = (error: Error, context: string) => {
   console.error(`Audio error in ${context}:`, error);
   // Don't throw, just log to prevent crashes
+};
+
+const handleAudioInterruption = () => {
+  if (state.playing.value) {
+    state.playing.value = false;
+  }
+};
+
+const setupAudioInterruptionListeners = () => {
+  try {
+    // iOS suspends audio context during screen lock, causing stuck playback state
+    if (audioContext.value) {
+      audioContext.value.addEventListener("statechange", () => {
+        if (audioContext.value?.state === "suspended") {
+          handleAudioInterruption();
+        }
+      });
+    }
+
+    // Mobile browsers don't always trigger audio context suspension on screen lock
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        handleAudioInterruption();
+      }
+    });
+  } catch (error) {
+    handleAudioError(error as Error, "setupAudioInterruptionListeners");
+  }
+};
+
+const cleanupAudioInterruptionListeners = () => {
+  try {
+    if (audioContext.value) {
+      audioContext.value.removeEventListener("statechange", handleAudioInterruption);
+    }
+    document.removeEventListener("visibilitychange", handleAudioInterruption);
+  } catch (error) {
+    handleAudioError(error as Error, "cleanupAudioInterruptionListeners");
+  }
 };
 
 const initializeAudioContext = async () => {
