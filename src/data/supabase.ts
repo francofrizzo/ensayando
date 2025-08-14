@@ -51,8 +51,9 @@ export const fetchSongsByCollectionId = async (
   return await supabase
     .from("songs")
     .select("*, audio_tracks(*)")
-    .order("id", { ascending: true })
-    .eq("collection_id", collectionId);
+    .eq("collection_id", collectionId)
+    .order("order", { ascending: true, nullsFirst: false })
+    .order("id", { ascending: true });
 };
 
 export const updateSongBasicInfo = async (

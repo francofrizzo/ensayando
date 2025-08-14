@@ -15,19 +15,19 @@
   "dependencies": {
     "@meersagor/wavesurfer-vue": "^0.1.0",
     "@supabase/supabase-js": "^2.50.0",
-    "@tailwindcss/vite": "^4.1.10",
     "@vercel/analytics": "^1.5.0",
     "culori": "^4.0.1",
     "daisyui": "^5.0.43",
     "lucide-vue-next": "^0.483.0",
     "pinia": "^2.3.1",
     "vanilla-jsoneditor": "^3.5.0",
-    "vue": "^3.5.13",
     "vue-router": "^4.5.0",
-    "vue-sonner": "^2.0.0"
+    "vue-sonner": "^2.0.0",
+    "vue": "^3.5.13"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.8.0",
+    "@tailwindcss/vite": "^4.1.10",
     "@tsconfig/node20": "^20.1.4",
     "@types/culori": "^4.0.0",
     "@types/node": "^20.12.5",
@@ -36,18 +36,18 @@
     "@vue/eslint-config-typescript": "^13.0.0",
     "@vue/tsconfig": "^0.5.1",
     "autoprefixer": "^10.4.19",
-    "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.23.0",
+    "eslint": "^8.57.0",
     "npm-run-all2": "^6.1.2",
     "postcss": "^8.4.38",
-    "prettier": "^3.6.0",
     "prettier-plugin-tailwindcss": "^0.6.13",
+    "prettier": "^3.6.0",
     "sass": "^1.77.6",
     "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3",
-    "vite": "^5.2.8",
     "vite-plugin-pwa": "^1.0.1",
     "vite-plugin-vue-devtools": "^7.0.25",
+    "vite": "^5.2.8",
     "vue-tsc": "^2.0.11"
   }
 }
