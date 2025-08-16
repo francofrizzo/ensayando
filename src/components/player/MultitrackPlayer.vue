@@ -596,7 +596,7 @@ const initializeAudioContext = async () => {
           :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
         >
           <div
-            class="h-full overflow-y-auto p-3 transition-all duration-300"
+            class="md:rounded-box h-full overflow-y-auto transition-all duration-300"
             :class="{ 'opacity-0': !tracksVisible }"
           >
             <TrackPlayer
@@ -607,6 +607,7 @@ const initializeAudioContext = async () => {
                   if (el) trackPlayers[index] = el;
                 }
               "
+              class="pl-4 first:pt-2 last:pb-2"
               :track="track"
               :collection="collection"
               :is-playing="state.playing.value"

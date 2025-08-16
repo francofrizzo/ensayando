@@ -91,9 +91,9 @@ const waveSurferColorScheme = computed(() => {
 
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
   return {
-    height: 60,
+    height: 64,
     barGap: 2,
-    barWidth: 2,
+    barWidth: 3,
     barRadius: 8,
     dragToSeek: true,
     backend: "WebAudio",
@@ -213,7 +213,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex w-full items-stretch gap-2">
+  <div
+    class="from-primary/10 flex w-full items-stretch gap-2 bg-linear-to-r to-[120px]"
+    :style="{ '--color-primary': color }"
+  >
     <div class="flex w-20 min-w-0 flex-shrink-0 flex-row gap-1 sm:w-24 lg:w-32 xl:w-36">
       <div
         class="flex w-full min-w-0 flex-grow-1 flex-col items-stretch justify-between gap-3 py-2"
@@ -232,8 +235,7 @@ onUnmounted(() => {
           min="0"
           max="1"
           step="0.01"
-          :style="{ color }"
-          class="range range-xs"
+          class="range range-xs range-primary"
           @input="
             (event: Event) =>
               handleVolumeChange(parseFloat((event.target as HTMLInputElement).value))
@@ -244,16 +246,14 @@ onUnmounted(() => {
         <button
           v-if="props.hasLyrics"
           :disabled="!isReady"
-          class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
-          :style="{ color: props.lyricsEnabled ? trackColor : disabledColor }"
+          class="btn btn-circle btn-sm btn-ghost text-primary flex-shrink-0"
           @click="handleLyricsButtonClick"
         >
           <MicVocal class="h-4 w-4" />
         </button>
         <button
           :disabled="!isReady"
-          class="btn btn-circle btn-sm btn-ghost flex-shrink-0"
-          :style="{ color }"
+          class="btn btn-circle btn-sm btn-ghost text-primary flex-shrink-0"
           @click="handleMuteButtonClick"
           @touchstart="handleMuteButtonTouchStart"
           @touchend="handleMuteButtonTouchEnd"
@@ -264,7 +264,7 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-    <div class="w-full p-0">
+    <div class="h-2 w-full p-0">
       <WaveSurferPlayer
         :options="waveSurferOptions"
         @interaction="(time: number) => emit('seek', time)"
