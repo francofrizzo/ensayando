@@ -16,6 +16,8 @@ const error = ref("");
 const isSignUp = ref(false);
 const successMessage = ref("");
 
+const isSignUpEnabled = false;
+
 onMounted(() => {
   // no-op; form is inline
 });
@@ -92,7 +94,7 @@ const switchMode = (signUp: boolean) => {
       </div>
 
       <div class="bg-base-200/80 rounded-box p-4 shadow-lg sm:p-8">
-        <div role="tablist" class="tabs tabs-box w-full">
+        <div v-if="isSignUpEnabled" role="tablist" class="tabs tabs-box mb-8 w-full">
           <button
             role="tab"
             class="tab flex-1"
@@ -113,7 +115,7 @@ const switchMode = (signUp: boolean) => {
           </button>
         </div>
 
-        <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
+        <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
           <label class="floating-label input input-bordered w-full">
             <Mail class="size-4" />
             <span>Email</span>
