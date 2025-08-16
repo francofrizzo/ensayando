@@ -580,7 +580,6 @@ const initializeAudioContext = async () => {
             :is-disabled="!isReady"
             :collection="collection"
             :enabled-track-ids="trackIdsWithLyricsEnabled"
-            class="px-10"
             @seek="onSeekToTime"
           />
           <div class="to-base-200/80 sticky inset-0 h-[32px] bg-gradient-to-b from-transparent" />

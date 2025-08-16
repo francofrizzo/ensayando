@@ -198,7 +198,7 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 text-xl">
+  <div class="flex flex-col gap-6">
     <div
       v-for="(stanza, stanzaIndex) in regularizedLyrics"
       :key="stanzaIndex"
@@ -207,10 +207,14 @@ watch(
       <div
         v-for="(line, lineIndex) in stanza"
         :key="`${stanzaIndex}-${lineIndex}`"
-        class="flex flex-row items-center justify-evenly gap-10"
+        class="flex flex-row items-center justify-evenly"
         :class="{
           'cursor-pointer': !isDisabled && line.start_time,
-          'cursor-default': isDisabled
+          'cursor-default': isDisabled,
+          'gap-10 px-10 text-xl tracking-wide': line.columns.length < 3,
+          'gap-4 px-4 text-base tracking-tight sm:gap-6 sm:px-6 sm:tracking-normal md:px-10 md:text-xl md:tracking-wide':
+            line.columns.length >= 3,
+          'text-sm sm:text-base': line.columns.length >= 4
         }"
       >
         <div
@@ -224,11 +228,9 @@ watch(
             class="flex snap-center flex-col items-center gap-1.5 text-left"
             @click="() => !isDisabled && verse.start_time && emit('seek', verse.start_time)"
           >
-            <span
-              v-if="verse.comment"
-              class="text-base-content/40 text-center text-sm tracking-wide uppercase"
-              >{{ verse.comment }}</span
-            >
+            <span v-if="verse.comment" class="text-base-content/40 text-center text-sm uppercase">{{
+              verse.comment
+            }}</span>
             <span
               :ref="
                 (el: any) => {
@@ -242,7 +244,7 @@ watch(
                 'font-semibold': verse.status === 'active',
                 'scale-[1.2]': verse.status === 'active'
               }"
-              class="transition-duration-500 text-center tracking-wide uppercase drop-shadow-xs transition-all dark:drop-shadow-none"
+              class="transition-duration-500 text-center uppercase drop-shadow-xs transition-all dark:drop-shadow-none"
               >{{ verse.text }}</span
             >
           </div>
