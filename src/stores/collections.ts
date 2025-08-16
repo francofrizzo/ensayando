@@ -134,6 +134,17 @@ export const useCollectionsStore = defineStore("collections", () => {
     return isLoadingCollections.value || isLoadingSongs.value;
   });
 
+  function reset() {
+    collections.value = [];
+    songs.value = [];
+    isLoadingCollections.value = false;
+    isLoadingSongs.value = false;
+    songsCollectionId.value = null;
+    localLyrics.value.value = [];
+    localLyrics.isDirty.value = false;
+    localLyrics.isSaving.value = false;
+  }
+
   return {
     collections,
     songs: visibleSongs,
@@ -147,6 +158,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     updateLocalLyrics,
     saveLyrics,
     currentUserRole,
-    canEditCurrentCollection
+    canEditCurrentCollection,
+    reset
   };
 });

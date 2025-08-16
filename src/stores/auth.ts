@@ -3,14 +3,25 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import * as supabase from "@/data/supabase";
+import { useCollectionsStore } from "@/stores/collections";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
+  const lastUserId = ref<string | null>(null);
 
   const isAuthenticated = computed(() => {
     return user.value !== null;
   });
+
+  const handleAuthChange = (newUser: User | null) => {
+    const collectionsStore = useCollectionsStore();
+    const newUserId = newUser?.id ?? null;
+    if (newUserId !== lastUserId.value) {
+      collectionsStore.reset();
+      lastUserId.value = newUserId;
+    }
+  };
 
   const initAuth = async () => {
     isLoading.value = true;
@@ -18,8 +29,10 @@ export const useAuthStore = defineStore("auth", () => {
       data: { session }
     } = await supabase.getSession();
     user.value = session?.user ?? null;
+    handleAuthChange(user.value);
     supabase.onAuthStateChange((event, session) => {
       user.value = session?.user ?? null;
+      handleAuthChange(user.value);
     });
     isLoading.value = false;
   };
