@@ -13,7 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+  <div class="flex min-w-0 items-center gap-3 to-transparent sm:gap-4">
     <SongMenu :collection="props.collection" class="shrink-0" @toggle-edit="emit('toggle-edit')" />
 
     <div class="flex min-w-0 flex-col gap-1 tracking-wide">

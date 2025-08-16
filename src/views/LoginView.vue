@@ -80,10 +80,19 @@ const switchMode = (signUp: boolean) => {
 </script>
 
 <template>
-  <div class="bg-base-200 flex min-h-dvh items-center justify-center p-4">
-    <div class="bg-base-100 text-base-content rounded-box w-full max-w-md p-6 shadow">
-      <div class="flex items-center justify-between gap-6">
-        <div role="tablist" class="tabs tabs-box tabs-sm grow-1">
+  <div
+    class="bg-base-200 from-primary/15 to-secondary/8 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
+  >
+    <div class="w-full max-w-md">
+      <div class="mb-8 text-center">
+        <div class="mb-3 flex justify-center">
+          <img src="/pwa-512x512.png" alt="Ensayando" class="h-16 w-16" />
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight">Ensayando</h1>
+      </div>
+
+      <div class="bg-base-200/80 rounded-box p-4 shadow-lg sm:p-8">
+        <div role="tablist" class="tabs tabs-box w-full">
           <button
             role="tab"
             class="tab flex-1"
@@ -100,58 +109,60 @@ const switchMode = (signUp: boolean) => {
             :disabled="isLoading"
             @click="switchMode(true)"
           >
-            Crear una cuenta
+            Crear cuenta
           </button>
         </div>
-      </div>
 
-      <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
-        <label class="floating-label input w-full">
-          <Mail class="size-4" />
-          <span>Email</span>
-          <input
-            v-model="email"
-            type="email"
-            placeholder="Email"
-            :disabled="isLoading"
-            @keydown="handleKeydown"
-          />
-        </label>
+        <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
+          <label class="floating-label input input-bordered w-full">
+            <Mail class="size-4" />
+            <span>Email</span>
+            <input
+              v-model="email"
+              type="email"
+              placeholder="Email"
+              :disabled="isLoading"
+              @keydown="handleKeydown"
+            />
+          </label>
 
-        <label class="floating-label input w-full">
-          <Key class="size-4" />
-          <span>Contraseña</span>
-          <input
-            v-model="password"
-            type="password"
-            placeholder="Contraseña"
-            :disabled="isLoading"
-            @keydown="handleKeydown"
-          />
-        </label>
+          <label class="floating-label input input-bordered w-full">
+            <Key class="size-4" />
+            <span>Contraseña</span>
+            <input
+              v-model="password"
+              type="password"
+              placeholder="Contraseña"
+              :disabled="isLoading"
+              @keydown="handleKeydown"
+            />
+          </label>
 
-        <div v-if="error" class="alert alert-error">
-          <span class="text-sm">{{ error }}</span>
-        </div>
+          <div v-if="error" class="alert alert-error">
+            <span class="text-sm">{{ error }}</span>
+          </div>
 
-        <div v-if="successMessage" class="alert alert-success">
-          <span class="text-sm">{{ successMessage }}</span>
-        </div>
+          <div v-if="successMessage" class="alert alert-success">
+            <span class="text-sm">{{ successMessage }}</span>
+          </div>
 
-        <div class="mt-4 flex justify-end gap-3">
-          <button type="submit" class="btn btn-primary" :disabled="isLoading">
+          <button
+            type="submit"
+            class="btn btn-primary btn-block mt-4"
+            :disabled="isLoading || !email || !password"
+          >
             <template v-if="isLoading">
-              <span class="loading loading-spinner loading-xs"></span>
-              <span>{{ isSignUp ? "Creando..." : "Iniciando..." }}</span>
+              <span class="loading loading-spinner loading-sm"></span>
+              {{ isSignUp ? "Creando cuenta..." : "Iniciando sesión..." }}
             </template>
             <template v-else>
-              <UserPlus v-if="isSignUp" class="size-4" />
-              <LogIn v-else class="size-4" />
-              <span>{{ isSignUp ? "Crear cuenta" : "Iniciar sesión" }}</span>
+              <UserPlus v-if="isSignUp" class="h-5 w-5" />
+              <LogIn v-else class="h-5 w-5" />
+              {{ isSignUp ? "Crear cuenta" : "Iniciar sesión" }}
             </template>
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 </template>

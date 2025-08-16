@@ -572,20 +572,18 @@ const initializeAudioContext = async () => {
           </div>
         </div>
 
-        <div v-if="lyrics.length > 0" class="relative flex-grow-1 snap-y overflow-auto px-10">
-          <div class="from-base-200 sticky inset-x-0 top-0 h-8 bg-gradient-to-b to-transparent" />
+        <div v-if="lyrics.length > 0" class="relative flex-grow-1 snap-y overflow-auto">
+          <div class="from-base-200/80 sticky inset-0 h-[32px] bg-gradient-to-b to-transparent" />
           <LyricsViewer
             :lyrics="lyrics"
             :current-time="state.currentTime.value"
             :is-disabled="!isReady"
             :collection="collection"
             :enabled-track-ids="trackIdsWithLyricsEnabled"
+            class="px-10"
             @seek="onSeekToTime"
           />
-
-          <div
-            class="from-base-200 sticky inset-x-0 bottom-0 h-8 bg-gradient-to-t to-transparent"
-          />
+          <div class="to-base-200/80 sticky inset-0 h-[32px] bg-gradient-to-b from-transparent" />
         </div>
         <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
           <MicVocal class="mb-4 size-22 opacity-50" />
