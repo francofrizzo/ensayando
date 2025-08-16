@@ -4,8 +4,6 @@ import { computed } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 
 import SongMenu from "@/components/navigation/SongMenu.vue";
-import { useCurrentCollection } from "@/composables/useCurrentCollection";
-import { useCollectionsStore } from "@/stores/collections";
 
 type Props = {
   type: "not-found" | "collection-not-found" | "song-not-found" | "no-collections" | "no-songs";
@@ -49,18 +47,12 @@ const config = {
 const icon = computed(() => config[props.type].icon);
 const title = computed(() => config[props.type].title);
 const message = computed(() => config[props.type].message);
-
-const collectionsStore = useCollectionsStore();
-const { currentCollection } = useCurrentCollection();
-const menuCollection = computed(
-  () => currentCollection.value || collectionsStore.collections[0] || null
-);
 </script>
 
 <template>
   <div class="relative min-h-dvh">
-    <div v-if="menuCollection" class="fixed top-3 left-3 z-50 lg:top-4 lg:left-4">
-      <SongMenu :collection="menuCollection" />
+    <div class="fixed top-3 left-3 z-50 lg:top-4 lg:left-4">
+      <SongMenu />
     </div>
 
     <div class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col">

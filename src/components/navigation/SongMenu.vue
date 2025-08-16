@@ -3,13 +3,9 @@ import { Edit, LockKeyhole, Menu, Music, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
 import AuthStatus from "@/components/auth/AuthStatus.vue";
+import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
-import type { CollectionWithRole } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
-
-const props = defineProps<{
-  collection: CollectionWithRole;
-}>();
 
 const emit = defineEmits<{
   (e: "toggle-edit"): void;
@@ -18,6 +14,7 @@ const emit = defineEmits<{
 const isOpen = ref(false);
 
 const collectionsStore = useCollectionsStore();
+const { currentCollection } = useCurrentCollection();
 const { currentSong } = useCurrentSong();
 
 const songMenuItems = computed(() => {
@@ -26,7 +23,7 @@ const songMenuItems = computed(() => {
 
 const otherCollectionMenuItems = computed(() => {
   return collectionsStore.collections.filter(
-    (collection) => collection.slug !== props.collection.slug
+    (collection) => collection.slug !== currentCollection.value?.slug
   );
 });
 </script>
@@ -44,12 +41,12 @@ const otherCollectionMenuItems = computed(() => {
         <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="flex min-h-full w-80 lg:p-3">
           <div
-            class="bg-base-100/75 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
+            class="to-base-100/75 from-primary/15 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border bg-linear-to-t px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
           >
-            <div class="flex flex-col gap-2">
+            <div v-if="currentCollection" class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-2 pr-3 pl-5">
                 <span class="text-base-content/60 font-medium tracking-wide uppercase">{{
-                  collection.title
+                  currentCollection?.title
                 }}</span>
                 <div class="flex items-center gap-2">
                   <button
@@ -73,7 +70,7 @@ const otherCollectionMenuItems = computed(() => {
                     :to="{
                       name: 'song',
                       params: {
-                        collectionSlug: collection.slug,
+                        collectionSlug: currentCollection?.slug,
                         songSlug: song.slug
                       }
                     }"
