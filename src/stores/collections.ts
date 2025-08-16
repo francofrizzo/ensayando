@@ -3,12 +3,11 @@ import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import * as supabase from "@/data/supabase";
-import type { Collection, LyricStanza, Song } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
+import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 
 export const useCollectionsStore = defineStore("collections", () => {
   // Data state
-  const collections = ref<Collection[]>([]);
+  const collections = ref<CollectionWithRole[]>([]);
   const songs = ref<Song[]>([]);
   const isLoadingCollections = ref(false);
   const isLoadingSongs = ref(false);
@@ -23,22 +22,29 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   // Route-reactive computed properties
   const route = useRoute();
-  const authStore = useAuthStore();
 
-  // Filtered collections based on authentication
-  const visibleCollections = computed(() => {
-    return collections.value.filter((c) => authStore.isAuthenticated || c.visible !== false);
+  // Role and permissions for the current collection (derived from route)
+  const currentUserRole = computed(() => {
+    const slug = route.params.collectionSlug as string;
+    if (!slug) return null;
+    const col = collections.value.find((c) => c.slug === slug);
+    return col?.user_role ?? null;
   });
 
-  // Filtered songs based on authentication
+  const canEditCurrentCollection = computed(() => {
+    return currentUserRole.value === "admin" || currentUserRole.value === "editor";
+  });
+
+  // Filter songs: editors see all, viewers only visible ones
   const visibleSongs = computed(() => {
-    return songs.value.filter((s) => authStore.isAuthenticated || s.visible !== false);
+    if (canEditCurrentCollection.value) return songs.value;
+    return songs.value.filter((s) => s.visible !== false);
   });
 
   const currentCollection = computed(() => {
     const slug = route.params.collectionSlug as string;
     if (!slug) return null;
-    return visibleCollections.value.find((c) => c.slug === slug) || null;
+    return collections.value.find((c) => c.slug === slug) || null;
   });
 
   const currentSong = computed(() => {
@@ -129,7 +135,7 @@ export const useCollectionsStore = defineStore("collections", () => {
   });
 
   return {
-    collections: visibleCollections,
+    collections,
     songs: visibleSongs,
     currentCollection,
     currentSong,
@@ -139,6 +145,8 @@ export const useCollectionsStore = defineStore("collections", () => {
     fetchSongsByCollectionId,
     localLyrics,
     updateLocalLyrics,
-    saveLyrics
+    saveLyrics,
+    currentUserRole,
+    canEditCurrentCollection
   };
 });

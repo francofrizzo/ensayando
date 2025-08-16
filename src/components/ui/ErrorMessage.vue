@@ -3,6 +3,10 @@ import { Rabbit, Search } from "lucide-vue-next";
 import { computed } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 
+import SongMenu from "@/components/navigation/SongMenu.vue";
+import { useCurrentCollection } from "@/composables/useCurrentCollection";
+import { useCollectionsStore } from "@/stores/collections";
+
 type Props = {
   type: "not-found" | "collection-not-found" | "song-not-found" | "no-collections" | "no-songs";
   backLink?: {
@@ -45,17 +49,29 @@ const config = {
 const icon = computed(() => config[props.type].icon);
 const title = computed(() => config[props.type].title);
 const message = computed(() => config[props.type].message);
+
+const collectionsStore = useCollectionsStore();
+const { currentCollection } = useCurrentCollection();
+const menuCollection = computed(
+  () => currentCollection.value || collectionsStore.collections[0] || null
+);
 </script>
 
 <template>
-  <div
-    class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col items-center justify-center gap-4 text-center"
-  >
-    <component :is="icon" class="mb-4 size-22 opacity-50" />
-    <h2 class="text-base-content/80 text-2xl font-semibold">{{ title }}</h2>
-    <p class="text-base-content/40">{{ message }}</p>
-    <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary">
-      {{ backLink.text }}
-    </router-link>
+  <div class="relative min-h-dvh">
+    <div v-if="menuCollection" class="fixed top-3 left-3 z-50 lg:top-4 lg:left-4">
+      <SongMenu :collection="menuCollection" />
+    </div>
+
+    <div class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col">
+      <div class="flex flex-grow-1 flex-col items-center justify-center gap-4 text-center">
+        <component :is="icon" class="mb-4 size-22 opacity-50" />
+        <h2 class="text-base-content/80 text-2xl font-semibold">{{ title }}</h2>
+        <p class="text-base-content/40">{{ message }}</p>
+        <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary">
+          {{ backLink.text }}
+        </router-link>
+      </div>
+    </div>
   </div>
 </template>

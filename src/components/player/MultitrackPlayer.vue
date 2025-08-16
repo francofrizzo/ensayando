@@ -10,11 +10,11 @@ import PlayerHeader from "@/components/player/PlayerHeader.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
-import type { Collection, LyricStanza, Song } from "@/data/types";
+import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
 
 const props = defineProps<{
-  collection: Collection;
+  collection: CollectionWithRole;
   song: Song;
   lyrics: LyricStanza[];
 }>();

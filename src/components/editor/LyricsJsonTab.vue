@@ -7,11 +7,9 @@ import { toast } from "vue-sonner";
 import JsonEditor from "@/components/editor/JsonEditor.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import lyricSchema from "@/data/lyric-schema.json";
-import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
-const authStore = useAuthStore();
 const { saveLyrics, updateLocalLyrics } = store;
 
 const hasValidationErrors = ref(false);
@@ -27,7 +25,7 @@ const initialContent = {
 
 const isSaveDisabled = computed(() => {
   return (
-    !authStore.isAuthenticated ||
+    !store.canEditCurrentCollection ||
     !store.localLyrics.isDirty ||
     store.localLyrics.isSaving ||
     hasValidationErrors.value

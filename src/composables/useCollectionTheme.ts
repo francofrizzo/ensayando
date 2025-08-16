@@ -1,10 +1,10 @@
 import { computed, type ComputedRef, type Ref } from "vue";
 
-import type { Collection } from "@/data/types";
+import type { CollectionWithRole } from "@/data/types";
 import { selectMostContrasting } from "@/utils/color-utils";
 
 export function useCollectionTheme(
-  collection: ComputedRef<Collection | null> | Ref<Collection | null>
+  collection: ComputedRef<CollectionWithRole | null> | Ref<CollectionWithRole | null>
 ) {
   const themeVariables = computed(() => {
     if (!collection.value) return {};

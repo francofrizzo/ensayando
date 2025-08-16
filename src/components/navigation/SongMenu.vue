@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { Edit, LockKeyhole, Menu, X } from "lucide-vue-next";
+import { Edit, LockKeyhole, Menu, Music, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
 import AuthStatus from "@/components/auth/AuthStatus.vue";
 import { useCurrentSong } from "@/composables/useCurrentSong";
-import type { Collection } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
+import type { CollectionWithRole } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
 
 const props = defineProps<{
-  collection: Collection;
+  collection: CollectionWithRole;
 }>();
 
 const emit = defineEmits<{
@@ -20,7 +19,6 @@ const isOpen = ref(false);
 
 const collectionsStore = useCollectionsStore();
 const { currentSong } = useCurrentSong();
-const authStore = useAuthStore();
 
 const songMenuItems = computed(() => {
   return collectionsStore.songs;
@@ -53,11 +51,23 @@ const otherCollectionMenuItems = computed(() => {
                 <span class="text-base-content/60 font-medium tracking-wide uppercase">{{
                   collection.title
                 }}</span>
-                <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
-                  <X class="size-4" />
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    v-if="collectionsStore.canEditCurrentCollection"
+                    class="btn btn-circle btn-soft btn-sm"
+                    @click="
+                      emit('toggle-edit');
+                      isOpen = false;
+                    "
+                  >
+                    <Edit class="size-4" />
+                  </button>
+                  <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
+                    <X class="size-4" />
+                  </button>
+                </div>
               </div>
-              <ul class="menu w-full">
+              <ul v-if="songMenuItems.length > 0" class="menu w-full">
                 <li v-for="song in songMenuItems" :key="song.id">
                   <router-link
                     :to="{
@@ -77,6 +87,14 @@ const otherCollectionMenuItems = computed(() => {
                   </router-link>
                 </li>
               </ul>
+              <div v-else class="px-5">
+                <div
+                  class="text-base-content/60 rounded-box bg-base-100/70 my-3 flex items-center gap-2 px-3 py-2 text-sm"
+                >
+                  <Music class="size-3.5 opacity-60" />
+                  <span class="italic">Esta colección no tiene canciones</span>
+                </div>
+              </div>
             </div>
             <div v-if="otherCollectionMenuItems.length > 0" class="flex flex-col gap-2">
               <span class="text-base-content/60 px-5 text-sm font-medium tracking-wide uppercase"
@@ -93,7 +111,6 @@ const otherCollectionMenuItems = computed(() => {
                     }"
                     @click="isOpen = false"
                   >
-                    <LockKeyhole v-if="!otherCollection.visible" class="text-primary size-3" />
                     {{ otherCollection.title }}
                   </router-link>
                 </li>
@@ -101,17 +118,7 @@ const otherCollectionMenuItems = computed(() => {
             </div>
             <div class="flex-grow-1" />
             <div class="flex items-center justify-between gap-2 pr-3 pl-4 opacity-60">
-              <AuthStatus class="grow-0" />
-              <button
-                v-if="authStore.isAuthenticated"
-                class="btn btn-circle btn-ghost btn-sm"
-                @click="
-                  emit('toggle-edit');
-                  isOpen = false;
-                "
-              >
-                <Edit class="size-4" />
-              </button>
+              <AuthStatus class="w-full" />
             </div>
           </div>
         </div>

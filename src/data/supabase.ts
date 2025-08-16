@@ -4,7 +4,7 @@ import type {
   PostgrestSingleResponse
 } from "@supabase/supabase-js";
 
-import type { AudioTrack, Collection, LyricStanza, Song } from "@/data/types";
+import type { AudioTrack, Collection, CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
 
 // Authentication functions
@@ -41,8 +41,52 @@ export const signOut = async () => {
 };
 
 // Collection and song functions
-export const fetchCollections = async (): Promise<PostgrestSingleResponse<Collection[]>> => {
-  return await supabase.from("collections").select().order("id", { ascending: false });
+// Fetch collections available to the current user along with their role in each collection
+export const fetchCollections = async (): Promise<
+  PostgrestSingleResponse<CollectionWithRole[]>
+> => {
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      data: [],
+      error: null,
+      count: null,
+      status: 200,
+      statusText: "OK"
+    } as PostgrestSingleResponse<CollectionWithRole[]>;
+  }
+
+  // Join user_collections with collections to get per-collection role
+  const response = await supabase
+    .from("user_collections")
+    .select("role, collections(*)")
+    .eq("user_id", user.id);
+
+  if (response.error) {
+    return response as PostgrestSingleResponse<CollectionWithRole[]>;
+  }
+
+  const mapped: CollectionWithRole[] = (response.data || [])
+    .map((row: any) => {
+      const collection: Collection | null = row.collections ?? null;
+      if (!collection) return null;
+      return { ...collection, user_role: row.role } as CollectionWithRole;
+    })
+    .filter(Boolean) as CollectionWithRole[];
+
+  // Sort by id desc to roughly match previous behavior
+  mapped.sort((a, b) => b.id - a.id);
+
+  return {
+    data: mapped,
+    error: null,
+    count: null,
+    status: 200,
+    statusText: "OK"
+  } as PostgrestSingleResponse<CollectionWithRole[]>;
 };
 
 export const fetchSongsByCollectionId = async (

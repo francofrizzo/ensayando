@@ -1,6 +1,6 @@
 import { useRouter } from "vue-router";
 
-import type { Collection, Song } from "@/data/types";
+import type { CollectionWithRole, Song } from "@/data/types";
 
 export function useNavigation() {
   const router = useRouter();
@@ -9,14 +9,14 @@ export function useNavigation() {
     router.push({ name: "home" });
   };
 
-  const navigateToCollection = (collection: Collection) => {
+  const navigateToCollection = (collection: CollectionWithRole) => {
     router.push({
       name: "collection",
       params: { collectionSlug: collection.slug }
     });
   };
 
-  const navigateToSong = (collection: Collection, song: Song) => {
+  const navigateToSong = (collection: CollectionWithRole, song: Song) => {
     router.push({
       name: "song",
       params: {
@@ -26,21 +26,21 @@ export function useNavigation() {
     });
   };
 
-  const navigateToFirstSong = (collection: Collection, songs: Song[]) => {
+  const navigateToFirstSong = (collection: CollectionWithRole, songs: Song[]) => {
     const firstSong = songs.find((s) => s.visible) || songs[0];
     if (firstSong) {
       navigateToSong(collection, firstSong);
     }
   };
 
-  const replaceToCollection = (collection: Collection) => {
+  const replaceToCollection = (collection: CollectionWithRole) => {
     router.replace({
       name: "collection",
       params: { collectionSlug: collection.slug }
     });
   };
 
-  const replaceToSong = (collection: Collection, song: Song) => {
+  const replaceToSong = (collection: CollectionWithRole, song: Song) => {
     router.replace({
       name: "song",
       params: {

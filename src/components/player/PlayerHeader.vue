@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import SongMenu from "@/components/navigation/SongMenu.vue";
-import type { Collection, Song } from "@/data/types";
+import type { CollectionWithRole, Song } from "@/data/types";
 
 const props = defineProps<{
-  collection: Collection;
+  collection: CollectionWithRole;
   song: Song;
 }>();
 

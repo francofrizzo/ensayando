@@ -1,6 +1,6 @@
 import { inject } from "@vercel/analytics";
 import { createPinia } from "pinia";
-import { createApp } from "vue";
+import { createApp, effectScope, watch } from "vue";
 
 import App from "@/App.vue";
 import "@/assets/styles.css";
@@ -15,6 +15,20 @@ app.use(router);
 
 const authStore = useAuthStore();
 authStore.initAuth();
+
+// Global auth watcher to redirect to login if logging out while on a protected route
+const scope = effectScope();
+scope.run(() => {
+  watch(
+    () => authStore.isAuthenticated,
+    (isAuthenticated) => {
+      if (!isAuthenticated && router.currentRoute.value.meta.requiresAuth) {
+        const redirect = router.currentRoute.value.fullPath;
+        router.replace({ name: "login", query: { redirect } });
+      }
+    }
+  );
+});
 
 app.mount("#app");
 

@@ -4,11 +4,11 @@ import { ref } from "vue";
 import { toast } from "vue-sonner";
 
 import { uploadFile } from "@/data/storage";
-import type { AudioTrack, Collection, Song } from "@/data/types";
+import type { AudioTrack, CollectionWithRole, Song } from "@/data/types";
 
 const props = defineProps<{
   track: AudioTrack;
-  collection: Collection;
+  collection: CollectionWithRole;
   song: Song | { slug: string };
   disabled?: boolean;
 }>();
@@ -40,7 +40,7 @@ const validateAudioFile = (file: File): boolean => {
 
 // Filename generation for audio tracks
 const generateTrackFilename = (
-  collection: Collection,
+  collection: CollectionWithRole,
   song: Song | { slug: string },
   track: AudioTrack,
   originalFilename: string

@@ -9,6 +9,12 @@ export type Collection = {
   created_at: string;
 };
 
+export type CollectionRole = "admin" | "editor" | "viewer";
+
+export type CollectionWithRole = Collection & {
+  user_role: CollectionRole;
+};
+
 export type Song = {
   id: number;
   slug: string;

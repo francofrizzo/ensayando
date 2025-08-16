@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 
-import { useAuthStore } from "@/stores/auth";
+import { useCollectionsStore } from "@/stores/collections";
 
 export const useUIStore = defineStore("ui", () => {
   const editMode = ref(false);
@@ -14,12 +14,12 @@ export const useUIStore = defineStore("ui", () => {
     editMode.value = !editMode.value;
   };
 
-  // Watch authentication state and reset edit mode when user logs out
-  const authStore = useAuthStore();
+  // Reset edit mode when the user cannot edit the current collection
+  const collectionsStore = useCollectionsStore();
   watch(
-    () => authStore.isAuthenticated,
-    (isAuthenticated) => {
-      if (!isAuthenticated && editMode.value) {
+    () => collectionsStore.canEditCurrentCollection,
+    (canEdit) => {
+      if (!canEdit && editMode.value) {
         setEditMode(false);
       }
     }

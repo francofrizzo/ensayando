@@ -10,6 +10,14 @@ const router = createRouter({
       name: "home",
       component: () => import("@/views/HomeView.vue"),
       meta: {
+        requiresAuth: true
+      }
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: () => import("@/views/LoginView.vue"),
+      meta: {
         requiresAuth: false
       }
     },
@@ -19,7 +27,7 @@ const router = createRouter({
       component: () => import("@/views/CollectionView.vue"),
       props: true,
       meta: {
-        requiresAuth: false
+        requiresAuth: true
       }
     },
     {
@@ -28,7 +36,7 @@ const router = createRouter({
       component: () => import("@/views/SongView.vue"),
       props: true,
       meta: {
-        requiresAuth: false
+        requiresAuth: true
       }
     },
     {
@@ -47,7 +55,7 @@ router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: "home" });
+    next({ name: "login", query: { redirect: to.fullPath } });
     return;
   }
 

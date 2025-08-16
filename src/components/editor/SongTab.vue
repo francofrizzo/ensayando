@@ -304,7 +304,12 @@ const updateExistingTracks = async () => {
 };
 
 const handleCreateSong = async () => {
-  if (!validateForm() || !authStore.isAuthenticated || !currentCollection.value) {
+  if (
+    !validateForm() ||
+    !authStore.isAuthenticated ||
+    !collectionsStore.canEditCurrentCollection ||
+    !currentCollection.value
+  ) {
     return;
   }
 
@@ -342,6 +347,7 @@ const handleUpdateSong = async () => {
     !validateForm() ||
     !currentSong.value ||
     !authStore.isAuthenticated ||
+    !collectionsStore.canEditCurrentCollection ||
     !currentCollection.value
   ) {
     return;
@@ -425,10 +431,20 @@ const colorOptions = computed(() =>
   }))
 );
 
-const canSave = computed(() => authStore.isAuthenticated && isDirty.value && !isSaving.value);
+const canSave = computed(
+  () =>
+    authStore.isAuthenticated &&
+    collectionsStore.canEditCurrentCollection &&
+    isDirty.value &&
+    !isSaving.value
+);
 
 const canCreateNewSong = computed(
-  () => authStore.isAuthenticated && !isCreateMode.value && !isSaving.value
+  () =>
+    authStore.isAuthenticated &&
+    collectionsStore.canEditCurrentCollection &&
+    !isCreateMode.value &&
+    !isSaving.value
 );
 
 const tracksForRendering = computed(() =>

@@ -2,10 +2,10 @@
 import { computed, ref, watch } from "vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
-import type { Collection, LyricStanza, LyricVerse } from "@/data/types";
+import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 
 const props = defineProps<{
-  collection: Collection;
+  collection: CollectionWithRole;
   lyrics: LyricStanza[];
   currentTime: number;
   isDisabled: boolean;

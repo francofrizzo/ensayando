@@ -5,11 +5,11 @@ import type { PartialWaveSurferOptions } from "node_modules/@meersagor/wavesurfe
 import { computed, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 
-import type { AudioTrack, Collection } from "@/data/types";
+import type { AudioTrack, CollectionWithRole } from "@/data/types";
 import { darken, lighten } from "@/utils/color-utils";
 
 const props = defineProps<{
-  collection: Collection;
+  collection: CollectionWithRole;
   track: AudioTrack;
   volume: number;
   isReady: boolean;

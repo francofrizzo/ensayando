@@ -1,11 +1,11 @@
-import type { Collection, LyricVerse } from "@/data/types";
+import type { CollectionWithRole, LyricVerse } from "@/data/types";
 
 export type LyricVerseStatus = "active" | "past" | "future";
 
 export function useLyricsColoring() {
   const getVerseStyles = (
     verse: LyricVerse,
-    collection: Collection | null,
+    collection: CollectionWithRole | null,
     status?: LyricVerseStatus
   ) => {
     if (!collection) return {};

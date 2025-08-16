@@ -11,21 +11,21 @@ import { usePlayerState } from "@/composables/useCurrentTime";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useLyricsEditor, type FocusPosition } from "@/composables/useLyricsEditor";
 import type { LyricVerse } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import KeyboardHelpModal from "./KeyboardHelpModal.vue";
 import LyricsTextarea from "./LyricsTextarea.vue";
 import LyricsToolbar from "./LyricsToolbar.vue";
 
 const store = useCollectionsStore();
-const authStore = useAuthStore();
 const { currentCollection } = useCurrentCollection();
 const { currentTime } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
 const { saveLyrics } = store;
 
 const isSaveDisabled = computed(() => {
-  return !authStore.isAuthenticated || !store.localLyrics.isDirty || store.localLyrics.isSaving;
+  return (
+    !store.canEditCurrentCollection || !store.localLyrics.isDirty || store.localLyrics.isSaving
+  );
 });
 
 const handleSaveClick = () => {

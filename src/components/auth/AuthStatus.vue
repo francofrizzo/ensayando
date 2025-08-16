@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { LogIn, LogOut, User } from "lucide-vue-next";
-import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
-import LoginModal from "@/components/auth/LoginModal.vue";
 import { useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
-const showLoginModal = ref(false);
+const router = useRouter();
 
 const handleLogout = async () => {
   try {
@@ -19,7 +18,7 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="flex min-w-0 items-center gap-2 text-xs">
+  <div class="flex min-w-0 items-center justify-between gap-2 text-xs">
     <template v-if="authStore.isAuthenticated">
       <div class="flex items-center gap-2 truncate text-ellipsis">
         <User class="size-4 shrink-0" />
@@ -32,12 +31,10 @@ const handleLogout = async () => {
     </template>
 
     <template v-else>
-      <button class="btn btn-circle btn-ghost btn-sm" @click="showLoginModal = true">
+      <button class="btn btn-circle btn-ghost btn-sm" @click="router.push({ name: 'login' })">
         <LogIn class="size-4" />
         <span class="sr-only">Iniciar sesión</span>
       </button>
     </template>
-
-    <LoginModal v-if="showLoginModal" @close="showLoginModal = false" />
   </div>
 </template>
