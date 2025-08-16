@@ -599,32 +599,34 @@ const initializeAudioContext = async () => {
             class="md:rounded-box h-full overflow-y-auto transition-all duration-300"
             :class="{ 'opacity-0': !tracksVisible }"
           >
-            <TrackPlayer
-              v-for="(track, index) in sortedTracks"
-              :key="index"
-              :ref="
-                (el: any) => {
-                  if (el) trackPlayers[index] = el;
-                }
-              "
-              class="pl-4 first:pt-2 last:pb-2"
-              :track="track"
-              :collection="collection"
-              :is-playing="state.playing.value"
-              :is-ready="state.trackStates.value[index]!.isReady"
-              :volume="state.trackStates.value[index]!.volume"
-              :has-lyrics="state.trackStates.value[index]!.hasLyrics"
-              :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
-              :edit-mode="uiStore.editMode"
-              @ready="(duration: number) => onReady(index, duration)"
-              @time-update="(time: number) => onTimeUpdate(index, time)"
-              @volume-change="(volume: number) => onVolumeChange(index, volume)"
-              @toggle-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
-              @toggle-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
-              @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
-              @seek="onSeekToTime"
-              @finish="onFinish(index)"
-            />
+            <div class="overflow-hidden">
+              <TrackPlayer
+                v-for="(track, index) in sortedTracks"
+                :key="index"
+                :ref="
+                  (el: any) => {
+                    if (el) trackPlayers[index] = el;
+                  }
+                "
+                class="pl-4 first:pt-2 last:pb-2"
+                :track="track"
+                :collection="collection"
+                :is-playing="state.playing.value"
+                :is-ready="state.trackStates.value[index]!.isReady"
+                :volume="state.trackStates.value[index]!.volume"
+                :has-lyrics="state.trackStates.value[index]!.hasLyrics"
+                :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
+                :edit-mode="uiStore.editMode"
+                @ready="(duration: number) => onReady(index, duration)"
+                @time-update="(time: number) => onTimeUpdate(index, time)"
+                @volume-change="(volume: number) => onVolumeChange(index, volume)"
+                @toggle-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
+                @toggle-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
+                @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
+                @seek="onSeekToTime"
+                @finish="onFinish(index)"
+              />
+            </div>
           </div>
 
           <div

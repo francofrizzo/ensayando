@@ -213,11 +213,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="from-primary/10 flex w-full items-stretch gap-2 bg-linear-to-r to-[120px]"
-    :style="{ '--color-primary': color }"
-  >
-    <div class="flex w-20 min-w-0 flex-shrink-0 flex-row gap-1 sm:w-24 lg:w-32 xl:w-36">
+  <div class="relative flex w-full items-stretch gap-2" :style="{ '--color-primary': color }">
+    <div
+      class="from-primary/12 pointer-events-none absolute inset-x-0 -top-8 -bottom-12 z-0 bg-linear-to-r to-[180px] mask-y-from-50% mask-y-to-100%"
+    />
+    <div class="z-1 flex w-20 min-w-0 flex-shrink-0 flex-row gap-1 sm:w-24 lg:w-32 xl:w-36">
       <div
         class="flex w-full min-w-0 flex-grow-1 flex-col items-stretch justify-between gap-3 py-2"
       >

@@ -41,7 +41,7 @@ const otherCollectionMenuItems = computed(() => {
         <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="flex min-h-full w-80 lg:p-3">
           <div
-            class="to-base-100/75 from-primary/15 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border bg-linear-to-t px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
+            class="from-primary/12 bg-base-100/75 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border bg-linear-to-t px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
           >
             <div v-if="currentCollection" class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-2 pr-3 pl-5">
