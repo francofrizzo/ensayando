@@ -14,7 +14,7 @@ app.use(pinia);
 app.use(router);
 
 const authStore = useAuthStore();
-authStore.initAuth();
+await authStore.initAuth();
 
 // Global auth watcher to redirect to login if logging out while on a protected route
 const scope = effectScope();
