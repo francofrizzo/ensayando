@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
-    VueDevTools(),
+    process.env.NODE_ENV === "development" ? VueDevTools() : null,
     VitePWA({
       registerType: "autoUpdate",
       devOptions: {
