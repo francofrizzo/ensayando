@@ -83,7 +83,7 @@ const switchMode = (signUp: boolean) => {
 
 <template>
   <div
-    class="bg-base-200 from-primary/15 to-secondary/8 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
+    class="bg-base-100 from-primary/12 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
   >
     <div class="w-full max-w-md">
       <div class="mb-8 text-center">

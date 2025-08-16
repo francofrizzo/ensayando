@@ -11,6 +11,10 @@ const router = useRouter();
 const handleLogout = async () => {
   try {
     await authStore.signOut();
+    await router.replace({
+      name: "login",
+      query: { redirect: router.currentRoute.value.fullPath }
+    });
   } catch (error) {
     toast.error(`Error al cerrar sesión: ${error}`);
   }
