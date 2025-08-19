@@ -549,7 +549,7 @@ defineExpose({
               </div>
             </div>
 
-            <div class="form-control w-full">
+            <div v-if="showAdvancedOptions" class="form-control w-full">
               <label class="label flex justify-between">
                 <span class="label-text font-medium">Slug (URL)</span>
                 <button
