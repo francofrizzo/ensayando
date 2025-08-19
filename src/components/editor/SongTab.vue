@@ -17,6 +17,7 @@ import { toast } from "vue-sonner";
 
 import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
 import ColorPicker from "@/components/editor/ColorPicker.vue";
+import PeaksUploader from "@/components/editor/PeaksUploader.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
@@ -55,7 +56,8 @@ const formData = reactive({
   title: "",
   slug: "",
   visible: true,
-  audio_tracks: [] as AudioTrack[]
+  audio_tracks: [] as AudioTrack[],
+  duration_seconds: undefined as number | undefined
 });
 
 const isSaving = ref(false);
@@ -89,6 +91,7 @@ const restoreFormFromSong = (song: typeof currentSong.value) => {
   formData.slug = song.slug;
   formData.visible = song.visible;
   formData.audio_tracks = serializeFormData(song);
+  formData.duration_seconds = song.duration_seconds ?? undefined;
   isDirty.value = false;
   clearErrors();
 };
@@ -206,6 +209,22 @@ const handleUploadSuccess = (index: number, data: { url: string; suggestedTitle:
   }
 };
 
+// Hidden peaks upload toggle
+const showAdvancedOptions = ref(false);
+const handlePeaksUploadSuccess = (
+  index: number,
+  data: { url: string; durationSeconds?: number }
+) => {
+  updateTrackField(index, "peaks_file_url", data.url);
+  if (typeof data.durationSeconds === "number") {
+    updateTrackField(index, "duration_seconds", data.durationSeconds);
+    // If no song duration set, use first track's duration as song duration
+    if (!formData.duration_seconds && index === 0) {
+      formData.duration_seconds = data.durationSeconds;
+    }
+  }
+};
+
 // Validation
 const validateForm = () => {
   clearErrors();
@@ -256,6 +275,8 @@ const saveAudioTracks = async (songId: number) => {
       title: track.title,
       color_key: track.color_key,
       audio_file_url: track.audio_file_url,
+      peaks_file_url: (track as any).peaks_file_url,
+      duration_seconds: (track as any).duration_seconds,
       order: track.order
     };
 
@@ -285,7 +306,14 @@ const updateExistingTracks = async () => {
     if (!originalTrack) continue;
 
     const updateData: Partial<AudioTrack> = {};
-    const fieldsToCheck = ["title", "color_key", "audio_file_url", "order"] as const;
+    const fieldsToCheck = [
+      "title",
+      "color_key",
+      "audio_file_url",
+      "order",
+      "peaks_file_url",
+      "duration_seconds"
+    ] as const;
 
     fieldsToCheck.forEach((field) => {
       if (track[field] !== originalTrack[field]) {
@@ -320,7 +348,8 @@ const handleCreateSong = async () => {
       collection_id: currentCollection.value.id,
       title: formData.title,
       slug: formData.slug,
-      visible: formData.visible
+      visible: formData.visible,
+      duration_seconds: formData.duration_seconds ?? null
     });
 
     if (songError) throw songError;
@@ -360,7 +389,8 @@ const handleUpdateSong = async () => {
     const { error: songError } = await updateSongBasicInfo(currentSong.value.id, {
       title: formData.title,
       slug: formData.slug,
-      visible: formData.visible
+      visible: formData.visible,
+      duration_seconds: formData.duration_seconds ?? null
     });
 
     if (songError) throw songError;
@@ -546,10 +576,31 @@ defineExpose({
         <div class="card-body gap-3 p-5">
           <div class="flex items-start justify-between">
             <h3 class="text-base-content font-medium tracking-wide uppercase">Tracks de audio</h3>
-            <button class="btn btn-square btn-sm btn-soft -mt-1" @click="addAudioTrack">
-              <Plus class="size-3.5" />
-              <span class="sr-only">Agregar track</span>
-            </button>
+            <div class="-mt-1 flex items-center gap-3">
+              <div v-if="showAdvancedOptions" class="form-control">
+                <label class="label gap-2">
+                  <span class="label-text text-xs opacity-60">Duración (s)</span>
+                  <input
+                    v-model.number="formData.duration_seconds"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    class="input input-xs input-bordered w-28"
+                  />
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer gap-2">
+                  <span class="label-text text-xs opacity-60">Avanzado</span>
+                  <input v-model="showAdvancedOptions" type="checkbox" class="toggle toggle-xs" />
+                </label>
+              </div>
+              <button class="btn btn-square btn-sm btn-soft" @click="addAudioTrack">
+                <Plus class="size-3.5" />
+                <span class="sr-only">Agregar track</span>
+              </button>
+            </div>
           </div>
 
           <div v-if="errors.audio_tracks" class="alert alert-error">
@@ -633,7 +684,7 @@ defineExpose({
                     </label>
                   </div>
 
-                  <div class="flex gap-2">
+                  <div class="flex items-center gap-2">
                     <AudioTrackUploader
                       v-if="currentCollection"
                       :track="formData.audio_tracks[track.renderIndex]!"
@@ -643,6 +694,18 @@ defineExpose({
                       @upload-start="handleUploadStart(track.renderIndex)"
                       @upload-end="handleUploadEnd"
                       @upload-success="(data: any) => handleUploadSuccess(track.renderIndex, data)"
+                    />
+                    <PeaksUploader
+                      v-if="currentCollection && showAdvancedOptions"
+                      :track="formData.audio_tracks[track.renderIndex]!"
+                      :collection="currentCollection"
+                      :song="currentSong || { slug: formData.slug }"
+                      :disabled="!formData.slug && isCreateMode"
+                      @upload-start="handleUploadStart(track.renderIndex)"
+                      @upload-end="handleUploadEnd"
+                      @upload-success="
+                        (data: any) => handlePeaksUploadSuccess(track.renderIndex, data)
+                      "
                     />
 
                     <button

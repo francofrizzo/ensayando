@@ -102,7 +102,7 @@ export const fetchSongsByCollectionId = async (
 
 export const updateSongBasicInfo = async (
   songId: number,
-  updates: { title: string; slug: string; visible: boolean }
+  updates: { title: string; slug: string; visible: boolean; duration_seconds?: number | null }
 ): Promise<PostgrestSingleResponse<null>> => {
   return await supabase.from("songs").update(updates).eq("id", songId);
 };
@@ -112,6 +112,7 @@ export const insertSong = async (songData: {
   title: string;
   slug: string;
   visible: boolean;
+  duration_seconds?: number | null;
 }): Promise<PostgrestSingleResponse<Song[]>> => {
   return await supabase.from("songs").insert(songData).select("*, audio_tracks(*)");
 };
@@ -131,7 +132,9 @@ export const insertAudioTrack = async (
 
 export const updateAudioTrack = async (
   trackId: number,
-  updates: Partial<Pick<AudioTrack, "title" | "color_key" | "audio_file_url" | "order">>
+  updates: Partial<
+    Pick<AudioTrack, "title" | "color_key" | "audio_file_url" | "order" | "peaks_file_url">
+  >
 ): Promise<PostgrestSingleResponse<AudioTrack[]>> => {
   return await supabase.from("audio_tracks").update(updates).eq("id", trackId).select();
 };

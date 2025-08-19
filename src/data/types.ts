@@ -20,6 +20,7 @@ export type Song = {
   slug: string;
   collection_id: number;
   title: string;
+  duration_seconds?: number | null;
   lyrics: LyricStanza[] | null;
   audio_tracks: AudioTrack[];
   visible: boolean;
@@ -34,8 +35,6 @@ export type AudioTrack = {
   audio_file_url: string;
   // Optional precomputed waveform peaks JSON file URL
   peaks_file_url?: string | null;
-  // Optional known duration to skip metadata probing
-  duration_seconds?: number | null;
   order: number | null;
   created_at: string;
 };
