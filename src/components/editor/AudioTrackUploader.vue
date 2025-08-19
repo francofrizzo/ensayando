@@ -4,7 +4,8 @@ import { ref } from "vue";
 import { toast } from "vue-sonner";
 
 import { uploadFile } from "@/data/storage";
-import type { AudioTrack, CollectionWithRole, Song } from "@/data/types";
+import type { AudioTrack, CollectionWithRole, Song, TrackPeaks } from "@/data/types";
+import { generateTrackPeaks } from "@/utils/audio-utils";
 
 const props = defineProps<{
   track: AudioTrack;
@@ -14,7 +15,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "upload-success": [data: { url: string; suggestedTitle: string }];
+  "upload-success": [data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }];
   "upload-start": [];
   "upload-end": [];
 }>();
@@ -69,6 +70,15 @@ const handleFileUpload = async (event: Event) => {
   emit("upload-start");
 
   try {
+    // Generate peaks client-side
+    let peaks: TrackPeaks | null = null;
+    try {
+      peaks = await generateTrackPeaks(file);
+    } catch (peaksError: any) {
+      console.warn("No se pudieron generar los peaks automáticamente:", peaksError);
+    }
+
+    // Upload file to storage
     const filename = generateTrackFilename(props.collection, props.song, props.track, file.name);
     const result = await uploadFile(file, filename, {
       bucket: "audio-files",
@@ -79,7 +89,8 @@ const handleFileUpload = async (event: Event) => {
 
     emit("upload-success", {
       url: result.url,
-      suggestedTitle
+      suggestedTitle,
+      peaks
     });
 
     toast.success("Archivo subido correctamente");

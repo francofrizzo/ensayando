@@ -2,6 +2,8 @@
 import {
   ArrowDown,
   ArrowUp,
+  AudioLines,
+  Cog,
   Eye,
   Hash,
   Link2,
@@ -17,7 +19,7 @@ import { toast } from "vue-sonner";
 
 import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
 import ColorPicker from "@/components/editor/ColorPicker.vue";
-import PeaksUploader from "@/components/editor/PeaksUploader.vue";
+// PeaksUploader removed; peaks are generated client-side
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
@@ -32,6 +34,7 @@ import {
 import type { AudioTrack } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
+import { generateTrackPeaks } from "@/utils/audio-utils";
 
 // Constants
 const VALIDATION_RULES = {
@@ -56,8 +59,7 @@ const formData = reactive({
   title: "",
   slug: "",
   visible: true,
-  audio_tracks: [] as AudioTrack[],
-  duration_seconds: undefined as number | undefined
+  audio_tracks: [] as AudioTrack[]
 });
 
 const isSaving = ref(false);
@@ -65,6 +67,7 @@ const isDirty = ref(false);
 const isCreateMode = ref(false);
 const trackKeyCounter = ref(0);
 const uploadingTrackIndex = ref<number | null>(null);
+const peaksGeneratingIndex = ref<number | null>(null);
 const errors = reactive({
   title: "",
   slug: "",
@@ -91,14 +94,8 @@ const restoreFormFromSong = (song: typeof currentSong.value) => {
   formData.slug = song.slug;
   formData.visible = song.visible;
   formData.audio_tracks = serializeFormData(song);
-  formData.duration_seconds = song.duration_seconds ?? undefined;
   isDirty.value = false;
   clearErrors();
-
-  // Auto-detect duration from first track if not already set
-  if (!formData.duration_seconds && formData.audio_tracks[0]?.audio_file_url) {
-    detectAudioDuration(formData.audio_tracks[0].audio_file_url);
-  }
 };
 
 const generateSlugFromTitle = () => {
@@ -128,6 +125,7 @@ const createNewTrack = (): AudioTrack => {
     title: "",
     color_key: defaultColorKey,
     audio_file_url: "",
+    peaks: null,
     order: newOrder,
     created_at: new Date().toISOString()
   };
@@ -191,11 +189,6 @@ const handleTrackTitleInput = (index: number, event: Event) => {
 const handleTrackUrlInput = (index: number, event: Event) => {
   const value = (event.target as HTMLInputElement).value;
   updateTrackField(index, "audio_file_url", value);
-
-  // Auto-detect duration from first track when URL is provided
-  if (index === 0 && value.trim() && !formData.duration_seconds) {
-    detectAudioDuration(value);
-  }
 };
 
 const handleColorChange = (index: number, colorKey: string) => {
@@ -210,7 +203,10 @@ const handleUploadEnd = () => {
   uploadingTrackIndex.value = null;
 };
 
-const handleUploadSuccess = (index: number, data: { url: string; suggestedTitle: string }) => {
+const handleUploadSuccess = (
+  index: number,
+  data: { url: string; suggestedTitle: string; peaks: any | null }
+) => {
   updateTrackField(index, "audio_file_url", data.url);
 
   const track = formData.audio_tracks[index];
@@ -218,42 +214,33 @@ const handleUploadSuccess = (index: number, data: { url: string; suggestedTitle:
     updateTrackField(index, "title", data.suggestedTitle);
   }
 
-  // Auto-detect duration from first track when uploaded
-  if (index === 0 && !formData.duration_seconds) {
-    detectAudioDuration(data.url);
+  if (data.peaks) {
+    updateTrackField(index, "peaks", data.peaks);
   }
 };
 
-// Client-side duration detection
-const detectAudioDuration = (audioUrl: string) => {
-  const audio = new Audio();
-  audio.crossOrigin = "anonymous";
-
-  audio.addEventListener("loadedmetadata", () => {
-    if (audio.duration && isFinite(audio.duration)) {
-      formData.duration_seconds = Math.round(audio.duration * 100) / 100; // Round to 2 decimals
-    }
-  });
-
-  audio.addEventListener("error", () => {
-    console.warn("Could not detect audio duration for:", audioUrl);
-  });
-
-  audio.src = audioUrl;
-};
-
-// Hidden peaks upload toggle
+// Advanced options (duration manual input)
 const showAdvancedOptions = ref(false);
-const handlePeaksUploadSuccess = (
-  index: number,
-  data: { url: string; durationSeconds?: number }
-) => {
-  updateTrackField(index, "peaks_file_url", data.url);
-  // Note: Duration is now detected from audio files, not peaks
-};
 
-const handlePeaksRemoved = (index: number) => {
-  updateTrackField(index, "peaks_file_url", null);
+const handleGeneratePeaks = async (index: number) => {
+  const track = formData.audio_tracks[index];
+  if (!track?.audio_file_url) return;
+
+  peaksGeneratingIndex.value = index;
+  try {
+    const response = await fetch(track.audio_file_url, { cache: "no-store" });
+    const blob = await response.blob();
+    const filename = track.title ? `${track.title}.audio` : `track-${track.id}.audio`;
+    const file = new File([blob], filename, { type: blob.type || "audio/mpeg" });
+    const peaks = await generateTrackPeaks(file);
+    updateTrackField(index, "peaks", peaks);
+    toast.success("Forma de onda generada correctamente");
+  } catch (error: any) {
+    console.error("Error generating peaks:", error);
+    toast.error("No se pudo generar la forma de onda");
+  } finally {
+    peaksGeneratingIndex.value = null;
+  }
 };
 
 // Validation
@@ -306,8 +293,7 @@ const saveAudioTracks = async (songId: number) => {
       title: track.title,
       color_key: track.color_key,
       audio_file_url: track.audio_file_url,
-      peaks_file_url: (track as any).peaks_file_url,
-      duration_seconds: (track as any).duration_seconds,
+      peaks: (track as any).peaks ?? null,
       order: track.order
     };
 
@@ -337,13 +323,7 @@ const updateExistingTracks = async () => {
     if (!originalTrack) continue;
 
     const updateData: Partial<AudioTrack> = {};
-    const fieldsToCheck = [
-      "title",
-      "color_key",
-      "audio_file_url",
-      "order",
-      "peaks_file_url"
-    ] as const;
+    const fieldsToCheck = ["title", "color_key", "audio_file_url", "order", "peaks"] as const;
 
     fieldsToCheck.forEach((field) => {
       if (track[field] !== originalTrack[field]) {
@@ -378,8 +358,7 @@ const handleCreateSong = async () => {
       collection_id: currentCollection.value.id,
       title: formData.title,
       slug: formData.slug,
-      visible: formData.visible,
-      duration_seconds: formData.duration_seconds ?? null
+      visible: formData.visible
     });
 
     if (songError) throw songError;
@@ -419,8 +398,7 @@ const handleUpdateSong = async () => {
     const { error: songError } = await updateSongBasicInfo(currentSong.value.id, {
       title: formData.title,
       slug: formData.slug,
-      visible: formData.visible,
-      duration_seconds: formData.duration_seconds ?? null
+      visible: formData.visible
     });
 
     if (songError) throw songError;
@@ -598,29 +576,6 @@ defineExpose({
                 <span class="label-text-alt text-error">{{ errors.slug }}</span>
               </div>
             </div>
-
-            <div v-if="showAdvancedOptions" class="form-control">
-              <label class="label">
-                <span class="label-text">Duración manual</span>
-                <span class="label-text-alt text-xs opacity-60">segundos</span>
-              </label>
-              <label class="input input-bordered flex w-full items-center gap-2">
-                <Music class="size-4 opacity-70" />
-                <input
-                  v-model.number="formData.duration_seconds"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Detectada automáticamente desde el primer track"
-                  class="grow"
-                />
-              </label>
-              <div class="label">
-                <span class="label-text-alt text-xs opacity-60">
-                  Se detecta automáticamente desde el primer track.
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -729,19 +684,32 @@ defineExpose({
                       @upload-end="handleUploadEnd"
                       @upload-success="(data: any) => handleUploadSuccess(track.renderIndex, data)"
                     />
-                    <PeaksUploader
-                      v-if="currentCollection && showAdvancedOptions"
-                      :track="formData.audio_tracks[track.renderIndex]!"
-                      :collection="currentCollection"
-                      :song="currentSong || { slug: formData.slug }"
-                      :disabled="!formData.slug && isCreateMode"
-                      @upload-start="handleUploadStart(track.renderIndex)"
-                      @upload-end="handleUploadEnd"
-                      @upload-success="
-                        (data: any) => handlePeaksUploadSuccess(track.renderIndex, data)
-                      "
-                      @peaks-removed="() => handlePeaksRemoved(track.renderIndex)"
-                    />
+                    <div
+                      v-if="showAdvancedOptions"
+                      class="tooltip tooltip-top"
+                      :data-tip="'Generar forma de onda'"
+                    >
+                      <button
+                        class="btn btn-sm btn-square"
+                        :class="
+                          formData.audio_tracks[track.renderIndex]!.peaks
+                            ? 'btn-primary'
+                            : 'btn-soft'
+                        "
+                        :disabled="
+                          !formData.audio_tracks[track.renderIndex]!.audio_file_url ||
+                          peaksGeneratingIndex === track.renderIndex
+                        "
+                        @click="handleGeneratePeaks(track.renderIndex)"
+                      >
+                        <template v-if="peaksGeneratingIndex === track.renderIndex">
+                          <span class="loading loading-spinner loading-xs" />
+                        </template>
+                        <template v-else>
+                          <AudioLines class="size-3.5" />
+                        </template>
+                      </button>
+                    </div>
 
                     <button
                       class="btn btn-sm btn-error btn-soft btn-square shrink-0"
@@ -755,17 +723,6 @@ defineExpose({
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="form-control self-center">
-        <label class="label cursor-pointer gap-2">
-          <input
-            v-model="showAdvancedOptions"
-            type="checkbox"
-            class="toggle toggle-xs toggle-primary"
-          />
-          <span class="label-text text-xs opacity-60">Mostrar opciones avanzadas</span>
-        </label>
       </div>
     </div>
   </div>
@@ -795,6 +752,15 @@ defineExpose({
             isCreateMode ? "Crear canción" : "Guardar cambios"
           }}</span>
         </template>
+      </button>
+
+      <button
+        class="btn btn-xs btn-square tooltip tooltip-bottom"
+        :class="{ 'btn-primary': showAdvancedOptions, 'btn-soft': !showAdvancedOptions }"
+        :data-tip="'Opciones avanzadas'"
+        @click="showAdvancedOptions = !showAdvancedOptions"
+      >
+        <Cog class="size-3.5" />
       </button>
     </div>
   </SafeTeleport>

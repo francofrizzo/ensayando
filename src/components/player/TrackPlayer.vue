@@ -101,6 +101,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
 
   const options = {
     height: 64,
+    barHeight: 0.9,
     barGap: isIOS ? 1.5 : 2,
     barWidth: isIOS ? 2 : 3,
     barRadius: 8,
@@ -118,76 +119,37 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
   return options;
 });
 
-// Prefetch peaks JSON if provided
-const loadPeaksIfAvailable = async () => {
-  try {
-    // Abort any previous fetch
-    if (abortController.value) {
-      abortController.value.abort();
-    }
-
-    if (!props.track.peaks_file_url) {
-      peaksData.value = null;
-      knownDurationSeconds.value = null;
-      return;
-    }
-
-    // Create new abort controller for this fetch
-    abortController.value = new AbortController();
-    const response = await fetch(props.track.peaks_file_url, {
-      cache: "force-cache",
-      signal: abortController.value.signal
-    });
-
-    if (!response.ok) {
-      peaksData.value = null;
-      return;
-    }
-
-    const json = await response.json();
-
-    if (Array.isArray(json)) {
-      peaksData.value = json;
-    } else if (json && (Array.isArray(json.data) || Array.isArray(json.channels))) {
-      // Support { data: [...] } or { channels: [[...], ...] }
-      peaksData.value = json.data ?? json.channels;
-      if (typeof json.duration === "number") {
-        knownDurationSeconds.value = json.duration;
+// Use embedded peaks if available on the track
+const applyEmbeddedPeaks = () => {
+  const embedded = props.track.peaks;
+  if (embedded && Array.isArray((embedded as any).channels)) {
+    peaksData.value = (embedded as any).channels;
+    knownDurationSeconds.value =
+      typeof (embedded as any).duration === "number" ? (embedded as any).duration : null;
+    // Clean up existing waveSurfer instance before re-rendering
+    if (waveSurfer.value) {
+      try {
+        waveSurfer.value.destroy();
+        waveSurfer.value = null;
+      } catch (_) {
+        /* no-op */
       }
-    } else {
-      peaksData.value = null;
     }
-
-    if (peaksData.value) {
-      // Clean up existing waveSurfer instance before re-rendering
-      if (waveSurfer.value) {
-        try {
-          waveSurfer.value.destroy();
-          waveSurfer.value = null;
-        } catch (_) {
-          // Ignore cleanup errors
-        }
-      }
-      // Force WaveSurfer component to re-render with peaks data
-      waveSurferKey.value++;
-    }
-  } catch (e) {
-    // Only log if it's not an AbortError (which is expected)
-    if (e instanceof Error && e.name !== "AbortError") {
-      console.warn(`Track ${props.track.id}: Error loading peaks:`, e.message);
-    }
+    waveSurferKey.value++;
+  } else {
     peaksData.value = null;
+    knownDurationSeconds.value = null;
   }
 };
 
 onMounted(() => {
-  loadPeaksIfAvailable();
+  applyEmbeddedPeaks();
 });
 
 watch(
-  () => props.track.peaks_file_url,
+  () => props.track.peaks,
   () => {
-    loadPeaksIfAvailable();
+    applyEmbeddedPeaks();
   }
 );
 
