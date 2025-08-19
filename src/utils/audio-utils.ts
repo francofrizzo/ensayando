@@ -9,7 +9,7 @@ export const generateTrackPeaks = async (
   const buf = await file.arrayBuffer();
   const audio = await AC.decodeAudioData(buf);
 
-  const duration = audio.duration;
+  const duration = Math.round(audio.duration * 100) / 100;
   const length = audio.length;
   const blocks = Math.max(1, Math.min(samples, length));
   const blockSize = Math.ceil(length / blocks);
