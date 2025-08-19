@@ -107,11 +107,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     ...(props.audioContext ? { audioContext: props.audioContext } : {}),
     // If we have precomputed peaks/duration, pass them to reduce decoding
     ...(peaksData.value ? { peaks: peaksData.value } : ({} as any)),
-    ...(props.track.duration_seconds
-      ? { duration: props.track.duration_seconds }
-      : knownDurationSeconds.value
-        ? { duration: knownDurationSeconds.value }
-        : ({} as any)),
+    ...(knownDurationSeconds.value ? { duration: knownDurationSeconds.value } : ({} as any)),
     ...waveSurferColorScheme.value
   };
 });
