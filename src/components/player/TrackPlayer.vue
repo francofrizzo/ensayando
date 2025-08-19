@@ -40,6 +40,7 @@ const isMac = navigator.userAgent.indexOf("Mac") > 0;
 const isMuted = computed(() => props.volume === 0);
 const peaksData = ref<any | null>(null);
 const knownDurationSeconds = ref<number | null>(null);
+const waveSurferKey = ref(0); // Force re-render when peaks load
 
 // Methods
 const handleTrackError = (error: Error, context: string) => {
@@ -96,20 +97,24 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1);
-  return {
+
+  const options = {
     height: 64,
     barGap: isIOS ? 1.5 : 2,
     barWidth: isIOS ? 2 : 3,
     barRadius: 8,
     dragToSeek: true,
     backend: "WebAudio",
-    url: props.track.audio_file_url,
+    // Only provide URL if we don't have peaks data - this allows immediate rendering from peaks
+    ...(peaksData.value ? {} : { url: props.track.audio_file_url }),
     ...(props.audioContext ? { audioContext: props.audioContext } : {}),
     // If we have precomputed peaks/duration, pass them to reduce decoding
     ...(peaksData.value ? { peaks: peaksData.value } : ({} as any)),
     ...(knownDurationSeconds.value ? { duration: knownDurationSeconds.value } : ({} as any)),
     ...waveSurferColorScheme.value
   };
+
+  return options;
 });
 
 // Prefetch peaks JSON if provided
@@ -120,8 +125,16 @@ const loadPeaksIfAvailable = async () => {
       knownDurationSeconds.value = null;
       return;
     }
+
     const response = await fetch(props.track.peaks_file_url, { cache: "force-cache" });
+
+    if (!response.ok) {
+      peaksData.value = null;
+      return;
+    }
+
     const json = await response.json();
+
     if (Array.isArray(json)) {
       peaksData.value = json;
     } else if (json && (Array.isArray(json.data) || Array.isArray(json.channels))) {
@@ -133,8 +146,21 @@ const loadPeaksIfAvailable = async () => {
     } else {
       peaksData.value = null;
     }
+
+    if (peaksData.value) {
+      // Clean up existing waveSurfer instance before re-rendering
+      if (waveSurfer.value) {
+        try {
+          waveSurfer.value.destroy();
+          waveSurfer.value = null;
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+      }
+      // Force WaveSurfer component to re-render with peaks data
+      waveSurferKey.value++;
+    }
   } catch (e) {
-    console.debug("Failed to load peaks JSON", e);
     peaksData.value = null;
   }
 };
@@ -314,11 +340,22 @@ onUnmounted(() => {
     </div>
     <div class="h-2 w-full p-0">
       <WaveSurferPlayer
+        :key="waveSurferKey"
         :options="waveSurferOptions"
         @wave-surfer="
           (ws: WaveSurfer) => {
             try {
-              ws.on('error', (e) => console.error(`WS error (track ${track.id})`, e));
+              // Filter out AbortErrors which are expected during component re-renders
+              ws.on('error', (e) => {
+                if (e.name !== 'AbortError') {
+                  console.error(`WS error (track ${track.id})`, e);
+                }
+              });
+
+              // If we have peaks but no URL was provided to WaveSurfer, load audio separately
+              if (peaksData.value && !ws.options.url) {
+                ws.load(props.track.audio_file_url);
+              }
             } catch (_) {
               /* no-op */
             }
