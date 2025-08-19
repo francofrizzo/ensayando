@@ -738,7 +738,7 @@ const initializeAudioContext = async () => {
 
           <div
             v-if="!isReady"
-            class="bg-base-100/80 rounded-box text-base-content/50 absolute inset-0 z-10 flex items-center justify-center gap-4 text-lg select-none"
+            class="bg-base-100/80 text-base-content/50 md:rounded-box absolute inset-0 z-10 flex items-center justify-center gap-4 text-lg select-none"
           >
             <Loader2 class="size-6 animate-spin" />
             <span class="tracking-wide uppercase">Cargando...</span>
