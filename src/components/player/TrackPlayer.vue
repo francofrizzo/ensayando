@@ -107,10 +107,8 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     barRadius: 8,
     dragToSeek: true,
     backend: "WebAudio",
-    // Only provide URL if we don't have peaks data - this allows immediate rendering from peaks
-    ...(peaksData.value ? {} : { url: props.track.audio_file_url }),
+    url: props.track.audio_file_url,
     ...(props.audioContext ? { audioContext: props.audioContext } : {}),
-    // If we have precomputed peaks/duration, pass them to reduce decoding
     ...(peaksData.value ? { peaks: peaksData.value } : ({} as any)),
     ...(knownDurationSeconds.value ? { duration: knownDurationSeconds.value } : ({} as any)),
     ...waveSurferColorScheme.value
@@ -343,11 +341,6 @@ onUnmounted(() => {
                   console.error(`WS error (track ${track.id})`, e);
                 }
               });
-
-              // If we have peaks but no URL was provided to WaveSurfer, load audio separately
-              if (peaksData.value && !ws.options.url) {
-                ws.load(props.track.audio_file_url);
-              }
             } catch (_) {
               /* no-op */
             }
