@@ -38,9 +38,6 @@ const isMuteButtonLongPressActive = ref(false);
 const TOUCH_DURATION = 500; // 500ms for long press
 const isMac = navigator.userAgent.indexOf("Mac") > 0;
 const isMuted = computed(() => props.volume === 0);
-const peaksData = ref<any | null>(null);
-const knownDurationSeconds = ref<number | null>(null);
-const waveSurferKey = ref(0); // Force re-render when peaks load
 const abortController = ref<AbortController | null>(null);
 
 // Methods
@@ -109,46 +106,14 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     backend: "WebAudio" as const,
     url: props.track.audio_file_url,
     audioContext: props.audioContext,
-    peaks: peaksData.value,
-    duration: knownDurationSeconds.value ?? undefined,
+    peaks: props.track.peaks?.channels,
     ...waveSurferColorScheme.value
   };
 
   return options;
 });
 
-// Use embedded peaks if available on the track
-const applyEmbeddedPeaks = () => {
-  const embedded = props.track.peaks;
-  if (embedded && Array.isArray(embedded.channels)) {
-    peaksData.value = embedded.channels;
-    knownDurationSeconds.value = typeof embedded.duration === "number" ? embedded.duration : null;
-    // Clean up existing waveSurfer instance before re-rendering
-    if (waveSurfer.value) {
-      try {
-        waveSurfer.value.destroy();
-        waveSurfer.value = null;
-      } catch (_) {
-        /* no-op */
-      }
-    }
-    waveSurferKey.value++;
-  } else {
-    peaksData.value = null;
-    knownDurationSeconds.value = null;
-  }
-};
-
-onMounted(() => {
-  applyEmbeddedPeaks();
-});
-
-watch(
-  () => props.track.peaks,
-  () => {
-    applyEmbeddedPeaks();
-  }
-);
+onMounted(() => {});
 
 const handleLyricsButtonClick = () => {
   emit("toggle-lyrics");
@@ -329,23 +294,8 @@ onUnmounted(() => {
     </div>
     <div class="h-2 w-full p-0">
       <WaveSurferPlayer
-        :key="waveSurferKey"
         :options="waveSurferOptions"
-        @wave-surfer="
-          (ws: WaveSurfer) => {
-            try {
-              // Filter out AbortErrors which are expected during component re-renders
-              ws.on('error', (e) => {
-                if (e.name !== 'AbortError') {
-                  console.error(`WS error (track ${track.id})`, e);
-                }
-              });
-            } catch (_) {
-              /* no-op */
-            }
-            waveSurfer = ws;
-          }
-        "
+        @wave-surfer="(ws: WaveSurfer) => (waveSurfer = ws)"
         @interaction="(time: number) => emit('seek', time)"
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"

@@ -92,6 +92,39 @@ providePlayerState({
   isPlaying: state.playing,
   isReady
 });
+// Cleanup and reset when switching songs to prevent lingering decoders/buffers
+watch(
+  () => props.song.id,
+  () => {
+    try {
+      trackPlayers.value.forEach((player, index) => {
+        try {
+          player?.waveSurfer?.destroy();
+        } catch (error) {
+          handleAudioError(error as Error, `destroy wavesurfer on song change ${index}`);
+        }
+      });
+      trackPlayers.value = [] as any;
+    } catch (error) {
+      handleAudioError(error as Error, "reset track players on song change");
+    }
+
+    // Reset state for new song
+    state.currentTime.value = 0;
+    state.totalDuration.value = 0;
+    state.playing.value = false;
+    state.trackStates.value = sortedTracks.value.map((track) => ({
+      id: track.id,
+      isReady: false,
+      volume: 1,
+      hasLyrics: tracksIdsWithLyrics().includes(track.id),
+      lyricsEnabled: true
+    }));
+
+    // Reset iOS sequential init counter
+    initializedTrackCount.value = isIOS.value ? 1 : sortedTracks.value.length;
+  }
+);
 
 // Interactivity
 const seekAllTracks = (time: number) => {
