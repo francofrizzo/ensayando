@@ -160,13 +160,14 @@ const onPlayPause = async (forcePlay?: boolean) => {
     return;
   }
 
-  // Check if audio context is suspended and prevent playback
-  if (
-    audioContext.value?.state === "suspended" &&
-    (forcePlay === true || forcePlay === undefined)
-  ) {
-    handleAudioError(new Error("Cannot start playback: audio context is suspended"), "onPlayPause");
-    return;
+  // If AudioContext exists but is suspended, try to resume it within user gesture
+  if (audioContext.value?.state === "suspended") {
+    try {
+      await audioContext.value.resume();
+    } catch (resumeError) {
+      handleAudioError(resumeError as Error, "audioContext.resume");
+      return;
+    }
   }
 
   // Initialize audio context for WebAudio API user gesture requirement
@@ -291,6 +292,8 @@ const DRIFT_THRESHOLD = 0.05;
 const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
 const audioContext = ref<AudioContext | null>(null);
+const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => any) | null>(null);
+const visibilityChangeHandlerRef = ref<((this: Document, ev: Event) => any) | null>(null);
 
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
@@ -358,8 +361,14 @@ watch(
 watch(
   () => isReady.value,
   (ready) => {
-    if (ready && !audioContext.value) {
-      // Set audio context reference from first track for interruption detection
+    if (ready) {
+      // If we already created a shared AudioContext, set up listeners now
+      if (audioContext.value) {
+        setupAudioInterruptionListeners();
+        return;
+      }
+
+      // Fallback: derive context from first wavesurfer instance if we didn't create one
       const firstTrack = trackPlayers.value[0];
       if (firstTrack?.waveSurfer) {
         const ws = firstTrack.waveSurfer as any;
@@ -448,20 +457,24 @@ const handleAudioInterruption = () => {
 const setupAudioInterruptionListeners = () => {
   try {
     // iOS suspends audio context during screen lock, causing stuck playback state
-    if (audioContext.value) {
-      audioContext.value.addEventListener("statechange", () => {
+    if (audioContext.value && !audioStateChangeHandlerRef.value) {
+      audioStateChangeHandlerRef.value = () => {
         if (audioContext.value?.state === "suspended") {
           handleAudioInterruption();
         }
-      });
+      };
+      audioContext.value.addEventListener("statechange", audioStateChangeHandlerRef.value);
     }
 
     // Mobile browsers don't always trigger audio context suspension on screen lock
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        handleAudioInterruption();
-      }
-    });
+    if (!visibilityChangeHandlerRef.value) {
+      visibilityChangeHandlerRef.value = () => {
+        if (document.hidden) {
+          handleAudioInterruption();
+        }
+      };
+      document.addEventListener("visibilitychange", visibilityChangeHandlerRef.value);
+    }
   } catch (error) {
     handleAudioError(error as Error, "setupAudioInterruptionListeners");
   }
@@ -469,10 +482,14 @@ const setupAudioInterruptionListeners = () => {
 
 const cleanupAudioInterruptionListeners = () => {
   try {
-    if (audioContext.value) {
-      audioContext.value.removeEventListener("statechange", handleAudioInterruption);
+    if (audioContext.value && audioStateChangeHandlerRef.value) {
+      audioContext.value.removeEventListener("statechange", audioStateChangeHandlerRef.value);
+      audioStateChangeHandlerRef.value = null;
     }
-    document.removeEventListener("visibilitychange", handleAudioInterruption);
+    if (visibilityChangeHandlerRef.value) {
+      document.removeEventListener("visibilitychange", visibilityChangeHandlerRef.value);
+      visibilityChangeHandlerRef.value = null;
+    }
   } catch (error) {
     handleAudioError(error as Error, "cleanupAudioInterruptionListeners");
   }
@@ -485,6 +502,15 @@ const initializeAudioContext = async () => {
   }
 
   try {
+    // Create (or reuse) a single shared AudioContext for all WaveSurfer instances
+    if (!audioContext.value) {
+      const AudioContextCtor: typeof AudioContext | undefined =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextCtor) {
+        audioContext.value = new AudioContextCtor();
+      }
+    }
+
     // Create silent audio element to unlock audio context on user interaction
     // This is needed for WebAudio API which requires user gesture to start playing
     silentAudio.value = new Audio();
@@ -616,6 +642,7 @@ const initializeAudioContext = async () => {
                 :has-lyrics="state.trackStates.value[index]!.hasLyrics"
                 :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
                 :edit-mode="uiStore.editMode"
+                :audio-context="audioContext || undefined"
                 @ready="(duration: number) => onReady(index, duration)"
                 @time-update="(time: number) => onTimeUpdate(index, time)"
                 @volume-change="(volume: number) => onVolumeChange(index, volume)"

@@ -17,6 +17,7 @@ const props = defineProps<{
   hasLyrics: boolean;
   lyricsEnabled: boolean;
   editMode?: boolean;
+  audioContext?: AudioContext;
 }>();
 
 const emit = defineEmits<{
@@ -98,6 +99,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     dragToSeek: true,
     backend: "WebAudio",
     url: props.track.audio_file_url,
+    ...(props.audioContext ? { audioContext: props.audioContext } : {}),
     ...waveSurferColorScheme.value
   };
 });
