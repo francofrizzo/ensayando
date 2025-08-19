@@ -41,6 +41,7 @@ const isMuted = computed(() => props.volume === 0);
 const peaksData = ref<any | null>(null);
 const knownDurationSeconds = ref<number | null>(null);
 const waveSurferKey = ref(0); // Force re-render when peaks load
+const abortController = ref<AbortController | null>(null);
 
 // Methods
 const handleTrackError = (error: Error, context: string) => {
@@ -120,13 +121,23 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
 // Prefetch peaks JSON if provided
 const loadPeaksIfAvailable = async () => {
   try {
+    // Abort any previous fetch
+    if (abortController.value) {
+      abortController.value.abort();
+    }
+
     if (!props.track.peaks_file_url) {
       peaksData.value = null;
       knownDurationSeconds.value = null;
       return;
     }
 
-    const response = await fetch(props.track.peaks_file_url, { cache: "force-cache" });
+    // Create new abort controller for this fetch
+    abortController.value = new AbortController();
+    const response = await fetch(props.track.peaks_file_url, {
+      cache: "force-cache",
+      signal: abortController.value.signal
+    });
 
     if (!response.ok) {
       peaksData.value = null;
@@ -161,6 +172,10 @@ const loadPeaksIfAvailable = async () => {
       waveSurferKey.value++;
     }
   } catch (e) {
+    // Only log if it's not an AbortError (which is expected)
+    if (e instanceof Error && e.name !== "AbortError") {
+      console.warn(`Track ${props.track.id}: Error loading peaks:`, e.message);
+    }
     peaksData.value = null;
   }
 };
@@ -269,6 +284,17 @@ watch(
 );
 
 onUnmounted(() => {
+  // Abort any ongoing fetch requests
+  try {
+    if (abortController.value) {
+      abortController.value.abort();
+      abortController.value = null;
+    }
+  } catch (error) {
+    handleTrackError(error as Error, "abort fetch");
+  }
+
+  // Clear timers
   try {
     if (muteButtonLongPressTimer.value) {
       clearTimeout(muteButtonLongPressTimer.value);
@@ -278,8 +304,12 @@ onUnmounted(() => {
     handleTrackError(error as Error, "cleanup timer");
   }
 
+  // Destroy WaveSurfer instance
   try {
-    waveSurfer.value?.destroy();
+    if (waveSurfer.value) {
+      waveSurfer.value.destroy();
+      waveSurfer.value = null;
+    }
   } catch (error) {
     handleTrackError(error as Error, "destroy waveSurfer");
   }
