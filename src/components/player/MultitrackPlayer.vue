@@ -64,6 +64,28 @@ const trackIdsWithLyricsEnabled = computed(() => {
   return state.trackStates.value.filter((track) => track.lyricsEnabled).map((track) => track.id);
 });
 
+// Platform detection
+const isIOS = computed(
+  () =>
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)
+);
+
+// Sequential initialization on iOS to avoid concurrent decodes
+const initializedTrackCount = ref<number>(0);
+watch(
+  () => props.song,
+  () => {
+    initializedTrackCount.value = isIOS.value ? 1 : sortedTracks.value.length;
+  },
+  { immediate: true }
+);
+const displayedTracks = computed(() => {
+  return isIOS.value
+    ? sortedTracks.value.slice(0, initializedTrackCount.value)
+    : sortedTracks.value;
+});
+
 providePlayerState({
   currentTime: state.currentTime,
   totalDuration: state.totalDuration,
@@ -89,6 +111,10 @@ const onReady = (trackIndex: number, duration: number) => {
   state.trackStates.value[trackIndex]!.isReady = true;
   if (trackIndex === 0) {
     state.totalDuration.value = duration;
+  }
+  // Progressively initialize next track on iOS once current one is ready
+  if (isIOS.value && initializedTrackCount.value < sortedTracks.value.length) {
+    initializedTrackCount.value += 1;
   }
 };
 
@@ -507,7 +533,15 @@ const initializeAudioContext = async () => {
       const AudioContextCtor: typeof AudioContext | undefined =
         (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AudioContextCtor) {
-        audioContext.value = new AudioContextCtor();
+        // Prefer 44.1 kHz and playback latency for lower memory/CPU on iOS
+        try {
+          audioContext.value = new AudioContextCtor({
+            sampleRate: 44100,
+            latencyHint: "playback" as any
+          });
+        } catch {
+          audioContext.value = new AudioContextCtor();
+        }
       }
     }
 
@@ -626,7 +660,7 @@ const initializeAudioContext = async () => {
           >
             <div class="overflow-hidden">
               <TrackPlayer
-                v-for="(track, index) in sortedTracks"
+                v-for="(track, index) in displayedTracks"
                 :key="index"
                 :ref="
                   (el: any) => {

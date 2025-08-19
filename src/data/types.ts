@@ -32,6 +32,10 @@ export type AudioTrack = {
   title: string;
   color_key: string;
   audio_file_url: string;
+  // Optional precomputed waveform peaks JSON file URL
+  peaks_file_url?: string | null;
+  // Optional known duration to skip metadata probing
+  duration_seconds?: number | null;
   order: number | null;
   created_at: string;
 };

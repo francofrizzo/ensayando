@@ -2,7 +2,7 @@
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
 import { Hash, MicVocal, Volume2Icon, VolumeX } from "lucide-vue-next";
 import type { PartialWaveSurferOptions } from "node_modules/@meersagor/wavesurfer-vue/dist/types/types";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
@@ -38,6 +38,8 @@ const isMuteButtonLongPressActive = ref(false);
 const TOUCH_DURATION = 500; // 500ms for long press
 const isMac = navigator.userAgent.indexOf("Mac") > 0;
 const isMuted = computed(() => props.volume === 0);
+const peaksData = ref<any | null>(null);
+const knownDurationSeconds = ref<number | null>(null);
 
 // Methods
 const handleTrackError = (error: Error, context: string) => {
@@ -91,18 +93,66 @@ const waveSurferColorScheme = computed(() => {
 });
 
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1);
   return {
     height: 64,
-    barGap: 2,
-    barWidth: 3,
+    barGap: isIOS ? 1.5 : 2,
+    barWidth: isIOS ? 2 : 3,
     barRadius: 8,
     dragToSeek: true,
     backend: "WebAudio",
     url: props.track.audio_file_url,
     ...(props.audioContext ? { audioContext: props.audioContext } : {}),
+    // If we have precomputed peaks/duration, pass them to reduce decoding
+    ...(peaksData.value ? { peaks: peaksData.value } : ({} as any)),
+    ...(props.track.duration_seconds
+      ? { duration: props.track.duration_seconds }
+      : knownDurationSeconds.value
+        ? { duration: knownDurationSeconds.value }
+        : ({} as any)),
     ...waveSurferColorScheme.value
   };
 });
+
+// Prefetch peaks JSON if provided
+const loadPeaksIfAvailable = async () => {
+  try {
+    if (!props.track.peaks_file_url) {
+      peaksData.value = null;
+      knownDurationSeconds.value = null;
+      return;
+    }
+    const response = await fetch(props.track.peaks_file_url, { cache: "force-cache" });
+    const json = await response.json();
+    if (Array.isArray(json)) {
+      peaksData.value = json;
+    } else if (json && (Array.isArray(json.data) || Array.isArray(json.channels))) {
+      // Support { data: [...] } or { channels: [[...], ...] }
+      peaksData.value = json.data ?? json.channels;
+      if (typeof json.duration === "number") {
+        knownDurationSeconds.value = json.duration;
+      }
+    } else {
+      peaksData.value = null;
+    }
+  } catch (e) {
+    console.debug("Failed to load peaks JSON", e);
+    peaksData.value = null;
+  }
+};
+
+onMounted(() => {
+  loadPeaksIfAvailable();
+});
+
+watch(
+  () => props.track.peaks_file_url,
+  () => {
+    loadPeaksIfAvailable();
+  }
+);
 
 const handleLyricsButtonClick = () => {
   emit("toggle-lyrics");
@@ -269,8 +319,17 @@ onUnmounted(() => {
     <div class="h-2 w-full p-0">
       <WaveSurferPlayer
         :options="waveSurferOptions"
+        @wave-surfer="
+          (ws: WaveSurfer) => {
+            try {
+              ws.on('error', (e) => console.error(`WS error (track ${track.id})`, e));
+            } catch (_) {
+              /* no-op */
+            }
+            waveSurfer = ws;
+          }
+        "
         @interaction="(time: number) => emit('seek', time)"
-        @wave-surfer="(ws: WaveSurfer) => (waveSurfer = ws)"
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"
         @finish="emit('finish')"
