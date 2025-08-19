@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { AudioLines } from "lucide-vue-next";
-import { ref } from "vue";
+import { AudioLines, X } from "lucide-vue-next";
+import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
 import { uploadFile } from "@/data/storage";
@@ -17,9 +17,16 @@ const emit = defineEmits<{
   "upload-success": [data: { url: string; durationSeconds?: number }];
   "upload-start": [];
   "upload-end": [];
+  "peaks-removed": [];
 }>();
 
 const isUploading = ref(false);
+const isRemoving = ref(false);
+
+// Check if peaks file exists
+const hasPeaksFile = computed(() => {
+  return !!(props.track.peaks_file_url && props.track.peaks_file_url.trim());
+});
 
 const generatePeaksFilename = (
   collection: CollectionWithRole,
@@ -75,24 +82,81 @@ const handleFileUpload = async (event: Event) => {
     if (input) input.value = "";
   }
 };
+
+const handleRemovePeaks = async () => {
+  if (!hasPeaksFile.value) return;
+
+  isRemoving.value = true;
+
+  try {
+    emit("peaks-removed");
+    toast.success("Peaks eliminados correctamente");
+  } catch (error: any) {
+    console.error("Peaks removal error:", error);
+    toast.error(error.message || "Error al eliminar peaks");
+  } finally {
+    isRemoving.value = false;
+  }
+};
 </script>
 
 <template>
-  <div class="relative shrink-0">
-    <input
-      type="file"
-      accept="application/json,.json"
-      class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-      :disabled="disabled || isUploading"
-      @change="handleFileUpload"
-    />
-    <button class="btn btn-sm btn-soft btn-square" :disabled="disabled || isUploading">
-      <template v-if="isUploading">
-        <span class="loading loading-spinner loading-xs" />
-      </template>
-      <template v-else>
-        <AudioLines class="size-3.5" />
-      </template>
-    </button>
+  <div :class="hasPeaksFile ? 'join' : ''">
+    <!-- Main peaks button -->
+    <div class="relative">
+      <input
+        v-if="!hasPeaksFile"
+        type="file"
+        accept="application/json,.json"
+        class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+        :disabled="disabled || isUploading"
+        @change="handleFileUpload"
+      />
+      <div
+        class="tooltip tooltip-top"
+        :data-tip="hasPeaksFile ? 'Reemplazar archivo de peaks' : 'Subir archivo de peaks'"
+      >
+        <button
+          class="btn btn-sm btn-square"
+          :class="hasPeaksFile ? 'btn-primary join-item' : 'btn-soft'"
+          :disabled="disabled || isUploading"
+          @click="hasPeaksFile ? ($refs.fileInput as any)?.click() : undefined"
+        >
+          <template v-if="isUploading">
+            <span class="loading loading-spinner loading-xs" />
+          </template>
+          <template v-else>
+            <AudioLines class="size-3.5" />
+          </template>
+        </button>
+      </div>
+
+      <!-- Hidden file input for replace functionality -->
+      <input
+        v-if="hasPeaksFile"
+        ref="fileInput"
+        type="file"
+        accept="application/json,.json"
+        class="hidden"
+        :disabled="disabled || isUploading"
+        @change="handleFileUpload"
+      />
+    </div>
+
+    <!-- Remove button (only when peaks exist) -->
+    <div v-if="hasPeaksFile" class="tooltip tooltip-top" data-tip="Eliminar archivo de peaks">
+      <button
+        class="btn btn-sm btn-soft btn-square join-item opacity-80 hover:opacity-100"
+        :disabled="disabled || isRemoving"
+        @click="handleRemovePeaks"
+      >
+        <template v-if="isRemoving">
+          <span class="loading loading-spinner loading-xs" />
+        </template>
+        <template v-else>
+          <X class="size-3" />
+        </template>
+      </button>
+    </div>
   </div>
 </template>

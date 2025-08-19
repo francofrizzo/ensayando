@@ -252,6 +252,10 @@ const handlePeaksUploadSuccess = (
   // Note: Duration is now detected from audio files, not peaks
 };
 
+const handlePeaksRemoved = (index: number) => {
+  updateTrackField(index, "peaks_file_url", null);
+};
+
 // Validation
 const validateForm = () => {
   clearErrors();
@@ -736,6 +740,7 @@ defineExpose({
                       @upload-success="
                         (data: any) => handlePeaksUploadSuccess(track.renderIndex, data)
                       "
+                      @peaks-removed="() => handlePeaksRemoved(track.renderIndex)"
                     />
 
                     <button
