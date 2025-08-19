@@ -97,7 +97,7 @@ const waveSurferColorScheme = computed(() => {
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1);
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   const options = {
     height: 64,
@@ -106,11 +106,11 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     barWidth: isIOS ? 2 : 3,
     barRadius: 8,
     dragToSeek: true,
-    backend: "WebAudio",
+    backend: "WebAudio" as const,
     url: props.track.audio_file_url,
-    ...(props.audioContext ? { audioContext: props.audioContext } : {}),
-    ...(peaksData.value ? { peaks: peaksData.value } : ({} as any)),
-    ...(knownDurationSeconds.value ? { duration: knownDurationSeconds.value } : ({} as any)),
+    audioContext: props.audioContext,
+    peaks: peaksData.value,
+    duration: knownDurationSeconds.value ?? undefined,
     ...waveSurferColorScheme.value
   };
 
@@ -120,10 +120,9 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
 // Use embedded peaks if available on the track
 const applyEmbeddedPeaks = () => {
   const embedded = props.track.peaks;
-  if (embedded && Array.isArray((embedded as any).channels)) {
-    peaksData.value = (embedded as any).channels;
-    knownDurationSeconds.value =
-      typeof (embedded as any).duration === "number" ? (embedded as any).duration : null;
+  if (embedded && Array.isArray(embedded.channels)) {
+    peaksData.value = embedded.channels;
+    knownDurationSeconds.value = typeof embedded.duration === "number" ? embedded.duration : null;
     // Clean up existing waveSurfer instance before re-rendering
     if (waveSurfer.value) {
       try {
