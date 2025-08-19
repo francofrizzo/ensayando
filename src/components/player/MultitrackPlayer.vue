@@ -71,20 +71,7 @@ const isIOS = computed(
     (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)
 );
 
-// Sequential initialization on iOS to avoid concurrent decodes
-const initializedTrackCount = ref<number>(0);
-watch(
-  () => props.song,
-  () => {
-    initializedTrackCount.value = isIOS.value ? 1 : sortedTracks.value.length;
-  },
-  { immediate: true }
-);
-const displayedTracks = computed(() => {
-  return isIOS.value
-    ? sortedTracks.value.slice(0, initializedTrackCount.value)
-    : sortedTracks.value;
-});
+// iOS sequential decode: rendering is not restricted anymore; we call beginLoad sequentially instead
 
 providePlayerState({
   currentTime: state.currentTime,
@@ -121,8 +108,17 @@ watch(
       lyricsEnabled: true
     }));
 
-    // Reset iOS sequential init counter
-    initializedTrackCount.value = isIOS.value ? 1 : sortedTracks.value.length;
+    // Start first decode on iOS for new song
+    if (isIOS.value && trackPlayers.value[0]) {
+      const first = trackPlayers.value[0] as any;
+      if (first && typeof first.beginLoad === "function") {
+        try {
+          first.beginLoad();
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
   }
 );
 
@@ -145,9 +141,16 @@ const onReady = (trackIndex: number, duration: number) => {
   if (trackIndex === 0) {
     state.totalDuration.value = duration;
   }
-  // Progressively initialize next track on iOS once current one is ready
-  if (isIOS.value && initializedTrackCount.value < sortedTracks.value.length) {
-    initializedTrackCount.value += 1;
+  // On iOS, trigger sequential decode by calling beginLoad on next deferred track
+  if (isIOS.value) {
+    const nextIndex = trackIndex + 1;
+    if (nextIndex < trackPlayers.value.length) {
+      try {
+        (trackPlayers.value[nextIndex] as any)?.beginLoad?.();
+      } catch (e) {
+        // no-op
+      }
+    }
   }
 };
 
@@ -283,6 +286,17 @@ const keydownHandler = (event: KeyboardEvent) => {
 onMounted(() => {
   window.addEventListener("keydown", keydownHandler);
   initMediaSession();
+  // Kick off sequential decode on iOS: start first track explicitly
+  if (isIOS.value && trackPlayers.value[0]) {
+    const first = trackPlayers.value[0] as any;
+    if (first && typeof first.beginLoad === "function") {
+      try {
+        first.beginLoad();
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
 });
 
 onUnmounted(() => {
@@ -693,7 +707,7 @@ const initializeAudioContext = async () => {
           >
             <div class="overflow-hidden">
               <TrackPlayer
-                v-for="(track, index) in displayedTracks"
+                v-for="(track, index) in sortedTracks"
                 :key="index"
                 :ref="
                   (el: any) => {
@@ -710,6 +724,7 @@ const initializeAudioContext = async () => {
                 :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
                 :edit-mode="uiStore.editMode"
                 :audio-context="audioContext || undefined"
+                :defer-load="isIOS"
                 @ready="(duration: number) => onReady(index, duration)"
                 @time-update="(time: number) => onTimeUpdate(index, time)"
                 @volume-change="(volume: number) => onVolumeChange(index, volume)"

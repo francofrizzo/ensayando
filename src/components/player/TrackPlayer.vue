@@ -18,6 +18,7 @@ const props = defineProps<{
   lyricsEnabled: boolean;
   editMode?: boolean;
   audioContext?: AudioContext;
+  deferLoad?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -33,6 +34,11 @@ const emit = defineEmits<{
 
 // State
 const waveSurfer = ref<WaveSurfer | null>(null);
+const hasBegunLoad = ref(false);
+const currentUrl = ref<string | null>(null);
+if (!props.deferLoad) {
+  currentUrl.value = props.track.audio_file_url;
+}
 const muteButtonLongPressTimer = ref<number | null>(null);
 const isMuteButtonLongPressActive = ref(false);
 const TOUCH_DURATION = 500; // 500ms for long press
@@ -69,7 +75,18 @@ const handleVolumeChange = (value: number | number[]) => {
 
 defineExpose({
   waveSurfer,
-  seekTo
+  seekTo,
+  beginLoad: () => {
+    if (hasBegunLoad.value) return;
+    hasBegunLoad.value = true;
+    currentUrl.value = props.track.audio_file_url;
+    try {
+      // If instance exists, explicitly load; otherwise options change will trigger load
+      waveSurfer.value?.load?.(props.track.audio_file_url as any);
+    } catch (e) {
+      // Fallback to options-driven load
+    }
+  }
 });
 
 const trackColor = computed(() => {
@@ -104,7 +121,7 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
     barRadius: 8,
     dragToSeek: true,
     backend: "WebAudio" as const,
-    url: props.track.audio_file_url,
+    url: currentUrl.value ?? undefined,
     audioContext: props.audioContext,
     peaks: props.track.peaks?.channels,
     ...waveSurferColorScheme.value
