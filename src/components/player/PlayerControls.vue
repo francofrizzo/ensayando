@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Pause, Play } from "lucide-vue-next";
+import { Copy, Pause, Play, RefreshCcw } from "lucide-vue-next";
 
 import { formatTime } from "@/utils/datetime-utils";
 
@@ -9,10 +9,12 @@ const props = defineProps<{
   isPlaying: boolean;
   isReady: boolean;
   editMode?: boolean;
+  autoplayEnabled: boolean;
 }>();
 
 const emit = defineEmits<{
   "play-pause": [];
+  "toggle-autoplay": [];
 }>();
 
 const copyTimeToClipboard = () => {
@@ -45,15 +47,26 @@ const copyTimeToClipboard = () => {
         <Copy class="size-3.5" />
       </button>
     </div>
-    <button
-      class="btn btn-circle btn-primary btn-lg flex-shrink-0"
-      :disabled="!props.isReady"
-      rounded
-      aria-label="Play/Pause"
-      @click="() => emit('play-pause')"
-    >
-      <Pause v-if="props.isPlaying" class="h-5 w-5" />
-      <Play v-else class="h-5 w-5" />
-    </button>
+    <div class="flex items-center gap-3">
+      <button
+        class="btn btn-circle btn-primary btn-lg flex-shrink-0"
+        :disabled="!props.isReady"
+        rounded
+        aria-label="Play/Pause"
+        @click="() => emit('play-pause')"
+      >
+        <Pause v-if="props.isPlaying" class="h-5 w-5" />
+        <Play v-else class="h-5 w-5" />
+      </button>
+      <button
+        class="btn btn-circle btn-sm flex-shrink-0"
+        :class="{ 'btn-primary': props.autoplayEnabled, 'btn-soft': !props.autoplayEnabled }"
+        :disabled="!props.isReady"
+        aria-label="Toggle Autoplay"
+        @click="() => emit('toggle-autoplay')"
+      >
+        <RefreshCcw class="h-4 w-4" />
+      </button>
+    </div>
   </div>
 </template>
