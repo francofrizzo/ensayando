@@ -237,10 +237,15 @@ const onFinish = (trackIndex: number) => {
     if (playerStore.autoplayEnabled && !isNavigatingToNext.value) {
       isNavigatingToNext.value = true;
 
+      // Remember current track selection before navigating
+      rememberCurrentSelection();
+
       const nextSong = getNextSong();
       if (nextSong) {
+        // Set flag to auto-start playback on next song
         playerStore.setShouldAutoStartNextSong(true);
 
+        // Navigate to next song
         router.push({
           name: "song",
           params: {
@@ -250,6 +255,7 @@ const onFinish = (trackIndex: number) => {
         });
       }
 
+      // Reset navigation flag after a short delay
       setTimeout(() => {
         isNavigatingToNext.value = false;
       }, 1000);
