@@ -11,10 +11,7 @@ import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
-import { useCollectionsStore } from "@/stores/collections";
-import { usePlayerStore } from "@/stores/player";
 import { useUIStore } from "@/stores/ui";
-import { useRouter } from "vue-router";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -23,8 +20,6 @@ const props = defineProps<{
 }>();
 
 const uiStore = useUIStore();
-const playerStore = usePlayerStore();
-const router = useRouter();
 
 // General state
 const sortedTracks = computed(() => {
@@ -69,53 +64,6 @@ const trackIdsWithLyricsEnabled = computed(() => {
   return state.trackStates.value.filter((track) => track.lyricsEnabled).map((track) => track.id);
 });
 
-const isNavigatingToNext = ref(false);
-
-const getCurrentEnabledColorKeys = () => {
-  return state.trackStates.value
-    .map((trackState, index) => ({ trackState, track: sortedTracks.value[index] }))
-    .filter(({ trackState, track }) => trackState.volume > 0 && track)
-    .map(({ track }) => track!.color_key);
-};
-
-const rememberCurrentSelection = () => {
-  const enabledColorKeys = getCurrentEnabledColorKeys();
-  const isAll = enabledColorKeys.length === sortedTracks.value.length;
-  playerStore.rememberSelection(props.collection.id, enabledColorKeys, isAll);
-};
-
-const applyStoredSelection = () => {
-  console.log("applyStoredSelection", props.collection.id);
-  const storedSelection = playerStore.getSelection(props.collection.id);
-  if (!storedSelection) return;
-
-  if (storedSelection.mode === "all") {
-    state.trackStates.value.forEach((trackState) => {
-      trackState.volume = 1;
-      trackState.lyricsEnabled = true;
-    });
-  } else if (storedSelection.mode === "subset") {
-    state.trackStates.value.forEach((trackState, index) => {
-      const track = sortedTracks.value[index];
-      if (track) {
-        const shouldEnable = storedSelection.colorKeys.includes(track.color_key);
-        trackState.volume = shouldEnable ? 1 : 0;
-        trackState.lyricsEnabled = shouldEnable;
-      }
-    });
-  }
-};
-
-const getNextSong = () => {
-  const collectionsStore = useCollectionsStore();
-  const allSongs = collectionsStore.songs;
-  const currentSongIndex = allSongs.findIndex((song: Song) => song.id === props.song.id);
-  if (currentSongIndex === -1 || currentSongIndex >= allSongs.length - 1) {
-    return null;
-  }
-  return allSongs[currentSongIndex + 1]!;
-};
-
 // Platform detection
 const isIOS = computed(
   () =>
@@ -131,7 +79,6 @@ providePlayerState({
   isPlaying: state.playing,
   isReady
 });
-
 // Cleanup and reset when switching songs to prevent lingering decoders/buffers
 watch(
   () => props.song.id,
@@ -173,19 +120,6 @@ watch(
       }
     }
   }
-);
-
-watch(
-  () => props.song.id,
-  () => {
-    console.log("watch song id", props.song.id);
-    // Apply stored track selection for this song
-    nextTick(() => {
-      console.log("applyStoredSelection nextTick", props.song.id);
-      applyStoredSelection();
-    });
-  },
-  { immediate: true }
 );
 
 // Interactivity
@@ -232,34 +166,6 @@ const onFinish = (trackIndex: number) => {
   const trackVolume = state.trackStates.value[trackIndex]?.volume ?? 0;
   if (trackVolume > 0) {
     state.playing.value = false;
-
-    // Autoplay logic
-    if (playerStore.autoplayEnabled && !isNavigatingToNext.value) {
-      isNavigatingToNext.value = true;
-
-      // Remember current track selection before navigating
-      rememberCurrentSelection();
-
-      const nextSong = getNextSong();
-      if (nextSong) {
-        // Set flag to auto-start playback on next song
-        playerStore.setShouldAutoStartNextSong(true);
-
-        // Navigate to next song
-        router.push({
-          name: "song",
-          params: {
-            collectionSlug: props.collection.slug,
-            songSlug: nextSong.slug
-          }
-        });
-      }
-
-      // Reset navigation flag after a short delay
-      setTimeout(() => {
-        isNavigatingToNext.value = false;
-      }, 1000);
-    }
   }
 };
 
@@ -271,7 +177,6 @@ const onVolumeChange = (trackIndex: number, volume: number) => {
   } else {
     onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, false);
   }
-  rememberCurrentSelection();
 };
 
 const onToggleTrackMuted = (trackIndex: number, toggleLyrics: boolean) => {
@@ -296,7 +201,6 @@ const onSoloTrack = (index: number, toggleLyrics: boolean) => {
       onSetTrackLyricsEnabled(sortedTracks.value[i]!.id, shouldBeEnabled);
     }
   });
-  rememberCurrentSelection();
 };
 
 const onSetTrackLyricsEnabled = (trackId: number, newState: boolean) => {
@@ -355,10 +259,6 @@ const onPlayPause = async (forcePlay?: boolean) => {
 
 const onSeekToTime = (time: number) => {
   seekAllTracks(time);
-};
-
-const onToggleAutoplay = () => {
-  playerStore.setAutoplayEnabled(!playerStore.autoplayEnabled);
 };
 
 const keydownHandler = (event: KeyboardEvent) => {
@@ -549,14 +449,6 @@ watch(
           audioContext.value = ws.backend.audioContext;
           setupAudioInterruptionListeners();
         }
-      }
-
-      // Auto-start playback if we should start the next song
-      if (playerStore.shouldAutoStartNextSong && playerStore.autoplayEnabled) {
-        nextTick(() => {
-          onPlayPause(true);
-          playerStore.setShouldAutoStartNextSong(false);
-        });
       }
     }
   }
@@ -780,9 +672,7 @@ const initializeAudioContext = async () => {
             :is-playing="state.playing.value"
             :is-ready="isReady"
             :edit-mode="uiStore.editMode"
-            :autoplay-enabled="playerStore.autoplayEnabled"
             @play-pause="onPlayPause"
-            @toggle-autoplay="onToggleAutoplay"
           />
           <div class="absolute top-2 left-1/2 flex -translate-x-1/2 items-center justify-end">
             <TimeCopier :current-time="state.currentTime.value" />
