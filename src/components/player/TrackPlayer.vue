@@ -99,6 +99,9 @@ const disabledColor = computed(() => {
 const color = computed(() => {
   return isMuted.value ? disabledColor.value : trackColor.value;
 });
+const lyricsButtonColor = computed(() => {
+  return props.lyricsEnabled ? trackColor.value : disabledColor.value;
+});
 
 const waveSurferColorScheme = computed(() => {
   const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -167,9 +170,9 @@ const handleMuteButtonClick = (event: MouseEvent) => {
   const isCtrlOrCmdPressed = isMac ? event.metaKey : event.ctrlKey;
 
   if (isCtrlOrCmdPressed) {
-    emit("toggle-solo", !event.shiftKey);
+    emit("toggle-solo", event.shiftKey);
   } else {
-    emit("toggle-muted", !event.shiftKey);
+    emit("toggle-muted", event.shiftKey);
   }
 };
 
@@ -291,14 +294,15 @@ onUnmounted(() => {
         <button
           v-if="props.hasLyrics"
           :disabled="!isReady"
-          class="btn btn-circle btn-sm btn-ghost text-primary flex-shrink-0"
+          class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
+          :style="{ '--color-primary': lyricsButtonColor }"
           @click="handleLyricsButtonClick"
         >
           <MicVocal class="h-4 w-4" />
         </button>
         <button
           :disabled="!isReady"
-          class="btn btn-circle btn-sm btn-ghost text-primary flex-shrink-0"
+          class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
           @click="handleMuteButtonClick"
           @touchstart="handleMuteButtonTouchStart"
           @touchend="handleMuteButtonTouchEnd"

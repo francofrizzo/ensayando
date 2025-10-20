@@ -169,23 +169,22 @@ const onFinish = (trackIndex: number) => {
   }
 };
 
-const onVolumeChange = (trackIndex: number, volume: number) => {
+const onVolumeChange = (trackIndex: number, volume: number, toggleLyrics = false) => {
   const clampedVolume = Math.max(0, Math.min(1, volume));
   state.trackStates.value[trackIndex]!.volume = clampedVolume;
-  if (state.trackStates.value[trackIndex]!.volume > 0) {
-    onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, true);
-  } else {
-    onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, false);
+  if (toggleLyrics) {
+    if (state.trackStates.value[trackIndex]!.volume > 0) {
+      onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, true);
+    } else {
+      onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, false);
+    }
   }
 };
 
 const onToggleTrackMuted = (trackIndex: number, toggleLyrics: boolean) => {
   const shouldBeEnabled = state.trackStates.value[trackIndex]!.volume === 0;
   const newVolume = shouldBeEnabled ? 1 : 0;
-  onVolumeChange(trackIndex, newVolume);
-  if (toggleLyrics) {
-    onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, shouldBeEnabled);
-  }
+  onVolumeChange(trackIndex, newVolume, toggleLyrics);
 };
 
 const onSoloTrack = (index: number, toggleLyrics: boolean) => {
@@ -196,10 +195,7 @@ const onSoloTrack = (index: number, toggleLyrics: boolean) => {
   state.trackStates.value.forEach((_, i) => {
     const shouldBeEnabled = i === index || isCurrentlySoloed;
     const newVolume = shouldBeEnabled ? 1 : 0;
-    onVolumeChange(i, newVolume);
-    if (toggleLyrics) {
-      onSetTrackLyricsEnabled(sortedTracks.value[i]!.id, shouldBeEnabled);
-    }
+    onVolumeChange(i, newVolume, toggleLyrics);
   });
 };
 
