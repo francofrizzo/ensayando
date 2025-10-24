@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronDown, Loader2, MicVocal } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { toast } from "vue-sonner";
 
 import SongEditor from "@/components/editor/SongEditor.vue";
 import TimeCopier from "@/components/editor/TimeCopier.vue";
@@ -12,6 +13,7 @@ import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
+import { mixAndEncodeMp3 } from "../../utils/mixdown";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -276,6 +278,14 @@ const keydownHandler = (event: KeyboardEvent) => {
     event.preventDefault();
     const newTime = Math.min(state.totalDuration.value, state.currentTime.value + 0.1);
     onSeekToTime(newTime);
+  } else if (
+    event.key === "e" &&
+    (event.metaKey || event.ctrlKey) &&
+    event.shiftKey &&
+    !isInCapturingElement
+  ) {
+    event.preventDefault();
+    onDownloadMix();
   }
 };
 
@@ -363,6 +373,78 @@ const silentAudio = ref<HTMLAudioElement | null>(null);
 const audioContext = ref<AudioContext | null>(null);
 const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => any) | null>(null);
 const visibilityChangeHandlerRef = ref<((this: Document, ev: Event) => any) | null>(null);
+
+const exporting = ref(false);
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
+const onDownloadMix = async () => {
+  if (!isReady.value || exporting.value) return;
+  exporting.value = true;
+
+  const toastId = toast.loading("Generando audio para descargar...");
+
+  try {
+    const urls = sortedTracks.value.map((t) => t.audio_file_url || null);
+    const gains = state.trackStates.value.map((s) => Math.max(0, Math.min(1, s.volume ?? 0)));
+    const sampleRate = audioContext.value?.sampleRate ?? 44100;
+    const duration = state.totalDuration.value;
+
+    const buffers = trackPlayers.value.map((player) => {
+      const ws: any = player?.waveSurfer;
+      if (!ws) return null;
+      try {
+        if (typeof ws.getDecodedData === "function") {
+          const data = ws.getDecodedData();
+          if (data) return data as AudioBuffer;
+        }
+      } catch (e) {
+        /* no-op: ws.getDecodedData may throw on some backends */
+      }
+      try {
+        if (ws.backend?.buffer) {
+          return ws.backend.buffer as AudioBuffer;
+        }
+      } catch (e) {
+        /* no-op: backend buffer access may throw if backend differs */
+      }
+      return null;
+    });
+
+    const blob = await mixAndEncodeMp3(urls, gains, {
+      duration,
+      sampleRate,
+      buffers,
+      bitrateKbps: 192
+    });
+    const safeTitle = (props.song.title || "mix")
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9-_]/g, "");
+    downloadBlob(blob, `${safeTitle}-mix.mp3`);
+
+    toast.success("Mezcla descargada", {
+      id: toastId,
+      description: `${safeTitle}-mix.mp3`
+    });
+  } catch (error) {
+    handleAudioError(error as Error, "onDownloadMix");
+    toast.error("Error al generar mezcla", {
+      id: toastId,
+      description: "Revisa la consola para más detalles"
+    });
+  } finally {
+    exporting.value = false;
+  }
+};
 
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
