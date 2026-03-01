@@ -68,14 +68,15 @@ export async function decodeAll(
     (window as any).AudioContext || (window as any).webkitAudioContext;
   const ac = AudioCtx ? new AudioCtx({ sampleRate }) : new (window as any).AudioContext();
 
-  const results: AudioBuffer[] = [];
+  const results: AudioBuffer[] = new Array(urls.length);
+
+  // Separate tracks into those with usable existing buffers and those needing fetch
+  const fetchTasks: { index: number; url: string }[] = [];
   for (let i = 0; i < urls.length; i++) {
     if (existing[i]) {
-      // Only accept existing if it can be coerced into a non-empty buffer AND is reasonably long
-      // WaveSurfer may provide tiny peak buffers (e.g. 1000 samples) instead of full audio
       const ok = isUsableBufferLike(existing[i]);
       const len = (existing[i] as any)?.length ?? 0;
-      const minExpectedSamples = sampleRate * 0.1; // At least 100ms of audio
+      const minExpectedSamples = sampleRate * 0.1;
       if (ok && len > minExpectedSamples) {
         console.log(`[mixdown] Track ${i}: using existing buffer (${len} samples)`);
         results[i] = existing[i] as AudioBuffer;
@@ -89,25 +90,30 @@ export async function decodeAll(
     const url = urls[i];
     if (!url) {
       console.log(`[mixdown] Track ${i}: no URL, creating silent buffer`);
-      // Create empty buffer if missing
       results[i] = ac.createBuffer(2, 1, sampleRate);
       continue;
     }
-    try {
-      console.log(`[mixdown] Track ${i}: fetching ${url}`);
-      const resp = await fetch(url as string);
-      const ab = await resp.arrayBuffer();
-      const audio = await ac.decodeAudioData(ab);
-      console.log(
-        `[mixdown] Track ${i}: decoded ${audio.length} samples, ${audio.numberOfChannels}ch`
-      );
-      results[i] = audio;
-    } catch (e) {
-      console.error(`[mixdown] Track ${i}: fetch/decode failed:`, e);
-      // On failure, return silence buffer of 1 frame to keep alignment
-      results[i] = ac.createBuffer(2, 1, sampleRate);
-    }
+    fetchTasks.push({ index: i, url });
   }
+
+  // Fetch and decode all needed tracks in parallel
+  await Promise.all(
+    fetchTasks.map(async ({ index, url }) => {
+      try {
+        console.log(`[mixdown] Track ${index}: fetching ${url}`);
+        const resp = await fetch(url);
+        const ab = await resp.arrayBuffer();
+        const audio = await ac.decodeAudioData(ab);
+        console.log(
+          `[mixdown] Track ${index}: decoded ${audio.length} samples, ${audio.numberOfChannels}ch`
+        );
+        results[index] = audio;
+      } catch (e) {
+        console.error(`[mixdown] Track ${index}: fetch/decode failed:`, e);
+        results[index] = ac.createBuffer(2, 1, sampleRate);
+      }
+    })
+  );
   try {
     ac.close?.();
   } catch {
@@ -157,6 +163,9 @@ export async function renderOffline(
 
   console.log(`[mixdown] Connected ${sourcesConnected} sources, rendering...`);
   const rendered = await offline.startRendering();
+  try {
+    (offline as any).close?.();
+  } catch {}
   console.log(`[mixdown] Offline render complete: ${rendered.length} samples`);
 
   // If rendered buffer looks silent, fallback to direct JS mixing
@@ -223,10 +232,12 @@ export async function encodeMp3(
   }
   const blockSize = 1152; // MP3 frame size
   const mp3Data: Uint8Array[] = [];
+  const leftBuf = new Int16Array(blockSize);
+  const rightBuf = new Int16Array(blockSize);
 
   for (let i = 0; i < left.length; i += blockSize) {
-    const leftChunk = floatTo16(left, i, blockSize);
-    const rightChunk = floatTo16(right, i, blockSize);
+    const leftChunk = floatTo16(left, i, blockSize, leftBuf);
+    const rightChunk = floatTo16(right, i, blockSize, rightBuf);
     const enc = encoder.encodeBuffer(leftChunk, rightChunk);
     if (enc.length > 0) mp3Data.push(enc);
   }
@@ -235,9 +246,18 @@ export async function encodeMp3(
   return mp3Data;
 }
 
-function floatTo16(src: Float32Array, start: number, len: number): Int16Array {
-  const out = new Int16Array(Math.min(len, src.length - start));
-  for (let i = 0; i < out.length; i++) {
+function floatTo16(
+  src: Float32Array,
+  start: number,
+  len: number,
+  preallocated?: Int16Array
+): Int16Array {
+  const actualLen = Math.min(len, src.length - start);
+  const out =
+    preallocated && preallocated.length >= actualLen
+      ? preallocated.subarray(0, actualLen)
+      : new Int16Array(actualLen);
+  for (let i = 0; i < actualLen; i++) {
     const s = Math.max(-1, Math.min(1, src[start + i] || 0));
     out[i] = s < 0 ? (s * 0x8000) | 0 : (s * 0x7fff) | 0;
   }
@@ -306,17 +326,24 @@ function isUsableBufferLike(candidate: any): boolean {
   }
 }
 
+let lameLoadPromise: Promise<void> | null = null;
+
 async function ensureLameJsUmdLoaded(): Promise<void> {
   const g = window as any;
   if (g?.lamejs?.Mp3Encoder || g?.Mp3Encoder) return;
-  await new Promise<void>((resolve, reject) => {
+  if (lameLoadPromise) return lameLoadPromise;
+  lameLoadPromise = new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
     script.src = "https://unpkg.com/lamejs@1.2.0/lame.min.js";
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = (e) => reject(e);
+    script.onerror = (e) => {
+      lameLoadPromise = null;
+      reject(e);
+    };
     document.head.appendChild(script);
   });
+  return lameLoadPromise;
 }
 
 function isAlmostSilent(buf: AudioBuffer): boolean {
@@ -325,7 +352,7 @@ function isAlmostSilent(buf: AudioBuffer): boolean {
     const right = buf.numberOfChannels > 1 ? buf.getChannelData(1) : left;
     let peak = 0;
     const len = left.length;
-    for (let i = 0; i < len; i += 1024) {
+    for (let i = 0; i < len; i += 256) {
       const l = Math.abs(left[i] || 0);
       const r = Math.abs(right[i] || 0);
       if (l > peak) peak = l;
@@ -351,7 +378,7 @@ async function jsMixToBuffer(
     const mixR = new Float32Array(length);
 
     const coerced: { buf: AudioBuffer; gain: number }[] = [];
-    const oc = new OfflineAudioContext(2, 1, sampleRate);
+    const oc = new OfflineAudioContext(2, 1, sampleRate) as any;
     for (let i = 0; i < inputs.length; i++) {
       const gain = Math.max(0, Math.min(1, gains[i] ?? 0));
       if (gain === 0) {
@@ -407,12 +434,18 @@ async function jsMixToBuffer(
       }
     }
 
-    const outCtx = new OfflineAudioContext(2, length, sampleRate);
+    try {
+      oc.close?.();
+    } catch {}
+    const outCtx = new OfflineAudioContext(2, length, sampleRate) as any;
     const out = outCtx.createBuffer(2, length, sampleRate);
     out.copyToChannel(mixL, 0);
     if (out.numberOfChannels > 1) {
       out.copyToChannel(mixR, 1);
     }
+    try {
+      outCtx.close?.();
+    } catch {}
     console.log(`[mixdown] jsMix: output buffer created, ${out.length} samples`);
     return out;
   } catch (e) {
@@ -442,6 +475,7 @@ function normalizeBuffer(buffer: AudioBuffer): AudioBuffer {
       const r = Math.abs(right[i] || 0);
       const p = Math.max(l, r);
       if (p > peak) peak = p;
+      if (peak >= 1.0) break; // Already clipping, no point scanning further
     }
 
     console.log(`[mixdown] normalizeBuffer: peak=${peak.toFixed(4)}`);

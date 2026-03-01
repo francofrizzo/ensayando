@@ -28,7 +28,7 @@ const sortedTracks = computed(() => {
   return [...props.song.audio_tracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 });
 
-const tracksIdsWithLyrics = () => {
+const tracksIdsWithLyrics = computed(() => {
   const tracks = new Set<number>();
   props.song.lyrics?.forEach((stanza) => {
     stanza.forEach((item) => {
@@ -44,7 +44,7 @@ const tracksIdsWithLyrics = () => {
     });
   });
   return Array.from(tracks);
-};
+});
 
 const state = {
   currentTime: ref<number>(0),
@@ -56,7 +56,7 @@ const state = {
       id: track.id,
       isReady: false,
       volume: 1,
-      hasLyrics: tracksIdsWithLyrics().includes(track.id),
+      hasLyrics: tracksIdsWithLyrics.value.includes(track.id),
       lyricsEnabled: true
     }))
   )
@@ -106,7 +106,7 @@ watch(
       id: track.id,
       isReady: false,
       volume: 1,
-      hasLyrics: tracksIdsWithLyrics().includes(track.id),
+      hasLyrics: tracksIdsWithLyrics.value.includes(track.id),
       lyricsEnabled: true
     }));
 
@@ -144,6 +144,20 @@ const onReady = (trackIndex: number, duration: number) => {
     state.totalDuration.value = duration;
   }
   // On iOS, trigger sequential decode by calling beginLoad on next deferred track
+  if (isIOS.value) {
+    const nextIndex = trackIndex + 1;
+    if (nextIndex < trackPlayers.value.length) {
+      try {
+        (trackPlayers.value[nextIndex] as any)?.beginLoad?.();
+      } catch (e) {
+        // no-op
+      }
+    }
+  }
+};
+
+const onTrackError = (trackIndex: number) => {
+  // On iOS, continue sequential decode even if a track fails
   if (isIOS.value) {
     const nextIndex = trackIndex + 1;
     if (nextIndex < trackPlayers.value.length) {
@@ -214,25 +228,23 @@ const onToggleTrackLyrics = (trackId: number) => {
 };
 
 const onPlayPause = async (forcePlay?: boolean) => {
+  if (isInitializing.value) return;
+
   // Check if tracks are ready before allowing playback
   if (!isReady.value && (forcePlay === true || forcePlay === undefined)) {
     handleAudioError(new Error("Cannot start playback: tracks are not ready"), "onPlayPause");
     return;
   }
 
-  // If AudioContext exists but is suspended, try to resume it within user gesture
-  if (audioContext.value?.state === "suspended") {
-    try {
+  isInitializing.value = true;
+  try {
+    // If AudioContext exists but is suspended, try to resume it within user gesture
+    if (audioContext.value?.state === "suspended") {
       await audioContext.value.resume();
-    } catch (resumeError) {
-      handleAudioError(resumeError as Error, "audioContext.resume");
-      return;
     }
-  }
 
-  // Initialize audio context for WebAudio API user gesture requirement
-  if (!hasInitializedAudio.value) {
-    try {
+    // Initialize audio context for WebAudio API user gesture requirement
+    if (!hasInitializedAudio.value) {
       await initializeAudioContext();
       // Try to play silent audio to unlock WebAudio context
       if (silentAudio.value) {
@@ -242,16 +254,13 @@ const onPlayPause = async (forcePlay?: boolean) => {
           console.debug("Silent audio play was blocked or failed:", playError);
         }
       }
-    } catch (e) {
-      handleAudioError(e as Error, "initializeAudioContext in onPlayPause");
-      return; // Don't proceed if audio context initialization fails
     }
-  }
 
-  try {
     state.playing.value = forcePlay ?? !state.playing.value;
   } catch (error) {
-    handleAudioError(error as Error, "setting playing state");
+    handleAudioError(error as Error, "onPlayPause");
+  } finally {
+    isInitializing.value = false;
   }
 };
 
@@ -292,20 +301,22 @@ const keydownHandler = (event: KeyboardEvent) => {
 onMounted(() => {
   window.addEventListener("keydown", keydownHandler);
   initMediaSession();
-  // Kick off sequential decode on iOS: start first track explicitly
-  if (isIOS.value && trackPlayers.value[0]) {
-    const first = trackPlayers.value[0] as any;
-    if (first && typeof first.beginLoad === "function") {
-      try {
-        first.beginLoad();
-      } catch (e) {
-        // ignore
+  // Kick off sequential decode on iOS: use nextTick so template refs are populated
+  if (isIOS.value) {
+    nextTick(() => {
+      const first = trackPlayers.value[0] as any;
+      if (first && typeof first.beginLoad === "function") {
+        try {
+          first.beginLoad();
+        } catch (e) {
+          // ignore
+        }
       }
-    }
+    });
   }
 });
 
-onUnmounted(() => {
+onUnmounted(async () => {
   try {
     window.removeEventListener("keydown", keydownHandler);
   } catch (error) {
@@ -340,17 +351,19 @@ onUnmounted(() => {
   }
 
   // Clean up audio context reference
+  try {
+    await audioContext.value?.close();
+  } catch {}
   audioContext.value = null;
 
   if (silentAudio.value) {
     try {
       silentAudio.value.pause();
       silentAudio.value.src = "";
-      silentAudio.value.load();
       silentAudio.value = null;
     } catch (error) {
       handleAudioError(error as Error, "silentAudio cleanup");
-      silentAudio.value = null; // Force cleanup even if error
+      silentAudio.value = null;
     }
   }
 });
@@ -367,13 +380,14 @@ const isPWA = computed(() => {
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
 const syncInterval = ref<number | null>(null);
 const SYNC_CHECK_INTERVAL = 1000;
-const DRIFT_THRESHOLD = 0.05;
+const DRIFT_THRESHOLD = 0.15;
 const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
 const audioContext = ref<AudioContext | null>(null);
 const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => any) | null>(null);
 const visibilityChangeHandlerRef = ref<((this: Document, ev: Event) => any) | null>(null);
 
+const isInitializing = ref(false);
 const exporting = ref(false);
 
 const downloadBlob = (blob: Blob, filename: string) => {
@@ -460,6 +474,7 @@ const checkAndCorrectSync = () => {
 
     trackPlayers.value.forEach((player, index) => {
       if (!player?.waveSurfer || index === 0) return; // Skip reference track
+      if (state.trackStates.value[index]?.volume === 0) return; // Skip muted tracks
 
       try {
         const time = player.waveSurfer.getCurrentTime?.() ?? 0;
@@ -658,15 +673,10 @@ const initializeAudioContext = async () => {
       const AudioContextCtor: typeof AudioContext | undefined =
         (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AudioContextCtor) {
-        // Prefer 44.1 kHz and playback latency for lower memory/CPU on iOS
-        try {
-          audioContext.value = new AudioContextCtor({
-            sampleRate: 44100,
-            latencyHint: "playback" as any
-          });
-        } catch {
-          audioContext.value = new AudioContextCtor();
-        }
+        audioContext.value = new AudioContextCtor({
+          sampleRate: 44100,
+          latencyHint: "playback" as any
+        });
       }
     }
 
@@ -680,6 +690,10 @@ const initializeAudioContext = async () => {
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         handleAudioError(new Error("Audio load timeout"), "initializeAudioContext");
+        try {
+          silentAudio.value?.pause();
+          silentAudio.value = null;
+        } catch {}
         reject(new Error("Audio load timeout"));
       }, 5000);
 
@@ -811,6 +825,7 @@ const initializeAudioContext = async () => {
                 @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
                 @seek="onSeekToTime"
                 @finish="onFinish(index)"
+                @error="onTrackError(index)"
               />
             </div>
           </div>

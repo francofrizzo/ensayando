@@ -36,7 +36,12 @@ export function useMediaSession(
       });
 
       navigator.mediaSession.setActionHandler("seekto", (details) => {
-        if (details.seekTime !== undefined) {
+        if (
+          details.seekTime !== undefined &&
+          Number.isFinite(details.seekTime) &&
+          details.seekTime >= 0 &&
+          details.seekTime <= options.value.duration
+        ) {
           currentTime.value = details.seekTime;
           events.onSeek?.(details.seekTime);
         }
@@ -126,9 +131,14 @@ export function useMediaSession(
     updateMediaSessionPlaybackState(playing);
   });
 
-  // Watch for time changes to update position state
+  // Watch for time changes to update position state (throttled to ~1s)
+  let lastPositionUpdate = 0;
   watch(currentTime, (time) => {
-    updatePositionState(time);
+    const now = performance.now();
+    if (now - lastPositionUpdate >= 1000) {
+      lastPositionUpdate = now;
+      updatePositionState(time);
+    }
   });
 
   return {

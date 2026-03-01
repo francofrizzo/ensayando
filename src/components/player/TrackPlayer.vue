@@ -25,6 +25,7 @@ const emit = defineEmits<{
   ready: [duration: number];
   "time-update": [time: number];
   finish: [];
+  error: [];
   seek: [time: number];
   "volume-change": [volume: number];
   "toggle-muted": [toggleLyrics: boolean];
@@ -44,7 +45,6 @@ const isMuteButtonLongPressActive = ref(false);
 const TOUCH_DURATION = 500; // 500ms for long press
 const isMac = navigator.userAgent.indexOf("Mac") > 0;
 const isMuted = computed(() => props.volume === 0);
-const abortController = ref<AbortController | null>(null);
 
 // Methods
 const handleTrackError = (error: Error, context: string) => {
@@ -92,10 +92,7 @@ defineExpose({
 const trackColor = computed(() => {
   return props.collection.track_colors[props.track.color_key] ?? props.collection.main_color;
 });
-const disabledColor = computed(() => {
-  const rootStyle = getComputedStyle(document.documentElement);
-  return rootStyle.getPropertyValue("--color-zinc-500").trim();
-});
+const disabledColor = ref("");
 const color = computed(() => {
   return isMuted.value ? disabledColor.value : trackColor.value;
 });
@@ -103,10 +100,13 @@ const lyricsButtonColor = computed(() => {
   return props.lyricsEnabled ? trackColor.value : disabledColor.value;
 });
 
+const isDarkMode = ref(window.matchMedia("(prefers-color-scheme: dark)").matches);
+let darkModeMediaQuery: MediaQueryList | null = null;
+let darkModeListener: ((e: MediaQueryListEvent) => void) | null = null;
+
 const waveSurferColorScheme = computed(() => {
-  const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return {
-    waveColor: isDarkMode ? darken(color.value, 0.3) : lighten(color.value, 0.4),
+    waveColor: isDarkMode.value ? darken(color.value, 0.3) : lighten(color.value, 0.4),
     progressColor: color.value
   };
 });
@@ -133,7 +133,21 @@ const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
   return options;
 });
 
-onMounted(() => {});
+onMounted(() => {
+  // Cache getComputedStyle once
+  disabledColor.value = getComputedStyle(document.documentElement)
+    .getPropertyValue("--color-zinc-500")
+    .trim();
+
+  // Reactively track dark mode changes
+  darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  darkModeListener = (e: MediaQueryListEvent) => {
+    isDarkMode.value = e.matches;
+    // Update waveform colors when dark mode changes
+    waveSurfer.value?.setOptions({ ...waveSurferColorScheme.value });
+  };
+  darkModeMediaQuery.addEventListener("change", darkModeListener);
+});
 
 const handleLyricsButtonClick = () => {
   emit("toggle-lyrics");
@@ -209,15 +223,10 @@ watch(
         const clampedVolume = Math.max(0, Math.min(1, newVolume));
         waveSurfer.value.setVolume(clampedVolume);
         waveSurfer.value.setMuted(clampedVolume === 0);
-        // Resync track position after volume change to prevent desynchronization
-        // When a track is muted, it pauses; when unmuted, it needs to jump to the current playback position
-        try {
-          const currentTime = waveSurfer.value.getCurrentTime();
-          if (currentTime >= 0 && waveSurfer.value.getDuration() > 0) {
-            waveSurfer.value.setTime(currentTime);
-          }
-        } catch (syncError) {
-          handleTrackError(syncError as Error, "resync after volume change");
+        // When unmuting while playing, ensure the track resumes playback
+        // WaveSurfer may internally pause muted tracks
+        if (clampedVolume > 0 && props.isPlaying) {
+          waveSurfer.value.play();
         }
       } catch (error) {
         handleTrackError(error as Error, "set volume");
@@ -228,14 +237,11 @@ watch(
 );
 
 onUnmounted(() => {
-  // Abort any ongoing fetch requests
-  try {
-    if (abortController.value) {
-      abortController.value.abort();
-      abortController.value = null;
-    }
-  } catch (error) {
-    handleTrackError(error as Error, "abort fetch");
+  // Clean up dark mode listener
+  if (darkModeMediaQuery && darkModeListener) {
+    darkModeMediaQuery.removeEventListener("change", darkModeListener);
+    darkModeMediaQuery = null;
+    darkModeListener = null;
   }
 
   // Clear timers
@@ -321,6 +327,7 @@ onUnmounted(() => {
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"
         @finish="emit('finish')"
+        @error="emit('error')"
       />
     </div>
   </div>
