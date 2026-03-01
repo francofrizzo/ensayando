@@ -80,6 +80,8 @@ defineExpose({
     if (hasBegunLoad.value) return;
     hasBegunLoad.value = true;
     currentUrl.value = props.track.audio_file_url;
+    // WaveSurferPlayer doesn't watch for option changes, so we must call load() explicitly
+    waveSurfer.value?.load(props.track.audio_file_url);
   }
 });
 
