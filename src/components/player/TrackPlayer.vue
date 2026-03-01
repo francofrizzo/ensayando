@@ -7,6 +7,7 @@ import type WaveSurfer from "wavesurfer.js";
 
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
 import { darken, lighten } from "@/utils/color-utils";
+import { isIOS, isMac } from "@/utils/platform";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -43,7 +44,6 @@ if (!props.deferLoad) {
 const muteButtonLongPressTimer = ref<number | null>(null);
 const isMuteButtonLongPressActive = ref(false);
 const TOUCH_DURATION = 500; // 500ms for long press
-const isMac = navigator.userAgent.indexOf("Mac") > 0;
 const isMuted = computed(() => props.volume === 0);
 
 // Methods
@@ -80,19 +80,16 @@ defineExpose({
     if (hasBegunLoad.value) return;
     hasBegunLoad.value = true;
     currentUrl.value = props.track.audio_file_url;
-    try {
-      // If instance exists, explicitly load; otherwise options change will trigger load
-      waveSurfer.value?.load?.(props.track.audio_file_url as any);
-    } catch (e) {
-      // Fallback to options-driven load
-    }
   }
 });
 
 const trackColor = computed(() => {
   return props.collection.track_colors[props.track.color_key] ?? props.collection.main_color;
 });
-const disabledColor = ref("");
+const disabledColor = ref(
+  getComputedStyle(document.documentElement).getPropertyValue("--color-zinc-500").trim() ||
+    "oklch(0.552 0.016 286)"
+);
 const color = computed(() => {
   return isMuted.value ? disabledColor.value : trackColor.value;
 });
@@ -112,17 +109,13 @@ const waveSurferColorScheme = computed(() => {
 });
 
 const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
   const options = {
     height: 64,
     barHeight: 0.9,
     barGap: isIOS ? 1.5 : 2,
     barWidth: isIOS ? 2 : 3,
     barRadius: 8,
-    dragToSeek: true,
+    dragToSeek: !isIOS,
     backend: "WebAudio" as const,
     url: currentUrl.value ?? undefined,
     audioContext: props.audioContext,
@@ -196,7 +189,7 @@ watch(
     if (!waveSurfer.value || !props.isReady) return;
     try {
       if (newIsPlaying) {
-        waveSurfer.value?.play();
+        waveSurfer.value?.play()?.catch(() => {});
       } else {
         waveSurfer.value?.pause();
       }
@@ -226,7 +219,7 @@ watch(
         // When unmuting while playing, ensure the track resumes playback
         // WaveSurfer may internally pause muted tracks
         if (clampedVolume > 0 && props.isPlaying) {
-          waveSurfer.value.play();
+          waveSurfer.value.play()?.catch(() => {});
         }
       } catch (error) {
         handleTrackError(error as Error, "set volume");
@@ -310,7 +303,7 @@ onUnmounted(() => {
           :disabled="!isReady"
           class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
           @click="handleMuteButtonClick"
-          @touchstart="handleMuteButtonTouchStart"
+          @touchstart.prevent="handleMuteButtonTouchStart"
           @touchend="handleMuteButtonTouchEnd"
           @touchcancel="handleMuteButtonTouchCancel"
         >
@@ -322,12 +315,16 @@ onUnmounted(() => {
     <div class="h-2 w-full p-0">
       <WaveSurferPlayer
         :options="waveSurferOptions"
-        @wave-surfer="(ws: WaveSurfer) => (waveSurfer = ws)"
+        @wave-surfer="
+          (ws: WaveSurfer) => {
+            waveSurfer = ws;
+            ws.on('error', () => emit('error'));
+          }
+        "
         @interaction="(time: number) => emit('seek', time)"
         @ready="(duration: number) => emit('ready', duration)"
         @timeupdate="(time: number) => emit('time-update', time)"
         @finish="emit('finish')"
-        @error="emit('error')"
       />
     </div>
   </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronDown, Loader2, MicVocal } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { isIOS } from "@/utils/platform";
 import { toast } from "vue-sonner";
 
 import SongEditor from "@/components/editor/SongEditor.vue";
@@ -66,12 +67,7 @@ const trackIdsWithLyricsEnabled = computed(() => {
   return state.trackStates.value.filter((track) => track.lyricsEnabled).map((track) => track.id);
 });
 
-// Platform detection
-const isIOS = computed(
-  () =>
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)
-);
+// Platform detection — isIOS imported from @/utils/platform
 
 // iOS sequential decode: rendering is not restricted anymore; we call beginLoad sequentially instead
 
@@ -110,16 +106,18 @@ watch(
       lyricsEnabled: true
     }));
 
-    // Start first decode on iOS for new song
-    if (isIOS.value && trackPlayers.value[0]) {
-      const first = trackPlayers.value[0] as any;
-      if (first && typeof first.beginLoad === "function") {
-        try {
-          first.beginLoad();
-        } catch (e) {
-          // ignore
+    // Start first decode on iOS for new song (nextTick so template refs are populated)
+    if (isIOS) {
+      nextTick(() => {
+        const first = trackPlayers.value[0] as any;
+        if (first && typeof first.beginLoad === "function") {
+          try {
+            first.beginLoad();
+          } catch (e) {
+            // ignore
+          }
         }
-      }
+      });
     }
   }
 );
@@ -144,7 +142,7 @@ const onReady = (trackIndex: number, duration: number) => {
     state.totalDuration.value = duration;
   }
   // On iOS, trigger sequential decode by calling beginLoad on next deferred track
-  if (isIOS.value) {
+  if (isIOS) {
     const nextIndex = trackIndex + 1;
     if (nextIndex < trackPlayers.value.length) {
       try {
@@ -158,7 +156,7 @@ const onReady = (trackIndex: number, duration: number) => {
 
 const onTrackError = (trackIndex: number) => {
   // On iOS, continue sequential decode even if a track fails
-  if (isIOS.value) {
+  if (isIOS) {
     const nextIndex = trackIndex + 1;
     if (nextIndex < trackPlayers.value.length) {
       try {
@@ -302,7 +300,7 @@ onMounted(() => {
   window.addEventListener("keydown", keydownHandler);
   initMediaSession();
   // Kick off sequential decode on iOS: use nextTick so template refs are populated
-  if (isIOS.value) {
+  if (isIOS) {
     nextTick(() => {
       const first = trackPlayers.value[0] as any;
       if (first && typeof first.beginLoad === "function") {
@@ -372,9 +370,7 @@ onUnmounted(async () => {
 const tracksVisible = ref(true);
 
 // PWA detection
-const isPWA = computed(() => {
-  return window.matchMedia("(display-mode: standalone)").matches;
-});
+const isPWA = window.matchMedia("(display-mode: standalone)").matches;
 
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
@@ -385,7 +381,6 @@ const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
 const audioContext = ref<AudioContext | null>(null);
 const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => any) | null>(null);
-const visibilityChangeHandlerRef = ref<((this: Document, ev: Event) => any) | null>(null);
 
 const isInitializing = ref(false);
 const exporting = ref(false);
@@ -462,6 +457,7 @@ const onDownloadMix = async () => {
 
 const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
+  if (audioContext.value?.state !== "running") return;
 
   const referenceTrack = trackPlayers.value[0];
   if (!referenceTrack?.waveSurfer) return;
@@ -602,7 +598,7 @@ watch(
   () => state.currentTime.value,
   (time) => {
     isUpdatingFromMediaSession.value = true;
-    mediaSessionTime.value = time;
+    mediaSessionTime.value = Math.min(time, state.totalDuration.value);
     nextTick(() => {
       isUpdatingFromMediaSession.value = false;
     });
@@ -631,16 +627,6 @@ const setupAudioInterruptionListeners = () => {
       };
       audioContext.value.addEventListener("statechange", audioStateChangeHandlerRef.value);
     }
-
-    // Mobile browsers don't always trigger audio context suspension on screen lock
-    if (!visibilityChangeHandlerRef.value) {
-      visibilityChangeHandlerRef.value = () => {
-        if (document.hidden) {
-          handleAudioInterruption();
-        }
-      };
-      document.addEventListener("visibilitychange", visibilityChangeHandlerRef.value);
-    }
   } catch (error) {
     handleAudioError(error as Error, "setupAudioInterruptionListeners");
   }
@@ -651,10 +637,6 @@ const cleanupAudioInterruptionListeners = () => {
     if (audioContext.value && audioStateChangeHandlerRef.value) {
       audioContext.value.removeEventListener("statechange", audioStateChangeHandlerRef.value);
       audioStateChangeHandlerRef.value = null;
-    }
-    if (visibilityChangeHandlerRef.value) {
-      document.removeEventListener("visibilitychange", visibilityChangeHandlerRef.value);
-      visibilityChangeHandlerRef.value = null;
     }
   } catch (error) {
     handleAudioError(error as Error, "cleanupAudioInterruptionListeners");

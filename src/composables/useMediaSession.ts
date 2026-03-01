@@ -92,7 +92,7 @@ export function useMediaSession(
       try {
         navigator.mediaSession.setPositionState({
           duration: options.value.duration,
-          position: time,
+          position: Math.max(0, Math.min(time, options.value.duration)),
           playbackRate: 1.0
         });
       } catch (error) {
