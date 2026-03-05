@@ -63,6 +63,7 @@ const message = computed(() => config[props.type].message);
         <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary">
           {{ backLink.text }}
         </router-link>
+        <slot name="actions" />
       </div>
     </div>
   </div>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import SongEditor from "@/components/editor/SongEditor.vue";
+import SongMenu from "@/components/navigation/SongMenu.vue";
 import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
@@ -14,6 +16,8 @@ const collectionsStore = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();
 const { replaceToSong } = useNavigation();
 const { themeVariables } = useCollectionTheme(currentCollection);
+
+const showEditor = ref(false);
 
 const isLoading = computed(() => collectionsStore.isLoading);
 
@@ -67,10 +71,24 @@ watch(
       }"
     />
 
+    <div
+      v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading && showEditor"
+      class="relative h-screen"
+    >
+      <div class="fixed top-3 left-3 z-50 lg:top-4 lg:left-4">
+        <SongMenu />
+      </div>
+      <SongEditor @toggle-edit="showEditor = false" />
+    </div>
+
     <ErrorMessage
       v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading"
       type="no-songs"
-    />
+    >
+      <template v-if="collectionsStore.canEditCurrentCollection" #actions>
+        <button class="btn btn-primary" @click="showEditor = true">Crear canción</button>
+      </template>
+    </ErrorMessage>
 
     <div v-else class="flex min-h-dvh items-center justify-center">
       <LoadingScreen />

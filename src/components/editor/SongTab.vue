@@ -435,6 +435,8 @@ watch(
   (song) => {
     if (song && !isCreateMode.value) {
       restoreFormFromSong(song);
+    } else if (!song && !isCreateMode.value) {
+      enterCreateMode();
     }
   },
   { immediate: true }
@@ -728,7 +730,7 @@ defineExpose({
   </div>
   <SafeTeleport to="[data-song-editor-actions]">
     <div class="flex gap-2">
-      <button v-if="isCreateMode" class="btn btn-xs btn-soft" @click="cancelCreateMode">
+      <button v-if="isCreateMode && currentSong" class="btn btn-xs btn-soft" @click="cancelCreateMode">
         <X class="size-3.5" />
         <span class="hidden md:block">Cancelar</span>
       </button>
