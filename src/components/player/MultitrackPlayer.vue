@@ -184,8 +184,13 @@ const onFinish = (trackIndex: number) => {
 };
 
 const onVolumeChange = (trackIndex: number, volume: number, toggleLyrics = false) => {
+  const previousVolume = state.trackStates.value[trackIndex]!.volume;
   const clampedVolume = Math.max(0, Math.min(1, volume));
   state.trackStates.value[trackIndex]!.volume = clampedVolume;
+  // When unmuting, sync the track to the current playback time
+  if (previousVolume === 0 && clampedVolume > 0) {
+    trackPlayers.value[trackIndex]?.seekTo(state.currentTime.value);
+  }
   if (toggleLyrics) {
     if (state.trackStates.value[trackIndex]!.volume > 0) {
       onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, true);
