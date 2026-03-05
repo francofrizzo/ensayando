@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import SongEditor from "@/components/editor/SongEditor.vue";
-import SongMenu from "@/components/navigation/SongMenu.vue";
 import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
@@ -73,11 +72,8 @@ watch(
 
     <div
       v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading && showEditor"
-      class="relative h-screen"
+      class="h-screen"
     >
-      <div class="fixed top-3 left-3 z-50 lg:top-4 lg:left-4">
-        <SongMenu />
-      </div>
       <SongEditor @toggle-edit="showEditor = false" />
     </div>
 
