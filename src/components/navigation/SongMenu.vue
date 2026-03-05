@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Edit, LockKeyhole, Menu, Music, X } from "lucide-vue-next";
+import { Edit, Globe, LockKeyhole, Menu, Music, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
 import AuthStatus from "@/components/auth/AuthStatus.vue";
@@ -45,9 +45,10 @@ const otherCollectionMenuItems = computed(() => {
           >
             <div v-if="currentCollection" class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-2 pr-3 pl-5">
-                <span class="text-base-content/60 font-medium tracking-wide uppercase">{{
-                  currentCollection?.title
-                }}</span>
+                <span class="text-base-content/60 flex items-center gap-1.5 font-medium tracking-wide uppercase">
+                  {{ currentCollection?.title }}
+                  <Globe v-if="currentCollection?.is_public" class="size-3.5 opacity-60" />
+                </span>
                 <div class="flex items-center gap-2">
                   <button
                     v-if="collectionsStore.canEditCurrentCollection"
@@ -106,9 +107,11 @@ const otherCollectionMenuItems = computed(() => {
                         collectionSlug: otherCollection.slug
                       }
                     }"
+                    class="flex items-center gap-1.5"
                     @click="isOpen = false"
                   >
                     {{ otherCollection.title }}
+                    <Globe v-if="otherCollection.is_public" class="size-3 opacity-60" />
                   </router-link>
                 </li>
               </ul>

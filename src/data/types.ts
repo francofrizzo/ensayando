@@ -6,6 +6,7 @@ export type Collection = {
   main_color: string;
   track_colors: Record<string, string>;
   artwork_file_url: string | null;
+  is_public: boolean;
   created_at: string;
 };
 

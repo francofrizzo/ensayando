@@ -26,19 +26,13 @@ const router = createRouter({
       path: "/:collectionSlug",
       name: "collection",
       component: () => import("@/views/CollectionView.vue"),
-      props: true,
-      meta: {
-        requiresAuth: true
-      }
+      props: true
     },
     {
       path: "/:collectionSlug/:songSlug",
       name: "song",
       component: () => import("@/views/SongView.vue"),
-      props: true,
-      meta: {
-        requiresAuth: true
-      }
+      props: true
     },
     {
       path: "/404",

@@ -41,6 +41,17 @@ export const signOut = async () => {
 };
 
 // Collection and song functions
+
+// Fetch all public collections (no auth required)
+export const fetchPublicCollections = async (): Promise<
+  PostgrestSingleResponse<Collection[]>
+> => {
+  return await supabase
+    .from("collections")
+    .select("*")
+    .eq("is_public", true);
+};
+
 // Fetch collections available to the current user along with their role in each collection
 export const fetchCollections = async (): Promise<
   PostgrestSingleResponse<CollectionWithRole[]>
@@ -49,9 +60,18 @@ export const fetchCollections = async (): Promise<
     data: { user }
   } = await supabase.auth.getUser();
 
+  // Unauthenticated: return only public collections with viewer role
   if (!user) {
+    const publicResponse = await fetchPublicCollections();
+    if (publicResponse.error) {
+      return publicResponse as PostgrestSingleResponse<CollectionWithRole[]>;
+    }
+    const mapped: CollectionWithRole[] = (publicResponse.data || []).map(
+      (collection) => ({ ...collection, user_role: "viewer" as const })
+    );
+    mapped.sort((a, b) => b.id - a.id);
     return {
-      data: [],
+      data: mapped,
       error: null,
       count: null,
       status: 200,
@@ -59,25 +79,38 @@ export const fetchCollections = async (): Promise<
     } as PostgrestSingleResponse<CollectionWithRole[]>;
   }
 
-  // Join user_collections with collections to get per-collection role
-  const response = await supabase
-    .from("user_collections")
-    .select("role, collections(*)")
-    .eq("user_id", user.id);
+  // Authenticated: fetch user's private collections + public collections, merge
+  const [userResponse, publicResponse] = await Promise.all([
+    supabase
+      .from("user_collections")
+      .select("role, collections(*)")
+      .eq("user_id", user.id),
+    fetchPublicCollections()
+  ]);
 
-  if (response.error) {
-    return response as PostgrestSingleResponse<CollectionWithRole[]>;
+  if (userResponse.error) {
+    return userResponse as PostgrestSingleResponse<CollectionWithRole[]>;
   }
 
-  const mapped: CollectionWithRole[] = (response.data || [])
-    .map((row: any) => {
-      const collection: Collection | null = row.collections ?? null;
-      if (!collection) return null;
-      return { ...collection, user_role: row.role } as CollectionWithRole;
-    })
-    .filter(Boolean) as CollectionWithRole[];
+  // Build map from user's collections (these take priority)
+  const collectionsMap = new Map<number, CollectionWithRole>();
 
-  // Sort by id desc to roughly match previous behavior
+  for (const row of userResponse.data || []) {
+    const collection: Collection | null = (row as any).collections ?? null;
+    if (!collection) continue;
+    collectionsMap.set(collection.id, { ...collection, user_role: row.role } as CollectionWithRole);
+  }
+
+  // Merge public collections (only add if user doesn't already have them)
+  if (!publicResponse.error && publicResponse.data) {
+    for (const collection of publicResponse.data) {
+      if (!collectionsMap.has(collection.id)) {
+        collectionsMap.set(collection.id, { ...collection, user_role: "viewer" as const });
+      }
+    }
+  }
+
+  const mapped = Array.from(collectionsMap.values());
   mapped.sort((a, b) => b.id - a.id);
 
   return {
