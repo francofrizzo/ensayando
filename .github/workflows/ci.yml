@@ -30,13 +30,12 @@ jobs:
         with:
           version: latest
 
-      - name: Cache Supabase Docker images
+      - name: Restore Supabase Docker cache
         id: supabase-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: /tmp/supabase-docker
-          key: supabase-docker-${{ hashFiles('supabase/config.toml') }}
-          save-always: true
+          key: supabase-docker-v2-${{ hashFiles('supabase/config.toml') }}
 
       - name: Load cached Docker images
         if: steps.supabase-cache.outputs.cache-hit == 'true'
@@ -51,7 +50,7 @@ jobs:
       - name: Install dependencies & start Supabase in parallel
         run: |
           pnpm install --frozen-lockfile &
-          supabase start &
+          supabase start --exclude realtime,edge-runtime,logflare,vector,studio,imgproxy,supavisor &
           wait
 
       - name: Cache Playwright browsers
@@ -77,6 +76,13 @@ jobs:
             name=$(echo "$img" | tr '/:' '_')
             docker save "$img" -o "/tmp/supabase-docker/${name}.tar"
           done
+
+      - name: Upload Supabase Docker cache
+        if: always() && steps.supabase-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/supabase-docker
+          key: supabase-docker-v2-${{ hashFiles('supabase/config.toml') }}
 
       - run: pnpm exec tsx tests/e2e/seed.ts
       - run: pnpm exec playwright test
