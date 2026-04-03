@@ -198,7 +198,7 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="font-lyrics flex flex-col gap-6">
     <div
       v-for="(stanza, stanzaIndex) in regularizedLyrics"
       :key="stanzaIndex"

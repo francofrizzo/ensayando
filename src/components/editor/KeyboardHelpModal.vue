@@ -34,7 +34,6 @@ onUnmounted(() => {
 const keybindingGroups = computed(() => {
   const commands = props.commandRegistry.getCommandsByCategory();
 
-  // Group by category
   const groups: Array<{
     category: string;
     items: Array<{
@@ -45,7 +44,7 @@ const keybindingGroups = computed(() => {
 
   Object.entries(commands).forEach(([category, categoryCommands]) => {
     const items = categoryCommands
-      .filter((command) => command.keybinding) // Only include commands with keybindings
+      .filter((command) => command.keybinding)
       .map((command) => ({
         description: command.description,
         keyParts: props.commandRegistry.getKeybindingParts(command)
@@ -64,38 +63,53 @@ const keybindingGroups = computed(() => {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
+  <Transition name="modal">
+    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
 
-    <div
-      class="bg-base-100/60 border-base-300 relative mx-4 max-h-[80vh] w-full max-w-2xl overflow-auto rounded-lg border shadow-xl backdrop-blur-sm"
-    >
       <div
-        class="bg-base-100 border-base-200 sticky top-0 flex items-center justify-between border-b px-6 py-4"
+        class="bg-base-100/75 border-base-300 relative mx-4 max-h-[70vh] w-full max-w-lg overflow-auto rounded-lg border shadow-xl"
       >
-        <h2 class="text-xl font-semibold">Atajos de teclado</h2>
-        <button class="btn btn-sm btn-circle btn-ghost" @click="emit('close')">
-          <X class="size-4" />
-        </button>
-      </div>
+        <div
+          class="bg-base-100/70 border-base-200 sticky top-0 z-10 flex items-center justify-between border-b px-5 py-3 backdrop-blur-lg"
+        >
+          <h2 class="text-base font-semibold">Atajos de teclado</h2>
+          <button class="btn btn-xs btn-circle btn-ghost" @click="emit('close')">
+            <X class="size-3.5" />
+          </button>
+        </div>
 
-      <div class="space-y-6 p-6">
-        <div v-for="group in keybindingGroups" :key="group.category">
-          <h3 class="text-primary mb-3 text-sm font-medium tracking-wide uppercase">
-            {{ group.category }}
-          </h3>
-          <div class="space-y-2">
-            <div
-              v-for="item in group.items"
-              :key="item.description"
-              class="flex items-center justify-between"
-            >
-              <span>{{ item.description }}</span>
-              <KeybindingDisplay :key-parts="item.keyParts" kbd-class="kbd-sm" />
+        <div class="space-y-4 px-5 py-4">
+          <div v-for="group in keybindingGroups" :key="group.category">
+            <h3 class="text-primary mb-2 text-xs font-medium tracking-wide uppercase">
+              {{ group.category }}
+            </h3>
+            <div class="space-y-1">
+              <div
+                v-for="item in group.items"
+                :key="item.description"
+                class="flex items-center justify-between gap-4 py-0.5"
+              >
+                <span class="text-base-content/80 text-sm">{{ item.description }}</span>
+                <KeybindingDisplay :key-parts="item.keyParts" kbd-class="kbd-xs" />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </Transition>
 </template>
+
+<style scoped>
+.modal-enter-active {
+  transition: all 200ms ease-out;
+}
+.modal-leave-active {
+  transition: all 150ms ease-in;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+</style>
