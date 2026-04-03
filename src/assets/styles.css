@@ -165,9 +165,15 @@
   color: color-mix(in oklch, currentColor 30%, transparent);
 }
 
+html,
+body {
+  @apply overscroll-none;
+  overflow: hidden;
+  height: 100%;
+}
+
 body {
   @apply selection:bg-base-content/10;
-  @apply overscroll-none;
 }
 
 @layer utilities {

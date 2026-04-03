@@ -755,7 +755,7 @@ const initializeAudioContext = async () => {
 
     <div class="drawer-content">
       <div
-        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden overscroll-none select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
+        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
       >
         <div class="relative flex items-center justify-between gap-3 p-3 md:p-0 md:pb-3">
           <PlayerHeader
@@ -799,7 +799,7 @@ const initializeAudioContext = async () => {
           :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
         >
           <div
-            class="md:rounded-box h-full overflow-y-auto overscroll-none transition-all duration-300"
+            class="md:rounded-box h-full overflow-y-auto transition-all duration-300"
             :class="{ 'opacity-0': !tracksVisible }"
           >
             <div class="overflow-hidden">
