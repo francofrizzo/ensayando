@@ -167,6 +167,11 @@ const handleMuteButtonTouchEnd = () => {
     clearTimeout(muteButtonLongPressTimer.value);
     muteButtonLongPressTimer.value = null;
   }
+  // touchstart.prevent suppresses the click event, so toggle mute here
+  // unless a long press (solo) was already triggered
+  if (!isMuteButtonLongPressActive.value) {
+    emit("toggle-muted", false);
+  }
 };
 
 const handleMuteButtonTouchCancel = () => {
