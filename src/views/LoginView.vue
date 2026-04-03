@@ -86,14 +86,20 @@ const switchMode = (signUp: boolean) => {
     class="bg-base-100 from-primary/12 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
   >
     <div class="w-full max-w-md">
-      <div class="mb-8 text-center">
+      <div
+        class="mb-8 text-center"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
+      >
         <div class="mb-3 flex justify-center">
           <img src="/pwa-512x512.png" alt="Ensayando" class="h-16 w-16" />
         </div>
         <h1 class="text-3xl font-bold tracking-tight">Ensayando</h1>
       </div>
 
-      <div class="bg-base-200/80 rounded-box p-4 shadow-lg sm:p-8">
+      <div
+        class="bg-base-200/80 rounded-box p-4 shadow-lg sm:p-8"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 100ms"
+      >
         <div v-if="isSignUpEnabled" role="tablist" class="tabs tabs-box mb-8 w-full">
           <button
             role="tab"
@@ -116,7 +122,10 @@ const switchMode = (signUp: boolean) => {
         </div>
 
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
-          <label class="floating-label input input-bordered w-full">
+          <label
+            class="floating-label input input-bordered w-full transition-shadow duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            style="animation: empty-stagger 400ms ease-out both; animation-delay: 180ms"
+          >
             <User class="size-4" />
             <span>Usuario</span>
             <input
@@ -130,7 +139,10 @@ const switchMode = (signUp: boolean) => {
             />
           </label>
 
-          <label class="floating-label input input-bordered w-full">
+          <label
+            class="floating-label input input-bordered w-full transition-shadow duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
+          >
             <Key class="size-4" />
             <span>Contraseña</span>
             <input
@@ -154,6 +166,7 @@ const switchMode = (signUp: boolean) => {
             type="submit"
             class="btn btn-primary btn-block mt-4"
             :disabled="isLoading || !username || !password"
+            style="animation: empty-stagger 400ms ease-out both; animation-delay: 300ms"
           >
             <template v-if="isLoading">
               <span class="loading loading-spinner loading-sm"></span>
