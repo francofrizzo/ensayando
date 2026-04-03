@@ -32,6 +32,7 @@ const emit = defineEmits<{
   "toggle-muted": [toggleLyrics: boolean];
   "toggle-solo": [toggleLyrics: boolean];
   "toggle-lyrics": [];
+  "solo-lyrics": [];
 }>();
 
 // State
@@ -144,8 +145,13 @@ onMounted(() => {
   darkModeMediaQuery.addEventListener("change", darkModeListener);
 });
 
-const handleLyricsButtonClick = () => {
-  emit("toggle-lyrics");
+const handleLyricsButtonClick = (event: MouseEvent) => {
+  const isCtrlOrCmdPressed = isMac ? event.metaKey : event.ctrlKey;
+  if (isCtrlOrCmdPressed) {
+    emit("solo-lyrics");
+  } else {
+    emit("toggle-lyrics");
+  }
 };
 
 const handleMuteButtonTouchStart = () => {
@@ -297,7 +303,7 @@ onUnmounted(() => {
           :disabled="!isReady"
           class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
           :style="{ '--color-primary': lyricsButtonColor }"
-          @click="handleLyricsButtonClick"
+          @click="handleLyricsButtonClick($event)"
         >
           <MicVocal class="h-4 w-4" />
         </button>

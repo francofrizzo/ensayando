@@ -81,7 +81,7 @@ const getKeybindingParts = (commandId: string): string[] => {
     class="bg-base-100/50 border-base-content/10 rounded-box flex flex-wrap justify-center gap-0.5 border px-2 py-0.5 backdrop-blur-sm"
   >
     <!-- Line operations -->
-    <div class="tooltip tooltip-bottom">
+<div class="tooltip tooltip-bottom">
       <div class="tooltip-content flex flex-col items-center gap-0.5">
         Agregar verso después<br />
         <KeybindingDisplay :key-parts="getKeybindingParts('insert-line')" kbd-class="kbd-xs" />

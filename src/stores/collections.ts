@@ -19,6 +19,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     isDirty: ref(false),
     isSaving: ref(false)
   };
+  const savedLyricsSnapshot = ref<string>("[]");
 
   // Undo/redo state
   const MAX_UNDO_STACK = 50;
@@ -83,9 +84,11 @@ export const useCollectionsStore = defineStore("collections", () => {
     currentSong,
     (song) => {
       if (song) {
-        localLyrics.value.value = song.lyrics ?? [];
+        savedLyricsSnapshot.value = JSON.stringify(song.lyrics ?? []);
+        localLyrics.value.value = JSON.parse(savedLyricsSnapshot.value);
         localLyrics.isDirty.value = false;
       } else {
+        savedLyricsSnapshot.value = "[]";
         localLyrics.value.value = [];
         localLyrics.isDirty.value = false;
       }
@@ -161,10 +164,18 @@ export const useCollectionsStore = defineStore("collections", () => {
       if (error) {
         throw error;
       } else {
+        savedLyricsSnapshot.value = JSON.stringify(toRaw(localLyrics.value.value));
         localLyrics.isDirty.value = false;
       }
     }
     localLyrics.isSaving.value = false;
+  }
+
+  function discardLyricsChanges() {
+    localLyrics.value.value = JSON.parse(savedLyricsSnapshot.value);
+    localLyrics.isDirty.value = false;
+    undoStack.value = [];
+    redoStack.value = [];
   }
 
   const isLoading = computed(() => {
@@ -194,6 +205,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     localLyrics,
     updateLocalLyrics,
     saveLyrics,
+    discardLyricsChanges,
     undo,
     redo,
     canUndo,

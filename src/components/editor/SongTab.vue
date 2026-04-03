@@ -610,8 +610,17 @@ defineExpose({
             <div
               v-for="track in tracksForRendering"
               :key="track.stableKey"
-              class="card bg-base-100 border-base-300 border"
+              class="card bg-base-100 border-base-300 overflow-hidden border"
             >
+              <div
+                class="h-[3px] w-full"
+                :style="{
+                  backgroundColor:
+                    colorOptions?.find(
+                      (c: any) => c.key === formData.audio_tracks[track.renderIndex]?.color_key
+                    )?.value || 'transparent'
+                }"
+              />
               <div class="card-body flex flex-row items-center gap-3 p-4">
                 <div class="join join-vertical -my-1 -ml-1 flex shrink-0 flex-col">
                   <button

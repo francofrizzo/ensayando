@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
-import { HelpCircle, Save } from "lucide-vue-next";
+import { HelpCircle, RotateCcw, Save } from "lucide-vue-next";
 
 import LyricsTimestamps from "@/components/editor/LyricsTimestamps.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
@@ -34,6 +34,10 @@ const handleSaveClick = () => {
   } catch (error) {
     toast.error(`Error al guardar letras: ${error}`);
   }
+};
+
+const handleDiscardChanges = () => {
+  store.discardLyricsChanges();
 };
 
 const lyricsToDisplay = computed(() => {
@@ -324,7 +328,7 @@ defineExpose({
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <div
               v-if="!Array.isArray(item)"
-              class="flex flex-col items-start px-5"
+              class="flex items-stretch"
               data-lyric-hitbox
               :class="{
                 'bg-base-content/8': isVerseSelected(i, j),
@@ -337,37 +341,43 @@ defineExpose({
                   : focusTextareaAndMoveCursorToEnd($event)
               "
             >
-              <input
-                v-if="item.comment !== undefined"
-                type="text"
-                :value="item.comment"
-                placeholder="Comentario..."
-                class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 text-xs outline-none"
-                @input="
-                  (e) => {
-                    const lyrics = [...store.localLyrics.value];
-                    const verse = lyrics[i]?.[j];
-                    if (verse && !Array.isArray(verse)) {
-                      verse.comment = (e.target as HTMLInputElement).value;
-                      store.updateLocalLyrics(lyrics);
+              <div
+                class="w-[3px] flex-shrink-0 rounded-r-sm transition-all duration-150"
+                :class="isVerseSelected(i, j) ? 'bg-primary' : 'bg-transparent'"
+              />
+              <div class="flex min-w-0 flex-1 flex-col px-5">
+                <input
+                  v-if="item.comment !== undefined"
+                  type="text"
+                  :value="item.comment"
+                  placeholder="Comentario..."
+                  class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 font-mono text-xs outline-none"
+                  @input="
+                    (e) => {
+                      const lyrics = [...store.localLyrics.value];
+                      const verse = lyrics[i]?.[j];
+                      if (verse && !Array.isArray(verse)) {
+                        verse.comment = (e.target as HTMLInputElement).value;
+                        store.updateLocalLyrics(lyrics);
+                      }
                     }
-                  }
-                "
-              />
-              <LyricsTimestamps
-                v-if="showTimestamps"
-                :verse="item"
-                :available-audio-tracks="availableAudioTracks"
-                v-bind="createTimestampUpdateFunction(i, j)"
-              />
-              <LyricsTextarea
-                v-model="createVerseModel(i, j).value"
-                :data-lyrics-input="`${i}-${j}`"
-                :verse-styles="getVerseStyles(item, currentCollection)"
-                :readonly="copyPropertiesToMode"
-                :class="{ 'cursor-pointer': copyPropertiesToMode }"
-                @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
-              />
+                  "
+                />
+                <LyricsTimestamps
+                  v-if="showTimestamps"
+                  :verse="item"
+                  :available-audio-tracks="availableAudioTracks"
+                  v-bind="createTimestampUpdateFunction(i, j)"
+                />
+                <LyricsTextarea
+                  v-model="createVerseModel(i, j).value"
+                  :data-lyrics-input="`${i}-${j}`"
+                  :verse-styles="getVerseStyles(item, currentCollection)"
+                  :readonly="copyPropertiesToMode"
+                  :class="{ 'cursor-pointer': copyPropertiesToMode }"
+                  @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
+                />
+              </div>
             </div>
             <div v-else class="flex w-full flex-row items-stretch">
               <div
@@ -378,12 +388,10 @@ defineExpose({
                 <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="flex flex-col items-start px-3"
+                  class="flex items-stretch"
                   data-lyric-hitbox
                   :class="{
                     'bg-base-content/8': isVerseSelected(i, j, k, l),
-                    'pl-5': k === 0,
-                    'pr-5': k === item.length - 1,
                     'cursor-text': !copyPropertiesToMode,
                     'bg-base-content/5 hover:bg-base-content/10 cursor-pointer':
                       copyPropertiesToMode
@@ -399,43 +407,55 @@ defineExpose({
                       : focusTextareaAndMoveCursorToEnd($event)
                   "
                 >
-                  <input
-                    v-if="line.comment !== undefined"
-                    type="text"
-                    :value="line.comment"
-                    placeholder="Comentario..."
-                    class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 text-xs outline-none"
-                    @input="
-                      (e) => {
-                        const lyrics = [...store.localLyrics.value];
-                        const stanza = lyrics[i]?.[j];
-                        if (stanza && Array.isArray(stanza)) {
-                          const verse = (stanza as any)[k]?.[l];
-                          if (verse) {
-                            verse.comment = (e.target as HTMLInputElement).value;
-                            store.updateLocalLyrics(lyrics);
+                  <div
+                    class="w-[3px] flex-shrink-0 rounded-r-sm transition-all duration-150"
+                    :class="isVerseSelected(i, j, k, l) ? 'bg-primary' : 'bg-transparent'"
+                  />
+                  <div
+                    class="flex min-w-0 flex-1 flex-col px-3"
+                    :class="{
+                      'pl-5': k === 0,
+                      'pr-5': k === item.length - 1
+                    }"
+                  >
+                    <input
+                      v-if="line.comment !== undefined"
+                      type="text"
+                      :value="line.comment"
+                      placeholder="Comentario..."
+                      class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 font-mono text-xs outline-none"
+                      @input="
+                        (e) => {
+                          const lyrics = [...store.localLyrics.value];
+                          const stanza = lyrics[i]?.[j];
+                          if (stanza && Array.isArray(stanza)) {
+                            const verse = (stanza as any)[k]?.[l];
+                            if (verse) {
+                              verse.comment = (e.target as HTMLInputElement).value;
+                              store.updateLocalLyrics(lyrics);
+                            }
                           }
                         }
-                      }
-                    "
-                  />
-                  <LyricsTimestamps
-                    v-if="showTimestamps"
-                    :verse="line"
-                    :available-audio-tracks="availableAudioTracks"
-                    :max-tracks="1"
-                    v-bind="createTimestampUpdateFunction(i, j, k, l)"
-                  />
-                  <LyricsTextarea
-                    v-model="createColumnModel(i, j, k, l).value"
-                    :data-lyrics-input="`${i}-${j}-${k}-${l}`"
-                    :verse-styles="getVerseStyles(line, currentCollection)"
-                    :readonly="copyPropertiesToMode"
-                    :class="{ 'cursor-pointer': copyPropertiesToMode }"
-                    @focus="
-                      onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
-                    "
-                  />
+                      "
+                    />
+                    <LyricsTimestamps
+                      v-if="showTimestamps"
+                      :verse="line"
+                      :available-audio-tracks="availableAudioTracks"
+                      :max-tracks="1"
+                      v-bind="createTimestampUpdateFunction(i, j, k, l)"
+                    />
+                    <LyricsTextarea
+                      v-model="createColumnModel(i, j, k, l).value"
+                      :data-lyrics-input="`${i}-${j}-${k}-${l}`"
+                      :verse-styles="getVerseStyles(line, currentCollection)"
+                      :readonly="copyPropertiesToMode"
+                          :class="{ 'cursor-pointer': copyPropertiesToMode }"
+                      @focus="
+                        onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
+                      "
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -454,17 +474,27 @@ defineExpose({
         <span class="hidden md:block">Ayuda</span>
       </button>
 
-      <button class="btn btn-xs btn-primary" :disabled="isSaveDisabled" @click="handleSaveClick">
-        <template v-if="store.localLyrics.isSaving">
-          <span class="loading loading-spinner loading-xs" />
-          <span>Guardando...</span>
-        </template>
+      <div class="flex items-center gap-0.5">
+        <button class="btn btn-xs btn-primary" :disabled="isSaveDisabled" @click="handleSaveClick">
+          <template v-if="store.localLyrics.isSaving">
+            <span class="loading loading-spinner loading-xs" />
+            <span>Guardando...</span>
+          </template>
 
-        <template v-else>
-          <Save class="size-3.5" />
-          <span class="hidden md:block">Guardar cambios</span>
-        </template>
-      </button>
+          <template v-else>
+            <Save class="size-3.5" />
+            <span class="hidden md:block">Guardar cambios</span>
+          </template>
+        </button>
+        <button
+          v-if="store.localLyrics.isDirty"
+          class="btn btn-xs btn-ghost"
+          title="Descartar cambios"
+          @click="handleDiscardChanges"
+        >
+          <RotateCcw class="size-3.5" />
+        </button>
+      </div>
     </SafeTeleport>
 
     <KeyboardHelpModal

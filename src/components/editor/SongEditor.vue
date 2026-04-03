@@ -2,6 +2,8 @@
 import { Braces, MicVocal, Music, X } from "lucide-vue-next";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
+import { useCollectionsStore } from "@/stores/collections";
+
 import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
 import LyricsTab from "@/components/editor/LyricsTab.vue";
 import SongTab from "@/components/editor/SongTab.vue";
@@ -30,8 +32,11 @@ const confirmCloseEditor = (): boolean => {
   return confirm("Hay cambios sin guardar. ¿Deseas cerrar el editor? Los cambios se perderán.");
 };
 
+const collectionsStore = useCollectionsStore();
+
 const handleCloseEditor = () => {
   if (confirmCloseEditor()) {
+    collectionsStore.discardLyricsChanges();
     emit("toggle-edit");
   }
 };
@@ -71,6 +76,7 @@ onBeforeUnmount(() => {
           @click="handleTabChange('song')"
         >
           <Music class="size-3.5" /> Canción
+          <span v-if="songTabRef?.isDirty" class="bg-primary size-1.5 rounded-full" />
         </a>
         <a
           role="tab"
@@ -79,6 +85,7 @@ onBeforeUnmount(() => {
           @click="handleTabChange('lyrics')"
         >
           <MicVocal class="size-3.5" /> Letra
+          <span v-if="lyricsTabRef?.hasUnsavedChanges" class="bg-primary size-1.5 rounded-full" />
         </a>
         <a
           role="tab"

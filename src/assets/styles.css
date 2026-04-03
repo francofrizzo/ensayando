@@ -113,6 +113,18 @@
   transform: translateY(-4px);
 }
 
+/* Fade transition */
+.page-fade-enter-active {
+  transition: opacity 150ms ease-out;
+}
+.page-fade-leave-active {
+  transition: opacity 80ms ease-in;
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
 /* Empty state staggered entrance */
 .empty-state-enter-active {
   transition: all 400ms ease-out;

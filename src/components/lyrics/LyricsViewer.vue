@@ -246,7 +246,7 @@ watch(
                 'dark:drop-shadow-md': verse.status === 'active',
                 'dark:drop-shadow-none': verse.status !== 'active'
               }"
-              class="text-center uppercase drop-shadow-xs transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+              class="text-center uppercase drop-shadow-xs transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
               >{{ verse.text }}</span
             >
           </div>

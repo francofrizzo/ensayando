@@ -232,6 +232,20 @@ const onToggleTrackLyrics = (trackId: number) => {
   onSetTrackLyricsEnabled(trackId, !state.trackStates.value[trackIndex]!.lyricsEnabled);
 };
 
+const onSoloTrackLyrics = (trackId: number) => {
+  const trackIndex = sortedTracks.value.findIndex((track) => track.id === trackId);
+  if (trackIndex === -1) return;
+
+  const isCurrentlySoloed = state.trackStates.value.every(
+    (track, i) => i === trackIndex || !track.lyricsEnabled
+  );
+
+  state.trackStates.value.forEach((_, i) => {
+    const id = sortedTracks.value[i]!.id;
+    onSetTrackLyricsEnabled(id, i === trackIndex || isCurrentlySoloed);
+  });
+};
+
 const onPlayPause = async (forcePlay?: boolean) => {
   if (isInitializing.value) return;
 
@@ -741,7 +755,7 @@ const initializeAudioContext = async () => {
 
     <div class="drawer-content">
       <div
-        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
+        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden overscroll-none select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
       >
         <div class="relative flex items-center justify-between gap-3 p-3 md:p-0 md:pb-3">
           <PlayerHeader
@@ -763,7 +777,7 @@ const initializeAudioContext = async () => {
         </div>
 
         <div v-if="lyrics.length > 0" class="relative flex-grow-1 snap-y overflow-auto">
-          <div class="from-base-200/80 sticky inset-0 h-[32px] bg-gradient-to-b to-transparent" />
+          <div class="sticky inset-0 h-[32px]" style="background: linear-gradient(to bottom, var(--color-base-200) 0%, color-mix(in oklch, var(--color-base-200) 40%, transparent) 50%, transparent 100%)" />
           <LyricsViewer
             :lyrics="lyrics"
             :current-time="state.currentTime.value"
@@ -772,7 +786,7 @@ const initializeAudioContext = async () => {
             :enabled-track-ids="trackIdsWithLyricsEnabled"
             @seek="onSeekToTime"
           />
-          <div class="to-base-200/80 sticky inset-0 h-[32px] bg-gradient-to-b from-transparent" />
+          <div class="sticky inset-0 h-[32px]" style="background: linear-gradient(to top, var(--color-base-200) 0%, color-mix(in oklch, var(--color-base-200) 40%, transparent) 50%, transparent 100%)" />
         </div>
         <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
           <MicVocal class="mb-4 size-22 opacity-50 empty-state-enter-active" style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms" />
@@ -815,6 +829,7 @@ const initializeAudioContext = async () => {
                 @toggle-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
                 @toggle-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
                 @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
+                @solo-lyrics="() => onSoloTrackLyrics(track.id)"
                 @seek="onSeekToTime"
                 @finish="onFinish(index)"
                 @error="onTrackError(index)"
@@ -854,7 +869,7 @@ const initializeAudioContext = async () => {
       <div
         class="bg-base-100/75 lg:bg-base-100 min-h-full w-full shadow-lg backdrop-blur-lg sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
       >
-        <SongEditor @toggle-edit="uiStore.toggleEditMode" />
+        <SongEditor v-if="uiStore.editMode" @toggle-edit="uiStore.toggleEditMode" />
       </div>
     </div>
   </div>
