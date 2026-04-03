@@ -17,7 +17,7 @@ const editorRef = ref<any>(null);
 
 const validator = createAjvValidator({ schema: lyricSchema });
 const VALIDATION_DELAY = 200;
-let validationTimeout: NodeJS.Timeout | null = null;
+let validationTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const initialContent = {
   text: JSON.stringify(store.localLyrics.value, null, 2)

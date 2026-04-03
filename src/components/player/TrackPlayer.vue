@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
 import { Hash, MicVocal, Volume2Icon, VolumeX } from "lucide-vue-next";
-import type { PartialWaveSurferOptions } from "node_modules/@meersagor/wavesurfer-vue/dist/types/types";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
+import type { WaveSurferOptions } from "wavesurfer.js";
 
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
 import { useLongPress } from "@/composables/useLongPress";
@@ -45,11 +45,11 @@ if (!props.deferLoad) {
 }
 const muteButton = useLongPress({
   tap: (shift) => emit("toggle-muted", shift),
-  longPress: () => emit("toggle-solo", false),
+  longPress: () => emit("toggle-solo", false)
 });
 const lyricsButton = useLongPress({
   tap: () => emit("toggle-lyrics"),
-  longPress: () => emit("solo-lyrics"),
+  longPress: () => emit("solo-lyrics")
 });
 const isMuted = computed(() => props.volume === 0);
 
@@ -117,7 +117,7 @@ const waveSurferColorScheme = computed(() => {
   };
 });
 
-const waveSurferOptions = computed<PartialWaveSurferOptions>(() => {
+const waveSurferOptions = computed<Partial<Omit<WaveSurferOptions, "container">>>(() => {
   const options = {
     height: 64,
     barHeight: 0.9,
@@ -150,7 +150,6 @@ onMounted(() => {
   };
   darkModeMediaQuery.addEventListener("change", darkModeListener);
 });
-
 
 watch(
   () => props.isPlaying,
