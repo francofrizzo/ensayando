@@ -57,13 +57,15 @@ const message = computed(() => config[props.type].message);
 
     <div class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col">
       <div class="flex flex-grow-1 flex-col items-center justify-center gap-4 text-center">
-        <component :is="icon" class="mb-4 size-22 opacity-50" />
-        <h2 class="text-base-content/80 text-2xl font-semibold">{{ title }}</h2>
-        <p class="text-base-content/40">{{ message }}</p>
-        <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary">
+        <component :is="icon" class="mb-4 size-22 opacity-50" style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms" />
+        <h2 class="text-base-content/80 text-2xl font-semibold" style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms">{{ title }}</h2>
+        <p class="text-base-content/40" style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms">{{ message }}</p>
+        <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary" style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms">
           {{ backLink.text }}
         </router-link>
-        <slot name="actions" />
+        <div style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms">
+          <slot name="actions" />
+        </div>
       </div>
     </div>
   </div>

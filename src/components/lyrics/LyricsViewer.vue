@@ -242,9 +242,11 @@ watch(
               :style="getVerseStyles(verse, collection, verse.status)"
               :class="{
                 'font-semibold': verse.status === 'active',
-                'scale-[1.15]': verse.status === 'active'
+                'scale-[1.15]': verse.status === 'active',
+                'dark:drop-shadow-md': verse.status === 'active',
+                'dark:drop-shadow-none': verse.status !== 'active'
               }"
-              class="text-center uppercase drop-shadow-xs transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:drop-shadow-none"
+              class="text-center uppercase drop-shadow-xs transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
               >{{ verse.text }}</span
             >
           </div>

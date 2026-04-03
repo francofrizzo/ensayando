@@ -66,7 +66,11 @@ const otherCollectionMenuItems = computed(() => {
                 </div>
               </div>
               <ul v-if="songMenuItems.length > 0" class="menu w-full">
-                <li v-for="song in songMenuItems" :key="song.id">
+                <li
+                  v-for="(song, index) in songMenuItems"
+                  :key="song.id"
+                  :style="{ animation: isOpen ? `menu-item-slide 250ms ease-out both` : 'none', animationDelay: `${index * 30}ms` }"
+                >
                   <router-link
                     :to="{
                       name: 'song',

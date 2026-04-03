@@ -113,6 +113,39 @@
   transform: translateY(-4px);
 }
 
+/* Empty state staggered entrance */
+.empty-state-enter-active {
+  transition: all 400ms ease-out;
+}
+.empty-state-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+/* Empty state staggered entrance keyframe */
+@keyframes empty-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sidebar menu item stagger */
+@keyframes menu-item-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 body {
   @apply selection:bg-base-content/10;
   @apply overscroll-none;

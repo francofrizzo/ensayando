@@ -772,9 +772,9 @@ const initializeAudioContext = async () => {
           <div class="to-base-200/80 sticky inset-0 h-[32px] bg-gradient-to-b from-transparent" />
         </div>
         <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
-          <MicVocal class="mb-4 size-22 opacity-50" />
-          <h2 class="text-base-content/80 text-2xl font-semibold">Letra faltante</h2>
-          <p class="text-base-content/40">La letra de esta canción todavía no está disponible.</p>
+          <MicVocal class="mb-4 size-22 opacity-50 empty-state-enter-active" style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms" />
+          <h2 class="text-base-content/80 text-2xl font-semibold" style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms">Letra faltante</h2>
+          <p class="text-base-content/40" style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms">La letra de esta canción todavía no está disponible.</p>
         </div>
 
         <div
@@ -795,6 +795,7 @@ const initializeAudioContext = async () => {
                   }
                 "
                 class="pl-4 first:pt-2 last:pb-2"
+                :style="isReady ? { animation: `empty-stagger 300ms ease-out both`, animationDelay: `${index * 50}ms` } : { opacity: 0 }"
                 :track="track"
                 :collection="collection"
                 :is-playing="state.playing.value"
@@ -836,7 +837,10 @@ const initializeAudioContext = async () => {
             v-if="!isReady"
             class="bg-base-100/80 md:rounded-box absolute inset-0 z-10 flex items-center justify-center select-none backdrop-blur-[1px]"
           >
-            <LoadingWaveform size="md" />
+            <div class="text-base-content/50 flex flex-col items-center gap-4">
+              <LoadingWaveform size="lg" :bar-count="12" />
+              <span class="animate-pulse text-sm tracking-wide uppercase" style="animation-duration: 3s">Cargando...</span>
+            </div>
           </div>
         </div>
       </div>

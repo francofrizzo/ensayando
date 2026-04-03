@@ -6,7 +6,7 @@ import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
   <div
     class="text-base-content/50 flex h-dvh w-full flex-col items-center justify-center gap-6 p-2 text-lg select-none"
   >
-    <LoadingWaveform size="lg" :bar-count="24" />
-    <span class="tracking-wide uppercase">Cargando...</span>
+    <LoadingWaveform size="lg" :bar-count="14" />
+    <span class="animate-pulse tracking-wide uppercase" style="animation-duration: 3s">Cargando...</span>
   </div>
 </template>
