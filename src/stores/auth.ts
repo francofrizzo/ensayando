@@ -5,7 +5,7 @@ import { computed, ref } from "vue";
 import * as supabase from "@/data/supabase";
 import { useCollectionsStore } from "@/stores/collections";
 
-const EMAIL_DOMAIN = "ensayando.local";
+const EMAIL_DOMAIN = "ensayando.com.ar";
 
 const usernameToEmail = (username: string) => `${username.toLowerCase()}@${EMAIL_DOMAIN}`;
 
