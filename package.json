@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22.0.0"
   },
@@ -31,7 +32,8 @@
     "vanilla-jsoneditor": "^3.5.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
-    "vue-sonner": "^2.0.0"
+    "vue-sonner": "^2.0.0",
+    "wavesurfer.js": "^7.12.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
@@ -60,7 +62,7 @@
     "vite": "^5.2.8",
     "vite-plugin-pwa": "^1.0.1",
     "vite-plugin-vue-devtools": "^7.0.25",
-    "vitest": "^4.1.2",
+    "vitest": "^3.2.4",
     "vue-tsc": "^2.0.11"
   }
 }

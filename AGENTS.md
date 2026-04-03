@@ -5,13 +5,13 @@ Multitrack audio player with synchronized lyrics for musical rehearsals. Vue 3 S
 ## Commands
 
 ```bash
-npm run dev          # Vite dev server
-npm run build        # type-check + vite build
-npm run type-check   # vue-tsc --build --force
-npm run lint         # eslint --fix
-npm run format       # prettier --write src/
-npm test             # vitest run (all tests)
-npm run test:watch   # vitest in watch mode
+pnpm dev             # Vite dev server
+pnpm build           # type-check + vite build
+pnpm type-check      # vue-tsc --build --force
+pnpm lint            # eslint --fix
+pnpm format          # prettier --write src/
+pnpm test            # vitest run (all tests)
+pnpm test:watch      # vitest in watch mode
 ```
 
 After non-trivial changes, run `type-check`, `lint`, and `test` before presenting work as done.
@@ -60,9 +60,9 @@ Playwright + local Supabase (`supabase start`). Tests live in `tests/e2e/`. Requ
 
 ```bash
 supabase start              # start local Supabase
-npx tsx tests/e2e/seed.ts   # seed test data (idempotent)
-npm run test:e2e            # run Playwright tests
-npm run test:e2e:ui         # Playwright UI mode
+pnpm exec tsx tests/e2e/seed.ts   # seed test data (idempotent)
+pnpm test:e2e               # run Playwright tests
+pnpm test:e2e:ui             # Playwright UI mode
 ```
 
 ## Database
