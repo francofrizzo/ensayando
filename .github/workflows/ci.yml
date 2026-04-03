@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm install
       - run: npm run type-check
       - run: npm run lint
       - run: npm test
@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm install
       - run: npx playwright install chromium --with-deps
       - run: npx tsx tests/e2e/seed.ts
       - run: npx playwright test
