@@ -65,7 +65,7 @@ const keybindingGroups = computed(() => {
 <template>
   <Transition name="modal">
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
-      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
+      <div class="bg-neutral/50 fixed inset-0 backdrop-blur-sm" @click="emit('close')"></div>
 
       <div
         class="bg-base-100/75 border-base-300 relative mx-4 max-h-[70vh] w-full max-w-lg overflow-auto rounded-lg border shadow-xl"

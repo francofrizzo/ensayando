@@ -33,19 +33,21 @@ const otherCollectionMenuItems = computed(() => {
     <div class="drawer">
       <input id="my-drawer" v-model="isOpen" type="checkbox" class="drawer-toggle" />
       <div class="drawer-content">
-        <label class="btn btn-square btn-primary btn-lg flex-shrink-0" htmlFor="my-drawer">
+        <label class="btn btn-square btn-primary btn-lg flex-shrink-0" for="my-drawer">
           <Menu class="h-5 w-5" />
         </label>
       </div>
       <div class="drawer-side z-50">
-        <label htmlFor="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+        <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="flex min-h-full w-80 lg:p-3">
           <div
             class="from-primary/12 to-base-100/12 bg-base-100/40 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border bg-linear-to-t px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
           >
             <div v-if="currentCollection" class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-2 pr-3 pl-5">
-                <span class="text-base-content/60 flex items-center gap-1.5 font-medium tracking-wide uppercase">
+                <span
+                  class="text-base-content/60 flex items-center gap-1.5 font-medium tracking-wide uppercase"
+                >
                   {{ currentCollection?.title }}
                   <Globe v-if="currentCollection?.is_public" class="size-3.5 opacity-60" />
                 </span>
@@ -69,7 +71,10 @@ const otherCollectionMenuItems = computed(() => {
                 <li
                   v-for="(song, index) in songMenuItems"
                   :key="song.id"
-                  :style="{ animation: isOpen ? `menu-item-slide 250ms ease-out both` : 'none', animationDelay: `${index * 30}ms` }"
+                  :style="{
+                    animation: isOpen ? `menu-item-slide 250ms ease-out both` : 'none',
+                    animationDelay: `${index * 30}ms`
+                  }"
                 >
                   <router-link
                     :to="{
@@ -79,9 +84,12 @@ const otherCollectionMenuItems = computed(() => {
                         songSlug: song.slug
                       }
                     }"
-                    :class="{
-                      'menu-focus': currentSong?.id === song.id
-                    }"
+                    :class="[
+                      'border-l-2',
+                      currentSong?.id === song.id
+                        ? 'menu-active bg-primary/12 text-primary border-primary font-semibold'
+                        : 'hover:bg-base-content/6 hover:border-base-content/15 border-transparent'
+                    ]"
                     @click="isOpen = false"
                   >
                     <LockKeyhole v-if="!song.visible" class="text-primary size-3" />
