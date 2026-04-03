@@ -6,8 +6,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
+import { useLongPress } from "@/composables/useLongPress";
 import { darken, lighten } from "@/utils/color-utils";
-import { isIOS, isMac } from "@/utils/platform";
+import { isIOS } from "@/utils/platform";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -42,9 +43,14 @@ const currentUrl = ref<string | null>(null);
 if (!props.deferLoad) {
   currentUrl.value = props.track.audio_file_url;
 }
-const muteButtonLongPressTimer = ref<number | null>(null);
-const isMuteButtonLongPressActive = ref(false);
-const TOUCH_DURATION = 500; // 500ms for long press
+const muteButton = useLongPress({
+  tap: (shift) => emit("toggle-muted", shift),
+  longPress: () => emit("toggle-solo", false),
+});
+const lyricsButton = useLongPress({
+  tap: () => emit("toggle-lyrics"),
+  longPress: () => emit("solo-lyrics"),
+});
 const isMuted = computed(() => props.volume === 0);
 
 // Methods
@@ -145,56 +151,6 @@ onMounted(() => {
   darkModeMediaQuery.addEventListener("change", darkModeListener);
 });
 
-const handleLyricsButtonClick = (event: MouseEvent) => {
-  const isCtrlOrCmdPressed = isMac ? event.metaKey : event.ctrlKey;
-  if (isCtrlOrCmdPressed) {
-    emit("solo-lyrics");
-  } else {
-    emit("toggle-lyrics");
-  }
-};
-
-const handleMuteButtonTouchStart = () => {
-  isMuteButtonLongPressActive.value = false;
-  muteButtonLongPressTimer.value = window.setTimeout(() => {
-    isMuteButtonLongPressActive.value = true;
-    emit("toggle-solo", false); // Touch events don't have shift key context
-  }, TOUCH_DURATION);
-};
-
-const handleMuteButtonTouchEnd = () => {
-  if (muteButtonLongPressTimer.value) {
-    clearTimeout(muteButtonLongPressTimer.value);
-    muteButtonLongPressTimer.value = null;
-  }
-  // touchstart.prevent suppresses the click event, so toggle mute here
-  // unless a long press (solo) was already triggered
-  if (!isMuteButtonLongPressActive.value) {
-    emit("toggle-muted", false);
-  }
-};
-
-const handleMuteButtonTouchCancel = () => {
-  if (muteButtonLongPressTimer.value) {
-    clearTimeout(muteButtonLongPressTimer.value);
-    muteButtonLongPressTimer.value = null;
-  }
-  isMuteButtonLongPressActive.value = false;
-};
-
-const handleMuteButtonClick = (event: MouseEvent) => {
-  if (isMuteButtonLongPressActive.value) {
-    event.preventDefault();
-    return;
-  }
-  const isCtrlOrCmdPressed = isMac ? event.metaKey : event.ctrlKey;
-
-  if (isCtrlOrCmdPressed) {
-    emit("toggle-solo", event.shiftKey);
-  } else {
-    emit("toggle-muted", event.shiftKey);
-  }
-};
 
 watch(
   () => props.isPlaying,
@@ -250,16 +206,6 @@ onUnmounted(() => {
     darkModeListener = null;
   }
 
-  // Clear timers
-  try {
-    if (muteButtonLongPressTimer.value) {
-      clearTimeout(muteButtonLongPressTimer.value);
-      muteButtonLongPressTimer.value = null;
-    }
-  } catch (error) {
-    handleTrackError(error as Error, "cleanup timer");
-  }
-
   // Destroy WaveSurfer instance
   try {
     if (waveSurfer.value) {
@@ -308,17 +254,14 @@ onUnmounted(() => {
           :disabled="!isReady"
           class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
           :style="{ '--color-primary': lyricsButtonColor }"
-          @click="handleLyricsButtonClick($event)"
+          v-on="lyricsButton"
         >
           <MicVocal class="h-4 w-4" />
         </button>
         <button
           :disabled="!isReady"
           class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
-          @click="handleMuteButtonClick"
-          @touchstart.prevent="handleMuteButtonTouchStart"
-          @touchend="handleMuteButtonTouchEnd"
-          @touchcancel="handleMuteButtonTouchCancel"
+          v-on="muteButton"
         >
           <Volume2Icon v-if="!isMuted" class="h-4 w-4" />
           <VolumeX v-else class="h-4 w-4" />
