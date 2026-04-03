@@ -41,7 +41,7 @@ const otherCollectionMenuItems = computed(() => {
         <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <div class="flex min-h-full w-80 lg:p-3">
           <div
-            class="from-primary/12 to-base-100/12 bg-base-100/40 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border bg-linear-to-t px-3 py-4 shadow-lg backdrop-blur-lg lg:px-1"
+            class="from-primary/12 to-base-100/12 bg-base-100/40 text-base-content border-base-200 lg:rounded-box flex w-full flex-col gap-6 border bg-linear-to-t px-3 py-4 shadow-2xl backdrop-blur-lg lg:px-1"
           >
             <div v-if="currentCollection" class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-2 pr-3 pl-5">
@@ -87,8 +87,8 @@ const otherCollectionMenuItems = computed(() => {
                     :class="[
                       'border-l-2',
                       currentSong?.id === song.id
-                        ? 'menu-active bg-primary/12 text-primary border-primary font-semibold'
-                        : 'hover:bg-base-content/6 hover:border-base-content/15 border-transparent'
+                        ? 'menu-active bg-primary/20 text-primary border-primary font-semibold'
+                        : 'hover:border-base-content/10 border-transparent'
                     ]"
                     @click="isOpen = false"
                   >
@@ -119,7 +119,7 @@ const otherCollectionMenuItems = computed(() => {
                         collectionSlug: otherCollection.slug
                       }
                     }"
-                    class="flex items-center gap-1.5"
+                    class="hover:border-base-content/10 flex items-center gap-1.5 border-l-2 border-transparent"
                     @click="isOpen = false"
                   >
                     {{ otherCollection.title }}

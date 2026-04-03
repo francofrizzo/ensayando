@@ -4,9 +4,14 @@ import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 
 <template>
   <div
-    class="bg-base-200 text-base-content/50 flex h-dvh w-full flex-col items-center justify-center gap-6 p-2 text-lg select-none"
+    class="bg-base-200 text-base-content/35 flex h-dvh w-full flex-col items-center justify-center p-2 text-lg select-none"
   >
-    <LoadingWaveform size="lg" :bar-count="14" />
-    <span class="animate-pulse tracking-wide" style="animation-duration: 3s">Cargando...</span>
+    <div
+      class="flex flex-col items-center gap-6"
+      style="animation: pulse-subtle 3s ease-in-out infinite"
+    >
+      <LoadingWaveform size="lg" :bar-count="14" />
+      <span class="tracking-wide">Cargando...</span>
+    </div>
   </div>
 </template>

@@ -812,11 +812,12 @@ const initializeAudioContext = async () => {
             v-if="!isReady && tracksVisible"
             class="bg-base-100/80 md:rounded-box absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px] select-none"
           >
-            <div class="text-base-content/50 flex flex-col items-center gap-4">
+            <div
+              class="text-base-content/35 flex flex-col items-center gap-4"
+              style="animation: pulse-subtle 3s ease-in-out infinite"
+            >
               <LoadingWaveform size="lg" :bar-count="12" />
-              <span class="animate-pulse text-sm tracking-wide" style="animation-duration: 3s"
-                >Cargando...</span
-              >
+              <span class="text-sm tracking-wide">Cargando...</span>
             </div>
           </div>
         </div>

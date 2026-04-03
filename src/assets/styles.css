@@ -136,6 +136,17 @@
   transform: translateY(12px);
 }
 
+/* Subtle pulse — fades to 60% instead of 0 */
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 /* Simple fade in */
 @keyframes fade-in {
   from {

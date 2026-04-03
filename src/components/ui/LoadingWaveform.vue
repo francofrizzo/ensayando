@@ -44,11 +44,14 @@ const barMax = (i: number) =>
 </script>
 
 <template>
-  <div class="flex items-center" :style="{ gap: `${config.gap}px`, height: `${config.maxHeight}px` }">
+  <div
+    class="flex items-center"
+    :style="{ gap: `${config.gap}px`, height: `${config.maxHeight}px` }"
+  >
     <div
       v-for="i in barCount"
       :key="i"
-      class="bg-base-content/15 loading-bar rounded-full"
+      class="loading-bar rounded-full bg-current"
       :style="{
         width: `${config.barWidth}px`,
         animationDelay: `${barOffset(i)}s`,
