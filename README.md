@@ -14,8 +14,8 @@ A web application for playing and editing multitrack songs with synchronized lyr
 
 ### Prerequisites
 
-- Node.js 20 or higher
-- npm or yarn
+- Node.js 22 (see `.nvmrc`)
+- npm
 
 ### Installation
 
@@ -35,11 +35,12 @@ npm run dev
 npm run build
 ```
 
-### Type Checking and Linting
+### Type Checking, Linting, and Tests
 
 ```sh
 npm run type-check
 npm run lint
+npm test
 ```
 
 ## Technologies Used
@@ -51,10 +52,11 @@ npm run lint
 - **WaveSurfer** for audio visualization and control
 - **Pinia** for state management
 - **Vue Router** for navigation
+- **PWA** via vite-plugin-pwa
 
-## IDE Setup
+## Deployment
 
-We recommend using [Cursor](https://cursor.sh/) with the [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) extension for the best TypeScript support in `.vue` files. The extension provides comprehensive Vue 3 and TypeScript integration.
+Vercel SPA with catch-all rewrite. See `vercel.json`.
 
 ## Project Structure
 
