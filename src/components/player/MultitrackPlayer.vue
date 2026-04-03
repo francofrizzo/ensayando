@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Loader2, MicVocal } from "lucide-vue-next";
+import { ChevronDown, MicVocal } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { isIOS } from "@/utils/platform";
 import { toast } from "vue-sonner";
@@ -10,6 +10,7 @@ import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
 import PlayerControls from "@/components/player/PlayerControls.vue";
 import PlayerHeader from "@/components/player/PlayerHeader.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
+import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
@@ -781,7 +782,7 @@ const initializeAudioContext = async () => {
           :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
         >
           <div
-            class="md:rounded-box h-full overflow-y-auto transition-all duration-300"
+            class="md:rounded-box h-full overflow-y-auto overscroll-none transition-all duration-300"
             :class="{ 'opacity-0': !tracksVisible }"
           >
             <div class="overflow-hidden">
@@ -833,10 +834,9 @@ const initializeAudioContext = async () => {
 
           <div
             v-if="!isReady"
-            class="bg-base-100/80 text-base-content/50 md:rounded-box absolute inset-0 z-10 flex items-center justify-center gap-4 text-lg select-none"
+            class="bg-base-100/80 md:rounded-box absolute inset-0 z-10 flex items-center justify-center select-none backdrop-blur-[1px]"
           >
-            <Loader2 class="size-6 animate-spin" />
-            <span class="tracking-wide uppercase">Cargando...</span>
+            <LoadingWaveform size="md" />
           </div>
         </div>
       </div>

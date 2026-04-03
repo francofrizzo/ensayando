@@ -83,6 +83,36 @@
 
 @import "./json-editor.css";
 
+/* Play/Pause icon morph */
+.player-icon-enter-active,
+.player-icon-leave-active {
+  transition: all 120ms ease;
+}
+.player-icon-enter-from {
+  opacity: 0;
+  transform: scale(0.7);
+}
+.player-icon-leave-to {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+/* Song change transition */
+.song-change-enter-active {
+  transition: all 200ms ease-out;
+}
+.song-change-leave-active {
+  transition: all 120ms ease-in;
+}
+.song-change-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.song-change-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 body {
   @apply selection:bg-base-content/10;
   @apply overscroll-none;

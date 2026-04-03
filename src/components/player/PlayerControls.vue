@@ -23,9 +23,12 @@ const copyTimeToClipboard = () => {
 <template>
   <div class="flex items-center gap-5 text-right tracking-wide tabular-nums">
     <div class="flex items-baseline">
-      <span class="text-base-content/90 cursor-default text-xl transition-colors">{{
-        formatTime(props.currentTime)
-      }}</span>
+      <span class="relative cursor-default text-xl transition-colors"
+        ><span
+          v-if="props.isPlaying"
+          class="bg-primary absolute -left-4 top-1/2 size-2 -translate-y-1/2 rounded-full animate-pulse"
+        /><span class="text-base-content/90">{{ formatTime(props.currentTime) }}</span></span
+      >
       <span class="text-base-content/50 text-md hidden cursor-default transition-colors sm:inline"
         >.{{ props.currentTime.toFixed(2).split(".")[1] }}</span
       >
@@ -52,8 +55,10 @@ const copyTimeToClipboard = () => {
       aria-label="Play/Pause"
       @click="() => emit('play-pause')"
     >
-      <Pause v-if="props.isPlaying" class="h-5 w-5" />
-      <Play v-else class="h-5 w-5" />
+      <Transition name="player-icon" mode="out-in">
+        <Pause v-if="props.isPlaying" key="pause" class="h-5 w-5" />
+        <Play v-else key="play" class="h-5 w-5 translate-x-[1px]" />
+      </Transition>
     </button>
   </div>
 </template>
