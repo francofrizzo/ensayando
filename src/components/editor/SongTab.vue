@@ -616,7 +616,7 @@ defineExpose({
             <div
               v-for="track in tracksForRendering"
               :key="track.stableKey"
-              class="card bg-base-100 border-base-300 overflow-hidden border"
+              class="card bg-base-100 border-base-300 overflow-hidden rounded-lg border"
             >
               <div
                 class="h-[3px] w-full"
@@ -745,7 +745,11 @@ defineExpose({
   </div>
   <SafeTeleport to="[data-song-editor-actions]">
     <div class="flex gap-2">
-      <button v-if="isCreateMode && currentSong" class="btn btn-xs btn-soft" @click="cancelCreateMode">
+      <button
+        v-if="isCreateMode && currentSong"
+        class="btn btn-xs btn-soft"
+        @click="cancelCreateMode"
+      >
         <X class="size-3.5" />
         <span class="hidden md:block">Cancelar</span>
       </button>

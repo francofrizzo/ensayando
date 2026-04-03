@@ -83,7 +83,7 @@ const switchMode = (signUp: boolean) => {
 
 <template>
   <div
-    class="bg-base-100 from-primary/12 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
+    class="bg-base-200 from-primary/15 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
   >
     <div class="w-full max-w-md">
       <div
@@ -123,7 +123,7 @@ const switchMode = (signUp: boolean) => {
 
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
           <label
-            class="floating-label input input-bordered w-full transition-shadow duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 180ms"
           >
             <User class="size-4" />
@@ -140,7 +140,7 @@ const switchMode = (signUp: boolean) => {
           </label>
 
           <label
-            class="floating-label input input-bordered w-full transition-shadow duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
           >
             <Key class="size-4" />
