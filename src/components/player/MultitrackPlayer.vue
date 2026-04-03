@@ -852,7 +852,7 @@ const initializeAudioContext = async () => {
           </div>
 
           <div
-            v-if="!isReady"
+            v-if="!isReady && tracksVisible"
             class="bg-base-100/80 md:rounded-box absolute inset-0 z-10 flex items-center justify-center select-none backdrop-blur-[1px]"
           >
             <div class="text-base-content/50 flex flex-col items-center gap-4">
