@@ -13,6 +13,7 @@ import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
+import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
 import { mixAndEncodeMp3 } from "../../utils/mixdown";
@@ -48,25 +49,19 @@ const tracksIdsWithLyrics = computed(() => {
   return Array.from(tracks);
 });
 
-const state = {
-  currentTime: ref<number>(0),
-  lastSeekTime: ref<number>(0),
-  totalDuration: ref<number>(0),
-  playing: ref(false),
-  trackStates: ref(
-    sortedTracks.value.map((track) => ({
-      id: track.id,
-      isReady: false,
-      volume: 1,
-      hasLyrics: tracksIdsWithLyrics.value.includes(track.id),
-      lyricsEnabled: true
-    }))
-  )
-};
-const isReady = computed(() => state.trackStates.value.every((track) => track.isReady));
-const trackIdsWithLyricsEnabled = computed(() => {
-  return state.trackStates.value.filter((track) => track.lyricsEnabled).map((track) => track.id);
+const buildTrackInits = (): TrackInit[] =>
+  sortedTracks.value.map((track) => ({
+    id: track.id,
+    hasLyrics: tracksIdsWithLyrics.value.includes(track.id)
+  }));
+
+const state = usePlayerState(buildTrackInits(), {
+  onSeekTrack: (trackIndex, time) => {
+    trackPlayers.value[trackIndex]?.seekTo(time);
+  }
 });
+
+const { isReady, trackIdsWithLyricsEnabled } = state;
 
 // Platform detection — isIOS imported from @/utils/platform
 
@@ -97,16 +92,7 @@ watch(
     }
 
     // Reset state for new song
-    state.currentTime.value = 0;
-    state.totalDuration.value = 0;
-    state.playing.value = false;
-    state.trackStates.value = sortedTracks.value.map((track) => ({
-      id: track.id,
-      isReady: false,
-      volume: 1,
-      hasLyrics: tracksIdsWithLyrics.value.includes(track.id),
-      lyricsEnabled: true
-    }));
+    state.resetForNewSong(buildTrackInits());
 
     // Start first decode on iOS for new song (nextTick so template refs are populated)
     if (isIOS) {
@@ -139,10 +125,7 @@ const seekAllTracks = (time: number) => {
 };
 
 const onReady = (trackIndex: number, duration: number) => {
-  state.trackStates.value[trackIndex]!.isReady = true;
-  if (trackIndex === 0) {
-    state.totalDuration.value = duration;
-  }
+  state.onReady(trackIndex, duration);
   // On iOS, trigger sequential decode by calling beginLoad on next deferred track
   if (isIOS) {
     const nextIndex = trackIndex + 1;
@@ -168,82 +151,6 @@ const onTrackError = (trackIndex: number) => {
       }
     }
   }
-};
-
-const onTimeUpdate = (trackIndex: number, time: number) => {
-  if (trackIndex === 0) {
-    state.currentTime.value = time;
-  }
-};
-
-const onFinish = (trackIndex: number) => {
-  // Stop playback when any audible track finishes
-  // (all tracks should finish at the same time, so we can stop on any finish event)
-  const trackVolume = state.trackStates.value[trackIndex]?.volume ?? 0;
-  if (trackVolume > 0) {
-    state.playing.value = false;
-  }
-};
-
-const onVolumeChange = (trackIndex: number, volume: number, toggleLyrics = false) => {
-  const previousVolume = state.trackStates.value[trackIndex]!.volume;
-  const clampedVolume = Math.max(0, Math.min(1, volume));
-  state.trackStates.value[trackIndex]!.volume = clampedVolume;
-  // When unmuting, sync the track to the current playback time
-  if (previousVolume === 0 && clampedVolume > 0) {
-    trackPlayers.value[trackIndex]?.seekTo(state.currentTime.value);
-  }
-  if (toggleLyrics) {
-    if (state.trackStates.value[trackIndex]!.volume > 0) {
-      onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, true);
-    } else {
-      onSetTrackLyricsEnabled(sortedTracks.value[trackIndex]!.id, false);
-    }
-  }
-};
-
-const onToggleTrackMuted = (trackIndex: number, toggleLyrics: boolean) => {
-  const shouldBeEnabled = state.trackStates.value[trackIndex]!.volume === 0;
-  const newVolume = shouldBeEnabled ? 1 : 0;
-  onVolumeChange(trackIndex, newVolume, toggleLyrics);
-};
-
-const onSoloTrack = (index: number, toggleLyrics: boolean) => {
-  const isCurrentlySoloed = state.trackStates.value.every(
-    (track, i) => i === index || track.volume === 0
-  );
-
-  state.trackStates.value.forEach((_, i) => {
-    const shouldBeEnabled = i === index || isCurrentlySoloed;
-    const newVolume = shouldBeEnabled ? 1 : 0;
-    onVolumeChange(i, newVolume, toggleLyrics);
-  });
-};
-
-const onSetTrackLyricsEnabled = (trackId: number, newState: boolean) => {
-  const trackIndex = sortedTracks.value.findIndex((track) => track.id === trackId);
-  if (trackIndex === -1) return;
-  state.trackStates.value[trackIndex]!.lyricsEnabled = newState;
-};
-
-const onToggleTrackLyrics = (trackId: number) => {
-  const trackIndex = sortedTracks.value.findIndex((track) => track.id === trackId);
-  if (trackIndex === -1) return;
-  onSetTrackLyricsEnabled(trackId, !state.trackStates.value[trackIndex]!.lyricsEnabled);
-};
-
-const onSoloTrackLyrics = (trackId: number) => {
-  const trackIndex = sortedTracks.value.findIndex((track) => track.id === trackId);
-  if (trackIndex === -1) return;
-
-  const isCurrentlySoloed = state.trackStates.value.every(
-    (track, i) => i === trackIndex || !track.lyricsEnabled
-  );
-
-  state.trackStates.value.forEach((_, i) => {
-    const id = sortedTracks.value[i]!.id;
-    onSetTrackLyricsEnabled(id, i === trackIndex || isCurrentlySoloed);
-  });
 };
 
 const onPlayPause = async (forcePlay?: boolean) => {
@@ -868,14 +775,14 @@ const initializeAudioContext = async () => {
                 :audio-context="audioContext || undefined"
                 :defer-load="isIOS"
                 @ready="(duration: number) => onReady(index, duration)"
-                @time-update="(time: number) => onTimeUpdate(index, time)"
-                @volume-change="(volume: number) => onVolumeChange(index, volume)"
-                @toggle-muted="(toggleLyrics: boolean) => onToggleTrackMuted(index, toggleLyrics)"
-                @toggle-solo="(toggleLyrics: boolean) => onSoloTrack(index, toggleLyrics)"
-                @toggle-lyrics="() => onToggleTrackLyrics(track.id)"
-                @solo-lyrics="() => onSoloTrackLyrics(track.id)"
+                @time-update="(time: number) => state.onTimeUpdate(index, time)"
+                @volume-change="(volume: number) => state.onVolumeChange(index, volume)"
+                @toggle-muted="(toggleLyrics: boolean) => state.onToggleTrackMuted(index, toggleLyrics)"
+                @toggle-solo="(toggleLyrics: boolean) => state.onSoloTrack(index, toggleLyrics)"
+                @toggle-lyrics="() => state.onToggleTrackLyrics(track.id)"
+                @solo-lyrics="() => state.onSoloTrackLyrics(track.id)"
                 @seek="onSeekToTime"
-                @finish="onFinish(index)"
+                @finish="state.onFinish(index)"
                 @error="onTrackError(index)"
               />
             </div>

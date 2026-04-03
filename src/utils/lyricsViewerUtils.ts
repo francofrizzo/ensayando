@@ -41,8 +41,8 @@ export const getVerseStatus = (
   let status: LyricVerseStatus = "future";
   let endTime: number | undefined = undefined;
 
-  if (verse.start_time) {
-    endTime = verse.end_time ?? (nextVerseStartTime ? nextVerseStartTime : verse.start_time + 5);
+  if (verse.start_time !== undefined) {
+    endTime = verse.end_time ?? (nextVerseStartTime !== undefined ? nextVerseStartTime : verse.start_time + 5);
     if (currentTime >= verse.start_time) {
       status = currentTime < endTime ? "active" : "past";
     }

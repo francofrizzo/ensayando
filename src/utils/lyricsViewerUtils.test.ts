@@ -59,6 +59,21 @@ describe("getVerseStatus", () => {
     const { status } = getVerseStatus({ text: "V", start_time: 5, end_time: 10 }, 10, undefined);
     expect(status).toBe("past");
   });
+
+  it("handles start_time: 0 correctly (regression)", () => {
+    const { status } = getVerseStatus({ text: "V", start_time: 0, end_time: 3 }, 1, undefined);
+    expect(status).toBe("active");
+  });
+
+  it("handles start_time: 0 as past when currentTime exceeds end", () => {
+    const { status } = getVerseStatus({ text: "V", start_time: 0, end_time: 3 }, 5, undefined);
+    expect(status).toBe("past");
+  });
+
+  it("uses nextVerseStartTime: 0 as fallback end_time", () => {
+    const { end_time } = getVerseStatus({ text: "V", start_time: 0 }, 0, 0);
+    expect(end_time).toBe(0);
+  });
 });
 
 // --- isVerseVisible ---
@@ -113,9 +128,7 @@ describe("addStatusToLyrics", () => {
     const result = addStatusToLyrics(timedLyrics, 4);
 
     const stanza0 = result[0] as LyricVerseWithStatus[];
-    // Note: start_time 0 is falsy, so Intro (start_time: 0) stays "future"
-    // This is existing behavior — verse.start_time check uses truthiness
-    expect(stanza0[0].status).toBe("future");
+    expect(stanza0[0].status).toBe("past"); // Intro (0-3), currentTime=4
     expect(stanza0[1].status).toBe("active"); // Verse one (3-6), currentTime=4
     expect(stanza0[2].status).toBe("future"); // Verse two (6-9), currentTime=4
 
