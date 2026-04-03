@@ -2,7 +2,7 @@ import { onUnmounted, ref } from "vue";
 
 import { isMac } from "@/utils/platform";
 
-interface LongPressActions {
+type LongPressActions = {
   tap: (shiftKey: boolean) => void;
   longPress: () => void;
 }
