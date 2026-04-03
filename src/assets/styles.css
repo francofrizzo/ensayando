@@ -146,6 +146,13 @@
   }
 }
 
+/* Fix disabled icon stroke-join artifacts visible through parent opacity */
+.btn-ghost:disabled,
+.btn-ghost[disabled] {
+  opacity: 1 !important;
+  color: color-mix(in oklch, currentColor 30%, transparent);
+}
+
 body {
   @apply selection:bg-base-content/10;
   @apply overscroll-none;

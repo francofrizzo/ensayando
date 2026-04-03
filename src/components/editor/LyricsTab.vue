@@ -62,7 +62,7 @@ const {
   lyricsToDisplay,
   store.updateLocalLyrics,
   handleSaveClick,
-  () => Math.max(0, Math.round((currentTime.value - 0.2) * 100) / 100),
+  () => Math.max(0, Math.round((currentTime.value - timestampOffset.value) * 100) / 100),
   seekTo,
   store.undo,
   store.redo
@@ -70,6 +70,9 @@ const {
 
 // Timestamp visibility state
 const showTimestamps = ref(true);
+
+// Reaction time offset for timestamping (seconds)
+const timestampOffset = ref(0.2);
 
 const toggleTimestamps = () => {
   showTimestamps.value = !showTimestamps.value;
@@ -307,6 +310,8 @@ defineExpose({
       :on-toggle-timestamps="toggleTimestamps"
       :current-verse-comment="currentVerseComment"
       :on-comment-change="handleCommentChange"
+      :timestamp-offset="timestampOffset"
+      @update:timestamp-offset="(v: number) => (timestampOffset = v)"
     />
 
     <div class="flex flex-1 flex-col pb-3">

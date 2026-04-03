@@ -41,9 +41,15 @@ type Props = {
   // Comment
   currentVerseComment: string | undefined;
   onCommentChange: (comment: string | undefined) => void;
+  // Timestamp offset
+  timestampOffset: number;
 };
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+  "update:timestampOffset": [value: number];
+}>();
 
 const hasColumnContext = computed(() => {
   return props.currentFocus?.columnIndex !== undefined;
@@ -243,6 +249,40 @@ const getKeybindingParts = (commandId: string): string[] => {
         <Clock class="size-3" />
         <span class="sr-only">Mostrar/ocultar marcas de tiempo</span>
       </button>
+    </div>
+
+    <div class="dropdown">
+      <div
+        tabindex="0"
+        role="button"
+        class="btn btn-xs btn-ghost gap-0 px-1.5 font-mono"
+        title="Corrección por tiempo de reacción"
+      >
+        <span class="text-base-content/40 text-[10px]">−{{ props.timestampOffset.toFixed(2) }}s</span>
+      </div>
+      <div
+        tabindex="0"
+        class="dropdown-content bg-base-100 rounded-box border-base-content/10 z-50 border p-3 shadow-lg"
+      >
+        <div class="flex flex-col gap-2">
+          <span class="text-xs">Corrección por reacción</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            :value="props.timestampOffset"
+            class="range range-xs range-primary w-32"
+            @input="
+              (e) => {
+                const v = parseFloat((e.target as HTMLInputElement).value);
+                if (!isNaN(v)) emit('update:timestampOffset', v);
+              }
+            "
+          />
+          <span class="text-base-content/50 text-center font-mono text-xs">{{ props.timestampOffset.toFixed(2) }}s</span>
+        </div>
+      </div>
     </div>
 
     <!-- Timestamp operations -->
