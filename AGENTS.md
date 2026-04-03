@@ -10,9 +10,11 @@ npm run build        # type-check + vite build
 npm run type-check   # vue-tsc --build --force
 npm run lint         # eslint --fix
 npm run format       # prettier --write src/
+npm test             # vitest run (all tests)
+npm run test:watch   # vitest in watch mode
 ```
 
-After non-trivial changes, run `type-check` and `lint` before presenting work as done.
+After non-trivial changes, run `type-check`, `lint`, and `test` before presenting work as done.
 
 ## Stack
 
@@ -45,6 +47,12 @@ Views ──► Composables ──► Stores (Pinia) ──► data/supabase.ts 
 - Use `lucide-vue-next` for icons.
 - Composables follow the `useXxx` naming convention and live in `src/composables/`.
 - Lyrics JSON structure is defined in `src/data/lyric-schema.json`.
+
+## Testing
+
+Vitest + `@vue/test-utils` + happy-dom. Tests are **co-located** with source files (e.g. `src/utils/color-utils.test.ts`). Shared fixtures live in `src/__fixtures__/`.
+
+When fixing a bug, add a regression test if the affected logic is testable. Prefer testing the pure function or extracted logic over mocking heavy framework deps.
 
 ## Database
 
