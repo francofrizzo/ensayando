@@ -7,7 +7,7 @@ const LOCAL_ANON_KEY =
 
 export default defineConfig({
   testDir: "tests/e2e",
-  timeout: 30000,
+  timeout: 15000,
   retries: 1,
   globalSetup: join(import.meta.dirname, "tests/e2e/global-setup.ts"),
   use: {
