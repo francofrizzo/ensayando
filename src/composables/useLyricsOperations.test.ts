@@ -10,7 +10,7 @@ function setup(initialLyrics: LyricStanza[]) {
   const updateLyrics = vi.fn((newLyrics: LyricStanza[]) => {
     lyrics.value = newLyrics;
   });
-  const focusInput = vi.fn(async (_pos: FocusPosition) => {});
+  const focusInput = vi.fn(async () => {});
   const findPositionAfterDeletion = (pos: FocusPosition) =>
     calculatePositionAfterDeletion(pos, lyrics.value);
 
@@ -101,7 +101,7 @@ describe("convertToColumns", () => {
 
   it("does nothing if item is already columns", () => {
     const columns: LyricVerse[][] = [[verse("A")], [verse("B")]];
-    const { lyrics, updateLyrics, ops } = setup([[columns]]);
+    const { updateLyrics, ops } = setup([[columns]]);
     ops.convertToColumns({ stanzaIndex: 0, itemIndex: 0 });
     expect(updateLyrics).not.toHaveBeenCalled();
   });

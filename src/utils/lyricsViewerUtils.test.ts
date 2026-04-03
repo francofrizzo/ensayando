@@ -7,7 +7,6 @@ import {
   getVerseStatus,
   isVerseVisible,
   regularizeLyrics,
-  type LyricStanzaWithStatus,
   type LyricVerseWithStatus
 } from "@/utils/lyricsViewerUtils";
 import {

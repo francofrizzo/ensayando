@@ -75,7 +75,7 @@ describe("useCommands", () => {
       };
       registry.register(cmd);
 
-      const result = registry.handleKeyboardEvent(fakeKeyEvent(" "));
+      registry.handleKeyboardEvent(fakeKeyEvent(" "));
       expect(cmd.execute).toHaveBeenCalled();
     });
 

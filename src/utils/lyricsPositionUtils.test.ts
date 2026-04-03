@@ -15,7 +15,6 @@ import {
   emptyLyrics,
   mixedColumnLyrics,
   singleVerseLyrics,
-  threeColumnLyrics,
   threeVerseLyrics,
   twoStanzaLyrics
 } from "@/__fixtures__/lyrics";
