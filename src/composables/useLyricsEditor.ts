@@ -1,6 +1,6 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
-import { nextTick, type Ref } from "vue";
+import { type Ref } from "vue";
 import { useLyricsCommands, type LyricsCommandActions } from "./useLyricsCommands";
 import { useLyricsNavigation } from "./useLyricsNavigation";
 import { useLyricsOperations } from "./useLyricsOperations";
