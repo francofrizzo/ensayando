@@ -44,7 +44,7 @@ export {
   IconClock as IconTimestamp,
   IconPlaylistAdd as IconAddStanza,
   IconArrowsSplit as IconSplitStanza,
-  IconArrowsMoveVertical as IconJoinStanza,
+  IconFold as IconJoinStanza,
   IconBraces as IconCode,
   IconHash as IconHash,
   IconLink as IconLink,
