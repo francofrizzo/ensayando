@@ -26,12 +26,16 @@ export const signInWithPassword = async (
   });
 };
 
-export const signUp = async (email: string, password: string): Promise<AuthResponse> => {
+export const signUp = async (
+  email: string,
+  password: string,
+  username: string
+): Promise<AuthResponse> => {
   return await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: import.meta.env.VITE_SITE_URL
+      data: { username }
     }
   });
 };

@@ -5,6 +5,10 @@ import { computed, ref } from "vue";
 import * as supabase from "@/data/supabase";
 import { useCollectionsStore } from "@/stores/collections";
 
+const EMAIL_DOMAIN = "ensayando.local";
+
+const usernameToEmail = (username: string) => `${username.toLowerCase()}@${EMAIL_DOMAIN}`;
+
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
@@ -12,6 +16,10 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isAuthenticated = computed(() => {
     return user.value !== null;
+  });
+
+  const username = computed(() => {
+    return user.value?.user_metadata?.username ?? null;
   });
 
   const handleAuthChange = (newUser: User | null) => {
@@ -37,7 +45,8 @@ export const useAuthStore = defineStore("auth", () => {
     isLoading.value = false;
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (usernameInput: string, password: string) => {
+    const email = usernameToEmail(usernameInput);
     const { data, error } = await supabase.signInWithPassword(email, password);
     if (error) {
       throw error;
@@ -45,8 +54,9 @@ export const useAuthStore = defineStore("auth", () => {
     return data;
   };
 
-  const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.signUp(email, password);
+  const signUp = async (usernameInput: string, password: string) => {
+    const email = usernameToEmail(usernameInput);
+    const { data, error } = await supabase.signUp(email, password, usernameInput);
     if (error) {
       throw error;
     }
@@ -62,6 +72,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   return {
     user,
+    username,
     isLoading,
     isAuthenticated,
     initAuth,

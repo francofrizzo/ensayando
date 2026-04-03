@@ -26,7 +26,7 @@ const handleLogout = async () => {
     <template v-if="authStore.isAuthenticated">
       <div class="flex items-center gap-2 truncate text-ellipsis">
         <User class="size-4 shrink-0" />
-        <span>{{ authStore.user?.email }}</span>
+        <span>{{ authStore.username }}</span>
       </div>
       <button class="btn btn-circle btn-ghost btn-sm" title="Cerrar sesión" @click="handleLogout">
         <LogOut class="size-4" />

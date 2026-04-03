@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Key, LogIn, Mail, UserPlus } from "lucide-vue-next";
+import { Key, LogIn, User, UserPlus } from "lucide-vue-next";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -9,7 +9,7 @@ const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
-const email = ref("");
+const username = ref("");
 const password = ref("");
 const isLoading = ref(false);
 const error = ref("");
@@ -34,7 +34,7 @@ watch(
 );
 
 const handleSubmit = async () => {
-  if (!email.value || !password.value) {
+  if (!username.value || !password.value) {
     error.value = "Por favor, completa todos los campos";
     return;
   }
@@ -50,15 +50,15 @@ const handleSubmit = async () => {
 
   try {
     if (isSignUp.value) {
-      const result = await authStore.signUp(email.value, password.value);
+      const result = await authStore.signUp(username.value, password.value);
       if (result.user && !result.session) {
-        successMessage.value = "¡Cuenta creada! Revisa tu email para confirmar tu cuenta.";
+        successMessage.value = "¡Cuenta creada!";
       } else {
         // Auto-login
         // watcher will redirect
       }
     } else {
-      await authStore.signIn(email.value, password.value);
+      await authStore.signIn(username.value, password.value);
       // watcher will redirect
     }
   } catch (err: any) {
@@ -117,12 +117,14 @@ const switchMode = (signUp: boolean) => {
 
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
           <label class="floating-label input input-bordered w-full">
-            <Mail class="size-4" />
-            <span>Email</span>
+            <User class="size-4" />
+            <span>Usuario</span>
             <input
-              v-model="email"
-              type="email"
-              placeholder="Email"
+              v-model="username"
+              type="text"
+              placeholder="Usuario"
+              autocapitalize="none"
+              autocomplete="username"
               :disabled="isLoading"
               @keydown="handleKeydown"
             />
@@ -151,7 +153,7 @@ const switchMode = (signUp: boolean) => {
           <button
             type="submit"
             class="btn btn-primary btn-block mt-4"
-            :disabled="isLoading || !email || !password"
+            :disabled="isLoading || !username || !password"
           >
             <template v-if="isLoading">
               <span class="loading loading-spinner loading-sm"></span>
