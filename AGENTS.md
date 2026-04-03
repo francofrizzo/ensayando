@@ -54,6 +54,17 @@ Vitest + `@vue/test-utils` + happy-dom. Tests are **co-located** with source fil
 
 When fixing a bug, add a regression test if the affected logic is testable. Prefer testing the pure function or extracted logic over mocking heavy framework deps.
 
+### E2E tests
+
+Playwright + local Supabase (`supabase start`). Tests live in `tests/e2e/`. Requires Docker.
+
+```bash
+supabase start              # start local Supabase
+npx tsx tests/e2e/seed.ts   # seed test data (idempotent)
+npm run test:e2e            # run Playwright tests
+npm run test:e2e:ui         # Playwright UI mode
+```
+
 ## Database
 
 Supabase (Postgres). Migrations live in `supabase/migrations/`. Auth uses Supabase Auth with email/password. Storage uses Supabase Storage buckets for audio files and artwork.

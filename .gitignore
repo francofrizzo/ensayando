@@ -32,3 +32,8 @@ coverage
 
 # Local public files
 public/local
+
+# Playwright
+tests/e2e/.auth/
+playwright-report/
+test-results/
