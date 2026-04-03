@@ -47,10 +47,6 @@ const handleEndTimeInput = (event: Event) => {
     }
   }
 };
-
-const formatTimeValue = (time: number | undefined): string => {
-  return time !== undefined ? Number(time).toFixed(2) : "";
-};
 </script>
 
 <template>

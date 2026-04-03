@@ -37,7 +37,7 @@ export const generateTrackPeaks = async (
 
   try {
     await AC.close();
-  } catch (e) {
+  } catch {
     // ignore close errors
   }
 

@@ -1,10 +1,10 @@
-import { chromium, type FullConfig } from "@playwright/test";
+import { chromium } from "@playwright/test";
 import { execSync } from "child_process";
 import { join } from "path";
 
 const AUTH_FILE = join(import.meta.dirname, ".auth", "user.json");
 
-async function globalSetup(_config: FullConfig) {
+async function globalSetup() {
   // Run seed script
   console.log("Running seed script...");
   execSync("npx tsx tests/e2e/seed.ts", {

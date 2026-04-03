@@ -101,7 +101,7 @@ watch(
         if (first && typeof first.beginLoad === "function") {
           try {
             first.beginLoad();
-          } catch (e) {
+          } catch {
             // ignore
           }
         }
@@ -132,7 +132,7 @@ const onReady = (trackIndex: number, duration: number) => {
     if (nextIndex < trackPlayers.value.length) {
       try {
         (trackPlayers.value[nextIndex] as any)?.beginLoad?.();
-      } catch (e) {
+      } catch {
         // no-op
       }
     }
@@ -146,7 +146,7 @@ const onTrackError = (trackIndex: number) => {
     if (nextIndex < trackPlayers.value.length) {
       try {
         (trackPlayers.value[nextIndex] as any)?.beginLoad?.();
-      } catch (e) {
+      } catch {
         // no-op
       }
     }
@@ -236,7 +236,7 @@ onMounted(() => {
       if (first && typeof first.beginLoad === "function") {
         try {
           first.beginLoad();
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -348,14 +348,14 @@ const onDownloadMix = async () => {
           const data = ws.getDecodedData();
           if (data) return data as AudioBuffer;
         }
-      } catch (e) {
+      } catch {
         /* no-op: ws.getDecodedData may throw on some backends */
       }
       try {
         if (ws.backend?.buffer) {
           return ws.backend.buffer as AudioBuffer;
         }
-      } catch (e) {
+      } catch {
         /* no-op: backend buffer access may throw if backend differs */
       }
       return null;

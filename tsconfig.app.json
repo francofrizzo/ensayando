@@ -9,7 +9,6 @@
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }

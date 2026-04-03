@@ -80,7 +80,7 @@ const handleEditorChange = (content: any, _previousContent: any, { contentErrors
       if (schemaErrors.length === 0) {
         updateLocalLyrics(parsedLyrics);
       }
-    } catch (error) {
+    } catch {
       // JSON parse error - don't update store
     }
   }

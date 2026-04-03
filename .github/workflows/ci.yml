@@ -29,14 +29,55 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - run: supabase start
+
+      - name: Cache Supabase Docker images
+        id: supabase-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/supabase-docker
+          key: supabase-docker-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Load cached Docker images
+        if: steps.supabase-cache.outputs.cache-hit == 'true'
+        run: for f in /tmp/supabase-docker/*.tar; do docker load -i "$f"; done
+
+      - name: Start Supabase (background)
+        run: supabase start &
+
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install chromium --with-deps
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Wait for Supabase
+        run: wait && supabase status
+
+      - name: Save Docker images to cache
+        if: steps.supabase-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/supabase-docker
+          docker images --format '{{.Repository}}:{{.Tag}}' | grep -E 'supabase|postgrest|gotrue|realtime|storage|pgmeta|kong|logflare|pg_' | while read img; do
+            name=$(echo "$img" | tr '/:' '_')
+            docker save "$img" -o "/tmp/supabase-docker/${name}.tar"
+          done
+
       - run: pnpm exec tsx tests/e2e/seed.ts
       - run: pnpm exec playwright test
         env:

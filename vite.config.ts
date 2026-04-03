@@ -4,15 +4,14 @@ import tailwindcss from "@tailwindcss/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import vitePluginVueDevtools from "vite-plugin-vue-devtools";
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ mode }) => ({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     tailwindcss(),
-    mode === "development"
-      ? (await import("vite-plugin-vue-devtools")).default()
-      : null,
+    mode === "development" ? vitePluginVueDevtools() : null,
     VitePWA({
       registerType: "autoUpdate",
       devOptions: {
@@ -85,8 +84,10 @@ export default defineConfig(async ({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          jsoneditor: ["vanilla-jsoneditor"]
+        manualChunks(id) {
+          if (id.includes("vanilla-jsoneditor")) {
+            return "jsoneditor";
+          }
         }
       }
     }
