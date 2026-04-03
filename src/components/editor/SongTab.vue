@@ -64,6 +64,7 @@ const formData = reactive({
 
 const isSaving = ref(false);
 const isDirty = ref(false);
+const isInitializing = ref(true);
 const isCreateMode = ref(false);
 const trackKeyCounter = ref(0);
 const uploadingTrackIndex = ref<number | null>(null);
@@ -95,6 +96,10 @@ const restoreFormFromSong = (song: typeof currentSong.value) => {
   formData.visible = song.visible;
   formData.audio_tracks = serializeFormData(song);
   isDirty.value = false;
+  isInitializing.value = true;
+  nextTick(() => {
+    isInitializing.value = false;
+  });
   clearErrors();
 };
 
@@ -445,6 +450,7 @@ watch(
 watch(
   () => ({ ...formData }),
   () => {
+    if (isInitializing.value) return;
     if (isCreateMode.value) {
       isDirty.value = !!(formData.title || formData.slug || formData.audio_tracks.length > 0);
     } else if (currentSong.value) {
