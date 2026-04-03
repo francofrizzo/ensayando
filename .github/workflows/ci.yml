@@ -75,10 +75,16 @@ jobs:
             sleep 2
           done
           supabase status
-          echo "Waiting for Auth service to be ready..."
+          echo "Waiting for Auth service..."
           for i in $(seq 1 30); do
             curl -sf http://localhost:54321/auth/v1/health && break
             echo "Auth not ready yet... ($i)"
+            sleep 2
+          done
+          echo "Waiting for Storage service..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:54321/storage/v1/status && break
+            echo "Storage not ready yet... ($i)"
             sleep 2
           done
 
