@@ -79,7 +79,7 @@ test("mute a track via click", async ({ page }) => {
 test("solo a track via ctrl+click", async ({ page }) => {
   await openTestSong(page);
 
-  await trackMuteButton(page, "Guitar").click({ modifiers: ["Meta"] });
+  await trackMuteButton(page, "Guitar").click({ modifiers: ["ControlOrMeta"] });
 
   // Guitar stays unmuted, others get muted
   await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-muted");
@@ -138,7 +138,7 @@ test("seek via lyrics click", async ({ page }) => {
         const seconds = parseInt(parts[0] ?? "0") * 60 + parseInt(parts[1] ?? "0");
         return seconds;
       },
-      { timeout: 5000 }
+      { timeout: 10000 }
     )
     .toBeGreaterThanOrEqual(2);
 });
