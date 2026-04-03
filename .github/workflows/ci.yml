@@ -36,6 +36,7 @@ jobs:
         with:
           path: /tmp/supabase-docker
           key: supabase-docker-${{ hashFiles('supabase/config.toml') }}
+          save-always: true
 
       - name: Load cached Docker images
         if: steps.supabase-cache.outputs.cache-hit == 'true'
