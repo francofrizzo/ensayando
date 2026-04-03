@@ -35,17 +35,10 @@ import type { AudioTrack } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { generateTrackPeaks } from "@/utils/audio-utils";
-
-// Constants
-const VALIDATION_RULES = {
-  SLUG_PATTERN: /^[a-z0-9-]+$/,
-  ERRORS: {
-    TITLE_REQUIRED: "El título es obligatorio",
-    SLUG_REQUIRED: "El slug es obligatorio",
-    SLUG_INVALID: "El slug solo puede contener letras minúsculas, números y guiones",
-    TRACKS_REQUIRED: "Debe haber al menos una pista de audio"
-  }
-} as const;
+import {
+  generateSlugFromTitle as generateSlug,
+  validateSongForm
+} from "@/utils/songUtils";
 
 // Composables and stores
 const { currentSong } = useCurrentSong();
@@ -104,16 +97,7 @@ const restoreFormFromSong = (song: typeof currentSong.value) => {
 };
 
 const generateSlugFromTitle = () => {
-  const slug = formData.title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  formData.slug = slug;
+  formData.slug = generateSlug(formData.title);
 };
 
 // Track operations
@@ -251,27 +235,9 @@ const handleGeneratePeaks = async (index: number) => {
 // Validation
 const validateForm = () => {
   clearErrors();
-  let isValid = true;
-
-  if (!formData.title.trim()) {
-    errors.title = VALIDATION_RULES.ERRORS.TITLE_REQUIRED;
-    isValid = false;
-  }
-
-  if (!formData.slug.trim()) {
-    errors.slug = VALIDATION_RULES.ERRORS.SLUG_REQUIRED;
-    isValid = false;
-  } else if (!VALIDATION_RULES.SLUG_PATTERN.test(formData.slug)) {
-    errors.slug = VALIDATION_RULES.ERRORS.SLUG_INVALID;
-    isValid = false;
-  }
-
-  if (formData.audio_tracks.length === 0) {
-    errors.audio_tracks = VALIDATION_RULES.ERRORS.TRACKS_REQUIRED;
-    isValid = false;
-  }
-
-  return isValid;
+  const result = validateSongForm(formData);
+  Object.assign(errors, result.errors);
+  return result.isValid;
 };
 
 // Mode management
