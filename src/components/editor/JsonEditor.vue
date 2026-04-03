@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { createJSONEditor, type JSONEditorPropsOptional } from "vanilla-jsoneditor";
+import {
+  createJSONEditor,
+  type Content,
+  type JSONEditorPropsOptional,
+  type JsonEditor
+} from "vanilla-jsoneditor";
 import { onBeforeUnmount, onMounted, onUpdated, ref, type Ref } from "vue";
 
 function filterProps(
@@ -17,14 +22,14 @@ const props = defineProps<JSONEditorPropsOptional>();
 
 // Reactive references
 const editorRef: Ref<HTMLElement | null> = ref(null);
-const editor: Ref<any> = ref(null);
+const editor: Ref<JsonEditor | null> = ref(null);
 const prevProps: Ref<Partial<JSONEditorPropsOptional>> = ref({});
 
 // Expose editor methods to parent components
 defineExpose({
   get: () => editor.value?.get(),
-  set: (content: any) => editor.value?.set(content),
-  updateProps: (props: any) => editor.value?.updateProps(props),
+  set: (content: Content) => editor.value?.set(content),
+  updateProps: (props: JSONEditorPropsOptional) => editor.value?.updateProps(props),
   destroy: () => editor.value?.destroy()
 });
 

@@ -16,6 +16,7 @@ import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useMediaSession } from "@/composables/useMediaSession";
 import { useNavigation } from "@/composables/useNavigation";
 import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
+import type WaveSurfer from "wavesurfer.js";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
 import { mixAndEncodeMp3 } from "../../utils/mixdown";
@@ -90,7 +91,7 @@ watch(
           handleAudioError(error as Error, `destroy wavesurfer on song change ${index}`);
         }
       });
-      trackPlayers.value = [] as any;
+      trackPlayers.value = [];
     } catch (error) {
       handleAudioError(error as Error, "reset track players on song change");
     }
@@ -101,7 +102,7 @@ watch(
     // Start first decode on iOS for new song (nextTick so template refs are populated)
     if (isIOS) {
       nextTick(() => {
-        const first = trackPlayers.value[0] as any;
+        const first = trackPlayers.value[0];
         if (first && typeof first.beginLoad === "function") {
           try {
             first.beginLoad();
@@ -135,7 +136,7 @@ const onReady = (trackIndex: number, duration: number) => {
     const nextIndex = trackIndex + 1;
     if (nextIndex < trackPlayers.value.length) {
       try {
-        (trackPlayers.value[nextIndex] as any)?.beginLoad?.();
+        trackPlayers.value[nextIndex]?.beginLoad?.();
       } catch {
         // no-op
       }
@@ -149,7 +150,7 @@ const onTrackError = (trackIndex: number) => {
     const nextIndex = trackIndex + 1;
     if (nextIndex < trackPlayers.value.length) {
       try {
-        (trackPlayers.value[nextIndex] as any)?.beginLoad?.();
+        trackPlayers.value[nextIndex]?.beginLoad?.();
       } catch {
         // no-op
       }
@@ -236,7 +237,7 @@ onMounted(() => {
   // Kick off sequential decode on iOS: use nextTick so template refs are populated
   if (isIOS) {
     nextTick(() => {
-      const first = trackPlayers.value[0] as any;
+      const first = trackPlayers.value[0];
       if (first && typeof first.beginLoad === "function") {
         try {
           first.beginLoad();
@@ -316,7 +317,7 @@ const DRIFT_THRESHOLD = 0.15;
 const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
 const audioContext = ref<AudioContext | null>(null);
-const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => any) | null>(null);
+const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => void) | null>(null);
 
 const isInitializing = ref(false);
 const exporting = ref(false);
@@ -345,7 +346,12 @@ const onDownloadMix = async () => {
     const duration = state.totalDuration.value;
 
     const buffers = trackPlayers.value.map((player) => {
-      const ws: any = player?.waveSurfer;
+      const ws = player?.waveSurfer as
+        | (WaveSurfer & {
+            getDecodedData?: () => AudioBuffer | null;
+            backend?: { buffer?: AudioBuffer; audioContext?: AudioContext };
+          })
+        | null;
       if (!ws) return null;
       try {
         if (typeof ws.getDecodedData === "function") {
@@ -469,7 +475,9 @@ watch(
       // Fallback: derive context from first wavesurfer instance if we didn't create one
       const firstTrack = trackPlayers.value[0];
       if (firstTrack?.waveSurfer) {
-        const ws = firstTrack.waveSurfer as any;
+        const ws = firstTrack.waveSurfer as WaveSurfer & {
+          backend?: { audioContext?: AudioContext };
+        };
         if (ws.backend?.audioContext) {
           audioContext.value = ws.backend.audioContext;
           setupAudioInterruptionListeners();
@@ -588,12 +596,13 @@ const initializeAudioContext = async () => {
   try {
     // Create (or reuse) a single shared AudioContext for all WaveSurfer instances
     if (!audioContext.value) {
+      const w = window as typeof window & { webkitAudioContext?: typeof AudioContext };
       const AudioContextCtor: typeof AudioContext | undefined =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
+        w.AudioContext || w.webkitAudioContext;
       if (AudioContextCtor) {
         audioContext.value = new AudioContextCtor({
           sampleRate: 44100,
-          latencyHint: "playback" as any
+          latencyHint: "playback" as AudioContextLatencyCategory
         });
       }
     }
@@ -762,8 +771,8 @@ const initializeAudioContext = async () => {
                 v-for="(track, index) in sortedTracks"
                 :key="index"
                 :ref="
-                  (el: any) => {
-                    if (el) trackPlayers[index] = el;
+                  (el) => {
+                    if (el) trackPlayers[index] = el as InstanceType<typeof TrackPlayer>;
                   }
                 "
                 class="pl-4 first:pt-2 last:pb-2"

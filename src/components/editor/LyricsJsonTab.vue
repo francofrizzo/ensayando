@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { IconProhibited, IconSave } from "@/components/ui/icons";
-import { Mode, createAjvValidator } from "vanilla-jsoneditor";
+import {
+  Mode,
+  createAjvValidator,
+  isContentParseError,
+  isTextContent,
+  type Content,
+  type OnChangeStatus
+} from "vanilla-jsoneditor";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
@@ -13,7 +20,7 @@ const store = useCollectionsStore();
 const { saveLyrics, updateLocalLyrics } = store;
 
 const hasValidationErrors = ref(false);
-const editorRef = ref<any>(null);
+const editorRef = ref<{ get: () => Content; set: (content: Content) => void } | null>(null);
 
 const validator = createAjvValidator({ schema: lyricSchema });
 const VALIDATION_DELAY = 200;
@@ -55,7 +62,7 @@ const handleSaveClick = () => {
   try {
     if (editorRef.value) {
       const currentContent = editorRef.value.get();
-      if (currentContent?.text) {
+      if (isTextContent(currentContent) && currentContent.text) {
         const parsedLyrics = JSON.parse(currentContent.text);
         updateLocalLyrics(parsedLyrics);
       }
@@ -66,13 +73,17 @@ const handleSaveClick = () => {
   }
 };
 
-const handleEditorChange = (content: any, _previousContent: any, { contentErrors }: any) => {
+const handleEditorChange = (
+  content: Content,
+  _previousContent: Content,
+  { contentErrors }: OnChangeStatus
+) => {
   if (validationTimeout) {
     clearTimeout(validationTimeout);
   }
 
   // Update store immediately for valid JSON
-  if (!contentErrors?.parseErrors?.length && content?.text) {
+  if (!isContentParseError(contentErrors) && isTextContent(content) && content.text) {
     try {
       const parsedLyrics = JSON.parse(content.text);
       const schemaErrors = validator(parsedLyrics);
@@ -88,7 +99,8 @@ const handleEditorChange = (content: any, _previousContent: any, { contentErrors
   // Debounce validation error state updates
   validationTimeout = setTimeout(() => {
     hasValidationErrors.value = Boolean(
-      contentErrors?.validationErrors?.length > 0 || contentErrors?.parseError !== undefined
+      contentErrors !== undefined &&
+      (isContentParseError(contentErrors) || contentErrors.validationErrors.length > 0)
     );
   }, VALIDATION_DELAY);
 };

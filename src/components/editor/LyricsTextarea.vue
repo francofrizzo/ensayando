@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, type CSSProperties } from "vue";
 
 type Props = {
   modelValue: string;
   dataLyricsInput: string;
-  verseStyles: Record<string, any>;
+  verseStyles: CSSProperties;
   readonly?: boolean;
   placeholder?: string;
 };

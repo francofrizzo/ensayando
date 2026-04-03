@@ -62,8 +62,11 @@ const handleSubmit = async () => {
       await authStore.signIn(username.value, password.value);
       // watcher will redirect
     }
-  } catch (err: any) {
-    error.value = err.message || `Error al ${isSignUp.value ? "registrarse" : "iniciar sesión"}`;
+  } catch (err: unknown) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : `Error al ${isSignUp.value ? "registrarse" : "iniciar sesión"}`;
   } finally {
     isLoading.value = false;
   }

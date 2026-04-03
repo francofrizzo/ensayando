@@ -30,7 +30,7 @@ import {
   updateAudioTrack,
   updateSongBasicInfo
 } from "@/data/supabase";
-import type { AudioTrack } from "@/data/types";
+import type { AudioTrack, TrackPeaks } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { generateTrackPeaks } from "@/utils/audio-utils";
@@ -67,7 +67,7 @@ const errors = reactive({
 // Utility functions
 const clearErrors = () => {
   Object.keys(errors).forEach((key) => {
-    (errors as any)[key] = "";
+    (errors as Record<string, string>)[key] = "";
   });
 };
 
@@ -116,7 +116,11 @@ const createNewTrack = (): AudioTrack => {
   };
 };
 
-const updateTrackField = (index: number, field: keyof AudioTrack, value: any) => {
+const updateTrackField = (
+  index: number,
+  field: keyof AudioTrack,
+  value: AudioTrack[keyof AudioTrack]
+) => {
   const newTracks = [...formData.audio_tracks];
   newTracks[index] = { ...newTracks[index]!, [field]: value };
   formData.audio_tracks = newTracks;
@@ -190,7 +194,7 @@ const handleUploadEnd = () => {
 
 const handleUploadSuccess = (
   index: number,
-  data: { url: string; suggestedTitle: string; peaks: any | null }
+  data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }
 ) => {
   updateTrackField(index, "audio_file_url", data.url);
 
@@ -220,7 +224,7 @@ const handleGeneratePeaks = async (index: number) => {
     const peaks = await generateTrackPeaks(file);
     updateTrackField(index, "peaks", peaks);
     toast.success("Forma de onda generada correctamente");
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error generating peaks:", error);
     toast.error("No se pudo generar la forma de onda");
   } finally {
@@ -260,7 +264,7 @@ const saveAudioTracks = async (songId: number) => {
       title: track.title,
       color_key: track.color_key,
       audio_file_url: track.audio_file_url,
-      peaks: (track as any).peaks ?? null,
+      peaks: track.peaks ?? null,
       order: track.order
     };
 
@@ -294,7 +298,8 @@ const updateExistingTracks = async () => {
 
     fieldsToCheck.forEach((field) => {
       if (track[field] !== originalTrack[field]) {
-        (updateData as any)[field] = track[field];
+        (updateData as Partial<Record<typeof field, AudioTrack[typeof field]>>)[field] =
+          track[field];
       }
     });
 
@@ -339,9 +344,11 @@ const handleCreateSong = async () => {
     isCreateMode.value = false;
     isDirty.value = false;
     replaceToSong(currentCollection.value, newSong);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating song:", error);
-    toast.error("Error al crear la canción: " + error.message);
+    toast.error(
+      "Error al crear la canción: " + (error instanceof Error ? error.message : String(error))
+    );
   } finally {
     isSaving.value = false;
   }
@@ -380,9 +387,11 @@ const handleUpdateSong = async () => {
       const updatedSong = { ...currentSong.value, slug: formData.slug };
       replaceToSong(currentCollection.value, updatedSong);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error saving song:", error);
-    toast.error("Error al guardar la canción: " + error.message);
+    toast.error(
+      "Error al guardar la canción: " + (error instanceof Error ? error.message : String(error))
+    );
   } finally {
     isSaving.value = false;
   }
@@ -582,7 +591,8 @@ defineExpose({
               :style="{
                 borderTopColor:
                   colorOptions?.find(
-                    (c: any) => c.key === formData.audio_tracks[track.renderIndex]?.color_key
+                    (c: { key: string; value: string }) =>
+                      c.key === formData.audio_tracks[track.renderIndex]?.color_key
                   )?.value || 'var(--color-base-300)'
               }"
             >
@@ -658,7 +668,10 @@ defineExpose({
                       :disabled="!formData.slug && isCreateMode"
                       @upload-start="handleUploadStart(track.renderIndex)"
                       @upload-end="handleUploadEnd"
-                      @upload-success="(data: any) => handleUploadSuccess(track.renderIndex, data)"
+                      @upload-success="
+                        (data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }) =>
+                          handleUploadSuccess(track.renderIndex, data)
+                      "
                     />
                     <div
                       v-if="showAdvancedOptions"

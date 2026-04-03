@@ -5,7 +5,9 @@ export const generateTrackPeaks = async (
   targetSamples = 1500,
   scale = 100
 ): Promise<TrackPeaks> => {
-  const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+  const AudioCtx =
+    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ??
+    AudioContext;
   const AC = new AudioCtx({ sampleRate: 44100 });
   const buf = await file.arrayBuffer();
   const audio = await AC.decodeAudioData(buf);

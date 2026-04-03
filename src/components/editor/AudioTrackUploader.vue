@@ -74,7 +74,7 @@ const handleFileUpload = async (event: Event) => {
     let peaks: TrackPeaks | null = null;
     try {
       peaks = await generateTrackPeaks(file);
-    } catch (peaksError: any) {
+    } catch (peaksError: unknown) {
       console.warn("No se pudieron generar los peaks automáticamente:", peaksError);
     }
 
@@ -94,9 +94,9 @@ const handleFileUpload = async (event: Event) => {
     });
 
     toast.success("Archivo subido correctamente");
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Upload error:", error);
-    toast.error(error.message || "Error al subir el archivo");
+    toast.error(error instanceof Error ? error.message : "Error al subir el archivo");
   } finally {
     isUploading.value = false;
     emit("upload-end");

@@ -16,7 +16,7 @@ export default [
   {
     rules: {
       "@typescript-eslint/consistent-type-definitions": ["error", "type"],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-expressions": "warn"
     }
   },

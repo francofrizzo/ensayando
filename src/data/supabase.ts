@@ -1,5 +1,6 @@
 import type {
   AuthResponse,
+  AuthSession,
   AuthTokenResponse,
   PostgrestSingleResponse
 } from "@supabase/supabase-js";
@@ -12,7 +13,9 @@ export const getSession = async () => {
   return await supabase.auth.getSession();
 };
 
-export const onAuthStateChange = (callback: (event: string, session: any) => void) => {
+export const onAuthStateChange = (
+  callback: (event: string, session: AuthSession | null) => void
+) => {
   return supabase.auth.onAuthStateChange(callback);
 };
 
@@ -47,13 +50,8 @@ export const signOut = async () => {
 // Collection and song functions
 
 // Fetch all public collections (no auth required)
-export const fetchPublicCollections = async (): Promise<
-  PostgrestSingleResponse<Collection[]>
-> => {
-  return await supabase
-    .from("collections")
-    .select("*")
-    .eq("is_public", true);
+export const fetchPublicCollections = async (): Promise<PostgrestSingleResponse<Collection[]>> => {
+  return await supabase.from("collections").select("*").eq("is_public", true);
 };
 
 // Fetch collections available to the current user along with their role in each collection
@@ -70,9 +68,10 @@ export const fetchCollections = async (): Promise<
     if (publicResponse.error) {
       return publicResponse as PostgrestSingleResponse<CollectionWithRole[]>;
     }
-    const mapped: CollectionWithRole[] = (publicResponse.data || []).map(
-      (collection) => ({ ...collection, user_role: "viewer" as const })
-    );
+    const mapped: CollectionWithRole[] = (publicResponse.data || []).map((collection) => ({
+      ...collection,
+      user_role: "viewer" as const
+    }));
     mapped.sort((a, b) => b.id - a.id);
     return {
       data: mapped,
@@ -85,10 +84,7 @@ export const fetchCollections = async (): Promise<
 
   // Authenticated: fetch user's private collections + public collections, merge
   const [userResponse, publicResponse] = await Promise.all([
-    supabase
-      .from("user_collections")
-      .select("role, collections(*)")
-      .eq("user_id", user.id),
+    supabase.from("user_collections").select("role, collections(*)").eq("user_id", user.id),
     fetchPublicCollections()
   ]);
 
@@ -100,7 +96,8 @@ export const fetchCollections = async (): Promise<
   const collectionsMap = new Map<number, CollectionWithRole>();
 
   for (const row of userResponse.data || []) {
-    const collection: Collection | null = (row as any).collections ?? null;
+    const collection: Collection | null =
+      (row as unknown as { role: string; collections: Collection | null }).collections ?? null;
     if (!collection) continue;
     collectionsMap.set(collection.id, { ...collection, user_role: row.role } as CollectionWithRole);
   }
