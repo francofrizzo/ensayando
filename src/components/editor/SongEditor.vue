@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Braces, MicVocal, Music, X } from "lucide-vue-next";
+import { IconCode, IconMic, IconMusic, IconClose } from "@/components/ui/icons";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import { useCollectionsStore } from "@/stores/collections";
@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
           :class="{ 'tab-active': activeTab === 'song' }"
           @click="handleTabChange('song')"
         >
-          <Music class="size-3.5" /> Canción
+          <IconMusic class="size-3.5" /> Canción
           <span v-if="songTabRef?.isDirty" class="bg-primary size-1.5 rounded-full" />
         </a>
         <a
@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
           :class="{ 'tab-active': activeTab === 'lyrics' }"
           @click="handleTabChange('lyrics')"
         >
-          <MicVocal class="size-3.5" /> Letra
+          <IconMic class="size-3.5" /> Letra
           <span v-if="lyricsTabRef?.hasUnsavedChanges" class="bg-primary size-1.5 rounded-full" />
         </a>
         <a
@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
           :class="{ 'tab-active': activeTab === 'lyrics-json' }"
           @click="handleTabChange('lyrics-json')"
         >
-          <Braces class="size-3.5" />
+          <IconCode class="size-3.5" />
           Letra (JSON)
         </a>
       </div>
@@ -101,7 +101,7 @@ onBeforeUnmount(() => {
       <div class="flex items-center gap-2">
         <div class="flex items-center gap-2" data-song-editor-actions></div>
         <button class="btn btn-xs btn-square btn-soft" @click="handleCloseEditor">
-          <X class="size-3.5" />
+          <IconClose class="size-3.5" />
         </button>
       </div>
     </div>

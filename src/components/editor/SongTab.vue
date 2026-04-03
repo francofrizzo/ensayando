@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import {
-  ArrowDown,
-  ArrowUp,
-  AudioLines,
-  Cog,
-  Eye,
-  Hash,
-  Link2,
-  LockKeyhole,
-  Music,
-  Plus,
-  Save,
-  Trash2,
-  X
-} from "lucide-vue-next";
+  IconMoveDown,
+  IconMoveUp,
+  IconMusic,
+  IconSettings,
+  IconVisible,
+  IconHash,
+  IconLink,
+  IconLock,
+  IconPlus,
+  IconSave,
+  IconTrash,
+  IconClose
+} from "@/components/ui/icons";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
@@ -35,10 +34,7 @@ import type { AudioTrack } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { generateTrackPeaks } from "@/utils/audio-utils";
-import {
-  generateSlugFromTitle as generateSlug,
-  validateSongForm
-} from "@/utils/songUtils";
+import { generateSlugFromTitle as generateSlug, validateSongForm } from "@/utils/songUtils";
 
 // Composables and stores
 const { currentSong } = useCurrentSong();
@@ -485,8 +481,8 @@ defineExpose({
             <div class="form-control">
               <label class="label cursor-pointer justify-start gap-3">
                 <div class="flex items-center gap-2">
-                  <Eye v-if="formData.visible" class="size-4" />
-                  <LockKeyhole v-else class="size-4" />
+                  <IconVisible v-if="formData.visible" class="size-4" />
+                  <IconLock v-else class="size-4" />
                   <span class="label-text font-medium">
                     {{ formData.visible ? "Visible" : "Oculta" }}
                   </span>
@@ -509,7 +505,7 @@ defineExpose({
                 class="input input-bordered flex w-full items-center gap-2"
                 :class="{ 'input-error': errors.title }"
               >
-                <Music class="size-4 opacity-70" />
+                <IconMusic class="size-4 opacity-70" />
                 <input
                   v-model="formData.title"
                   type="text"
@@ -538,7 +534,7 @@ defineExpose({
                 class="input input-bordered flex w-full items-center gap-2"
                 :class="{ 'input-error': errors.slug }"
               >
-                <Hash class="size-4 opacity-70" />
+                <IconHash class="size-4 opacity-70" />
                 <input
                   v-model="formData.slug"
                   type="text"
@@ -560,7 +556,7 @@ defineExpose({
             <h3 class="text-base-content font-medium tracking-wide uppercase">Tracks de audio</h3>
             <div class="-mt-1">
               <button class="btn btn-square btn-sm btn-soft" @click="addAudioTrack">
-                <Plus class="size-3.5" />
+                <IconPlus class="size-3.5" />
                 <span class="sr-only">Agregar track</span>
               </button>
             </div>
@@ -574,7 +570,7 @@ defineExpose({
             v-if="formData.audio_tracks.length === 0"
             class="text-base-content/60 py-8 text-center"
           >
-            <Music class="mx-auto mb-2 size-8 opacity-50" />
+            <IconMusic class="mx-auto mb-2 size-8 opacity-50" />
             <p>Aún no hay pistas de audio configuradas</p>
           </div>
 
@@ -582,17 +578,14 @@ defineExpose({
             <div
               v-for="track in tracksForRendering"
               :key="track.stableKey"
-              class="card bg-base-100 border-base-300 overflow-hidden rounded-lg border"
+              class="card bg-base-100 border-base-300 rounded-lg border border-t-[3px]"
+              :style="{
+                borderTopColor:
+                  colorOptions?.find(
+                    (c: any) => c.key === formData.audio_tracks[track.renderIndex]?.color_key
+                  )?.value || 'var(--color-base-300)'
+              }"
             >
-              <div
-                class="h-[3px] w-full"
-                :style="{
-                  backgroundColor:
-                    colorOptions?.find(
-                      (c: any) => c.key === formData.audio_tracks[track.renderIndex]?.color_key
-                    )?.value || 'transparent'
-                }"
-              />
               <div class="card-body flex flex-row items-center gap-3 p-4">
                 <div class="join join-vertical -my-1 -ml-1 flex shrink-0 flex-col">
                   <button
@@ -600,14 +593,14 @@ defineExpose({
                     :disabled="track.renderIndex === 0"
                     @click="moveTrackUp(track.renderIndex)"
                   >
-                    <ArrowUp class="size-3.5" />
+                    <IconMoveUp class="size-3.5" />
                   </button>
                   <button
                     class="btn btn-xs btn-ghost btn-square join-item"
                     :disabled="track.renderIndex === formData.audio_tracks.length - 1"
                     @click="moveTrackDown(track.renderIndex)"
                   >
-                    <ArrowDown class="size-3.5" />
+                    <IconMoveDown class="size-3.5" />
                   </button>
                 </div>
 
@@ -645,7 +638,7 @@ defineExpose({
                       class="input input-bordered input-sm flex w-full items-center gap-2"
                       :class="{ 'input-error': errors.slug }"
                     >
-                      <Link2 class="size-4 opacity-70" />
+                      <IconLink class="size-4 opacity-70" />
                       <input
                         :value="formData.audio_tracks[track.renderIndex]!.audio_file_url"
                         type="url"
@@ -689,7 +682,7 @@ defineExpose({
                           <span class="loading loading-spinner loading-xs" />
                         </template>
                         <template v-else>
-                          <AudioLines class="size-3.5" />
+                          <IconMusic class="size-3.5" />
                         </template>
                       </button>
                     </div>
@@ -698,7 +691,7 @@ defineExpose({
                       class="btn btn-sm btn-error btn-soft btn-square shrink-0"
                       @click="removeAudioTrack(track.renderIndex)"
                     >
-                      <Trash2 class="size-3.5" />
+                      <IconTrash class="size-3.5" />
                     </button>
                   </div>
                 </div>
@@ -716,7 +709,7 @@ defineExpose({
         class="btn btn-xs btn-soft"
         @click="cancelCreateMode"
       >
-        <X class="size-3.5" />
+        <IconClose class="size-3.5" />
         <span class="hidden md:block">Cancelar</span>
       </button>
       <button
@@ -725,7 +718,7 @@ defineExpose({
         :disabled="!canCreateNewSong"
         @click="enterCreateMode"
       >
-        <Plus class="size-3.5" />
+        <IconPlus class="size-3.5" />
         <span class="hidden md:block">Nueva canción</span>
       </button>
       <button class="btn btn-xs btn-primary" :disabled="!canSave" @click="handleSave">
@@ -734,7 +727,7 @@ defineExpose({
           <span>{{ isCreateMode ? "Creando..." : "Guardando..." }}</span>
         </template>
         <template v-else>
-          <Save class="size-3.5" />
+          <IconSave class="size-3.5" />
           <span class="hidden md:block">{{
             isCreateMode ? "Crear canción" : "Guardar cambios"
           }}</span>
@@ -747,7 +740,7 @@ defineExpose({
         :data-tip="'Opciones avanzadas'"
         @click="showAdvancedOptions = !showAdvancedOptions"
       >
-        <Cog class="size-3.5" />
+        <IconSettings class="size-3.5" />
       </button>
     </div>
   </SafeTeleport>

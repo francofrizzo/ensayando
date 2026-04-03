@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { average, selectMostContrasting } from "@/utils/color-utils";
-import { Palette, X } from "lucide-vue-next";
+import { IconPalette, IconClose } from "@/components/ui/icons";
 import { computed } from "vue";
 
 type Props = {
@@ -119,18 +119,21 @@ const isColorSelected = (colorKey: string) => {
       :class="[btnClass, { 'btn-disabled': disabled }]"
     >
       <span v-if="buttonContent">{{ buttonContent }}</span>
-      <Palette v-else class="size-3" />
+      <IconPalette v-else class="size-3" />
     </div>
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 min-w-max border p-2 shadow-lg"
+      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 min-w-max border p-2 shadow-xl"
     >
-      <div class="flex flex-col gap-1">
-        <div v-if="title" class="p-1 text-xs">
+      <div class="flex flex-col gap-2">
+        <span
+          v-if="title"
+          class="text-base-content/50 px-1 text-[10px] font-medium tracking-wider uppercase"
+        >
           {{ title }}
-        </div>
-        <div class="mb-2 grid grid-cols-4 gap-2 px-1">
+        </span>
+        <div class="grid grid-cols-4 gap-2 px-1">
           <button
             v-for="color in availableColors"
             :key="color.key"
@@ -152,7 +155,7 @@ const isColorSelected = (colorKey: string) => {
           class="btn btn-xs btn-ghost w-full"
           @click="clearColors"
         >
-          <X class="size-3" />
+          <IconClose class="size-3" />
           Limpiar
         </button>
       </div>

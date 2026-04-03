@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Rabbit, Search } from "lucide-vue-next";
+import { IconEmpty, IconSearch } from "@/components/ui/icons";
 import { computed } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 
@@ -17,27 +17,27 @@ const props = defineProps<Props>();
 
 const config = {
   "not-found": {
-    icon: Search,
+    icon: IconSearch,
     title: "Página no encontrada",
     message: "La página que buscás no existe o fue movida."
   },
   "collection-not-found": {
-    icon: Search,
+    icon: IconSearch,
     title: "Colección no encontrada",
     message: "La colección que buscás no existe o no está disponible."
   },
   "song-not-found": {
-    icon: Search,
+    icon: IconSearch,
     title: "Canción no encontrada",
     message: "La canción que buscás no existe o no está disponible."
   },
   "no-collections": {
-    icon: Rabbit,
+    icon: IconEmpty,
     title: "No hay nada por acá",
     message: "No hay colecciones disponibles."
   },
   "no-songs": {
-    icon: Rabbit,
+    icon: IconEmpty,
     title: "No hay canciones",
     message:
       "Esta colección no tiene canciones. Las canciones aparecerán acá una vez que se agreguen a la colección."
@@ -57,10 +57,29 @@ const message = computed(() => config[props.type].message);
 
     <div class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col">
       <div class="flex flex-grow-1 flex-col items-center justify-center gap-4 text-center">
-        <component :is="icon" class="mb-4 size-22 opacity-50" style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms" />
-        <h2 class="text-base-content/80 text-2xl font-semibold" style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms">{{ title }}</h2>
-        <p class="text-base-content/40" style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms">{{ message }}</p>
-        <router-link v-if="backLink" :to="backLink.to" class="btn btn-primary" style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms">
+        <component
+          :is="icon"
+          class="mb-4 size-22 opacity-50"
+          style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
+        />
+        <h2
+          class="text-base-content/80 text-2xl font-semibold"
+          style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms"
+        >
+          {{ title }}
+        </h2>
+        <p
+          class="text-base-content/40"
+          style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms"
+        >
+          {{ message }}
+        </p>
+        <router-link
+          v-if="backLink"
+          :to="backLink.to"
+          class="btn btn-primary"
+          style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
+        >
           {{ backLink.text }}
         </router-link>
         <div style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms">

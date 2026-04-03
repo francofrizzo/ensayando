@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ban, Save } from "lucide-vue-next";
+import { IconProhibited, IconSave } from "@/components/ui/icons";
 import { Mode, createAjvValidator } from "vanilla-jsoneditor";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { toast } from "vue-sonner";
@@ -132,12 +132,12 @@ defineExpose({
         </template>
 
         <template v-else-if="hasValidationErrors">
-          <Ban class="size-3.5" />
+          <IconProhibited class="size-3.5" />
           <span class="hidden md:block">Hay errores</span>
         </template>
 
         <template v-else>
-          <Save class="size-3.5" />
+          <IconSave class="size-3.5" />
           <span class="hidden md:block">Guardar cambios</span>
         </template>
       </button>

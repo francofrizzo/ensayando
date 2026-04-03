@@ -10,6 +10,8 @@ function mountControls(props: Partial<InstanceType<typeof PlayerControls>["$prop
       totalDuration: 180,
       isPlaying: false,
       isReady: true,
+      prevSong: null,
+      nextSong: null,
       ...props
     }
   });
@@ -18,19 +20,39 @@ function mountControls(props: Partial<InstanceType<typeof PlayerControls>["$prop
 describe("PlayerControls", () => {
   it("shows Play icon when not playing", () => {
     const wrapper = mountControls({ isPlaying: false });
-    // Play icon is rendered (Pause is not)
     expect(wrapper.find("[aria-label='Play/Pause']").exists()).toBe(true);
   });
 
-  it("disables button when not ready", () => {
+  it("shows spinner when not ready", () => {
     const wrapper = mountControls({ isReady: false });
-    const button = wrapper.find("[aria-label='Play/Pause']");
-    expect(button.attributes("disabled")).toBeDefined();
+    expect(wrapper.find(".loading-spinner").exists()).toBe(true);
+  });
+
+  it("hides time display when not ready", () => {
+    const wrapper = mountControls({ isReady: false });
+    expect(wrapper.find("[data-testid='time-display']").exists()).toBe(false);
+  });
+
+  it("shows time display when ready", () => {
+    const wrapper = mountControls({ isReady: true });
+    expect(wrapper.find("[data-testid='time-display']").exists()).toBe(true);
   });
 
   it("emits play-pause on click", async () => {
     const wrapper = mountControls({ isReady: true });
     await wrapper.find("[aria-label='Play/Pause']").trigger("click");
     expect(wrapper.emitted("play-pause")).toBeTruthy();
+  });
+
+  it("does not emit play-pause when not ready", async () => {
+    const wrapper = mountControls({ isReady: false });
+    await wrapper.find("[aria-label='Play/Pause']").trigger("click");
+    expect(wrapper.emitted("play-pause")).toBeUndefined();
+  });
+
+  it("disables prev/next buttons when no adjacent songs", () => {
+    const wrapper = mountControls({ prevSong: null, nextSong: null });
+    expect(wrapper.find("[aria-label='Canción anterior']").attributes("disabled")).toBeDefined();
+    expect(wrapper.find("[aria-label='Canción siguiente']").attributes("disabled")).toBeDefined();
   });
 });

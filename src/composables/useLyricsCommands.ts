@@ -25,6 +25,8 @@ export type LyricsCommandActions = {
   clearStanzaTimes: () => void;
   moveLineUp: () => void;
   moveLineDown: () => void;
+  splitStanza: () => void;
+  joinStanzas: () => void;
   undo: () => void;
   redo: () => void;
 };
@@ -232,6 +234,28 @@ export function useLyricsCommands(
       keybinding: {
         key: "Enter",
         modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "split-stanza",
+      description: "Dividir estrofa en el verso actual",
+      category: "Operaciones de estrofas",
+      execute: () => actions.splitStanza(),
+      canExecute: () => canPerformActions.value && currentFocus()?.itemIndex !== 0,
+      keybinding: {
+        key: "Enter",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+    {
+      id: "join-stanzas",
+      description: "Unir con la estrofa anterior",
+      category: "Operaciones de estrofas",
+      execute: () => actions.joinStanzas(),
+      canExecute: () => canPerformActions.value && (currentFocus()?.stanzaIndex ?? 0) > 0,
+      keybinding: {
+        key: "Backspace",
+        modifiers: { ctrl: true, shift: true }
       }
     },
 

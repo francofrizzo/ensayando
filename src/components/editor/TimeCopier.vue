@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check } from "lucide-vue-next";
+import { IconCheck } from "@/components/ui/icons";
 import { onMounted, onUnmounted, ref } from "vue";
 
 const hideDelay = 1000;
@@ -77,7 +77,7 @@ onUnmounted(() => {
       <span class="text-base-content/80 font-mono">
         "{{ copiedType }}": {{ copiedTime.toFixed(2) }}
       </span>
-      <Check
+      <IconCheck
         v-if="wasCopied"
         class="text-success h-4 w-4 transition-all duration-300"
         :class="{ 'opacity-100': wasCopied, 'opacity-0': !wasCopied }"

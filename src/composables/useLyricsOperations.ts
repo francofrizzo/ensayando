@@ -27,11 +27,17 @@ export function useLyricsOperations(
     comment: undefined
   });
 
-  const insertLine = (currentFocus: FocusPosition, before: boolean = false) => {
+  const insertLine = (
+    currentFocus: FocusPosition,
+    before: boolean = false,
+    initialProps?: Partial<LyricVerse>
+  ) => {
     const { stanzaIndex, itemIndex } = currentFocus;
     const currentLyrics = [...lyrics.value];
     const stanza = currentLyrics[stanzaIndex];
     if (!stanza) return;
+
+    const newVerse: LyricVerse = { ...createEmptyVerse(), ...initialProps };
 
     if (isColumnContext(currentFocus)) {
       const { columnIndex, lineIndex } = currentFocus;
@@ -40,8 +46,6 @@ export function useLyricsOperations(
       if (Array.isArray(item) && item[columnIndex]) {
         const targetColumn = item[columnIndex];
         if (targetColumn) {
-          const newVerse = createEmptyVerse();
-
           if (before) {
             targetColumn.splice(lineIndex, 0, newVerse);
             updateLyrics(currentLyrics);
@@ -54,8 +58,6 @@ export function useLyricsOperations(
         }
       }
     } else {
-      const newVerse = createEmptyVerse();
-
       if (before) {
         stanza.splice(itemIndex, 0, newVerse);
         updateLyrics(currentLyrics);
@@ -174,11 +176,11 @@ export function useLyricsOperations(
     }
   };
 
-  const insertStanza = (currentFocus: FocusPosition) => {
+  const insertStanza = (currentFocus: FocusPosition, initialProps?: Partial<LyricVerse>) => {
     const { stanzaIndex } = currentFocus;
     const currentLyrics = [...lyrics.value];
 
-    const newStanza: LyricStanza = [createEmptyVerse()];
+    const newStanza: LyricStanza = [{ ...createEmptyVerse(), ...initialProps }];
 
     currentLyrics.splice(stanzaIndex + 1, 0, newStanza);
     updateLyrics(currentLyrics);
@@ -303,6 +305,36 @@ export function useLyricsOperations(
     updateLyrics(currentLyrics);
   };
 
+  const splitStanza = (currentFocus: FocusPosition) => {
+    const { stanzaIndex, itemIndex } = currentFocus;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza || itemIndex === 0) return;
+
+    const before = stanza.slice(0, itemIndex);
+    const after = stanza.slice(itemIndex);
+
+    currentLyrics.splice(stanzaIndex, 1, before as LyricStanza, after as LyricStanza);
+    updateLyrics(currentLyrics);
+
+    focusInput({ stanzaIndex: stanzaIndex + 1, itemIndex: 0 });
+  };
+
+  const joinStanzas = (currentFocus: FocusPosition) => {
+    const { stanzaIndex } = currentFocus;
+    const currentLyrics = [...lyrics.value];
+    if (stanzaIndex === 0) return;
+
+    const previous = currentLyrics[stanzaIndex - 1]!;
+    const current = currentLyrics[stanzaIndex]!;
+    const merged = [...previous, ...current] as LyricStanza;
+
+    currentLyrics.splice(stanzaIndex - 1, 2, merged);
+    updateLyrics(currentLyrics);
+
+    focusInput({ stanzaIndex: stanzaIndex - 1, itemIndex: previous.length });
+  };
+
   return {
     insertLine,
     deleteLine,
@@ -312,6 +344,8 @@ export function useLyricsOperations(
     insertLineOutsideColumn,
     duplicateLine,
     moveLine,
-    clearStanzaTimes
+    clearStanzaTimes,
+    splitStanza,
+    joinStanzas
   };
 }

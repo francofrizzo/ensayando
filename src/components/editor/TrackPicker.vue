@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AudioTrack } from "@/data/types";
 import { selectMostContrasting } from "@/utils/color-utils";
-import { MicVocal, X } from "lucide-vue-next";
+import { IconMic, IconClose } from "@/components/ui/icons";
 import { computed } from "vue";
 
 type Props = {
@@ -102,19 +102,21 @@ const getColorStyle = (colorKey: string) => {
         }
       ]"
     >
-      <MicVocal class="size-3" />
+      <IconMic class="size-3" />
     </div>
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 w-64 border p-2 shadow-lg"
+      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 w-64 border p-2 shadow-xl"
     >
       <div v-if="sortedTracks.length === 0" class="text-base-content/50 px-2 py-1 text-xs">
         No hay pistas disponibles
       </div>
 
-      <div v-else class="flex flex-col gap-1">
-        <div class="p-1 text-xs">Pistas de audio del verso</div>
+      <div v-else class="flex flex-col gap-2">
+        <span class="text-base-content/50 px-1 text-[10px] font-medium tracking-wider uppercase"
+          >Pistas del verso</span
+        >
         <button
           v-for="track in sortedTracks"
           :key="track.id"
@@ -135,7 +137,7 @@ const getColorStyle = (colorKey: string) => {
           class="btn btn-xs btn-ghost text-base-content/70 hover:bg-base-200"
           @click="clearTracks"
         >
-          <X class="size-3" />
+          <IconClose class="size-3" />
           Limpiar
         </button>
       </div>

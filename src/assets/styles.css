@@ -99,6 +99,15 @@
   transform: scale(0.7);
 }
 
+/* Time display reveal */
+.time-reveal-enter-active {
+  transition: all 300ms ease-out;
+}
+.time-reveal-enter-from {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
 /* Song change transition */
 .song-change-enter-active {
   transition: all 200ms ease-out;
@@ -181,13 +190,14 @@
   }
 }
 
-/* Exception: DaisyUI's default disabled opacity causes SVG stroke-join
-   artifacts on ghost buttons with Lucide icons. No Tailwind utility
-   equivalent for the color-mix fallback. See AGENTS.md conventions. */
-.btn-ghost:disabled,
-.btn-ghost[disabled] {
-  opacity: 1 !important;
-  color: color-mix(in oklch, currentColor 30%, transparent);
+/* Exception: DaisyUI dims disabled buttons via semi-transparent text color,
+   causing SVG stroke-join artifacts on Lucide icons. Use opacity on the
+   SVG instead so strokes stay fully opaque relative to each other. */
+:disabled svg,
+[disabled] svg,
+.btn-disabled svg {
+  color: var(--color-base-content);
+  opacity: 0.2;
 }
 
 html,

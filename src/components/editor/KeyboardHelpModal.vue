@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
 import type { CommandRegistry } from "@/composables/useCommands";
-import { X } from "lucide-vue-next";
+import { IconClose } from "@/components/ui/icons";
 import { computed, onMounted, onUnmounted } from "vue";
 
 type Props = {
@@ -75,7 +75,7 @@ const keybindingGroups = computed(() => {
         >
           <h2 class="text-base font-semibold">Atajos de teclado</h2>
           <button class="btn btn-xs btn-circle btn-ghost" @click="emit('close')">
-            <X class="size-3.5" />
+            <IconClose class="size-3.5" />
           </button>
         </div>
 

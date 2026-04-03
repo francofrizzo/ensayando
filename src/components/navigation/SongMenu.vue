@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Edit, Globe, LockKeyhole, Menu, Music, X } from "lucide-vue-next";
+import {
+  IconClose,
+  IconEdit,
+  IconGlobe,
+  IconLock,
+  IconMenu,
+  IconMusic
+} from "@/components/ui/icons";
 import { computed, ref } from "vue";
 
 import AuthStatus from "@/components/auth/AuthStatus.vue";
@@ -34,7 +41,7 @@ const otherCollectionMenuItems = computed(() => {
       <input id="my-drawer" v-model="isOpen" type="checkbox" class="drawer-toggle" />
       <div class="drawer-content">
         <label class="btn btn-square btn-primary btn-lg flex-shrink-0" for="my-drawer">
-          <Menu class="h-5 w-5" />
+          <IconMenu class="h-5 w-5" />
         </label>
       </div>
       <div class="drawer-side z-50">
@@ -49,7 +56,7 @@ const otherCollectionMenuItems = computed(() => {
                   class="text-base-content/60 flex items-center gap-1.5 font-medium tracking-wide uppercase"
                 >
                   {{ currentCollection?.title }}
-                  <Globe v-if="currentCollection?.is_public" class="size-3.5 opacity-60" />
+                  <IconGlobe v-if="currentCollection?.is_public" class="size-3.5 opacity-60" />
                 </span>
                 <div class="flex items-center gap-2">
                   <button
@@ -60,10 +67,10 @@ const otherCollectionMenuItems = computed(() => {
                       isOpen = false;
                     "
                   >
-                    <Edit class="size-4" />
+                    <IconEdit class="size-4" />
                   </button>
                   <button class="btn btn-circle btn-soft btn-sm" @click="isOpen = false">
-                    <X class="size-4" />
+                    <IconClose class="size-4" />
                   </button>
                 </div>
               </div>
@@ -92,7 +99,7 @@ const otherCollectionMenuItems = computed(() => {
                     ]"
                     @click="isOpen = false"
                   >
-                    <LockKeyhole v-if="!song.visible" class="text-primary size-3" />
+                    <IconLock v-if="!song.visible" class="text-primary size-3" />
                     {{ song.title }}
                   </router-link>
                 </li>
@@ -101,7 +108,7 @@ const otherCollectionMenuItems = computed(() => {
                 <div
                   class="text-base-content/60 rounded-box bg-base-100/70 my-3 flex items-center gap-2 px-3 py-2 text-sm"
                 >
-                  <Music class="size-3.5 opacity-60" />
+                  <IconMusic class="size-3.5 opacity-60" />
                   <span class="italic">Esta colección no tiene canciones</span>
                 </div>
               </div>
@@ -123,7 +130,7 @@ const otherCollectionMenuItems = computed(() => {
                     @click="isOpen = false"
                   >
                     {{ otherCollection.title }}
-                    <Globe v-if="otherCollection.is_public" class="size-3 opacity-60" />
+                    <IconGlobe v-if="otherCollection.is_public" class="size-3 opacity-60" />
                   </router-link>
                 </li>
               </ul>

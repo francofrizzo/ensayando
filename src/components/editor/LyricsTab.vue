@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { toast } from "vue-sonner";
 
-import { HelpCircle, RotateCcw, Save } from "lucide-vue-next";
+import { IconHelp, IconDiscard, IconSave } from "@/components/ui/icons";
 
 import LyricsTimestamps from "@/components/editor/LyricsTimestamps.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
@@ -51,6 +51,7 @@ const lyricsToDisplay = computed(() => {
 
 const {
   currentFocus,
+  updateLyrics,
   showHelp,
   handleInputFocus,
   commandRegistry,
@@ -102,7 +103,7 @@ const createVerseModel = (stanzaIndex: number, itemIndex: number) => {
       const stanza = currentLyrics[stanzaIndex];
       if (stanza && !Array.isArray(stanza[itemIndex])) {
         (stanza[itemIndex] as LyricVerse).text = newText;
-        store.updateLocalLyrics(currentLyrics);
+        updateLyrics(currentLyrics);
       }
     }
   });
@@ -138,7 +139,7 @@ const createColumnModel = (
         const columns = stanza[itemIndex] as LyricVerse[][];
         if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
           columns[columnIndex][lineIndex].text = newText;
-          store.updateLocalLyrics(currentLyrics);
+          updateLyrics(currentLyrics);
         }
       }
     }
@@ -183,7 +184,12 @@ const handleCommentChange = (comment: string | undefined) => {
   setCurrentVerseComment(comment);
 };
 
-const isVerseSelected = (stanzaIndex: number, itemIndex: number, columnIndex?: number, lineIndex?: number) => {
+const isVerseSelected = (
+  stanzaIndex: number,
+  itemIndex: number,
+  columnIndex?: number,
+  lineIndex?: number
+) => {
   const f = currentFocus.value;
   if (!f) return false;
   if (f.stanzaIndex !== stanzaIndex || f.itemIndex !== itemIndex) return false;
@@ -250,7 +256,7 @@ const createTimestampUpdateFunction = (
         }
 
         verse.start_time = value;
-        store.updateLocalLyrics(currentLyrics);
+        updateLyrics(currentLyrics);
       }
     },
     onUpdateEndTime: (value: number | undefined) => {
@@ -286,7 +292,7 @@ const createTimestampUpdateFunction = (
         }
 
         verse.end_time = value;
-        store.updateLocalLyrics(currentLyrics);
+        updateLyrics(currentLyrics);
       }
     }
   };
@@ -358,7 +364,7 @@ defineExpose({
                       const verse = lyrics[i]?.[j];
                       if (verse && !Array.isArray(verse)) {
                         verse.comment = (e.target as HTMLInputElement).value;
-                        store.updateLocalLyrics(lyrics);
+                        updateLyrics(lyrics);
                       }
                     }
                   "
@@ -432,7 +438,7 @@ defineExpose({
                             const verse = (stanza as any)[k]?.[l];
                             if (verse) {
                               verse.comment = (e.target as HTMLInputElement).value;
-                              store.updateLocalLyrics(lyrics);
+                              updateLyrics(lyrics);
                             }
                           }
                         }
@@ -450,7 +456,7 @@ defineExpose({
                       :data-lyrics-input="`${i}-${j}-${k}-${l}`"
                       :verse-styles="getVerseStyles(line, currentCollection)"
                       :readonly="copyPropertiesToMode"
-                          :class="{ 'cursor-pointer': copyPropertiesToMode }"
+                      :class="{ 'cursor-pointer': copyPropertiesToMode }"
                       @focus="
                         onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
                       "
@@ -470,7 +476,7 @@ defineExpose({
         title="Keyboard shortcuts (Shift + ?)"
         @click="showHelp = !showHelp"
       >
-        <HelpCircle class="size-3.5" />
+        <IconHelp class="size-3.5" />
         <span class="hidden md:block">Ayuda</span>
       </button>
 
@@ -482,7 +488,7 @@ defineExpose({
           </template>
 
           <template v-else>
-            <Save class="size-3.5" />
+            <IconSave class="size-3.5" />
             <span class="hidden md:block">Guardar cambios</span>
           </template>
         </button>
@@ -492,7 +498,7 @@ defineExpose({
           title="Descartar cambios"
           @click="handleDiscardChanges"
         >
-          <RotateCcw class="size-3.5" />
+          <IconDiscard class="size-3.5" />
         </button>
       </div>
     </SafeTeleport>

@@ -12,12 +12,12 @@ export type { FocusPosition };
 
 export function useLyricsEditor(
   lyrics: Ref<LyricStanza[]>,
-  updateLyrics: (newLyrics: LyricStanza[]) => void,
+  updateLyrics: (newLyrics: LyricStanza[], focus?: FocusPosition | null) => void,
   onSave?: () => void,
   getCurrentTime?: () => number,
   seekTo?: (time: number) => void,
-  onUndo?: () => void,
-  onRedo?: () => void
+  onUndo?: () => FocusPosition | null,
+  onRedo?: () => FocusPosition | null
 ) {
   // Initialize navigation composable
   const navigation = useLyricsNavigation(lyrics);
@@ -33,6 +33,11 @@ export function useLyricsEditor(
     handleInputFocus
   } = navigation;
 
+  // Wrap updateLyrics to always pass the current focus for undo/redo
+  const updateLyricsWithFocus = (newLyrics: LyricStanza[]) => {
+    updateLyrics(newLyrics, currentFocus.value);
+  };
+
   // Helper function to update current verse
   const updateCurrentVerse = (
     position: FocusPosition,
@@ -42,7 +47,7 @@ export function useLyricsEditor(
     if (verse) {
       const currentLyrics = [...lyrics.value];
       updater(verse);
-      updateLyrics(currentLyrics);
+      updateLyricsWithFocus(currentLyrics);
       return true;
     }
     return false;
@@ -51,7 +56,7 @@ export function useLyricsEditor(
   // Initialize operations composable
   const operations = useLyricsOperations(
     lyrics,
-    updateLyrics,
+    updateLyricsWithFocus,
     focusInput,
     findPositionAfterDeletion
   );
@@ -83,16 +88,11 @@ export function useLyricsEditor(
     const colorsToInherit = properties.getColorsForInheritance(currentFocus.value);
     const trackIdsToInherit = properties.getAudioTrackIdsForInheritance(currentFocus.value);
 
-    operations.insertLine(currentFocus.value, before);
+    const initialProps: Record<string, unknown> = {};
+    if (colorsToInherit.length > 0) initialProps.color_keys = colorsToInherit;
+    if (trackIdsToInherit.length > 0) initialProps.audio_track_ids = trackIdsToInherit;
 
-    nextTick(() => {
-      if (colorsToInherit.length > 0) {
-        properties.setCurrentVerseColors(currentFocus.value, colorsToInherit);
-      }
-      if (trackIdsToInherit.length > 0) {
-        properties.setCurrentVerseAudioTrackIds(currentFocus.value, trackIdsToInherit);
-      }
-    });
+    operations.insertLine(currentFocus.value, before, initialProps);
   };
 
   const duplicateLineWithInheritance = () => {
@@ -116,16 +116,11 @@ export function useLyricsEditor(
     const colorsToInherit = properties.getColorsForInheritance(currentFocus.value);
     const trackIdsToInherit = properties.getAudioTrackIdsForInheritance(currentFocus.value);
 
-    operations.insertStanza(currentFocus.value);
+    const initialProps: Record<string, unknown> = {};
+    if (colorsToInherit.length > 0) initialProps.color_keys = colorsToInherit;
+    if (trackIdsToInherit.length > 0) initialProps.audio_track_ids = trackIdsToInherit;
 
-    nextTick(() => {
-      if (colorsToInherit.length > 0) {
-        properties.setCurrentVerseColors(currentFocus.value, colorsToInherit);
-      }
-      if (trackIdsToInherit.length > 0) {
-        properties.setCurrentVerseAudioTrackIds(currentFocus.value, trackIdsToInherit);
-      }
-    });
+    operations.insertStanza(currentFocus.value, initialProps);
   };
 
   // Stamp and advance: set start time then move to next verse
@@ -187,8 +182,20 @@ export function useLyricsEditor(
     moveLineDown: () => {
       if (currentFocus.value) operations.moveLine(currentFocus.value, "down");
     },
-    undo: () => onUndo?.(),
-    redo: () => onRedo?.()
+    splitStanza: () => {
+      if (currentFocus.value) operations.splitStanza(currentFocus.value);
+    },
+    joinStanzas: () => {
+      if (currentFocus.value) operations.joinStanzas(currentFocus.value);
+    },
+    undo: () => {
+      const focus = onUndo?.() ?? null;
+      if (focus) focusInput(focus);
+    },
+    redo: () => {
+      const focus = onRedo?.() ?? null;
+      if (focus) focusInput(focus);
+    }
   };
 
   // Initialize commands composable
@@ -203,6 +210,7 @@ export function useLyricsEditor(
   // Return the public API
   return {
     currentFocus,
+    updateLyrics: updateLyricsWithFocus,
     showHelp: commands.showHelp,
     handleInputFocus,
     focusInput,

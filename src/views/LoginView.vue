@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Key, LogIn, User, UserPlus } from "lucide-vue-next";
+import { IconKey, IconLogIn, IconUser, IconUserPlus } from "@/components/ui/icons";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -127,7 +127,7 @@ const switchMode = (signUp: boolean) => {
             class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 180ms"
           >
-            <User class="size-4" />
+            <IconUser class="size-4" />
             <span>Usuario</span>
             <input
               v-model="username"
@@ -144,7 +144,7 @@ const switchMode = (signUp: boolean) => {
             class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
           >
-            <Key class="size-4" />
+            <IconKey class="size-4" />
             <span>Contraseña</span>
             <input
               v-model="password"
@@ -174,8 +174,8 @@ const switchMode = (signUp: boolean) => {
               {{ isSignUp ? "Creando cuenta..." : "Iniciando sesión..." }}
             </template>
             <template v-else>
-              <UserPlus v-if="isSignUp" class="h-5 w-5" />
-              <LogIn v-else class="h-5 w-5" />
+              <IconUserPlus v-if="isSignUp" class="h-5 w-5" />
+              <IconLogIn v-else class="h-5 w-5" />
               {{ isSignUp ? "Crear cuenta" : "Iniciar sesión" }}
             </template>
           </button>

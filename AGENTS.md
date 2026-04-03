@@ -44,7 +44,7 @@ Views ──► Composables ──► Stores (Pinia) ──► data/supabase.ts 
 - All UI text is in Spanish.
 - Use `@/` import aliases, not relative paths.
 - Use DaisyUI components and Tailwind utilities, not raw HTML/hardcoded colors. Avoid custom CSS overrides of DaisyUI internals in `styles.css` — prefer Tailwind classes or documented DaisyUI practices. Reserve `styles.css` for things that genuinely require CSS (Vue transitions, `@keyframes`, pseudo-element selectors).
-- Use `lucide-vue-next` for icons.
+- Use `@tabler/icons-vue` for icons, imported via `@/components/ui/icons.ts` with semantic names (e.g. `IconPlay`, `IconSave`). Never import directly from the icon package in components.
 - Composables follow the `useXxx` naming convention and live in `src/composables/`.
 - Lyrics JSON structure is defined in `src/data/lyric-schema.json`.
 

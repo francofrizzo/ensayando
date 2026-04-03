@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
-import { Hash, MicVocal, Volume2Icon, VolumeX } from "lucide-vue-next";
+import { IconHash, IconMic, IconVolumeOn, IconVolumeOff } from "@/components/ui/icons";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 import type { WaveSurferOptions } from "wavesurfer.js";
@@ -236,7 +236,7 @@ onUnmounted(() => {
             {{ track.title }}
           </span>
           <span v-if="editMode" class="badge badge-sm badge-soft shrink-0 gap-1 px-1">
-            <Hash class="size-3" />{{ track.id }}
+            <IconHash class="size-3" />{{ track.id }}
           </span>
         </div>
         <input
@@ -252,24 +252,29 @@ onUnmounted(() => {
           "
         />
       </div>
-      <div class="flex flex-shrink-0 flex-grow-0 flex-col items-center justify-center gap-0">
-        <button
-          v-if="props.hasLyrics"
-          :disabled="!isReady"
-          class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
-          :style="{ '--color-primary': lyricsButtonColor }"
-          v-on="lyricsButton"
-        >
-          <MicVocal class="h-4 w-4" />
-        </button>
-        <button
-          :disabled="!isReady"
-          class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
-          v-on="muteButton"
-        >
-          <Volume2Icon v-if="!isMuted" class="h-4 w-4" />
-          <VolumeX v-else class="h-4 w-4" />
-        </button>
+      <div class="z-10 flex flex-shrink-0 flex-grow-0 flex-col items-center justify-center gap-0">
+        <div v-if="props.hasLyrics" class="tooltip tooltip-left">
+          <div class="tooltip-content text-xs">Letra</div>
+          <button
+            :disabled="!isReady"
+            class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
+            :style="{ '--color-primary': lyricsButtonColor }"
+            v-on="lyricsButton"
+          >
+            <IconMic class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="tooltip tooltip-left">
+          <div class="tooltip-content text-xs">{{ isMuted ? "Activar" : "Silenciar" }}</div>
+          <button
+            :disabled="!isReady"
+            class="btn btn-square btn-sm btn-ghost text-primary flex-shrink-0"
+            v-on="muteButton"
+          >
+            <IconVolumeOn v-if="!isMuted" class="h-4 w-4" />
+            <IconVolumeOff v-else class="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
     <div class="h-2 w-full p-0">

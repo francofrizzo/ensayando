@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, MicVocal } from "lucide-vue-next";
+import { IconChevronDown, IconMic } from "@/components/ui/icons";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { isIOS } from "@/utils/platform";
 import { toast } from "vue-sonner";
@@ -12,7 +12,9 @@ import PlayerHeader from "@/components/player/PlayerHeader.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 import { providePlayerState } from "@/composables/useCurrentTime";
+import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useMediaSession } from "@/composables/useMediaSession";
+import { useNavigation } from "@/composables/useNavigation";
 import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
@@ -25,6 +27,8 @@ const props = defineProps<{
 }>();
 
 const uiStore = useUIStore();
+const { prevSong, nextSong } = useCurrentSong();
+const { navigateToSong } = useNavigation();
 
 // General state
 const sortedTracks = computed(() => {
@@ -679,8 +683,11 @@ const initializeAudioContext = async () => {
             :total-duration="state.totalDuration.value"
             :is-playing="state.playing.value"
             :is-ready="isReady"
-            :edit-mode="uiStore.editMode"
+            :prev-song="prevSong"
+            :next-song="nextSong"
             @play-pause="onPlayPause"
+            @skip-prev="prevSong && navigateToSong(collection, prevSong)"
+            @skip-next="nextSong && navigateToSong(collection, nextSong)"
           />
           <div class="absolute top-2 left-1/2 flex -translate-x-1/2 items-center justify-end">
             <TimeCopier :current-time="state.currentTime.value" />
@@ -724,7 +731,7 @@ const initializeAudioContext = async () => {
           />
         </div>
         <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
-          <MicVocal
+          <IconMic
             class="empty-state-enter-active mb-4 size-22 opacity-50"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
           />
@@ -801,7 +808,7 @@ const initializeAudioContext = async () => {
               class="bg-base-100 text-base-content/50 rounded-t-box border-base-300 pointer-events-auto flex w-16 cursor-pointer items-center justify-center border-t border-r border-l p-2"
               @click="tracksVisible = !tracksVisible"
             >
-              <ChevronDown
+              <IconChevronDown
                 class="h-7 w-7 transition-transform duration-300"
                 :class="{ 'rotate-180': !tracksVisible }"
               />

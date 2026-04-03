@@ -12,10 +12,29 @@ export function useCurrentSong() {
     return collectionsStore.songs.find((s) => s.slug === songSlug.value) || null;
   });
 
+  const currentSongIndex = computed(() => {
+    if (!currentSong.value) return -1;
+    return collectionsStore.songs.findIndex((s) => s.id === currentSong.value!.id);
+  });
+
+  const prevSong = computed(() => {
+    const idx = currentSongIndex.value;
+    if (idx <= 0) return null;
+    return collectionsStore.songs[idx - 1] ?? null;
+  });
+
+  const nextSong = computed(() => {
+    const idx = currentSongIndex.value;
+    if (idx < 0 || idx >= collectionsStore.songs.length - 1) return null;
+    return collectionsStore.songs[idx + 1] ?? null;
+  });
+
   const isLoading = computed(() => collectionsStore.isLoading);
 
   return {
     currentSong,
+    prevSong,
+    nextSong,
     isLoading
   };
 }

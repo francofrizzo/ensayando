@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Upload } from "lucide-vue-next";
+import { IconUpload } from "@/components/ui/icons";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 
@@ -119,7 +119,7 @@ const handleFileUpload = async (event: Event) => {
         <span class="loading loading-spinner loading-xs" />
       </template>
       <template v-else>
-        <Upload class="size-3.5" />
+        <IconUpload class="size-3.5" />
       </template>
     </button>
   </div>
