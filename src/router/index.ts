@@ -71,7 +71,8 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.name === "login" && authStore.isAuthenticated) {
-    next({ path: (to.query.redirect as string) || "/" });
+    const redirect = to.query.redirect;
+    next({ path: typeof redirect === "string" && redirect ? redirect : "/" });
     return;
   }
 

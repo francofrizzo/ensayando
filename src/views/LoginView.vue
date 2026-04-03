@@ -26,8 +26,9 @@ watch(
   () => authStore.isAuthenticated,
   (isAuthenticated) => {
     if (isAuthenticated) {
-      const redirect = (route.query.redirect as string) || "/";
-      router.replace(redirect);
+      const redirect = route.query.redirect;
+      const target = typeof redirect === "string" && redirect ? redirect : "/";
+      router.replace(target);
     }
   },
   { immediate: true }
