@@ -281,7 +281,9 @@ onUnmounted(async () => {
   // Clean up audio context reference
   try {
     await audioContext.value?.close();
-  } catch {}
+  } catch {
+    /* ignore cleanup errors */
+  }
   audioContext.value = null;
 
   if (silentAudio.value) {
@@ -605,7 +607,9 @@ const initializeAudioContext = async () => {
         try {
           silentAudio.value?.pause();
           silentAudio.value = null;
-        } catch {}
+        } catch {
+          /* ignore cleanup errors */
+        }
         reject(new Error("Audio load timeout"));
       }, 5000);
 
@@ -777,7 +781,9 @@ const initializeAudioContext = async () => {
                 @ready="(duration: number) => onReady(index, duration)"
                 @time-update="(time: number) => state.onTimeUpdate(index, time)"
                 @volume-change="(volume: number) => state.onVolumeChange(index, volume)"
-                @toggle-muted="(toggleLyrics: boolean) => state.onToggleTrackMuted(index, toggleLyrics)"
+                @toggle-muted="
+                  (toggleLyrics: boolean) => state.onToggleTrackMuted(index, toggleLyrics)
+                "
                 @toggle-solo="(toggleLyrics: boolean) => state.onSoloTrack(index, toggleLyrics)"
                 @toggle-lyrics="() => state.onToggleTrackLyrics(track.id)"
                 @solo-lyrics="() => state.onSoloTrackLyrics(track.id)"

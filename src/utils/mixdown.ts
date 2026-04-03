@@ -165,7 +165,9 @@ export async function renderOffline(
   const rendered = await offline.startRendering();
   try {
     (offline as any).close?.();
-  } catch {}
+  } catch {
+    /* ignore cleanup errors */
+  }
   console.log(`[mixdown] Offline render complete: ${rendered.length} samples`);
 
   // If rendered buffer looks silent, fallback to direct JS mixing
@@ -436,7 +438,9 @@ async function jsMixToBuffer(
 
     try {
       oc.close?.();
-    } catch {}
+    } catch {
+      /* ignore cleanup errors */
+    }
     const outCtx = new OfflineAudioContext(2, length, sampleRate) as any;
     const out = outCtx.createBuffer(2, length, sampleRate);
     out.copyToChannel(mixL, 0);
@@ -445,7 +449,9 @@ async function jsMixToBuffer(
     }
     try {
       outCtx.close?.();
-    } catch {}
+    } catch {
+      /* ignore cleanup errors */
+    }
     console.log(`[mixdown] jsMix: output buffer created, ${out.length} samples`);
     return out;
   } catch (e) {
