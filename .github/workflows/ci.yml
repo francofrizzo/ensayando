@@ -3,26 +3,31 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "supabase/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tsconfig*.json"
+      - "vite.config.ts"
+      - "playwright.config.ts"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "supabase/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tsconfig*.json"
+      - "vite.config.ts"
+      - "playwright.config.ts"
+      - ".github/workflows/ci.yml"
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run type-check
-      - run: pnpm run lint
-      - run: pnpm test
-      - run: pnpm run build
-
-  e2e:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,11 +52,29 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install chromium --with-deps
 
-      - name: Start Supabase & install Playwright deps in parallel
+      # Start Supabase in background — runs during checks, ready by E2E time
+      - name: Start Supabase (background)
+        run: supabase start --exclude realtime,edge-runtime,logflare,vector,studio,imgproxy,supavisor &
+
+      # --- Checks (Supabase starts in parallel) ---
+      - run: pnpm run type-check
+      - run: pnpm run lint
+      - run: pnpm test
+      - run: pnpm run build
+
+      # --- E2E ---
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Wait for Supabase
         run: |
-          supabase start --exclude realtime,edge-runtime,logflare,vector,studio,imgproxy,supavisor &
-          pnpm exec playwright install-deps chromium &
-          wait
+          for i in $(seq 1 30); do
+            supabase status &>/dev/null && break
+            echo "Waiting for Supabase... ($i)"
+            sleep 2
+          done
+          supabase status
 
       - run: pnpm exec tsx tests/e2e/seed.ts
       - run: pnpm exec playwright test
