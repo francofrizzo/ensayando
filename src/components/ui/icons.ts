@@ -39,7 +39,7 @@ export {
   IconArrowBackUp as IconUndo,
   IconArrowForwardUp as IconRedo,
   IconPalette as IconPalette,
-  IconPaintFilled as IconCopyProperties,
+  IconPaint as IconCopyProperties,
   IconMessage as IconComment,
   IconClock as IconTimestamp,
   IconPlaylistAdd as IconAddStanza,
