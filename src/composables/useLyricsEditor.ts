@@ -14,7 +14,10 @@ export function useLyricsEditor(
   lyrics: Ref<LyricStanza[]>,
   updateLyrics: (newLyrics: LyricStanza[]) => void,
   onSave?: () => void,
-  getCurrentTime?: () => number
+  getCurrentTime?: () => number,
+  seekTo?: (time: number) => void,
+  onUndo?: () => void,
+  onRedo?: () => void
 ) {
   // Initialize navigation composable
   const navigation = useLyricsNavigation(lyrics);
@@ -125,6 +128,21 @@ export function useLyricsEditor(
     });
   };
 
+  // Stamp and advance: set start time then move to next verse
+  const stampAndAdvance = () => {
+    timestamps.setCurrentVerseStartTime(currentFocus.value);
+    navigateVertical("down");
+  };
+
+  // Seek to current verse's start time
+  const seekToCurrentVerse = () => {
+    if (!currentFocus.value || !seekTo) return;
+    const verse = getCurrentVerse(currentFocus.value);
+    if (verse?.start_time !== undefined) {
+      seekTo(verse.start_time);
+    }
+  };
+
   // Create action functions for commands
   const commandActions: LyricsCommandActions = {
     navigateVertical,
@@ -157,7 +175,20 @@ export function useLyricsEditor(
     setCurrentVerseEndTime: () => timestamps.setCurrentVerseEndTime(currentFocus.value),
     clearCurrentVerseStartTime: () => timestamps.clearCurrentVerseStartTime(currentFocus.value),
     clearCurrentVerseEndTime: () => timestamps.clearCurrentVerseEndTime(currentFocus.value),
-    clearCurrentVerseBothTimes: () => timestamps.clearCurrentVerseBothTimes(currentFocus.value)
+    clearCurrentVerseBothTimes: () => timestamps.clearCurrentVerseBothTimes(currentFocus.value),
+    stampAndAdvance,
+    seekToCurrentVerse,
+    clearStanzaTimes: () => {
+      if (currentFocus.value) operations.clearStanzaTimes(currentFocus.value);
+    },
+    moveLineUp: () => {
+      if (currentFocus.value) operations.moveLine(currentFocus.value, "up");
+    },
+    moveLineDown: () => {
+      if (currentFocus.value) operations.moveLine(currentFocus.value, "down");
+    },
+    undo: () => onUndo?.(),
+    redo: () => onRedo?.()
   };
 
   // Initialize commands composable
@@ -189,6 +220,9 @@ export function useLyricsEditor(
     toggleCopyPropertiesToMode: () => properties.toggleCopyPropertiesToMode(currentFocus.value),
     exitCopyPropertiesToMode: properties.exitCopyPropertiesToMode,
     copyPropertiesToVerse: (targetPosition: FocusPosition) =>
-      properties.copyPropertiesToVerse(targetPosition)
+      properties.copyPropertiesToVerse(targetPosition),
+    getCurrentVerseComment: () => properties.getCurrentVerseComment(currentFocus.value),
+    setCurrentVerseComment: (comment: string | undefined) =>
+      properties.setCurrentVerseComment(currentFocus.value, comment)
   };
 }

@@ -251,6 +251,58 @@ export function useLyricsOperations(
     }
   };
 
+  const moveLine = (currentFocus: FocusPosition, direction: "up" | "down") => {
+    const { stanzaIndex, itemIndex } = currentFocus;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    if (isColumnContext(currentFocus)) {
+      const { columnIndex, lineIndex } = currentFocus;
+      const item = getItemAtPosition(currentFocus, currentLyrics);
+      if (!Array.isArray(item)) return;
+      const column = item[columnIndex];
+      if (!column) return;
+
+      const targetIndex = direction === "up" ? lineIndex - 1 : lineIndex + 1;
+      if (targetIndex < 0 || targetIndex >= column.length) return;
+
+      [column[lineIndex], column[targetIndex]] = [column[targetIndex]!, column[lineIndex]!];
+      updateLyrics(currentLyrics);
+      focusInput({ stanzaIndex, itemIndex, columnIndex, lineIndex: targetIndex });
+    } else {
+      const targetIndex = direction === "up" ? itemIndex - 1 : itemIndex + 1;
+      if (targetIndex < 0 || targetIndex >= stanza.length) return;
+
+      [stanza[itemIndex], stanza[targetIndex]] = [stanza[targetIndex]!, stanza[itemIndex]!];
+      updateLyrics(currentLyrics);
+      focusInput({ stanzaIndex, itemIndex: targetIndex });
+    }
+  };
+
+  const clearStanzaTimes = (currentFocus: FocusPosition) => {
+    const { stanzaIndex } = currentFocus;
+    const currentLyrics = [...lyrics.value];
+    const stanza = currentLyrics[stanzaIndex];
+    if (!stanza) return;
+
+    for (const item of stanza) {
+      if (Array.isArray(item)) {
+        for (const column of item as LyricVerse[][]) {
+          for (const verse of column) {
+            verse.start_time = undefined;
+            verse.end_time = undefined;
+          }
+        }
+      } else {
+        (item as LyricVerse).start_time = undefined;
+        (item as LyricVerse).end_time = undefined;
+      }
+    }
+
+    updateLyrics(currentLyrics);
+  };
+
   return {
     insertLine,
     deleteLine,
@@ -258,6 +310,8 @@ export function useLyricsOperations(
     insertColumn,
     insertStanza,
     insertLineOutsideColumn,
-    duplicateLine
+    duplicateLine,
+    moveLine,
+    clearStanzaTimes
   };
 }

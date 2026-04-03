@@ -5,6 +5,7 @@ export type PlayerState = {
   totalDuration: Ref<number>;
   isPlaying: Ref<boolean>;
   isReady: ComputedRef<boolean>;
+  seekTo?: (time: number) => void;
 };
 
 const PLAYER_STATE_KEY: InjectionKey<PlayerState> = Symbol("player-state");
@@ -30,6 +31,7 @@ export function usePlayerState() {
     currentTime: computed(() => playerTime.currentTime.value),
     totalDuration: computed(() => playerTime.totalDuration.value),
     isPlaying: computed(() => playerTime.isPlaying.value),
-    isReady: computed(() => playerTime.isReady.value)
+    isReady: computed(() => playerTime.isReady.value),
+    seekTo: playerTime.seekTo ?? (() => {})
   };
 }

@@ -18,7 +18,7 @@ import LyricsToolbar from "./LyricsToolbar.vue";
 
 const store = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();
-const { currentTime } = usePlayerState();
+const { currentTime, seekTo } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
 const { saveLyrics } = store;
 
@@ -55,9 +55,17 @@ const {
   getCurrentVerseAudioTrackIds,
   setCurrentVerseAudioTrackIds,
   copyPropertiesToMode,
-  copyPropertiesToVerse
-} = useLyricsEditor(lyricsToDisplay, store.updateLocalLyrics, handleSaveClick, () =>
-  Math.max(0, Math.round((currentTime.value - 0.2) * 100) / 100)
+  copyPropertiesToVerse,
+  getCurrentVerseComment,
+  setCurrentVerseComment
+} = useLyricsEditor(
+  lyricsToDisplay,
+  store.updateLocalLyrics,
+  handleSaveClick,
+  () => Math.max(0, Math.round((currentTime.value - 0.2) * 100) / 100),
+  seekTo,
+  store.undo,
+  store.redo
 );
 
 // Timestamp visibility state
@@ -159,6 +167,23 @@ const availableAudioTracks = computed(() => {
 
 const handleAudioTrackIdsChange = (trackIds: number[]) => {
   setCurrentVerseAudioTrackIds(trackIds);
+};
+
+// Comment functionality
+const currentVerseComment = computed(() => getCurrentVerseComment());
+
+const handleCommentChange = (comment: string | undefined) => {
+  setCurrentVerseComment(comment);
+};
+
+const isVerseSelected = (stanzaIndex: number, itemIndex: number, columnIndex?: number, lineIndex?: number) => {
+  const f = currentFocus.value;
+  if (!f) return false;
+  if (f.stanzaIndex !== stanzaIndex || f.itemIndex !== itemIndex) return false;
+  if (columnIndex !== undefined && lineIndex !== undefined) {
+    return f.columnIndex === columnIndex && f.lineIndex === lineIndex;
+  }
+  return f.columnIndex === undefined;
 };
 
 const focusTextareaAndMoveCursorToEnd = (event: Event) => {
@@ -280,6 +305,8 @@ defineExpose({
       :copy-properties-to-mode="copyPropertiesToMode"
       :show-timestamps="showTimestamps"
       :on-toggle-timestamps="toggleTimestamps"
+      :current-verse-comment="currentVerseComment"
+      :on-comment-change="handleCommentChange"
     />
 
     <div class="flex flex-1 flex-col pb-3">
@@ -292,9 +319,10 @@ defineExpose({
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <div
               v-if="!Array.isArray(item)"
-              class="focus-within:bg-base-content/8 flex flex-col items-start px-5"
+              class="flex flex-col items-start px-5"
               data-lyric-hitbox
               :class="{
+                'bg-base-content/8': isVerseSelected(i, j),
                 'cursor-text': !copyPropertiesToMode,
                 'bg-base-content/5 hover:bg-base-content/10 cursor-pointer': copyPropertiesToMode
               }"
@@ -304,6 +332,23 @@ defineExpose({
                   : focusTextareaAndMoveCursorToEnd($event)
               "
             >
+              <input
+                v-if="item.comment !== undefined"
+                type="text"
+                :value="item.comment"
+                placeholder="Comentario..."
+                class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 text-xs outline-none"
+                @input="
+                  (e) => {
+                    const lyrics = [...store.localLyrics.value];
+                    const verse = lyrics[i]?.[j];
+                    if (verse && !Array.isArray(verse)) {
+                      verse.comment = (e.target as HTMLInputElement).value;
+                      store.updateLocalLyrics(lyrics);
+                    }
+                  }
+                "
+              />
               <LyricsTimestamps
                 v-if="showTimestamps"
                 :verse="item"
@@ -328,9 +373,10 @@ defineExpose({
                 <div
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="focus-within:bg-base-content/8 flex flex-col items-start px-3"
+                  class="flex flex-col items-start px-3"
                   data-lyric-hitbox
                   :class="{
+                    'bg-base-content/8': isVerseSelected(i, j, k, l),
                     'pl-5': k === 0,
                     'pr-5': k === item.length - 1,
                     'cursor-text': !copyPropertiesToMode,
@@ -348,6 +394,26 @@ defineExpose({
                       : focusTextareaAndMoveCursorToEnd($event)
                   "
                 >
+                  <input
+                    v-if="line.comment !== undefined"
+                    type="text"
+                    :value="line.comment"
+                    placeholder="Comentario..."
+                    class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 text-xs outline-none"
+                    @input="
+                      (e) => {
+                        const lyrics = [...store.localLyrics.value];
+                        const stanza = lyrics[i]?.[j];
+                        if (stanza && Array.isArray(stanza)) {
+                          const verse = (stanza as any)[k]?.[l];
+                          if (verse) {
+                            verse.comment = (e.target as HTMLInputElement).value;
+                            store.updateLocalLyrics(lyrics);
+                          }
+                        }
+                      }
+                    "
+                  />
                   <LyricsTimestamps
                     v-if="showTimestamps"
                     :verse="line"

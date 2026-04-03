@@ -20,6 +20,13 @@ export type LyricsCommandActions = {
   clearCurrentVerseStartTime: () => void;
   clearCurrentVerseEndTime: () => void;
   clearCurrentVerseBothTimes: () => void;
+  stampAndAdvance: () => void;
+  seekToCurrentVerse: () => void;
+  clearStanzaTimes: () => void;
+  moveLineUp: () => void;
+  moveLineDown: () => void;
+  undo: () => void;
+  redo: () => void;
 };
 
 export function useLyricsCommands(
@@ -285,6 +292,86 @@ export function useLyricsCommands(
     },
 
     {
+      id: "stamp-and-advance",
+      description: "Marcar inicio y avanzar al siguiente verso",
+      category: "Marcas de tiempo",
+      execute: () => actions.stampAndAdvance(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowDown",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "seek-to-verse",
+      description: "Ir al tiempo del verso actual",
+      category: "Marcas de tiempo",
+      execute: () => actions.seekToCurrentVerse(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "g",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "clear-stanza-times",
+      description: "Limpiar todos los tiempos de la estrofa",
+      category: "Marcas de tiempo",
+      execute: () => actions.clearStanzaTimes(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "/",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+
+    {
+      id: "move-line-up",
+      description: "Mover verso hacia arriba",
+      category: "Operaciones de versos",
+      execute: () => actions.moveLineUp(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowUp",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+    {
+      id: "move-line-down",
+      description: "Mover verso hacia abajo",
+      category: "Operaciones de versos",
+      execute: () => actions.moveLineDown(),
+      canExecute: () => canPerformActions.value,
+      keybinding: {
+        key: "ArrowDown",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+
+    {
+      id: "undo",
+      description: "Deshacer último cambio",
+      category: "Acciones rápidas",
+      execute: () => actions.undo(),
+      canExecute: () => true,
+      keybinding: {
+        key: "z",
+        modifiers: { ctrl: true }
+      }
+    },
+    {
+      id: "redo",
+      description: "Rehacer último cambio",
+      category: "Acciones rápidas",
+      execute: () => actions.redo(),
+      canExecute: () => true,
+      keybinding: {
+        key: "z",
+        modifiers: { ctrl: true, shift: true }
+      }
+    },
+
+    {
       id: "save",
       description: "Guardar cambios",
       category: "Acciones rápidas",
@@ -314,16 +401,28 @@ export function useLyricsCommands(
 
   const handleKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
+    const isOnLyricsInput =
+      target.hasAttribute("data-lyrics-input") || target.hasAttribute("data-timestamps-input");
 
-    // Allow ESC key to work globally (not just on input elements)
+    // Always allow ESC
     if (event.key === "Escape") {
       commandRegistry.handleKeyboardEvent(event);
       return;
     }
 
-    // For other keys, only handle when focused on lyrics input elements
-    if (!target.hasAttribute("data-lyrics-input") && !target.hasAttribute("data-timestamps-input"))
-      return;
+    // When a verse is selected, allow navigation and modifier commands globally
+    if (currentFocus()) {
+      const hasModifier = event.ctrlKey || event.metaKey;
+      const isNavKey = event.key.startsWith("Arrow");
+
+      if (hasModifier || isNavKey) {
+        commandRegistry.handleKeyboardEvent(event);
+        return;
+      }
+    }
+
+    // Text-editing keys (Enter, Backspace, typing) only when focused on lyrics inputs
+    if (!isOnLyricsInput) return;
 
     commandRegistry.handleKeyboardEvent(event);
   };

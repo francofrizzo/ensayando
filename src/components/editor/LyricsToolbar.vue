@@ -8,6 +8,7 @@ import {
   Columns,
   Copy,
   ListPlus,
+  MessageSquare,
   PaintRoller,
   Trash2,
   X
@@ -37,6 +38,9 @@ type Props = {
   // Timestamp visibility
   showTimestamps: boolean;
   onToggleTimestamps: () => void;
+  // Comment
+  currentVerseComment: string | undefined;
+  onCommentChange: (comment: string | undefined) => void;
 };
 
 const props = defineProps<Props>();
@@ -200,6 +204,23 @@ const getKeybindingParts = (commandId: string): string[] => {
       >
         <PaintRoller class="size-3" />
         <span class="sr-only">Copiar propiedades a otros versos</span>
+      </button>
+    </div>
+
+    <div class="tooltip tooltip-bottom">
+      <div class="tooltip-content">Agregar/quitar comentario al verso</div>
+      <button
+        class="btn btn-xs btn-square btn-ghost"
+        :class="{ 'btn-active': props.currentVerseComment !== '' }"
+        :disabled="!canPerformActions || copyPropertiesToMode"
+        @click="
+          props.currentVerseComment !== undefined
+            ? props.onCommentChange(undefined)
+            : props.onCommentChange('')
+        "
+      >
+        <MessageSquare class="size-3" />
+        <span class="sr-only">Comentario del verso</span>
       </button>
     </div>
 

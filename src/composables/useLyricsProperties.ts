@@ -87,6 +87,26 @@ export function useLyricsProperties(
     setCurrentVerseAudioTrackIds(targetPosition, [...sourceTrackIds]);
   };
 
+  const getCurrentVerseComment = (currentFocus: FocusPosition | null): string | undefined => {
+    if (!currentFocus || !getCurrentVerse) return undefined;
+    const verse = getCurrentVerse(currentFocus);
+    return verse?.comment;
+  };
+
+  const setCurrentVerseComment = (
+    currentFocus: FocusPosition | null,
+    comment: string | undefined
+  ) => {
+    if (!currentFocus || !updateCurrentVerse) return;
+    updateCurrentVerse(currentFocus, (verse) => {
+      if (comment === undefined) {
+        delete verse.comment;
+      } else {
+        verse.comment = comment;
+      }
+    });
+  };
+
   return {
     copyPropertiesToMode,
     sourcePosition,
@@ -98,6 +118,8 @@ export function useLyricsProperties(
     setCurrentVerseAudioTrackIds,
     toggleCopyPropertiesToMode,
     exitCopyPropertiesToMode,
-    copyPropertiesToVerse
+    copyPropertiesToVerse,
+    getCurrentVerseComment,
+    setCurrentVerseComment
   };
 }

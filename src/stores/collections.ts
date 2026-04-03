@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref, toRaw, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import * as supabase from "@/data/supabase";
@@ -19,6 +19,14 @@ export const useCollectionsStore = defineStore("collections", () => {
     isDirty: ref(false),
     isSaving: ref(false)
   };
+
+  // Undo/redo state
+  const MAX_UNDO_STACK = 50;
+  const undoStack = ref<LyricStanza[][]>([]);
+  const redoStack = ref<LyricStanza[][]>([]);
+  const isUndoRedoOperation = ref(false);
+  const canUndo = computed(() => undoStack.value.length > 0);
+  const canRedo = computed(() => redoStack.value.length > 0);
 
   // Route-reactive computed properties
   const route = useRoute();
@@ -81,6 +89,8 @@ export const useCollectionsStore = defineStore("collections", () => {
         localLyrics.value.value = [];
         localLyrics.isDirty.value = false;
       }
+      undoStack.value = [];
+      redoStack.value = [];
     },
     { immediate: true }
   );
@@ -110,8 +120,35 @@ export const useCollectionsStore = defineStore("collections", () => {
   }
 
   async function updateLocalLyrics(value: LyricStanza[]) {
+    if (!isUndoRedoOperation.value) {
+      undoStack.value.push(structuredClone(toRaw(localLyrics.value.value)));
+      if (undoStack.value.length > MAX_UNDO_STACK) {
+        undoStack.value.shift();
+      }
+      redoStack.value = [];
+    }
     localLyrics.value.value = value;
     localLyrics.isDirty.value = true;
+  }
+
+  function undo() {
+    if (undoStack.value.length === 0) return;
+    const previousState = undoStack.value.pop()!;
+    redoStack.value.push(structuredClone(toRaw(localLyrics.value.value)));
+    isUndoRedoOperation.value = true;
+    localLyrics.value.value = previousState;
+    localLyrics.isDirty.value = true;
+    isUndoRedoOperation.value = false;
+  }
+
+  function redo() {
+    if (redoStack.value.length === 0) return;
+    const nextState = redoStack.value.pop()!;
+    undoStack.value.push(structuredClone(toRaw(localLyrics.value.value)));
+    isUndoRedoOperation.value = true;
+    localLyrics.value.value = nextState;
+    localLyrics.isDirty.value = true;
+    isUndoRedoOperation.value = false;
   }
 
   async function saveLyrics() {
@@ -157,6 +194,10 @@ export const useCollectionsStore = defineStore("collections", () => {
     localLyrics,
     updateLocalLyrics,
     saveLyrics,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     currentUserRole,
     canEditCurrentCollection,
     reset

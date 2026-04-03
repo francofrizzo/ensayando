@@ -76,7 +76,8 @@ providePlayerState({
   currentTime: state.currentTime,
   totalDuration: state.totalDuration,
   isPlaying: state.playing,
-  isReady
+  isReady,
+  seekTo: (time: number) => onSeekToTime(time)
 });
 // Cleanup and reset when switching songs to prevent lingering decoders/buffers
 watch(
@@ -285,11 +286,13 @@ const keydownHandler = (event: KeyboardEvent) => {
     onPlayPause();
   } else if (event.key === "ArrowLeft" && (!isInCapturingElement || event.altKey)) {
     event.preventDefault();
-    const newTime = Math.max(0, state.currentTime.value - 0.1);
+    const step = event.shiftKey ? 3.0 : 0.1;
+    const newTime = Math.max(0, state.currentTime.value - step);
     onSeekToTime(newTime);
   } else if (event.key === "ArrowRight" && (!isInCapturingElement || event.altKey)) {
     event.preventDefault();
-    const newTime = Math.min(state.totalDuration.value, state.currentTime.value + 0.1);
+    const step = event.shiftKey ? 3.0 : 0.1;
+    const newTime = Math.min(state.totalDuration.value, state.currentTime.value + step);
     onSeekToTime(newTime);
   } else if (
     event.key === "e" &&
