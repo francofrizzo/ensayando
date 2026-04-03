@@ -41,15 +41,17 @@ jobs:
         if: steps.supabase-cache.outputs.cache-hit == 'true'
         run: for f in /tmp/supabase-docker/*.tar; do docker load -i "$f"; done
 
-      - name: Start Supabase (background)
-        run: supabase start &
-
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+
+      - name: Install dependencies & start Supabase in parallel
+        run: |
+          pnpm install --frozen-lockfile &
+          supabase start &
+          wait
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -65,9 +67,6 @@ jobs:
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
-
-      - name: Wait for Supabase
-        run: wait && supabase status
 
       - name: Save Docker images to cache
         if: steps.supabase-cache.outputs.cache-hit != 'true'

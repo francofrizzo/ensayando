@@ -23,17 +23,13 @@ const emit = defineEmits<{
 
 const { getVerseStyles } = useLyricsColoring();
 
-const allLyricsWithStatus = computed(() =>
-  addStatusToLyrics(props.lyrics, props.currentTime)
-);
+const allLyricsWithStatus = computed(() => addStatusToLyrics(props.lyrics, props.currentTime));
 
 const lyricsWithStatus = computed(() =>
   filterVisibleLyrics(allLyricsWithStatus.value, props.enabledTrackIds)
 );
 
-const regularizedLyrics = computed(() =>
-  regularizeLyrics(lyricsWithStatus.value)
-);
+const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value));
 
 const currentVerseElement = ref<Element | null>(null);
 
@@ -92,6 +88,7 @@ watch(
                   }
                 }
               "
+              :data-active="verse.status === 'active' || undefined"
               :style="getVerseStyles(verse, collection, verse.status)"
               :class="{
                 'font-semibold': verse.status === 'active',

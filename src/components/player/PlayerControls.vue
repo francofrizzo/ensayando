@@ -23,10 +23,10 @@ const copyTimeToClipboard = () => {
 <template>
   <div class="flex items-center gap-5 text-right tracking-wide tabular-nums">
     <div class="flex items-baseline">
-      <span class="relative cursor-default text-xl transition-colors"
+      <span data-testid="time-display" class="relative cursor-default text-xl transition-colors"
         ><span
           v-if="props.isPlaying"
-          class="bg-primary absolute -left-4 top-1/2 size-2 -translate-y-1/2 rounded-full animate-pulse"
+          class="bg-primary absolute top-1/2 -left-4 size-2 -translate-y-1/2 animate-pulse rounded-full"
         /><span class="text-base-content/90">{{ formatTime(props.currentTime) }}</span></span
       >
       <span class="text-base-content/50 text-md hidden cursor-default transition-colors sm:inline"

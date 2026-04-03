@@ -19,6 +19,7 @@ const emit = defineEmits<{
     <Transition name="song-change" mode="out-in">
       <div :key="props.song.id" class="flex min-w-0 flex-col gap-1 tracking-wide">
         <span
+          data-testid="song-title"
           class="line-clamp-2 text-lg leading-tight font-semibold tracking-tight text-ellipsis"
           >{{ props.song.title }}</span
         >

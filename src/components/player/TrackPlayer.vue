@@ -222,6 +222,7 @@ onUnmounted(() => {
     class="relative flex w-full items-stretch gap-2"
     :style="{ '--color-primary': color }"
     :data-testid="`track-${track.title}`"
+    :data-muted="isMuted || undefined"
   >
     <div
       class="from-primary/12 pointer-events-none absolute inset-x-0 -top-8 -bottom-12 z-0 bg-linear-to-r to-[180px] mask-y-from-50% mask-y-to-100%"

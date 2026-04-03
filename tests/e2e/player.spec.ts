@@ -14,8 +14,7 @@ function playPauseButton(page: import("@playwright/test").Page) {
 
 // Helper: get the time display text
 async function getCurrentTimeText(page: import("@playwright/test").Page) {
-  const timeEl = page.locator(".tabular-nums .text-xl").first();
-  return timeEl.textContent();
+  return page.getByTestId("time-display").textContent();
 }
 
 // Helper: get the mute button for a track by name
@@ -25,10 +24,9 @@ function trackMuteButton(page: import("@playwright/test").Page, trackName: strin
 
 // --- Navigation ---
 
-test("see collection and song list", async ({ page }) => {
+test("collection auto-redirects to first song", async ({ page }) => {
   await page.goto("/test-collection");
-  // Collection auto-redirects to first song; verify song title visible in header
-  await expect(page.getByText("Test Song").last()).toBeVisible();
+  await expect(page.getByTestId("song-title")).toBeVisible();
 });
 
 test("open song and see tracks panel", async ({ page }) => {
@@ -60,8 +58,13 @@ test("pause stops time", async ({ page }) => {
   await playPauseButton(page).click();
   const timeAfterPause = await getCurrentTimeText(page);
 
-  await page.waitForTimeout(500);
-  expect(await getCurrentTimeText(page)).toBe(timeAfterPause);
+  // Poll to confirm time stays frozen
+  await expect
+    .poll(async () => getCurrentTimeText(page), {
+      intervals: [200, 200, 200],
+      timeout: 2000
+    })
+    .toBe(timeAfterPause);
 });
 
 // --- Track controls ---
@@ -69,38 +72,41 @@ test("pause stops time", async ({ page }) => {
 test("mute a track via click", async ({ page }) => {
   await openTestSong(page);
 
-  const muteBtn = trackMuteButton(page, "Guitar");
-  await muteBtn.click();
-  await expect(muteBtn).toBeVisible();
+  await trackMuteButton(page, "Guitar").click();
+  await expect(page.getByTestId("track-Guitar")).toHaveAttribute("data-muted", "true");
 });
 
 test("solo a track via ctrl+click", async ({ page }) => {
   await openTestSong(page);
 
-  const muteBtn = trackMuteButton(page, "Guitar");
-  await muteBtn.click({ modifiers: ["Meta"] });
-  await expect(muteBtn).toBeVisible();
+  await trackMuteButton(page, "Guitar").click({ modifiers: ["Meta"] });
+
+  // Guitar stays unmuted, others get muted
+  await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-muted");
+  await expect(page.getByTestId("track-Vocals")).toHaveAttribute("data-muted", "true");
+  await expect(page.getByTestId("track-Drums")).toHaveAttribute("data-muted", "true");
 });
 
 test("unmute after mute does not get stuck", async ({ page }) => {
   await openTestSong(page);
 
   const muteBtn = trackMuteButton(page, "Guitar");
+  const track = page.getByTestId("track-Guitar");
 
   await playPauseButton(page).click();
-  await page.waitForTimeout(500);
+  await expect.poll(async () => getCurrentTimeText(page), { timeout: 5000 }).not.toBe("0:00");
 
-  // Mute then unmute
+  // Mute and verify
   await muteBtn.click();
-  await page.waitForTimeout(300);
-  await muteBtn.click();
-  await page.waitForTimeout(300);
+  await expect(track).toHaveAttribute("data-muted", "true");
 
-  // Time should still be advancing (wait >1s so the displayed second changes)
+  // Unmute and verify
+  await muteBtn.click();
+  await expect(track).not.toHaveAttribute("data-muted");
+
+  // Time should still be advancing
   const time1 = await getCurrentTimeText(page);
-  await page.waitForTimeout(1500);
-  const time2 = await getCurrentTimeText(page);
-  expect(time2).not.toBe(time1);
+  await expect.poll(async () => getCurrentTimeText(page), { timeout: 5000 }).not.toBe(time1);
 });
 
 // --- Lyrics ---
@@ -112,16 +118,10 @@ test("lyrics highlight follows playback", async ({ page }) => {
 
   await playPauseButton(page).click();
 
-  await expect
-    .poll(
-      async () => {
-        const el = page.getByText("FIRST VERSE");
-        const classes = await el.getAttribute("class");
-        return classes?.includes("font-semibold");
-      },
-      { timeout: 5000 }
-    )
-    .toBe(true);
+  // FIRST VERSE should become active around 0.5s
+  await expect(page.getByText("FIRST VERSE")).toHaveAttribute("data-active", "true", {
+    timeout: 5000
+  });
 });
 
 test("seek via lyrics click", async ({ page }) => {
@@ -129,6 +129,7 @@ test("seek via lyrics click", async ({ page }) => {
 
   await page.getByText("THIRD VERSE").click();
 
+  // Time should jump to ~3.0
   await expect
     .poll(
       async () => {
