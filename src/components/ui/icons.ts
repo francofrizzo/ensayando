@@ -15,7 +15,7 @@ export {
   IconPlayerSkipForwardFilled as IconSkipNext,
   IconVolume as IconVolumeOn,
   IconVolumeOff as IconVolumeOff,
-  IconMicrophone as IconMic,
+  IconBubbleText as IconLyrics,
   IconMusic as IconMusic,
   IconUser as IconUser,
   IconUserPlus as IconUserPlus,

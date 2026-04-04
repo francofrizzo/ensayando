@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AudioTrack } from "@/data/types";
 import { selectMostContrasting } from "@/utils/color-utils";
-import { IconMic, IconClose } from "@/components/ui/icons";
+import { IconLyrics, IconClose } from "@/components/ui/icons";
 import { computed } from "vue";
 
 type Props = {
@@ -102,7 +102,7 @@ const getColorStyle = (colorKey: string) => {
         }
       ]"
     >
-      <IconMic class="size-3" />
+      <IconLyrics class="size-3" />
     </div>
     <div
       v-if="!disabled"

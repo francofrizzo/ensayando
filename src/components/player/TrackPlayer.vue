@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
-import { IconHash, IconMic, IconVolumeOn, IconVolumeOff } from "@/components/ui/icons";
+import { IconHash, IconLyrics, IconVolumeOn, IconVolumeOff } from "@/components/ui/icons";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 import type { WaveSurferOptions } from "wavesurfer.js";
@@ -261,7 +261,7 @@ onUnmounted(() => {
             :style="{ '--color-primary': lyricsButtonColor }"
             v-on="lyricsButton"
           >
-            <IconMic class="h-4 w-4" />
+            <IconLyrics class="h-4 w-4" />
           </button>
         </div>
         <div class="tooltip tooltip-left">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconCode, IconMic, IconMusic, IconClose } from "@/components/ui/icons";
+import { IconCode, IconLyrics, IconMusic, IconClose } from "@/components/ui/icons";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import { useCollectionsStore } from "@/stores/collections";
@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
           :class="{ 'tab-active': activeTab === 'lyrics' }"
           @click="handleTabChange('lyrics')"
         >
-          <IconMic class="size-3.5" /> Letra
+          <IconLyrics class="size-3.5" /> Letra
           <span v-if="lyricsTabRef?.hasUnsavedChanges" class="bg-primary size-1.5 rounded-full" />
         </a>
         <a

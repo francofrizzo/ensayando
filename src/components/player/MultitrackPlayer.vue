@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconChevronDown, IconMic } from "@/components/ui/icons";
+import { IconChevronDown, IconLyrics } from "@/components/ui/icons";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { isIOS } from "@/utils/platform";
 import { toast } from "vue-sonner";
@@ -740,7 +740,7 @@ const initializeAudioContext = async () => {
           />
         </div>
         <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
-          <IconMic
+          <IconLyrics
             class="empty-state-enter-active mb-4 size-22 opacity-50"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
           />
