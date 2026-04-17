@@ -131,11 +131,11 @@ const switchMode = (signUp: boolean) => {
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 180ms"
           >
             <IconUser class="size-4" />
-            <span>Usuario</span>
+            <span>Usuario o email</span>
             <input
               v-model="username"
               type="text"
-              placeholder="Usuario"
+              placeholder="Usuario o email"
               autocapitalize="none"
               autocomplete="username"
               :disabled="isLoading"

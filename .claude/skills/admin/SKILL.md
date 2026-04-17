@@ -1,11 +1,35 @@
 ---
 name: admin
-description: Run Ensayando admin tasks that the app UI doesn't expose, via SQL against the linked Supabase project. Use for user management (find, create, delete, reset password, change email), collection access (grant, change, revoke roles, list members), collection CRUD (create, delete, rename, change slug, toggle is_public, edit colors, change artwork URL), and song operations (delete, reorder). Runs `npx supabase db query --linked`.
+description: Run Ensayando admin tasks that the app UI doesn't expose, via SQL against the linked Supabase project. Use for user management (find, create, delete, reset password, change email; supports both real-email and username-only users), collection access (grant, change, revoke roles, list members), collection CRUD (create, delete, rename, change slug, toggle is_public, edit colors, change artwork URL), and song operations (delete, reorder). Runs `npx supabase db query --linked`.
 ---
 
 # Admin
 
-The Ensayando app UI is intentionally narrow — it doesn't expose user management, collection CRUD, or song deletion/reordering. Plus the app uses fictitious emails as usernames (no real inbox), so email-based password reset flows do not work. For any of the above, run SQL directly against the linked Supabase project.
+The Ensayando app UI is intentionally narrow — it doesn't expose user management, collection CRUD, or song deletion/reordering. For any of the above, run SQL directly against the linked Supabase project.
+
+## User identifiers
+
+The login form accepts either a username or a real email:
+
+- If the input contains `@`, it's used verbatim as the email.
+- Otherwise, the app appends `@ensayando.com.ar` (see `EMAIL_DOMAIN` in `src/stores/auth.ts`) and uses that as the synthetic email.
+
+So `auth.users.email` has two shapes:
+
+- **Username-only users** — `<username>@ensayando.com.ar`. Email-based password reset flows do **not** work (no real inbox). Reset via SQL (see "Reset a password" below).
+- **Real-email users** — any other domain. Email-based reset _would_ work in principle, but the app's reset landing page isn't wired up; still prefer the SQL path.
+
+`auth.users.raw_user_meta_data->>'username'` stores whatever the user typed at signup (raw username or full email). It drives the display name in `AuthStatus.vue`.
+
+When a user gives you a "username" to act on, look it up by both shapes if the first doesn't match:
+
+```sql
+SELECT id, email, raw_user_meta_data->>'username' AS username
+FROM auth.users
+WHERE email = '<input>'
+   OR email = lower('<input>') || '@ensayando.com.ar'
+   OR raw_user_meta_data->>'username' = '<input>';
+```
 
 ## Preconditions
 
@@ -41,10 +65,16 @@ Do not attempt to self-heal by running `login` or `link` — both can require in
 
 ## User workflows
 
+In the workflows below, `<email>` means the **resolved** email — if the user gave you a bare username, append `@ensayando.com.ar` first. Use the lookup query in the "User identifiers" section above if you're not sure which form matches.
+
 ### Find a user
 
 ```sql
-SELECT id, email, created_at FROM auth.users WHERE email = '<email>';
+SELECT id, email, raw_user_meta_data->>'username' AS username, created_at
+FROM auth.users
+WHERE email = '<input>'
+   OR email = lower('<input>') || '@ensayando.com.ar'
+   OR raw_user_meta_data->>'username' = '<input>';
 ```
 
 ### Reset a password
@@ -71,7 +101,11 @@ If the change is temporary (e.g. to route a reset email through a real inbox), a
 
 ### Create a user
 
-Requires a confirmed email so the user can sign in immediately. Use `gen_random_uuid()` for the id and set `email_confirmed_at = now()`.
+Requires a confirmed email so the user can sign in immediately. Use `gen_random_uuid()` for the id, set `email_confirmed_at = now()`, and store the login handle (raw username or full email — whatever they'll type at the login form) in `raw_user_meta_data.username` so `AuthStatus.vue` displays it correctly.
+
+For a **username-only user**: email is `<username>@ensayando.com.ar`, `username` metadata is `<username>`.
+
+For a **real-email user**: email is their real address, `username` metadata is also the full email (matches what the form will pass).
 
 ```sql
 INSERT INTO auth.users (
@@ -82,10 +116,11 @@ INSERT INTO auth.users (
 ) VALUES (
   gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
   '<email>', crypt('<password>', gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  jsonb_build_object('username', '<login-handle>'),
   now(), now()
 )
-RETURNING id, email;
+RETURNING id, email, raw_user_meta_data->>'username' AS username;
 ```
 
 After creating, grant collection access (see below) — otherwise the user sees no collections.

@@ -7,7 +7,10 @@ import { useCollectionsStore } from "@/stores/collections";
 
 const EMAIL_DOMAIN = "ensayando.com.ar";
 
-const usernameToEmail = (username: string) => `${username.toLowerCase()}@${EMAIL_DOMAIN}`;
+const resolveEmail = (input: string) => {
+  const trimmed = input.trim().toLowerCase();
+  return trimmed.includes("@") ? trimmed : `${trimmed}@${EMAIL_DOMAIN}`;
+};
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
@@ -46,7 +49,7 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const signIn = async (usernameInput: string, password: string) => {
-    const email = usernameToEmail(usernameInput);
+    const email = resolveEmail(usernameInput);
     const { data, error } = await supabase.signInWithPassword(email, password);
     if (error) {
       throw error;
@@ -55,8 +58,8 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const signUp = async (usernameInput: string, password: string) => {
-    const email = usernameToEmail(usernameInput);
-    const { data, error } = await supabase.signUp(email, password, usernameInput);
+    const email = resolveEmail(usernameInput);
+    const { data, error } = await supabase.signUp(email, password, usernameInput.trim());
     if (error) {
       throw error;
     }
