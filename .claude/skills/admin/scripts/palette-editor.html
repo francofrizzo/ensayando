@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Palette editor</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --border: #8884;
+        --muted: #8888;
+        --bg: #0000;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 24px;
+        max-width: 900px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      header .sub {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .actions button {
+        font: inherit;
+        padding: 8px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: transparent;
+        cursor: pointer;
+        margin-left: 8px;
+      }
+      .actions button.primary {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+      .actions button.primary:hover {
+        background: #1d4ed8;
+      }
+      .actions button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      section {
+        margin-bottom: 24px;
+      }
+      section > h2 {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 6px;
+      }
+      .row.active {
+        background: #2563eb22;
+        outline: 1px solid #2563eb;
+      }
+      .row:hover {
+        background: #8882;
+      }
+      .swatch {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .swatch.oog::after {
+        content: "!";
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #dc2626;
+        color: white;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        font-size: 10px;
+        text-align: center;
+        line-height: 14px;
+        font-weight: bold;
+      }
+      .row input.key {
+        font: inherit;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        width: 110px;
+        background: var(--bg);
+        color: inherit;
+      }
+      .row .css {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        flex: 1;
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .row button.del {
+        background: transparent;
+        border: 0;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 4px 8px;
+      }
+      .row button.del:hover {
+        color: #dc2626;
+      }
+      .add-btn {
+        font: inherit;
+        padding: 6px 12px;
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        background: transparent;
+        cursor: pointer;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .add-btn:hover {
+        border-color: currentColor;
+        color: inherit;
+      }
+      #picker {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        background: #8881;
+      }
+      #picker.hidden {
+        display: none;
+      }
+      #picker .title {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      #picker .lc {
+        position: relative;
+        width: 320px;
+        height: 200px;
+        border-radius: 4px;
+        cursor: crosshair;
+        user-select: none;
+        margin-bottom: 8px;
+      }
+      #picker .lc canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+      }
+      #picker .lc .marker {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        box-shadow:
+          0 0 0 1px black,
+          0 0 4px rgba(0, 0, 0, 0.4);
+      }
+      #picker .hue {
+        position: relative;
+        width: 320px;
+        height: 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        user-select: none;
+        margin-bottom: 12px;
+        background: linear-gradient(
+          to right,
+          oklch(70% 0.18 0),
+          oklch(70% 0.18 60),
+          oklch(70% 0.18 120),
+          oklch(70% 0.18 180),
+          oklch(70% 0.18 240),
+          oklch(70% 0.18 300),
+          oklch(70% 0.18 360)
+        );
+      }
+      #picker .hue .marker {
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        width: 4px;
+        background: white;
+        border: 1px solid black;
+        transform: translateX(-50%);
+        pointer-events: none;
+      }
+      #picker .inputs {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      #picker .inputs label {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      #picker .inputs input {
+        font: inherit;
+        font-family: ui-monospace, monospace;
+        width: 80px;
+        padding: 4px 6px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg);
+        color: inherit;
+      }
+      #picker .css-out {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        padding: 6px 8px;
+        background: #8881;
+        border-radius: 4px;
+        user-select: all;
+      }
+      #picker .warn {
+        color: #dc2626;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      #picker .warn.hidden {
+        display: none;
+      }
+      #status {
+        position: fixed;
+        bottom: 16px;
+        left: 16px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: #16a34a;
+        color: white;
+        font-size: 13px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #status.show {
+        opacity: 1;
+      }
+      #status.error {
+        background: #dc2626;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1 id="header-title">Palette editor</h1>
+        <div class="sub" id="header-sub"></div>
+      </div>
+      <div class="actions">
+        <button id="cancel">Cancel</button>
+        <button id="save" class="primary">Save</button>
+      </div>
+    </header>
+
+    <section>
+      <h2>main_color</h2>
+      <div id="main-row"></div>
+    </section>
+
+    <section>
+      <h2>track_colors</h2>
+      <div id="tracks"></div>
+      <button class="add-btn" id="add-track">+ add track color</button>
+    </section>
+
+    <section>
+      <div id="picker" class="hidden">
+        <div class="title" id="picker-title"></div>
+        <div class="lc" id="lc">
+          <canvas id="lc-canvas" width="320" height="200"></canvas>
+          <div class="marker" id="lc-marker"></div>
+        </div>
+        <div class="hue" id="hue"><div class="marker" id="hue-marker"></div></div>
+        <div class="inputs">
+          <label>L% <input id="in-l" type="number" step="0.1" min="0" max="100" /></label>
+          <label>C <input id="in-c" type="number" step="0.001" min="0" max="0.5" /></label>
+          <label>H <input id="in-h" type="number" step="0.1" min="0" max="360" /></label>
+          <label>α <input id="in-a" type="number" step="0.01" min="0" max="1" /></label>
+        </div>
+        <div class="css-out" id="css-out"></div>
+        <div class="warn hidden" id="gamut-warn">
+          Out of sRGB gamut — browser will clip when rendering.
+        </div>
+      </div>
+    </section>
+
+    <div id="status"></div>
+
+    <script type="module">
+      import { parse, converter, inGamut } from "https://cdn.jsdelivr.net/npm/culori@4/+esm";
+
+      const INITIAL = window.__PALETTE__;
+      const state = {
+        title: INITIAL.title,
+        slug: INITIAL.slug,
+        main_color: INITIAL.main_color || "oklch(70% 0.15 200)",
+        track_colors: { ...(INITIAL.track_colors || {}) },
+        active: null // { kind: 'main' } | { kind: 'track', key: '...' }
+      };
+
+      document.getElementById("header-title").textContent = `Palette — ${state.title}`;
+      document.getElementById("header-sub").textContent = `slug: ${state.slug}`;
+
+      const toOklch = converter("oklch");
+      const toRgb = converter("rgb");
+      const srgbIn = inGamut("rgb");
+
+      function parseOklch(css) {
+        try {
+          const p = parse(css);
+          if (!p) return null;
+          const o = toOklch(p);
+          return {
+            l: typeof o.l === "number" ? o.l : 0,
+            c: typeof o.c === "number" ? o.c : 0,
+            h: typeof o.h === "number" ? o.h : 0,
+            alpha: typeof o.alpha === "number" ? o.alpha : 1
+          };
+        } catch {
+          return null;
+        }
+      }
+
+      function formatOklch({ l, c, h, alpha }) {
+        const lp = (l * 100).toFixed(1);
+        const cs = (+c.toFixed(3)).toString();
+        const hs = (+(h ?? 0).toFixed(2)).toString();
+        if (alpha != null && alpha < 1) return `oklch(${lp}% ${cs} ${hs} / ${+alpha.toFixed(3)})`;
+        return `oklch(${lp}% ${cs} ${hs})`;
+      }
+
+      function isOog(css) {
+        const p = parse(css);
+        if (!p) return false;
+        return !srgbIn(toOklch(p));
+      }
+
+      function renderMainRow() {
+        const host = document.getElementById("main-row");
+        host.innerHTML = "";
+        const row = document.createElement("div");
+        row.className = "row" + (state.active?.kind === "main" ? " active" : "");
+        const sw = document.createElement("div");
+        sw.className = "swatch" + (isOog(state.main_color) ? " oog" : "");
+        sw.style.background = state.main_color;
+        sw.title = state.main_color;
+        sw.onclick = () => {
+          state.active = { kind: "main" };
+          renderAll();
+        };
+        row.appendChild(sw);
+        const lbl = document.createElement("div");
+        lbl.className = "css";
+        lbl.textContent = state.main_color;
+        row.appendChild(lbl);
+        host.appendChild(row);
+      }
+
+      function renderTracks() {
+        const host = document.getElementById("tracks");
+        host.innerHTML = "";
+        for (const [key, value] of Object.entries(state.track_colors)) {
+          const row = document.createElement("div");
+          row.className =
+            "row" + (state.active?.kind === "track" && state.active.key === key ? " active" : "");
+          const sw = document.createElement("div");
+          sw.className = "swatch" + (isOog(value) ? " oog" : "");
+          sw.style.background = value;
+          sw.title = value;
+          sw.onclick = () => {
+            state.active = { kind: "track", key };
+            renderAll();
+          };
+          row.appendChild(sw);
+          const keyIn = document.createElement("input");
+          keyIn.className = "key";
+          keyIn.value = key;
+          keyIn.onchange = () => renameTrack(key, keyIn.value);
+          row.appendChild(keyIn);
+          const css = document.createElement("div");
+          css.className = "css";
+          css.textContent = value;
+          row.appendChild(css);
+          const del = document.createElement("button");
+          del.className = "del";
+          del.textContent = "×";
+          del.title = "remove";
+          del.onclick = () => {
+            delete state.track_colors[key];
+            if (state.active?.kind === "track" && state.active.key === key) state.active = null;
+            renderAll();
+          };
+          row.appendChild(del);
+          host.appendChild(row);
+        }
+      }
+
+      function renameTrack(oldKey, newKey) {
+        newKey = newKey.trim();
+        if (!newKey || newKey === oldKey) {
+          renderAll();
+          return;
+        }
+        if (state.track_colors[newKey] !== undefined) {
+          showStatus(`key "${newKey}" already exists`, true);
+          renderAll();
+          return;
+        }
+        // preserve order
+        const entries = Object.entries(state.track_colors).map(([k, v]) => [
+          k === oldKey ? newKey : k,
+          v
+        ]);
+        state.track_colors = Object.fromEntries(entries);
+        if (state.active?.kind === "track" && state.active.key === oldKey)
+          state.active = { kind: "track", key: newKey };
+        renderAll();
+      }
+
+      document.getElementById("add-track").onclick = () => {
+        let i = 1,
+          key;
+        do {
+          key = `c${i++}`;
+        } while (state.track_colors[key] !== undefined);
+        state.track_colors[key] = "oklch(70% 0.15 200)";
+        state.active = { kind: "track", key };
+        renderAll();
+      };
+
+      // --- Picker ---
+
+      const LC_W = 320,
+        LC_H = 200,
+        C_MAX = 0.37;
+      const lcCanvas = document.getElementById("lc-canvas");
+      const lcCtx = lcCanvas.getContext("2d", { willReadFrequently: false });
+      const lcMarker = document.getElementById("lc-marker");
+      const hueMarker = document.getElementById("hue-marker");
+      let cachedHue = null;
+      let cachedImage = null;
+
+      function renderLCPlane(h) {
+        if (cachedHue === h && cachedImage) {
+          lcCtx.putImageData(cachedImage, 0, 0);
+          return;
+        }
+        const img = lcCtx.createImageData(LC_W, LC_H);
+        for (let y = 0; y < LC_H; y++) {
+          const l = 1 - y / (LC_H - 1);
+          for (let x = 0; x < LC_W; x++) {
+            const c = (x / (LC_W - 1)) * C_MAX;
+            const rgb = toRgb({ mode: "oklch", l, c, h });
+            const i = (y * LC_W + x) * 4;
+            const r = Math.max(0, Math.min(1, rgb.r));
+            const g = Math.max(0, Math.min(1, rgb.g));
+            const b = Math.max(0, Math.min(1, rgb.b));
+            const oog =
+              rgb.r < -0.001 ||
+              rgb.r > 1.001 ||
+              rgb.g < -0.001 ||
+              rgb.g > 1.001 ||
+              rgb.b < -0.001 ||
+              rgb.b > 1.001;
+            // dim out-of-gamut regions slightly
+            const dim = oog ? 0.6 : 1;
+            img.data[i] = Math.round(r * 255 * dim);
+            img.data[i + 1] = Math.round(g * 255 * dim);
+            img.data[i + 2] = Math.round(b * 255 * dim);
+            img.data[i + 3] = 255;
+          }
+        }
+        cachedHue = h;
+        cachedImage = img;
+        lcCtx.putImageData(img, 0, 0);
+      }
+
+      function getActiveColor() {
+        if (!state.active) return null;
+        if (state.active.kind === "main") return parseOklch(state.main_color);
+        return parseOklch(state.track_colors[state.active.key]);
+      }
+
+      function setActiveColor(o) {
+        const css = formatOklch(o);
+        if (state.active.kind === "main") state.main_color = css;
+        else state.track_colors[state.active.key] = css;
+      }
+
+      function renderPicker() {
+        const picker = document.getElementById("picker");
+        if (!state.active) {
+          picker.classList.add("hidden");
+          return;
+        }
+        picker.classList.remove("hidden");
+        const o = getActiveColor();
+        if (!o) return;
+        document.getElementById("picker-title").textContent =
+          state.active.kind === "main"
+            ? "editing: main_color"
+            : `editing: track_colors["${state.active.key}"]`;
+        renderLCPlane(o.h || 0);
+        lcMarker.style.left = `${(o.c / C_MAX) * 100}%`;
+        lcMarker.style.top = `${(1 - o.l) * 100}%`;
+        lcMarker.style.background = formatOklch(o);
+        hueMarker.style.left = `${((o.h || 0) / 360) * 100}%`;
+        document.getElementById("in-l").value = (o.l * 100).toFixed(1);
+        document.getElementById("in-c").value = o.c.toFixed(3);
+        document.getElementById("in-h").value = (o.h || 0).toFixed(2);
+        document.getElementById("in-a").value = o.alpha.toFixed(2);
+        const css = formatOklch(o);
+        document.getElementById("css-out").textContent = css;
+        document.getElementById("gamut-warn").classList.toggle("hidden", !isOog(css));
+      }
+
+      // LC drag
+      let lcDragging = false;
+      function handleLC(e) {
+        if (!state.active) return;
+        const rect = document.getElementById("lc").getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+        const o = getActiveColor();
+        o.c = x * C_MAX;
+        o.l = 1 - y;
+        setActiveColor(o);
+        renderAll();
+      }
+      document.getElementById("lc").addEventListener("pointerdown", (e) => {
+        lcDragging = true;
+        e.target.setPointerCapture?.(e.pointerId);
+        handleLC(e);
+      });
+      document.getElementById("lc").addEventListener("pointermove", (e) => {
+        if (lcDragging) handleLC(e);
+      });
+      document.getElementById("lc").addEventListener("pointerup", () => (lcDragging = false));
+      document.getElementById("lc").addEventListener("pointercancel", () => (lcDragging = false));
+
+      // Hue drag
+      let hueDragging = false;
+      function handleHue(e) {
+        if (!state.active) return;
+        const rect = document.getElementById("hue").getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const o = getActiveColor();
+        o.h = x * 360;
+        setActiveColor(o);
+        renderAll();
+      }
+      document.getElementById("hue").addEventListener("pointerdown", (e) => {
+        hueDragging = true;
+        e.target.setPointerCapture?.(e.pointerId);
+        handleHue(e);
+      });
+      document.getElementById("hue").addEventListener("pointermove", (e) => {
+        if (hueDragging) handleHue(e);
+      });
+      document.getElementById("hue").addEventListener("pointerup", () => (hueDragging = false));
+      document.getElementById("hue").addEventListener("pointercancel", () => (hueDragging = false));
+
+      // Numeric inputs
+      function bindNumeric(id, setter) {
+        const el = document.getElementById(id);
+        el.addEventListener("input", () => {
+          if (!state.active) return;
+          const v = parseFloat(el.value);
+          if (!Number.isFinite(v)) return;
+          const o = getActiveColor();
+          setter(o, v);
+          setActiveColor(o);
+          renderAll();
+        });
+      }
+      bindNumeric("in-l", (o, v) => (o.l = Math.max(0, Math.min(1, v / 100))));
+      bindNumeric("in-c", (o, v) => (o.c = Math.max(0, Math.min(0.5, v))));
+      bindNumeric("in-h", (o, v) => (o.h = ((v % 360) + 360) % 360));
+      bindNumeric("in-a", (o, v) => (o.alpha = Math.max(0, Math.min(1, v))));
+
+      function renderAll() {
+        renderMainRow();
+        renderTracks();
+        renderPicker();
+      }
+
+      // Save / Cancel
+      function showStatus(msg, error = false) {
+        const s = document.getElementById("status");
+        s.textContent = msg;
+        s.classList.toggle("error", error);
+        s.classList.add("show");
+        setTimeout(() => s.classList.remove("show"), 2400);
+      }
+
+      document.getElementById("save").onclick = async () => {
+        const btn = document.getElementById("save");
+        btn.disabled = true;
+        try {
+          const res = await fetch("/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ main_color: state.main_color, track_colors: state.track_colors })
+          });
+          if (!res.ok) throw new Error(await res.text());
+          document.body.innerHTML =
+            '<p style="padding:40px;font-size:16px">Saved. You can close this tab.</p>';
+        } catch (e) {
+          showStatus("save failed: " + e.message, true);
+          btn.disabled = false;
+        }
+      };
+
+      document.getElementById("cancel").onclick = async () => {
+        await fetch("/cancel", { method: "POST" }).catch(() => {});
+        document.body.innerHTML =
+          '<p style="padding:40px;font-size:16px">Cancelled. You can close this tab.</p>';
+      };
+
+      renderAll();
+    </script>
+  </body>
+</html>
