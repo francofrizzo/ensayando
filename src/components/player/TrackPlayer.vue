@@ -9,6 +9,7 @@ import type { AudioTrack, CollectionWithRole } from "@/data/types";
 import { useLongPress } from "@/composables/useLongPress";
 import { darken, lighten } from "@/utils/color-utils";
 import { isIOS } from "@/utils/platform";
+import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -205,15 +206,11 @@ onUnmounted(() => {
     darkModeListener = null;
   }
 
-  // Destroy WaveSurfer instance
-  try {
-    if (waveSurfer.value) {
-      waveSurfer.value.destroy();
-      waveSurfer.value = null;
-    }
-  } catch (error) {
+  const ws = waveSurfer.value;
+  waveSurfer.value = null;
+  void cleanupWaveSurfer(ws).catch((error: unknown) => {
     handleTrackError(error as Error, "destroy waveSurfer");
-  }
+  });
 });
 </script>
 

@@ -16,6 +16,7 @@ import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useMediaSession } from "@/composables/useMediaSession";
 import { useNavigation } from "@/composables/useNavigation";
 import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
+import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 import type WaveSurfer from "wavesurfer.js";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useUIStore } from "@/stores/ui";
@@ -85,11 +86,9 @@ watch(
   () => {
     try {
       trackPlayers.value.forEach((player, index) => {
-        try {
-          player?.waveSurfer?.destroy();
-        } catch (error) {
+        void cleanupWaveSurfer(player?.waveSurfer ?? null).catch((error: unknown) => {
           handleAudioError(error as Error, `destroy wavesurfer on song change ${index}`);
-        }
+        });
       });
       trackPlayers.value = [];
     } catch (error) {
@@ -262,13 +261,13 @@ onUnmounted(async () => {
     handleAudioError(error as Error, "stopSyncCheck");
   }
 
-  // More aggressive cleanup of track players
+  // Belt-and-suspenders: children normally clean themselves up on unmount, but
+  // run cleanup here too in case a TrackPlayer somehow lingered. cleanupWaveSurfer
+  // is a no-op on null, which is what child refs will be by the time this runs.
   trackPlayers.value.forEach((player, index) => {
-    try {
-      player?.waveSurfer?.destroy();
-    } catch (error) {
+    void cleanupWaveSurfer(player?.waveSurfer ?? null).catch((error: unknown) => {
       handleAudioError(error as Error, `destroying wavesurfer ${index}`);
-    }
+    });
   });
 
   try {
