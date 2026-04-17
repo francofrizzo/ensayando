@@ -22,8 +22,8 @@ The login form accepts either a username or a real email:
 
 So `auth.users.email` has two shapes:
 
-- **Username-only users** — `<username>@ensayando.com.ar`. Email-based password reset flows do **not** work (no real inbox). Reset via SQL (`admin.sh reset-password`).
-- **Real-email users** — any other domain. The app's reset landing page isn't wired up; still prefer the SQL path.
+- **Username-only users** — `<username>@ensayando.com.ar`. Email-based password reset flows do **not** work (no real inbox). The login UI detects these and shows "Tu cuenta es administrada manualmente. Pedile al administrador que te la resetee." — reset via SQL (`admin.sh reset-password`).
+- **Real-email users** — any other domain. The app has a self-serve password reset (`LoginView.vue` "¿Olvidaste tu contraseña?" → `ResetPasswordView.vue`). Only use `admin.sh reset-password` if the user can't receive the email.
 
 `auth.users.raw_user_meta_data->>'username'` stores whatever the user typed at signup (raw username or full email). It drives the display name in `AuthStatus.vue`.
 
