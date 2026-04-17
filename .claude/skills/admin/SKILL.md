@@ -107,20 +107,38 @@ For a **username-only user**: email is `<username>@ensayando.com.ar`, `username`
 
 For a **real-email user**: email is their real address, `username` metadata is also the full email (matches what the form will pass).
 
+Three things must be set or GoTrue fails login with "Database error querying schema":
+
+1. The `auth.users` row.
+2. A matching `auth.identities` row — without it, GoTrue can't resolve the email provider.
+3. Token columns (`confirmation_token`, `recovery_token`, `email_change`, `email_change_token_new`, `email_change_token_current`, `reauthentication_token`, `phone_change`, `phone_change_token`) must be empty strings, **not** NULL — GoTrue's Go scanner chokes on NULL text here.
+
+Run all three in one CTE so the user is usable immediately:
+
 ```sql
-INSERT INTO auth.users (
-  id, instance_id, aud, role, email,
-  encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data,
-  created_at, updated_at
-) VALUES (
-  gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-  '<email>', crypt('<password>', gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}'::jsonb,
-  jsonb_build_object('username', '<login-handle>'),
-  now(), now()
+WITH new_user AS (
+  INSERT INTO auth.users (
+    id, instance_id, aud, role, email,
+    encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data,
+    confirmation_token, recovery_token,
+    email_change, email_change_token_new, email_change_token_current,
+    reauthentication_token, phone_change, phone_change_token,
+    created_at, updated_at
+  ) VALUES (
+    gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+    '<email>', crypt('<password>', gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('username', '<login-handle>'),
+    '', '', '', '', '', '', '', '',
+    now(), now()
+  )
+  RETURNING id, email
 )
-RETURNING id, email, raw_user_meta_data->>'username' AS username;
+INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+SELECT id::text, id, jsonb_build_object('sub', id::text, 'email', email, 'email_verified', true, 'phone_verified', false), 'email', now(), now(), now()
+FROM new_user
+RETURNING user_id;
 ```
 
 After creating, grant collection access (see below) — otherwise the user sees no collections.
