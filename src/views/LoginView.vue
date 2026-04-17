@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { IconKey, IconLogIn, IconUser, IconUserPlus } from "@/components/ui/icons";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { useAuthStore } from "@/stores/auth";
+import { AdminManagedAccountError, useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -17,6 +17,15 @@ const isSignUp = ref(false);
 const successMessage = ref("");
 
 const isSignUpEnabled = false;
+
+// Forgot-password state
+const isResetting = ref(false);
+const resetNotice = ref<{ kind: "success" | "admin-managed"; text: string } | null>(null);
+
+const looksLikeResettableEmail = computed(() => {
+  const v = username.value.trim().toLowerCase();
+  return v.includes("@") && !v.endsWith("@ensayando.com.ar");
+});
 
 onMounted(() => {
   // no-op; form is inline
@@ -83,6 +92,36 @@ const switchMode = (signUp: boolean) => {
   error.value = "";
   successMessage.value = "";
 };
+
+const handleForgotPassword = async () => {
+  if (!username.value.trim() || isResetting.value) return;
+  isResetting.value = true;
+  error.value = "";
+  successMessage.value = "";
+  resetNotice.value = null;
+  try {
+    await authStore.requestPasswordReset(username.value);
+    resetNotice.value = {
+      kind: "success",
+      text: "Te enviamos un email con instrucciones para restablecer tu contraseña."
+    };
+  } catch (err: unknown) {
+    if (err instanceof AdminManagedAccountError) {
+      resetNotice.value = {
+        kind: "admin-managed",
+        text: "Tu cuenta es administrada manualmente. Pedile al administrador que te la resetee."
+      };
+    } else {
+      error.value = err instanceof Error ? err.message : "No se pudo enviar el email";
+    }
+  } finally {
+    isResetting.value = false;
+  }
+};
+
+watch(username, () => {
+  resetNotice.value = null;
+});
 </script>
 
 <template>
@@ -157,6 +196,26 @@ const switchMode = (signUp: boolean) => {
               @keydown="handleKeydown"
             />
           </label>
+
+          <div v-if="!isSignUp && looksLikeResettableEmail" class="-mt-2 flex justify-end">
+            <button
+              type="button"
+              class="link link-hover text-xs"
+              :disabled="isResetting || isLoading"
+              @click="handleForgotPassword"
+            >
+              <span v-if="isResetting" class="loading loading-spinner loading-xs"></span>
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
+          <div
+            v-if="resetNotice"
+            class="alert"
+            :class="resetNotice.kind === 'success' ? 'alert-success' : 'alert-info'"
+          >
+            <span class="text-sm">{{ resetNotice.text }}</span>
+          </div>
 
           <div v-if="error" class="alert alert-error">
             <span class="text-sm">{{ error }}</span>

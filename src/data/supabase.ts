@@ -47,6 +47,14 @@ export const signOut = async () => {
   return await supabase.auth.signOut();
 };
 
+export const resetPasswordForEmail = async (email: string, redirectTo: string) => {
+  return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+};
+
+export const updatePassword = async (newPassword: string) => {
+  return await supabase.auth.updateUser({ password: newPassword });
+};
+
 // Collection and song functions
 
 // Fetch all public collections (no auth required)

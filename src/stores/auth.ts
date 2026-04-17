@@ -12,6 +12,18 @@ const resolveEmail = (input: string) => {
   return trimmed.includes("@") ? trimmed : `${trimmed}@${EMAIL_DOMAIN}`;
 };
 
+export const isAdminManagedEmail = (email: string) => {
+  const e = email.trim().toLowerCase();
+  return !e.includes("@") || e.endsWith(`@${EMAIL_DOMAIN}`);
+};
+
+export class AdminManagedAccountError extends Error {
+  constructor() {
+    super("admin-managed");
+    this.name = "AdminManagedAccountError";
+  }
+}
+
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
@@ -73,6 +85,25 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  const requestPasswordReset = async (emailInput: string) => {
+    const email = emailInput.trim().toLowerCase();
+    if (isAdminManagedEmail(email)) {
+      throw new AdminManagedAccountError();
+    }
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.resetPasswordForEmail(email, redirectTo);
+    if (error) {
+      throw error;
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.updatePassword(newPassword);
+    if (error) {
+      throw error;
+    }
+  };
+
   return {
     user,
     username,
@@ -81,6 +112,8 @@ export const useAuthStore = defineStore("auth", () => {
     initAuth,
     signIn,
     signUp,
-    signOut
+    signOut,
+    requestPasswordReset,
+    updatePassword
   };
 });
