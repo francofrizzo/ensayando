@@ -71,6 +71,8 @@ Supabase (Postgres). Migrations live in `supabase/migrations/`. Auth uses Supaba
 
 Row-Level Security (RLS) controls access — collections can be public or private with per-user roles.
 
+For admin tasks the app UI doesn't expose (user management, collection CRUD, song deletion/reordering, granting collection roles), use the `admin` skill at `.claude/skills/admin/SKILL.md` — it runs SQL against the linked Supabase project via `npx supabase db query --linked`.
+
 ## Deployment
 
 Vercel SPA with catch-all rewrite (`vercel.json`). No server-side rendering — the `server/` directory exists but is currently empty/unused.

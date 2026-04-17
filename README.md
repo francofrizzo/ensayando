@@ -54,6 +54,10 @@ npm test
 - **Vue Router** for navigation
 - **PWA** via vite-plugin-pwa
 
+## Admin tasks
+
+Some operations aren't exposed in the app UI — managing users (create, delete, reset password), assigning collection roles, and collection/song CRUD. These are handled via SQL against the linked Supabase project. If you're working with Claude Code, the `.claude/skills/admin/` skill covers the common workflows; otherwise the `SKILL.md` file there doubles as a quick reference for the SQL snippets.
+
 ## Deployment
 
 Vercel SPA with catch-all rewrite. See `vercel.json`.
