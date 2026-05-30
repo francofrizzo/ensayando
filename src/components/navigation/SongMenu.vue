@@ -3,6 +3,7 @@ import {
   IconClose,
   IconEdit,
   IconGlobe,
+  IconLink,
   IconLock,
   IconMenu,
   IconMusic
@@ -56,7 +57,14 @@ const otherCollectionMenuItems = computed(() => {
                   class="text-base-content/60 flex items-center gap-1.5 font-medium tracking-wide uppercase"
                 >
                   {{ currentCollection?.title }}
-                  <IconGlobe v-if="currentCollection?.is_public" class="size-3.5 opacity-60" />
+                  <IconGlobe
+                    v-if="currentCollection?.visibility === 'public'"
+                    class="size-3.5 opacity-60"
+                  />
+                  <IconLink
+                    v-else-if="currentCollection?.visibility === 'unlisted'"
+                    class="size-3.5 opacity-60"
+                  />
                 </span>
                 <div class="flex items-center gap-2">
                   <button
@@ -130,7 +138,14 @@ const otherCollectionMenuItems = computed(() => {
                     @click="isOpen = false"
                   >
                     {{ otherCollection.title }}
-                    <IconGlobe v-if="otherCollection.is_public" class="size-3 opacity-60" />
+                    <IconGlobe
+                      v-if="otherCollection.visibility === 'public'"
+                      class="size-3 opacity-60"
+                    />
+                    <IconLink
+                      v-else-if="otherCollection.visibility === 'unlisted'"
+                      class="size-3 opacity-60"
+                    />
                   </router-link>
                 </li>
               </ul>

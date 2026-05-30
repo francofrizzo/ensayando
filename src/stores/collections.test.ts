@@ -11,11 +11,16 @@ vi.mock("vue-router", () => ({
 // Mock supabase data layer
 vi.mock("@/data/supabase", () => ({
   fetchCollections: vi.fn().mockResolvedValue({ data: [], error: null }),
+  fetchCollectionBySlug: vi.fn().mockResolvedValue({ data: null, error: null }),
   fetchSongsByCollectionId: vi.fn().mockResolvedValue({ data: [], error: null }),
   updateSongLyrics: vi.fn().mockResolvedValue({ error: null })
 }));
 
+import * as supabaseData from "@/data/supabase";
+
 import { useCollectionsStore } from "./collections";
+
+const fetchCollectionBySlugMock = vi.mocked(supabaseData.fetchCollectionBySlug);
 
 const verse = (text: string) => [{ text }] as LyricStanza;
 
@@ -312,5 +317,60 @@ describe("collections store — undo/redo", () => {
     expect(store.localLyrics.isDirty).toBe(false);
     expect(store.canUndo).toBe(false);
     expect(store.canRedo).toBe(false);
+  });
+});
+
+describe("collections store — ensureCollectionLoaded", () => {
+  let store: ReturnType<typeof useCollectionsStore>;
+
+  const collection = {
+    id: 7,
+    slug: "andiepalooza",
+    title: "Andiepalooza",
+    main_color: "oklch(60.6% 0.25 292.717)",
+    track_colors: {},
+    artwork_file_url: null,
+    visibility: "unlisted" as const,
+    created_at: "2026-01-01T00:00:00Z"
+  };
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    store = useCollectionsStore();
+    fetchCollectionBySlugMock.mockReset();
+    fetchCollectionBySlugMock.mockResolvedValue({ data: null, error: null } as never);
+  });
+
+  it("fetches an unlisted collection by slug and adds it as a viewer", async () => {
+    fetchCollectionBySlugMock.mockResolvedValue({ data: collection, error: null } as never);
+
+    await store.ensureCollectionLoaded("andiepalooza");
+
+    expect(fetchCollectionBySlugMock).toHaveBeenCalledWith("andiepalooza");
+    expect(store.collections).toHaveLength(1);
+    expect(store.collections[0]).toMatchObject({ slug: "andiepalooza", user_role: "viewer" });
+  });
+
+  it("is a no-op when the slug is already loaded", async () => {
+    fetchCollectionBySlugMock.mockResolvedValue({ data: collection, error: null } as never);
+    await store.ensureCollectionLoaded("andiepalooza");
+    fetchCollectionBySlugMock.mockClear();
+
+    // Second call for the same slug should not hit the data layer again.
+    await store.ensureCollectionLoaded("andiepalooza");
+    expect(fetchCollectionBySlugMock).not.toHaveBeenCalled();
+    expect(store.collections).toHaveLength(1);
+  });
+
+  it("does nothing when the slug is empty", async () => {
+    await store.ensureCollectionLoaded(null);
+    await store.ensureCollectionLoaded("");
+    expect(fetchCollectionBySlugMock).not.toHaveBeenCalled();
+    expect(store.collections).toHaveLength(0);
+  });
+
+  it("leaves collections untouched when the slug doesn't resolve", async () => {
+    await store.ensureCollectionLoaded("nope");
+    expect(store.collections).toHaveLength(0);
   });
 });

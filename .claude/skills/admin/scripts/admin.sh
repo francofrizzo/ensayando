@@ -22,9 +22,9 @@ require_role() {
   esac
 }
 
-require_bool() {
-  case "$1" in true|false) ;; *)
-    echo "error: expected true|false (got: $1)" >&2; exit 2 ;;
+require_visibility() {
+  case "$1" in private|unlisted|public) ;; *)
+    echo "error: visibility must be private|unlisted|public (got: $1)" >&2; exit 2 ;;
   esac
 }
 
@@ -54,7 +54,9 @@ collection access:
   list-user-collections <email>
 
 collections:
-  toggle-public <slug> <true|false>
+  set-visibility <slug> <private|unlisted|public>
+                                         private=members only; unlisted=link-only (hidden
+                                         from sidebar); public=listed for everyone
   delete-collection <slug> --yes         cascades to songs/tracks; no storage cleanup
   edit-palette <slug>                    open browser oklch editor; prints new palette JSON on save
   apply-palette <slug> <json>            UPDATE main_color + track_colors (payload from edit-palette)
@@ -196,13 +198,13 @@ WHERE uc.user_id = (SELECT id FROM auth.users WHERE email = '$e')
 ORDER BY c.title;"
 }
 
-cmd_toggle_public() {
-  need_args $# 2 "toggle-public <slug> <true|false>"
-  require_bool "$2"
-  local s; s=$(sqlq "$1")
-  run_sql "UPDATE public.collections SET is_public = $2
+cmd_set_visibility() {
+  need_args $# 2 "set-visibility <slug> <private|unlisted|public>"
+  require_visibility "$2"
+  local s v; s=$(sqlq "$1"); v=$(sqlq "$2")
+  run_sql "UPDATE public.collections SET visibility = '$v'
 WHERE slug = '$s'
-RETURNING id, slug, is_public;"
+RETURNING id, slug, visibility;"
 }
 
 cmd_delete_collection() {
@@ -275,7 +277,7 @@ case "$sub" in
   revoke-access)          cmd_revoke_access "$@" ;;
   list-members)           cmd_list_members "$@" ;;
   list-user-collections)  cmd_list_user_collections "$@" ;;
-  toggle-public)          cmd_toggle_public "$@" ;;
+  set-visibility)         cmd_set_visibility "$@" ;;
   delete-collection)      cmd_delete_collection "$@" ;;
   edit-palette)           cmd_edit_palette "$@" ;;
   apply-palette)          cmd_apply_palette "$@" ;;

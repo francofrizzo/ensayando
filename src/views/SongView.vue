@@ -7,9 +7,11 @@ import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
+import { useRouteParams } from "@/composables/useRouteParams";
 import { useCollectionsStore } from "@/stores/collections";
 
 const collectionsStore = useCollectionsStore();
+const { collectionSlug } = useRouteParams();
 const { currentCollection } = useCurrentCollection();
 const { currentSong } = useCurrentSong();
 const { themeVariables } = useCollectionTheme(currentCollection);
@@ -20,6 +22,8 @@ onMounted(async () => {
   if (collectionsStore.collections.length === 0) {
     await collectionsStore.fetchCollections();
   }
+  // Resolve unlisted/public collections reached directly by link (not in the listing).
+  await collectionsStore.ensureCollectionLoaded(collectionSlug.value);
 });
 </script>
 

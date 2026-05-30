@@ -22,10 +22,7 @@ export const trackVerse = (text: string, trackIds: number[]): LyricVerse => ({
   audio_track_ids: trackIds
 });
 
-export const fullVerse = (
-  text: string,
-  opts: Partial<LyricVerse> = {}
-): LyricVerse => ({
+export const fullVerse = (text: string, opts: Partial<LyricVerse> = {}): LyricVerse => ({
   text,
   ...opts
 });
@@ -64,25 +61,13 @@ export const mixedColumnLyrics: LyricStanza[] = [
 
 /** Multicolumn with 3 columns */
 export const threeColumnLyrics: LyricStanza[] = [
-  [
-    [
-      [{ text: "A1" }],
-      [{ text: "B1" }],
-      [{ text: "C1" }]
-    ]
-  ]
+  [[[{ text: "A1" }], [{ text: "B1" }], [{ text: "C1" }]]]
 ];
 
 /** Lyrics with timestamps for status/overlap testing */
 export const timedLyrics: LyricStanza[] = [
-  [
-    timedVerse(0, 3, "Intro"),
-    timedVerse(3, 6, "Verse one"),
-    timedVerse(6, 9, "Verse two")
-  ],
-  [
-    timedVerse(10, 13, "Chorus")
-  ]
+  [timedVerse(0, 3, "Intro"), timedVerse(3, 6, "Verse one"), timedVerse(6, 9, "Verse two")],
+  [timedVerse(10, 13, "Chorus")]
 ];
 
 /** Overlapping timestamps (for regularization column merging) */
@@ -119,7 +104,6 @@ export const mockCollection: CollectionWithRole = {
   id: 1,
   slug: "test-collection",
   title: "Test Collection",
-  visible: true,
   main_color: "#3b82f6",
   track_colors: {
     red: "#ef4444",
@@ -127,7 +111,7 @@ export const mockCollection: CollectionWithRole = {
     green: "#22c55e"
   },
   artwork_file_url: null,
-  is_public: false,
+  visibility: "private",
   created_at: "2025-01-01T00:00:00Z",
   user_role: "admin"
 };

@@ -123,6 +123,23 @@ export const useCollectionsStore = defineStore("collections", () => {
     isLoadingCollections.value = false;
   }
 
+  // Ensure the collection for a given slug is available in `collections`, fetching it
+  // directly when it isn't part of the listed/owned set. This is what makes "unlisted"
+  // (and public) collections reachable by link without showing up in the sidebar listing.
+  // Members and listed collections are already loaded by fetchCollections, so the by-slug
+  // fetch only ever resolves collections the user accesses purely via their link → viewer.
+  async function ensureCollectionLoaded(slug: string | null | undefined) {
+    if (!slug || collections.value.some((c) => c.slug === slug)) return;
+    isLoadingCollections.value = true;
+    const { data, error } = await supabase.fetchCollectionBySlug(slug);
+    if (error) {
+      console.error(error);
+    } else if (data && !collections.value.some((c) => c.id === data.id)) {
+      collections.value.push({ ...data, user_role: "viewer" });
+    }
+    isLoadingCollections.value = false;
+  }
+
   async function fetchSongsByCollectionId(collectionId: number) {
     isLoadingSongs.value = true;
     const { data, error } = await supabase.fetchSongsByCollectionId(collectionId);
@@ -265,6 +282,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     songsCollectionId,
     isLoading,
     fetchCollections,
+    ensureCollectionLoaded,
     fetchSongsByCollectionId,
     localLyrics,
     updateLocalLyrics,

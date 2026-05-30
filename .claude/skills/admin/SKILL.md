@@ -1,6 +1,6 @@
 ---
 name: admin
-description: Run Ensayando admin tasks that the app UI doesn't expose, via SQL against the linked Supabase project. Use for user management (find, create, delete, reset password, change email; supports both real-email and username-only users), collection access (grant, change, revoke roles, list members), collection CRUD (create, delete, rename, change slug, toggle is_public, edit colors, change artwork URL), and song operations (delete, reorder). Runs `npx supabase db query --linked`.
+description: Run Ensayando admin tasks that the app UI doesn't expose, via SQL against the linked Supabase project. Use for user management (find, create, delete, reset password, change email; supports both real-email and username-only users), collection access (grant, change, revoke roles, list members), collection CRUD (create, delete, rename, change slug, set visibility private/unlisted/public, edit colors, change artwork URL), and song operations (delete, reorder). Runs `npx supabase db query --linked`.
 ---
 
 # Admin
@@ -37,13 +37,13 @@ When a user gives you a "username" to act on, use `admin.sh find-user <input>` �
 - Query output comes back wrapped in an untrusted-data safety envelope; ignore the wrapper text.
 - Storage files (artwork, audio tracks) are **not** removed when their parent collection/song is deleted. Storage cleanup is out of scope.
 - Roles are free-text in the schema but the app only recognises `admin`, `editor`, `viewer`. Do not invent new role strings.
-- `Collection.visible` exists in `src/data/types.ts` but the column does not exist in the DB — ignore it. If the user asks to toggle it, flag the codebase inconsistency rather than inventing SQL.
+- Collection visibility is the `visibility` column (`'private' | 'unlisted' | 'public'`). `private` = members only; `unlisted` = readable by anyone with the link but hidden from sidebar listings; `public` = listed for everyone. RLS treats `unlisted` and `public` the same (both link-readable); the listing/sidebar distinction is enforced client-side. Use `admin.sh set-visibility <slug> <value>`.
 
 ## Schema
 
 - `auth.users` — Supabase-managed. Relevant columns: `id` (uuid), `email`, `encrypted_password`, `email_confirmed_at`, `raw_user_meta_data`, `created_at`.
 - `auth.identities` — provider rows. A user needs a matching `email` identity or GoTrue fails login with "Database error querying schema".
-- `public.collections` — `id` (bigint), `slug` (text, unique), `title`, `main_color` (CSS color string — typically `oklch(...)`, not hex), `track_colors` (jsonb — `Record<string, string>` per `src/data/types.ts:7`, values are also CSS color strings), `artwork_file_url` (text, nullable), `is_public` (bool, default false), `created_at`.
+- `public.collections` — `id` (bigint), `slug` (text, unique), `title`, `main_color` (CSS color string — typically `oklch(...)`, not hex), `track_colors` (jsonb — `Record<string, string>` per `src/data/types.ts`, values are also CSS color strings), `artwork_file_url` (text, nullable), `visibility` (text: `'private' | 'unlisted' | 'public'`, default `'private'`, CHECK-constrained), `created_at`.
 - `public.songs` — `id` (bigint), `slug`, `collection_id` (FK → collections), `title`, `visible` (bool), `order` (int, reserved keyword — quote it), `lyrics` (jsonb), `created_at`.
 - `public.audio_tracks` — FK → songs; cascades on song delete.
 - `public.user_collections` — junction: `user_id` (uuid, FK → auth.users, ON DELETE CASCADE), `collection_id` (bigint, FK → public.collections), `role` (`'admin' | 'editor' | 'viewer'`).
@@ -78,9 +78,9 @@ If this is temporary (e.g. to route a reset email through a real inbox), always 
 ### Create a collection
 
 ```sql
-INSERT INTO public.collections (slug, title, main_color, track_colors, is_public)
-VALUES ('<slug>', '<title>', '<css-color>', '<json>'::jsonb, <true|false>)
-RETURNING id, slug, title;
+INSERT INTO public.collections (slug, title, main_color, track_colors, visibility)
+VALUES ('<slug>', '<title>', '<css-color>', '<json>'::jsonb, '<private|unlisted|public>')
+RETURNING id, slug, title, visibility;
 ```
 
 `track_colors` is JSONB matching `Record<string, string>`. Values are CSS colors, conventionally `oklch(...)` in this DB, e.g. `'{"v1":"oklch(60.6% 0.25 292.717)","bg":"oklch(76.8% 0.233 130.85)"}'`.

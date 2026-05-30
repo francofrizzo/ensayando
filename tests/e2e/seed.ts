@@ -64,7 +64,7 @@ async function seed() {
         vocals: "#3b82f6",
         drums: "#22c55e"
       },
-      is_public: false
+      visibility: "private"
     })
     .select()
     .single();

@@ -57,9 +57,19 @@ export const updatePassword = async (newPassword: string) => {
 
 // Collection and song functions
 
-// Fetch all public collections (no auth required)
-export const fetchPublicCollections = async (): Promise<PostgrestSingleResponse<Collection[]>> => {
-  return await supabase.from("collections").select("*").eq("is_public", true);
+// Fetch collections that should appear in the sidebar listing (no auth required).
+// Only "public" collections are listed; "unlisted" ones are reachable by link but hidden here.
+export const fetchListedCollections = async (): Promise<PostgrestSingleResponse<Collection[]>> => {
+  return await supabase.from("collections").select("*").eq("visibility", "public");
+};
+
+// Fetch a single collection by slug. RLS decides visibility: anyone can read "public" and
+// "unlisted" collections by their link; "private" ones only resolve for members. Returns
+// data === null (with no error) when the slug doesn't exist or isn't readable.
+export const fetchCollectionBySlug = async (
+  slug: string
+): Promise<PostgrestSingleResponse<Collection | null>> => {
+  return await supabase.from("collections").select("*").eq("slug", slug).maybeSingle();
 };
 
 // Fetch collections available to the current user along with their role in each collection
@@ -70,9 +80,9 @@ export const fetchCollections = async (): Promise<
     data: { user }
   } = await supabase.auth.getUser();
 
-  // Unauthenticated: return only public collections with viewer role
+  // Unauthenticated: return only listed (public) collections with viewer role
   if (!user) {
-    const publicResponse = await fetchPublicCollections();
+    const publicResponse = await fetchListedCollections();
     if (publicResponse.error) {
       return publicResponse as PostgrestSingleResponse<CollectionWithRole[]>;
     }
@@ -90,10 +100,10 @@ export const fetchCollections = async (): Promise<
     } as PostgrestSingleResponse<CollectionWithRole[]>;
   }
 
-  // Authenticated: fetch user's private collections + public collections, merge
+  // Authenticated: fetch user's own collections + listed (public) collections, merge
   const [userResponse, publicResponse] = await Promise.all([
     supabase.from("user_collections").select("role, collections(*)").eq("user_id", user.id),
-    fetchPublicCollections()
+    fetchListedCollections()
   ]);
 
   if (userResponse.error) {

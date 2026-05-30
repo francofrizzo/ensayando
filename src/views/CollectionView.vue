@@ -24,6 +24,8 @@ onMounted(async () => {
   if (collectionsStore.collections.length === 0) {
     await collectionsStore.fetchCollections();
   }
+  // Resolve unlisted/public collections reached directly by link (not in the listing).
+  await collectionsStore.ensureCollectionLoaded(route.params.collectionSlug as string);
 });
 
 watch(

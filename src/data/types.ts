@@ -1,12 +1,16 @@
+// "private": only members (via user_collections) can read it.
+// "unlisted": anyone with the link can read it, but it's hidden from sidebar listings.
+// "public": anyone can read it and it shows up in every sidebar.
+export type CollectionVisibility = "private" | "unlisted" | "public";
+
 export type Collection = {
   id: number;
   slug: string;
   title: string;
-  visible: boolean;
   main_color: string;
   track_colors: Record<string, string>;
   artwork_file_url: string | null;
-  is_public: boolean;
+  visibility: CollectionVisibility;
   created_at: string;
 };
 
