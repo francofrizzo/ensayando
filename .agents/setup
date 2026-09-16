@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+step() {
+  printf '\n==> %s\n' "$1"
+}
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+step "Installing the Node.js 22 toolchain"
+export NVM_DIR="$HOME/.nvm"
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+  rm -rf "$NVM_DIR"
+  mkdir -p "$NVM_DIR"
+  curl --fail --location --silent --show-error \
+    https://github.com/nvm-sh/nvm/archive/refs/tags/v0.40.3.tar.gz |
+    tar -xz --strip-components=1 -C "$NVM_DIR"
+fi
+
+# shellcheck disable=SC1091
+source "$NVM_DIR/nvm.sh" || true
+if ! nvm version 22 >/dev/null 2>&1; then
+  nvm install 22
+fi
+nvm alias default 22 >/dev/null
+nvm use --silent 22
+
+profile_marker="# Ensayando Node.js toolchain"
+if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
+  cat >>"$HOME/.bash_profile" <<'EOF'
+
+# Ensayando Node.js toolchain
+export NVM_DIR="$HOME/.nvm"
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "$NVM_DIR/nvm.sh"
+fi
+EOF
+fi
+
+corepack enable pnpm
+corepack install --global pnpm@10.33.0
+
+step "Installing locked JavaScript dependencies"
+pnpm install --frozen-lockfile
+
+step "Installing Chromium and its system dependencies"
+pnpm exec playwright install --with-deps chromium
+
+step "Installing the Supabase CLI"
+if ! command -v supabase >/dev/null 2>&1; then
+  install_dir="$HOME/.local/bin"
+  archive="$(mktemp)"
+  mkdir -p "$install_dir"
+  trap 'rm -f "$archive"' EXIT
+  curl --fail --location --silent --show-error \
+    https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+    --output "$archive"
+  tar -xzf "$archive" -C "$install_dir" supabase
+  chmod +x "$install_dir/supabase"
+fi
+
+printf '\nOrb setup complete: Node %s, pnpm %s, Supabase CLI %s\n' \
+  "$(node --version)" "$(pnpm --version)" "$(supabase --version)"

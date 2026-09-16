@@ -38,5 +38,8 @@ tests/e2e/.auth/
 playwright-report/
 test-results/
 
+# Amp orb runtime files
+.amp/portals/
+
 # Claude Code local settings
 .claude/settings.local.json
