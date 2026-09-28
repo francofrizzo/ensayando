@@ -46,6 +46,7 @@
     "@tsconfig/node20": "^20.1.4",
     "@types/culori": "^4.0.0",
     "@types/node": "^25.5.2",
+    "@vercel/blob": "^2.8.0",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.7.0",

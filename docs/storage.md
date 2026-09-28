@@ -8,13 +8,14 @@ Files never pass through a Vercel Function.
 
 | Environment         | Bucket                  | Location | Access  |
 | ------------------- | ----------------------- | -------- | ------- |
-| Production          | `ensayando-audio-files` | ENAM     | Private |
+| Production          | `ensayando`             | ENAM     | Private |
 | Preview/development | `ensayando-dev`         | ENAM     | Private |
 
 Keys are provider-independent database values:
 
 - `audio/<collection-id>/<uuid>.<ext>`
 - `artwork/<collection-id>/<uuid>.<ext>`
+- `legacy/<provider>/<uuid>.<ext>` for source objects no longer referenced by the database
 - `_smoke/<uuid>` and `_contract/<uuid>` for disposable checks
 
 Do not enable `r2.dev`. If permanent public URLs become necessary, use a separate public bucket
@@ -45,7 +46,8 @@ R2_SECRET_ACCESS_KEY
 
 The API also reads `SUPABASE_URL`/`SUPABASE_ANON_KEY`, falling back to the existing
 `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` values. Migration scripts additionally require
-`SUPABASE_SERVICE_ROLE_KEY`.
+`SUPABASE_SERVICE_ROLE_KEY` and `BLOB_READ_WRITE_TOKEN`; `SUPABASE_STORAGE_BUCKET` defaults to
+`audio-files`.
 
 Use one Cloudflare Object Read & Write token per bucket. Never reuse Ticket Say credentials or
 commit credentials to the repository.
@@ -78,10 +80,11 @@ pnpm storage:migrate -- --execute # copy, size/hash verify, transactional key up
 pnpm storage:migrate -- --verify  # verify all migrated rows again
 ```
 
-The migration is deterministic, resumable, and never deletes source files. It preserves source
-content type/disposition, checks every object size, hashes up to ten distributed samples, and only
-then calls `apply_storage_key_migration` to set all matching database keys in one transaction.
-Legacy URLs remain populated for fallback during the grace period.
+The migration inventories both source stores, including unreferenced objects, and preserves those
+objects under `legacy/`. It is deterministic, resumable, and never deletes source files. It
+preserves source content type/disposition, checks every object size, hashes up to ten distributed
+samples, and only then calls `apply_storage_key_migration` to set all matching database keys in one
+transaction. Legacy URLs remain populated for fallback during the grace period.
 
 After at least two weeks, inventory and deletion of Supabase Storage or Vercel Blob require a
 separate explicit approval. Remove the migration RPC in the eventual cleanup migration.

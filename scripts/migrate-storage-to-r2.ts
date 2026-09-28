@@ -5,6 +5,7 @@ import {
   type S3Client
 } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
+import { list as listBlobs } from "@vercel/blob";
 import { createHash } from "node:crypto";
 
 import { getR2Client, getR2Config } from "../server/storage/r2";
@@ -23,12 +24,19 @@ type ArtworkSource = {
 };
 
 type MigrationItem = {
-  type: "audio" | "artwork";
-  id: number;
-  collectionId: number;
+  type: "audio" | "artwork" | "legacy";
+  label: string;
+  databaseId?: number;
   sourceUrl: string;
   objectKey: string;
   pending: boolean;
+};
+
+type SourceObject = {
+  provider: "supabase" | "vercel-blob";
+  sourceUrl: string;
+  sourceKey: string;
+  size: number;
 };
 
 const execute = process.argv.includes("--execute");
@@ -66,18 +74,25 @@ function sourceProvider(url: string): string {
   return host;
 }
 
+function canonicalUrl(url: string): string {
+  const parsed = new URL(url);
+  parsed.hash = "";
+  parsed.search = "";
+  return parsed.toString();
+}
+
+function adminSupabase() {
+  return createClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+
 async function loadItems(): Promise<{
   items: MigrationItem[];
   audioRows: AudioSource[];
   artworkRows: ArtworkSource[];
 }> {
-  const supabase = createClient(
-    requiredEnv("SUPABASE_URL"),
-    requiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    {
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
+  const supabase = adminSupabase();
   const [audioResult, artworkResult] = await Promise.all([
     supabase
       .from("audio_tracks")
@@ -101,8 +116,8 @@ async function loadItems(): Promise<{
     const extension = extensionFromUrl(row.audio_file_url, "mp3");
     items.push({
       type: "audio",
-      id: row.id,
-      collectionId: song.collection_id,
+      label: `audio track ${row.id}`,
+      databaseId: row.id,
       sourceUrl: row.audio_file_url,
       objectKey:
         row.audio_file_key ??
@@ -116,8 +131,8 @@ async function loadItems(): Promise<{
     const extension = extensionFromUrl(row.artwork_file_url, "jpg");
     items.push({
       type: "artwork",
-      id: row.id,
-      collectionId: row.id,
+      label: `collection artwork ${row.id}`,
+      databaseId: row.id,
       sourceUrl: row.artwork_file_url,
       objectKey:
         row.artwork_file_key ??
@@ -129,13 +144,99 @@ async function loadItems(): Promise<{
   return { items, audioRows, artworkRows };
 }
 
+async function listSupabaseObjects(): Promise<SourceObject[]> {
+  const supabase = adminSupabase();
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "audio-files";
+  const objects: SourceObject[] = [];
+
+  async function visit(prefix: string): Promise<void> {
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.storage.from(bucket).list(prefix, {
+        limit: 1000,
+        offset,
+        sortBy: { column: "name", order: "asc" }
+      });
+      if (error) throw error;
+
+      for (const entry of data) {
+        const sourceKey = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (!entry.id) {
+          await visit(sourceKey);
+          continue;
+        }
+        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(sourceKey);
+        objects.push({
+          provider: "supabase",
+          sourceUrl: publicUrl.publicUrl,
+          sourceKey,
+          size: Number(entry.metadata?.size ?? 0)
+        });
+      }
+
+      if (data.length < 1000) break;
+    }
+  }
+
+  await visit("");
+  return objects;
+}
+
+async function listVercelObjects(): Promise<SourceObject[]> {
+  const token = requiredEnv("BLOB_READ_WRITE_TOKEN");
+  const objects: SourceObject[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const page = await listBlobs({ token, cursor, limit: 1000 });
+    objects.push(
+      ...page.blobs.map((blob) => ({
+        provider: "vercel-blob" as const,
+        sourceUrl: blob.url,
+        sourceKey: blob.pathname,
+        size: blob.size
+      }))
+    );
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
+
+  return objects;
+}
+
+async function includeUnreferencedObjects(items: MigrationItem[]): Promise<{
+  items: MigrationItem[];
+  inventory: Record<string, { objects: number; bytes: number; unreferenced: number }>;
+}> {
+  const sourceObjects = [...(await listSupabaseObjects()), ...(await listVercelObjects())];
+  const referencedUrls = new Set(items.map((item) => canonicalUrl(item.sourceUrl)));
+  const inventory: Record<string, { objects: number; bytes: number; unreferenced: number }> = {};
+
+  for (const source of sourceObjects) {
+    const summary = (inventory[source.provider] ??= { objects: 0, bytes: 0, unreferenced: 0 });
+    summary.objects += 1;
+    summary.bytes += source.size;
+    if (referencedUrls.has(canonicalUrl(source.sourceUrl))) continue;
+
+    summary.unreferenced += 1;
+    const extension = extensionFromUrl(source.sourceUrl, "bin");
+    items.push({
+      type: "legacy",
+      label: `${source.provider} ${source.sourceKey}`,
+      sourceUrl: source.sourceUrl,
+      objectKey: `legacy/${source.provider}/${deterministicUuid(`${source.provider}:${source.sourceKey}`)}.${extension}`,
+      pending: true
+    });
+  }
+
+  return { items, inventory };
+}
+
 async function bodyBytes(body: { transformToByteArray(): Promise<Uint8Array> }) {
   return new Uint8Array(await body.transformToByteArray());
 }
 
 async function copyItem(client: S3Client, bucket: string, item: MigrationItem): Promise<number> {
   const source = await fetch(item.sourceUrl);
-  if (!source.ok) throw new Error(`Source returned ${source.status} for ${item.type} ${item.id}`);
+  if (!source.ok) throw new Error(`Source returned ${source.status} for ${item.label}`);
   const bytes = new Uint8Array(await source.arrayBuffer());
   const contentType =
     source.headers.get("content-type")?.split(";")[0] || "application/octet-stream";
@@ -174,19 +275,21 @@ async function copyItem(client: S3Client, bucket: string, item: MigrationItem): 
 }
 
 async function applyKeys(items: MigrationItem[]): Promise<void> {
-  const supabase = createClient(
-    requiredEnv("SUPABASE_URL"),
-    requiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    {
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
+  const supabase = adminSupabase();
   const audioUpdates = items
-    .filter((item) => item.type === "audio")
-    .map((item) => ({ id: item.id, source_url: item.sourceUrl, object_key: item.objectKey }));
+    .filter((item) => item.type === "audio" && item.databaseId !== undefined)
+    .map((item) => ({
+      id: item.databaseId,
+      source_url: item.sourceUrl,
+      object_key: item.objectKey
+    }));
   const artworkUpdates = items
-    .filter((item) => item.type === "artwork")
-    .map((item) => ({ id: item.id, source_url: item.sourceUrl, object_key: item.objectKey }));
+    .filter((item) => item.type === "artwork" && item.databaseId !== undefined)
+    .map((item) => ({
+      id: item.databaseId,
+      source_url: item.sourceUrl,
+      object_key: item.objectKey
+    }));
   const { data, error } = await supabase.rpc("apply_storage_key_migration", {
     audio_updates: audioUpdates,
     artwork_updates: artworkUpdates
@@ -208,7 +311,7 @@ async function verifyItems(
       client.send(new HeadObjectCommand({ Bucket: bucket, Key: item.objectKey }))
     ]);
     if (!source.ok)
-      throw new Error(`Source HEAD returned ${source.status} for ${item.type} ${item.id}`);
+      throw new Error(`Source HEAD returned ${source.status} for ${item.label}`);
     const sourceSize = Number(source.headers.get("content-length"));
     const targetSize = target.ContentLength ?? 0;
     if (sourceSize !== targetSize) throw new Error(`Size mismatch for ${item.objectKey}`);
@@ -246,7 +349,8 @@ async function verifyItems(
 }
 
 async function main(): Promise<void> {
-  const { items } = await loadItems();
+  const loaded = await loadItems();
+  const { items, inventory } = await includeUnreferencedObjects(loaded.items);
   const pendingItems = items.filter((item) => item.pending);
   const counts = new Map<string, number>();
   for (const item of pendingItems) {
@@ -257,6 +361,7 @@ async function main(): Promise<void> {
     JSON.stringify({
       mode: execute ? "execute" : verify ? "verify" : "dry-run",
       totalObjects: verify ? items.length : pendingItems.length,
+      sourceInventory: inventory,
       counts: Object.fromEntries(counts)
     })
   );
