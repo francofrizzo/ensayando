@@ -88,3 +88,21 @@ transaction. Legacy URLs remain populated for fallback during the grace period.
 
 After at least two weeks, inventory and deletion of Supabase Storage or Vercel Blob require a
 separate explicit approval. Remove the migration RPC in the eventual cleanup migration.
+
+## Production migration record
+
+The production copy completed on 2026-09-28:
+
+| Store/prefix                  | Objects | Bytes         |
+| ----------------------------- | ------: | ------------: |
+| Supabase Storage source       |     264 |   985,801,234 |
+| Vercel Blob source            |     142 |   287,988,728 |
+| R2 `audio/`                   |     369 | 1,180,931,097 |
+| R2 `artwork/`                 |       1 |       196,355 |
+| R2 `legacy/vercel-blob/`      |      36 |    92,662,510 |
+| **R2 total**                  | **406** | **1,273,789,962** |
+
+All 369 audio rows and the one artwork row have R2 keys; no referenced row remains pending. Every
+object passed an independent source/R2 size comparison and ten distributed samples passed SHA-256
+comparison. Production playback was then verified through presigned R2 URLs. The Supabase and
+Vercel sources remain unchanged for the grace period and must not be removed before 2026-10-12.
