@@ -1,6 +1,6 @@
 import type { IncomingHttpHeaders } from "node:http";
 
-import { createRequestSupabaseClient } from "../server/supabase";
+import { createRequestSupabaseClient } from "../server/supabase.js";
 import {
   collectionIdFromKey,
   createDownloadUrl,
@@ -11,7 +11,7 @@ import {
   type StorageFileType,
   validateUpload,
   verifyUploadedObject
-} from "../server/storage/r2";
+} from "../server/storage/r2.js";
 
 type VercelRequest = {
   method?: string;
