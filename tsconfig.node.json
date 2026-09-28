@@ -1,6 +1,9 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
   "include": [
+    "api/**/*.ts",
+    "server/**/*.ts",
+    "scripts/**/*.ts",
     "vite.config.*",
     "vitest.config.*",
     "cypress.config.*",

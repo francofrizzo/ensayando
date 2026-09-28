@@ -17,10 +17,15 @@
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:storage": "R2_CONTRACT_TEST=1 vitest run tests/storage/r2.contract.test.ts",
+    "storage:migrate": "tsx scripts/migrate-storage-to-r2.ts",
+    "storage:smoke": "tsx scripts/smoke-r2.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/s3-request-presigner": "^3.1141.0",
     "@meersagor/wavesurfer-vue": "^2.0.2",
     "@supabase/supabase-js": "^2.50.0",
     "@tabler/icons-vue": "^3.41.1",
