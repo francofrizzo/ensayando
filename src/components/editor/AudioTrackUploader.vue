@@ -54,12 +54,7 @@ const generateTrackFilename = (
   return `${collectionSlug}/${songSlug}-${trackId}.${extension}`;
 };
 
-const handleFileUpload = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-
-  if (!file) return;
-
+const uploadAudioFile = async (file: File) => {
   // Validate file type
   if (!validateAudioFile(file)) {
     toast.error("Por favor selecciona un archivo de audio válido");
@@ -100,13 +95,30 @@ const handleFileUpload = async (event: Event) => {
   } finally {
     isUploading.value = false;
     emit("upload-end");
-    input.value = "";
   }
 };
+
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (file) await uploadAudioFile(file);
+  input.value = "";
+};
+
+const uploadDroppedFile = async (file: File) => {
+  if (props.disabled || isUploading.value) return;
+  await uploadAudioFile(file);
+};
+
+defineExpose({ uploadDroppedFile });
 </script>
 
 <template>
-  <div class="relative shrink-0">
+  <label
+    class="btn btn-sm btn-soft relative shrink-0 cursor-pointer"
+    :class="{ 'btn-disabled cursor-not-allowed': disabled || isUploading }"
+  >
     <input
       type="file"
       accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
@@ -114,13 +126,13 @@ const handleFileUpload = async (event: Event) => {
       :disabled="disabled || isUploading"
       @change="handleFileUpload"
     />
-    <button class="btn btn-sm btn-soft btn-square" :disabled="disabled || isUploading">
-      <template v-if="isUploading">
-        <span class="loading loading-spinner loading-xs" />
-      </template>
-      <template v-else>
-        <IconUpload class="size-3.5" />
-      </template>
-    </button>
-  </div>
+    <template v-if="isUploading">
+      <span class="loading loading-spinner loading-xs" />
+      <span>Subiendo audio...</span>
+    </template>
+    <template v-else>
+      <IconUpload class="size-3.5" />
+      <span>Elegir audio</span>
+    </template>
+  </label>
 </template>

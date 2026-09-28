@@ -11,9 +11,10 @@ import {
   IconPlus,
   IconSave,
   IconTrash,
-  IconClose
+  IconClose,
+  IconUpload
 } from "@/components/ui/icons";
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
 import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
@@ -30,6 +31,7 @@ import {
   updateAudioTrack,
   updateSongBasicInfo
 } from "@/data/supabase";
+import { removeUnreferencedAudioFiles } from "@/data/storage";
 import type { AudioTrack, TrackPeaks } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
@@ -58,6 +60,10 @@ const isCreateMode = ref(false);
 const trackKeyCounter = ref(0);
 const uploadingTrackIndex = ref<number | null>(null);
 const peaksGeneratingIndex = ref<number | null>(null);
+const draggingTrackId = ref<number | null>(null);
+const trackDragDepths = new Map<number, number>();
+const audioUploaderRefs = new Map<number, { uploadDroppedFile: (file: File) => Promise<void> }>();
+const pendingUploadUrls = new Set<string>();
 const errors = reactive({
   title: "",
   slug: "",
@@ -145,8 +151,13 @@ const addAudioTrack = () => {
 };
 
 const removeAudioTrack = (index: number) => {
+  const removedUrl = formData.audio_tracks[index]?.audio_file_url;
   formData.audio_tracks = formData.audio_tracks.filter((_, i) => i !== index);
   reorderTracks();
+
+  if (removedUrl && pendingUploadUrls.has(removedUrl)) {
+    void cleanupUploadedFiles([removedUrl]);
+  }
 };
 
 const moveTrackUp = async (index: number) => {
@@ -177,7 +188,12 @@ const handleTrackTitleInput = (index: number, event: Event) => {
 
 const handleTrackUrlInput = (index: number, event: Event) => {
   const value = (event.target as HTMLInputElement).value;
+  const previousUrl = formData.audio_tracks[index]?.audio_file_url;
   updateTrackField(index, "audio_file_url", value);
+
+  if (previousUrl && previousUrl !== value && pendingUploadUrls.has(previousUrl)) {
+    void cleanupUploadedFiles([previousUrl]);
+  }
 };
 
 const handleColorChange = (index: number, colorKey: string) => {
@@ -192,11 +208,53 @@ const handleUploadEnd = () => {
   uploadingTrackIndex.value = null;
 };
 
+const setAudioUploaderRef = (trackId: number, instance: unknown) => {
+  if (instance) {
+    audioUploaderRefs.set(
+      trackId,
+      instance as { uploadDroppedFile: (file: File) => Promise<void> }
+    );
+  } else {
+    audioUploaderRefs.delete(trackId);
+  }
+};
+
+const handleTrackDragEnter = (trackId: number) => {
+  if (!formData.slug && isCreateMode.value) return;
+  trackDragDepths.set(trackId, (trackDragDepths.get(trackId) ?? 0) + 1);
+  draggingTrackId.value = trackId;
+};
+
+const handleTrackDragLeave = (trackId: number) => {
+  const nextDepth = Math.max((trackDragDepths.get(trackId) ?? 1) - 1, 0);
+  if (nextDepth > 0) {
+    trackDragDepths.set(trackId, nextDepth);
+    return;
+  }
+
+  trackDragDepths.delete(trackId);
+  if (draggingTrackId.value === trackId) draggingTrackId.value = null;
+};
+
+const handleTrackDrop = async (trackId: number, event: DragEvent) => {
+  trackDragDepths.delete(trackId);
+  draggingTrackId.value = null;
+
+  const file = event.dataTransfer?.files[0];
+  if (file) await audioUploaderRefs.get(trackId)?.uploadDroppedFile(file);
+};
+
 const handleUploadSuccess = (
   index: number,
   data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }
 ) => {
+  const previousUrl = formData.audio_tracks[index]?.audio_file_url;
+  pendingUploadUrls.add(data.url);
   updateTrackField(index, "audio_file_url", data.url);
+
+  if (previousUrl && previousUrl !== data.url && pendingUploadUrls.has(previousUrl)) {
+    void cleanupUploadedFiles([previousUrl]);
+  }
 
   const track = formData.audio_tracks[index];
   if (track && !track.title) {
@@ -240,8 +298,23 @@ const validateForm = () => {
   return result.isValid;
 };
 
+const cleanupUploadedFiles = async (urls: string[]) => {
+  try {
+    await removeUnreferencedAudioFiles(urls);
+    urls.forEach((url) => pendingUploadUrls.delete(url));
+  } catch (error) {
+    console.error("Error cleaning up audio files:", error);
+    toast.warning("No se pudieron limpiar algunos archivos de audio sin uso");
+  }
+};
+
+const cleanupPendingUploads = async () => {
+  await cleanupUploadedFiles([...pendingUploadUrls]);
+};
+
 // Mode management
-const enterCreateMode = () => {
+const enterCreateMode = async () => {
+  await cleanupPendingUploads();
   isCreateMode.value = true;
   formData.title = "";
   formData.slug = "";
@@ -251,7 +324,8 @@ const enterCreateMode = () => {
   clearErrors();
 };
 
-const cancelCreateMode = () => {
+const cancelCreateMode = async () => {
+  await cleanupPendingUploads();
   isCreateMode.value = false;
   restoreFormFromSong(currentSong.value);
 };
@@ -338,6 +412,8 @@ const handleCreateSong = async () => {
 
     const newSong = newSongData[0];
     await saveAudioTracks(newSong.id);
+    formData.audio_tracks.forEach((track) => pendingUploadUrls.delete(track.audio_file_url));
+    await cleanupPendingUploads();
     await collectionsStore.fetchSongsByCollectionId(currentCollection.value.id);
 
     toast.success("Canción creada correctamente");
@@ -378,6 +454,13 @@ const handleUpdateSong = async () => {
     if (songError) throw songError;
 
     await updateExistingTracks();
+    const activeUrls = new Set(formData.audio_tracks.map((track) => track.audio_file_url));
+    const replacedOrRemovedUrls = currentSong.value.audio_tracks
+      .map((track) => track.audio_file_url)
+      .filter((url) => !activeUrls.has(url));
+    activeUrls.forEach((url) => pendingUploadUrls.delete(url));
+    await cleanupPendingUploads();
+    await cleanupUploadedFiles(replacedOrRemovedUrls);
     await collectionsStore.fetchSongsByCollectionId(currentSong.value.collection_id);
 
     toast.success("Canción actualizada correctamente");
@@ -405,14 +488,19 @@ const handleSave = async () => {
   }
 };
 
+onBeforeUnmount(() => {
+  void cleanupPendingUploads();
+});
+
 // Watchers
 watch(
   currentSong,
   (song) => {
     if (song && !isCreateMode.value) {
+      void cleanupPendingUploads();
       restoreFormFromSong(song);
     } else if (!song && !isCreateMode.value) {
-      enterCreateMode();
+      void enterCreateMode();
     }
   },
   { immediate: true }
@@ -587,7 +675,10 @@ defineExpose({
             <div
               v-for="track in tracksForRendering"
               :key="track.stableKey"
-              class="card bg-base-100 border-base-300 rounded-lg border border-t-[3px]"
+              class="card bg-base-100 border-base-300 relative rounded-lg border border-t-[3px] transition-shadow"
+              :class="{
+                'ring-primary ring-2 ring-offset-2': draggingTrackId === track.id
+              }"
               :style="{
                 borderTopColor:
                   colorOptions?.find(
@@ -595,7 +686,20 @@ defineExpose({
                       c.key === formData.audio_tracks[track.renderIndex]?.color_key
                   )?.value || 'var(--color-base-300)'
               }"
+              @dragenter.prevent="handleTrackDragEnter(track.id)"
+              @dragover.prevent
+              @dragleave.prevent="handleTrackDragLeave(track.id)"
+              @drop.prevent="handleTrackDrop(track.id, $event)"
             >
+              <div
+                v-if="draggingTrackId === track.id"
+                class="border-primary bg-primary/15 pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg border-2"
+              >
+                <div class="badge badge-primary gap-2 px-4 py-3 font-medium shadow-lg">
+                  <IconUpload class="size-4" />
+                  Soltá el audio acá
+                </div>
+              </div>
               <div class="card-body flex flex-row items-center gap-3 p-4">
                 <div class="join join-vertical -my-1 -ml-1 flex shrink-0 flex-col">
                   <button
@@ -659,9 +763,10 @@ defineExpose({
                     </label>
                   </div>
 
-                  <div class="flex items-center gap-2">
+                  <div class="flex w-full items-center gap-2">
                     <AudioTrackUploader
                       v-if="currentCollection"
+                      :ref="(instance) => setAudioUploaderRef(track.id, instance)"
                       :track="formData.audio_tracks[track.renderIndex]!"
                       :collection="currentCollection"
                       :song="currentSong || { slug: formData.slug }"
@@ -673,6 +778,9 @@ defineExpose({
                           handleUploadSuccess(track.renderIndex, data)
                       "
                     />
+                    <span class="text-base-content/50 mr-auto hidden text-xs sm:inline">
+                      o arrastralo sobre toda la pista
+                    </span>
                     <div
                       v-if="showAdvancedOptions"
                       class="tooltip tooltip-top"
