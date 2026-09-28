@@ -84,10 +84,11 @@ The migration inventories both source stores, including unreferenced objects, an
 objects under `legacy/`. It is deterministic, resumable, and never deletes source files. It
 preserves source content type/disposition, checks every object size, hashes up to ten distributed
 samples, and only then calls `apply_storage_key_migration` to set all matching database keys in one
-transaction. Legacy URLs remain populated for fallback during the grace period.
+transaction. Legacy URL columns remain populated for audit purposes, but their source objects have
+been deleted and they are no longer a usable fallback.
 
-After at least two weeks, inventory and deletion of Supabase Storage or Vercel Blob require a
-separate explicit approval. Remove the migration RPC in the eventual cleanup migration.
+The source cleanup has completed. Do not rerun the copy after deleting the source stores. Remove
+the migration RPC in a future schema-cleanup migration.
 
 ## Production migration record
 
@@ -104,5 +105,9 @@ The production copy completed on 2026-09-28:
 
 All 369 audio rows and the one artwork row have R2 keys; no referenced row remains pending. Every
 object passed an independent source/R2 size comparison and ten distributed samples passed SHA-256
-comparison. Production playback was then verified through presigned R2 URLs. The Supabase and
-Vercel sources remain unchanged for the grace period and must not be removed before 2026-10-12.
+comparison. Production playback was then verified through presigned R2 URLs.
+
+Following explicit owner approval on 2026-09-28, all 264 Supabase Storage objects (985,801,234
+bytes) and all 142 Vercel Blob objects (287,988,728 bytes) were deleted through their storage APIs.
+Both sources report zero objects and zero bytes. R2 still reports the expected 406 objects and
+1,273,789,962 bytes, and production playback was rechecked after source deletion.
