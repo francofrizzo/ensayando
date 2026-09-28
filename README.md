@@ -48,7 +48,8 @@ npm test
 - **Vue 3** with Composition API and TypeScript
 - **Vite** as bundler and development server
 - **Tailwind CSS** + **DaisyUI** for the interface
-- **Supabase** for authentication and storage
+- **Supabase** for authentication and database access
+- **Cloudflare R2** for private media storage through presigned URLs
 - **WaveSurfer** for audio visualization and control
 - **Pinia** for state management
 - **Vue Router** for navigation
@@ -61,6 +62,9 @@ Some operations aren't exposed in the app UI — managing users (create, delete,
 ## Deployment
 
 Vercel SPA with catch-all rewrite. See `vercel.json`.
+
+See [File storage](docs/storage.md) for R2 setup, environment variables, verification, and the
+legacy-media migration procedure.
 
 ## Project Structure
 
