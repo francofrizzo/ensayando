@@ -3,19 +3,19 @@ import { IconUpload } from "@/components/ui/icons";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 
-import { uploadFile } from "@/data/storage";
-import type { AudioTrack, CollectionWithRole, Song, TrackPeaks } from "@/data/types";
+import { uploadAudioFile as uploadAudioToStorage } from "@/data/storage";
+import type { CollectionWithRole, TrackPeaks } from "@/data/types";
 import { generateTrackPeaks } from "@/utils/audio-utils";
 
 const props = defineProps<{
-  track: AudioTrack;
   collection: CollectionWithRole;
-  song: Song | { slug: string };
   disabled?: boolean;
 }>();
 
 const emit = defineEmits<{
-  "upload-success": [data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }];
+  "upload-success": [
+    data: { key: string; url: string; suggestedTitle: string; peaks: TrackPeaks | null }
+  ];
   "upload-start": [];
   "upload-end": [];
 }>();
@@ -39,21 +39,6 @@ const validateAudioFile = (file: File): boolean => {
   return ALLOWED_AUDIO_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.test(file.name);
 };
 
-// Filename generation for audio tracks
-const generateTrackFilename = (
-  collection: CollectionWithRole,
-  song: Song | { slug: string },
-  track: AudioTrack,
-  originalFilename: string
-): string => {
-  const extension = originalFilename.split(".").pop()?.toLowerCase() || "mp3";
-  const collectionSlug = collection.slug;
-  const songSlug = song.slug;
-  const trackId = Math.abs(track.id); // Use absolute value for negative temp IDs
-
-  return `${collectionSlug}/${songSlug}-${trackId}.${extension}`;
-};
-
 const uploadAudioFile = async (file: File) => {
   // Validate file type
   if (!validateAudioFile(file)) {
@@ -74,15 +59,12 @@ const uploadAudioFile = async (file: File) => {
     }
 
     // Upload file to storage
-    const filename = generateTrackFilename(props.collection, props.song, props.track, file.name);
-    const result = await uploadFile(file, filename, {
-      bucket: "audio-files",
-      addRandomSuffix: true
-    });
+    const result = await uploadAudioToStorage(file, props.collection.id);
 
     const suggestedTitle = file.name.replace(/\.[^/.]+$/, "");
 
     emit("upload-success", {
+      key: result.key,
       url: result.url,
       suggestedTitle,
       peaks

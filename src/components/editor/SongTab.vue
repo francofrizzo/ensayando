@@ -31,7 +31,7 @@ import {
   updateAudioTrack,
   updateSongBasicInfo
 } from "@/data/supabase";
-import { removeUnreferencedAudioFiles } from "@/data/storage";
+import { audioPlaybackUrl, deleteAudioFile } from "@/data/storage";
 import type { AudioTrack, TrackPeaks } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
@@ -63,7 +63,7 @@ const peaksGeneratingIndex = ref<number | null>(null);
 const draggingTrackId = ref<number | null>(null);
 const trackDragDepths = new Map<number, number>();
 const audioUploaderRefs = new Map<number, { uploadDroppedFile: (file: File) => Promise<void> }>();
-const pendingUploadUrls = new Set<string>();
+const pendingUploadKeys = new Set<string>();
 const errors = reactive({
   title: "",
   slug: "",
@@ -116,6 +116,7 @@ const createNewTrack = (): AudioTrack => {
     title: "",
     color_key: defaultColorKey,
     audio_file_url: "",
+    audio_file_key: null,
     peaks: null,
     order: newOrder,
     created_at: new Date().toISOString()
@@ -150,13 +151,13 @@ const addAudioTrack = () => {
   formData.audio_tracks = [...formData.audio_tracks, createNewTrack()];
 };
 
-const removeAudioTrack = (index: number) => {
-  const removedUrl = formData.audio_tracks[index]?.audio_file_url;
+const removeAudioTrack = async (index: number) => {
+  const track = formData.audio_tracks[index];
   formData.audio_tracks = formData.audio_tracks.filter((_, i) => i !== index);
   reorderTracks();
 
-  if (removedUrl && pendingUploadUrls.has(removedUrl)) {
-    void cleanupUploadedFiles([removedUrl]);
+  if (track?.audio_file_key && pendingUploadKeys.has(track.audio_file_key)) {
+    await cleanupUploadedFiles([track.audio_file_key]);
   }
 };
 
@@ -188,11 +189,13 @@ const handleTrackTitleInput = (index: number, event: Event) => {
 
 const handleTrackUrlInput = (index: number, event: Event) => {
   const value = (event.target as HTMLInputElement).value;
-  const previousUrl = formData.audio_tracks[index]?.audio_file_url;
+  const previousKey = formData.audio_tracks[index]?.audio_file_key;
   updateTrackField(index, "audio_file_url", value);
+  updateTrackField(index, "audio_file_key", null);
+  updateTrackField(index, "playback_url", value);
 
-  if (previousUrl && previousUrl !== value && pendingUploadUrls.has(previousUrl)) {
-    void cleanupUploadedFiles([previousUrl]);
+  if (previousKey && pendingUploadKeys.has(previousKey)) {
+    void cleanupUploadedFiles([previousKey]);
   }
 };
 
@@ -246,14 +249,16 @@ const handleTrackDrop = async (trackId: number, event: DragEvent) => {
 
 const handleUploadSuccess = (
   index: number,
-  data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }
+  data: { key: string; url: string; suggestedTitle: string; peaks: TrackPeaks | null }
 ) => {
-  const previousUrl = formData.audio_tracks[index]?.audio_file_url;
-  pendingUploadUrls.add(data.url);
-  updateTrackField(index, "audio_file_url", data.url);
+  const previousKey = formData.audio_tracks[index]?.audio_file_key;
+  pendingUploadKeys.add(data.key);
+  updateTrackField(index, "audio_file_url", "");
+  updateTrackField(index, "audio_file_key", data.key);
+  updateTrackField(index, "playback_url", data.url);
 
-  if (previousUrl && previousUrl !== data.url && pendingUploadUrls.has(previousUrl)) {
-    void cleanupUploadedFiles([previousUrl]);
+  if (previousKey && previousKey !== data.key && pendingUploadKeys.has(previousKey)) {
+    void cleanupUploadedFiles([previousKey]);
   }
 
   const track = formData.audio_tracks[index];
@@ -271,11 +276,11 @@ const showAdvancedOptions = ref(false);
 
 const handleGeneratePeaks = async (index: number) => {
   const track = formData.audio_tracks[index];
-  if (!track?.audio_file_url) return;
+  if (!track || !audioPlaybackUrl(track)) return;
 
   peaksGeneratingIndex.value = index;
   try {
-    const response = await fetch(track.audio_file_url, { cache: "no-store" });
+    const response = await fetch(audioPlaybackUrl(track), { cache: "no-store" });
     const blob = await response.blob();
     const filename = track.title ? `${track.title}.audio` : `track-${track.id}.audio`;
     const file = new File([blob], filename, { type: blob.type || "audio/mpeg" });
@@ -298,18 +303,22 @@ const validateForm = () => {
   return result.isValid;
 };
 
-const cleanupUploadedFiles = async (urls: string[]) => {
-  try {
-    await removeUnreferencedAudioFiles(urls);
-    urls.forEach((url) => pendingUploadUrls.delete(url));
-  } catch (error) {
-    console.error("Error cleaning up audio files:", error);
-    toast.warning("No se pudieron limpiar algunos archivos de audio sin uso");
-  }
+const cleanupUploadedFiles = async (keys: string[]) => {
+  await Promise.all(
+    [...new Set(keys)].map(async (key) => {
+      try {
+        await deleteAudioFile(key);
+        pendingUploadKeys.delete(key);
+      } catch (error) {
+        console.error("Error cleaning up audio file:", error);
+        toast.warning("No se pudo limpiar un archivo de audio sin uso");
+      }
+    })
+  );
 };
 
 const cleanupPendingUploads = async () => {
-  await cleanupUploadedFiles([...pendingUploadUrls]);
+  await cleanupUploadedFiles([...pendingUploadKeys]);
 };
 
 // Mode management
@@ -338,6 +347,7 @@ const saveAudioTracks = async (songId: number) => {
       title: track.title,
       color_key: track.color_key,
       audio_file_url: track.audio_file_url,
+      audio_file_key: track.audio_file_key ?? null,
       peaks: track.peaks ?? null,
       order: track.order
     };
@@ -358,8 +368,20 @@ const updateExistingTracks = async () => {
 
   // Delete removed tracks
   if (tracksToDelete.length > 0) {
+    const removedStorageKeys = currentSong.value.audio_tracks
+      .filter((track) => tracksToDelete.includes(track.id))
+      .flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []));
     const { error } = await deleteAudioTracks(tracksToDelete);
     if (error) throw error;
+    await Promise.all(
+      removedStorageKeys.map(async (key) => {
+        try {
+          await deleteAudioFile(key);
+        } catch (storageError) {
+          console.error("Error deleting audio file:", storageError);
+        }
+      })
+    );
   }
 
   // Update existing tracks
@@ -368,7 +390,14 @@ const updateExistingTracks = async () => {
     if (!originalTrack) continue;
 
     const updateData: Partial<AudioTrack> = {};
-    const fieldsToCheck = ["title", "color_key", "audio_file_url", "order", "peaks"] as const;
+    const fieldsToCheck = [
+      "title",
+      "color_key",
+      "audio_file_url",
+      "audio_file_key",
+      "order",
+      "peaks"
+    ] as const;
 
     fieldsToCheck.forEach((field) => {
       if (track[field] !== originalTrack[field]) {
@@ -412,7 +441,9 @@ const handleCreateSong = async () => {
 
     const newSong = newSongData[0];
     await saveAudioTracks(newSong.id);
-    formData.audio_tracks.forEach((track) => pendingUploadUrls.delete(track.audio_file_url));
+    formData.audio_tracks.forEach((track) => {
+      if (track.audio_file_key) pendingUploadKeys.delete(track.audio_file_key);
+    });
     await cleanupPendingUploads();
     await collectionsStore.fetchSongsByCollectionId(currentCollection.value.id);
 
@@ -454,13 +485,17 @@ const handleUpdateSong = async () => {
     if (songError) throw songError;
 
     await updateExistingTracks();
-    const activeUrls = new Set(formData.audio_tracks.map((track) => track.audio_file_url));
-    const replacedOrRemovedUrls = currentSong.value.audio_tracks
-      .map((track) => track.audio_file_url)
-      .filter((url) => !activeUrls.has(url));
-    activeUrls.forEach((url) => pendingUploadUrls.delete(url));
+    const activeKeys = new Set(
+      formData.audio_tracks.flatMap((track) =>
+        track.audio_file_key ? [track.audio_file_key] : []
+      )
+    );
+    const replacedOrRemovedKeys = currentSong.value.audio_tracks
+      .flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []))
+      .filter((key) => !activeKeys.has(key));
+    activeKeys.forEach((key) => pendingUploadKeys.delete(key));
     await cleanupPendingUploads();
-    await cleanupUploadedFiles(replacedOrRemovedUrls);
+    await cleanupUploadedFiles(replacedOrRemovedKeys);
     await collectionsStore.fetchSongsByCollectionId(currentSong.value.collection_id);
 
     toast.success("Canción actualizada correctamente");
@@ -766,16 +801,22 @@ defineExpose({
                   <div class="flex w-full items-center gap-2">
                     <AudioTrackUploader
                       v-if="currentCollection"
+<<<<<<< HEAD
                       :ref="(instance) => setAudioUploaderRef(track.id, instance)"
                       :track="formData.audio_tracks[track.renderIndex]!"
+=======
+>>>>>>> 8fc8e78 (feat(storage): route media through private R2)
                       :collection="currentCollection"
-                      :song="currentSong || { slug: formData.slug }"
                       :disabled="!formData.slug && isCreateMode"
                       @upload-start="handleUploadStart(track.renderIndex)"
                       @upload-end="handleUploadEnd"
                       @upload-success="
-                        (data: { url: string; suggestedTitle: string; peaks: TrackPeaks | null }) =>
-                          handleUploadSuccess(track.renderIndex, data)
+                        (data: {
+                          key: string;
+                          url: string;
+                          suggestedTitle: string;
+                          peaks: TrackPeaks | null;
+                        }) => handleUploadSuccess(track.renderIndex, data)
                       "
                     />
                     <span class="text-base-content/50 mr-auto hidden text-xs sm:inline">
@@ -794,7 +835,7 @@ defineExpose({
                             : 'btn-soft'
                         "
                         :disabled="
-                          !formData.audio_tracks[track.renderIndex]!.audio_file_url ||
+                          !audioPlaybackUrl(formData.audio_tracks[track.renderIndex]!) ||
                           peaksGeneratingIndex === track.renderIndex
                         "
                         @click="handleGeneratePeaks(track.renderIndex)"

@@ -10,6 +10,8 @@ export type Collection = {
   main_color: string;
   track_colors: Record<string, string>;
   artwork_file_url: string | null;
+  artwork_file_key?: string | null;
+  artwork_playback_url?: string;
   visibility: CollectionVisibility;
   created_at: string;
 };
@@ -37,6 +39,8 @@ export type AudioTrack = {
   title: string;
   color_key: string;
   audio_file_url: string;
+  audio_file_key?: string | null;
+  playback_url?: string;
   peaks: TrackPeaks | null;
   order: number | null;
   created_at: string;

@@ -6,6 +6,7 @@ import type WaveSurfer from "wavesurfer.js";
 import type { WaveSurferOptions } from "wavesurfer.js";
 
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
+import { audioPlaybackUrl } from "@/data/storage";
 import { useLongPress } from "@/composables/useLongPress";
 import { darken, lighten } from "@/utils/color-utils";
 import { isIOS } from "@/utils/platform";
@@ -42,7 +43,7 @@ const waveSurfer = ref<WaveSurfer | null>(null);
 const hasBegunLoad = ref(false);
 const currentUrl = ref<string | null>(null);
 if (!props.deferLoad) {
-  currentUrl.value = props.track.audio_file_url;
+  currentUrl.value = audioPlaybackUrl(props.track);
 }
 const muteButton = useLongPress({
   tap: (shift) => emit("toggle-muted", shift),
@@ -87,9 +88,10 @@ defineExpose({
   beginLoad: () => {
     if (hasBegunLoad.value) return;
     hasBegunLoad.value = true;
-    currentUrl.value = props.track.audio_file_url;
+    const url = audioPlaybackUrl(props.track);
+    currentUrl.value = url;
     // WaveSurferPlayer doesn't watch for option changes, so we must call load() explicitly
-    waveSurfer.value?.load(props.track.audio_file_url);
+    waveSurfer.value?.load(url);
   }
 });
 

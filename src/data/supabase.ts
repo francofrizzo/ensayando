@@ -183,7 +183,12 @@ export const insertAudioTrack = async (
 
 export const updateAudioTrack = async (
   trackId: number,
-  updates: Partial<Pick<AudioTrack, "title" | "color_key" | "audio_file_url" | "order" | "peaks">>
+  updates: Partial<
+    Pick<
+      AudioTrack,
+      "title" | "color_key" | "audio_file_url" | "audio_file_key" | "order" | "peaks"
+    >
+  >
 ): Promise<PostgrestSingleResponse<AudioTrack[]>> => {
   return await supabase.from("audio_tracks").update(updates).eq("id", trackId).select();
 };

@@ -3,6 +3,7 @@ import { computed, ref, toRaw, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import * as supabase from "@/data/supabase";
+import { resolveAudioTrackUrls, resolveCollectionArtwork } from "@/data/storage";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 
@@ -116,7 +117,16 @@ export const useCollectionsStore = defineStore("collections", () => {
     isLoadingCollections.value = true;
     const { data, error } = await supabase.fetchCollections();
     if (!error) {
-      collections.value = data;
+      collections.value = await Promise.all(
+        data.map(async (collection) => {
+          try {
+            return (await resolveCollectionArtwork(collection)) as CollectionWithRole;
+          } catch (storageError) {
+            console.error(storageError);
+            return collection;
+          }
+        })
+      );
     } else {
       console.error(error);
     }
@@ -135,7 +145,13 @@ export const useCollectionsStore = defineStore("collections", () => {
     if (error) {
       console.error(error);
     } else if (data && !collections.value.some((c) => c.id === data.id)) {
-      collections.value.push({ ...data, user_role: "viewer" });
+      let collection = data;
+      try {
+        collection = await resolveCollectionArtwork(data);
+      } catch (storageError) {
+        console.error(storageError);
+      }
+      collections.value.push({ ...collection, user_role: "viewer" });
     }
     isLoadingCollections.value = false;
   }
@@ -144,7 +160,18 @@ export const useCollectionsStore = defineStore("collections", () => {
     isLoadingSongs.value = true;
     const { data, error } = await supabase.fetchSongsByCollectionId(collectionId);
     if (!error) {
-      songs.value = data;
+      const sourceTracks = data.flatMap((song) => song.audio_tracks);
+      let tracks = sourceTracks;
+      try {
+        tracks = await resolveAudioTrackUrls(sourceTracks);
+      } catch (storageError) {
+        console.error(storageError);
+      }
+      const tracksById = new Map(tracks.map((track) => [track.id, track]));
+      songs.value = data.map((song) => ({
+        ...song,
+        audio_tracks: song.audio_tracks.map((track) => tracksById.get(track.id) ?? track)
+      }));
       songsCollectionId.value = collectionId;
     } else {
       console.error(error);

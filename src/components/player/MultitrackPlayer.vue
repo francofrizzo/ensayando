@@ -19,6 +19,7 @@ import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 import type WaveSurfer from "wavesurfer.js";
 import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
+import { artworkPlaybackUrl, audioPlaybackUrl } from "@/data/storage";
 import { useUIStore } from "@/stores/ui";
 import { mixAndEncodeMp3 } from "../../utils/mixdown";
 
@@ -339,7 +340,7 @@ const onDownloadMix = async () => {
   const toastId = toast.loading("Generando audio para descargar...");
 
   try {
-    const urls = sortedTracks.value.map((t) => t.audio_file_url || null);
+    const urls = sortedTracks.value.map((track) => audioPlaybackUrl(track) || null);
     const gains = state.trackStates.value.map((s) => Math.max(0, Math.min(1, s.volume ?? 0)));
     const sampleRate = audioContext.value?.sampleRate ?? 44100;
     const duration = state.totalDuration.value;
@@ -491,7 +492,7 @@ const mediaSessionOptions = computed(() => ({
   title: props.song.title,
   artist: "",
   album: props.collection.title,
-  artwork: props.collection.artwork_file_url || "",
+  artwork: artworkPlaybackUrl(props.collection),
   duration: state.totalDuration.value
 }));
 

@@ -1,108 +1,126 @@
+import type { AudioTrack, Collection } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
 
 export type UploadResult = {
+  key: string;
   url: string;
   filename: string;
   size: number;
 };
 
-const AUDIO_BUCKET = "audio-files";
+type StorageAction = Record<string, unknown> & { action: string };
 
-const generateRandomSuffix = (): string => {
-  return Math.random().toString(36).substring(2, 8);
+const CONTENT_TYPES_BY_EXTENSION: Record<string, string> = {
+  aac: "audio/aac",
+  flac: "audio/flac",
+  m4a: "audio/x-m4a",
+  mp3: "audio/mpeg",
+  ogg: "audio/ogg",
+  wav: "audio/wav"
 };
 
-/**
- * Uploads a file to Supabase Storage
- * This is completely client-side and handles authentication through Supabase
- */
-export const uploadFile = async (
-  file: File,
-  filename: string,
-  options: {
-    bucket: string;
-    addRandomSuffix?: boolean;
+async function storageRequest<T>(body: StorageAction): Promise<T> {
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+  const response = await fetch("/api/storage", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error || `Error de almacenamiento (${response.status})`);
   }
-): Promise<UploadResult> => {
-  try {
-    const bucketName = options.bucket;
 
-    // Generate final filename
-    let finalFilename = filename || file.name;
-    if (options?.addRandomSuffix) {
-      const extension = finalFilename.split(".").pop();
-      const nameWithoutExt = finalFilename.substring(0, finalFilename.lastIndexOf("."));
-      finalFilename = `${nameWithoutExt}-${generateRandomSuffix()}.${extension}`;
-    }
+  return (response.status === 204 ? undefined : await response.json()) as T;
+}
 
-    const { data, error } = await supabase.storage.from(bucketName).upload(finalFilename, file, {
-      cacheControl: "3600",
-      upsert: false
+function contentTypeForAudio(file: File): string {
+  if (file.type) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return CONTENT_TYPES_BY_EXTENSION[extension] ?? "application/octet-stream";
+}
+
+export async function uploadAudioFile(file: File, collectionId: number): Promise<UploadResult> {
+  const contentType = contentTypeForAudio(file);
+  const signed = await storageRequest<{
+    key: string;
+    url: string;
+    headers: Record<string, string>;
+  }>({
+    action: "sign-upload",
+    fileType: "audio",
+    collectionId,
+    filename: file.name,
+    contentType,
+    size: file.size
+  });
+
+  const upload = await fetch(signed.url, {
+    method: "PUT",
+    headers: signed.headers,
+    body: file
+  });
+  if (!upload.ok) {
+    throw new Error(`R2 rechazó la carga (${upload.status})`);
+  }
+
+  const completed = await storageRequest<{ url: string; size: number }>({
+    action: "complete-upload",
+    fileType: "audio",
+    key: signed.key
+  });
+
+  return {
+    key: signed.key,
+    url: completed.url,
+    filename: file.name,
+    size: completed.size
+  };
+}
+
+export async function resolveAudioTrackUrls(tracks: AudioTrack[]): Promise<AudioTrack[]> {
+  const r2Tracks = tracks.filter((track) => track.audio_file_key);
+  if (r2Tracks.length === 0) return tracks;
+
+  const urls: Record<string, string> = {};
+  for (let index = 0; index < r2Tracks.length; index += 100) {
+    const batch = r2Tracks.slice(index, index + 100);
+    const result = await storageRequest<{ urls: Record<string, string> }>({
+      action: "download-audio",
+      trackIds: batch.map((track) => track.id)
     });
-
-    if (error) {
-      throw new Error(`Supabase upload error: ${error.message}`);
-    }
-
-    const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl(data.path);
-
-    return {
-      url: publicUrlData.publicUrl,
-      filename: data.path,
-      size: file.size
-    };
-  } catch (error) {
-    console.error("Upload failed:", error);
-    throw new Error(
-      `Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+    Object.assign(urls, result.urls);
   }
-};
 
-export const getPublicStoragePath = (
-  url: string,
-  bucket: string,
-  expectedOrigin: string
-): string | null => {
-  try {
-    const parsedUrl = new URL(url);
-    const marker = `/storage/v1/object/public/${bucket}/`;
-    const markerIndex = parsedUrl.pathname.indexOf(marker);
+  return tracks.map((track) => ({
+    ...track,
+    playback_url: urls[String(track.id)] ?? track.audio_file_url
+  }));
+}
 
-    if (parsedUrl.origin !== expectedOrigin || markerIndex === -1) return null;
+export async function resolveCollectionArtwork(collection: Collection): Promise<Collection> {
+  if (!collection.artwork_file_key) return collection;
+  const { url } = await storageRequest<{ url: string }>({
+    action: "download-artwork",
+    collectionId: collection.id
+  });
+  return { ...collection, artwork_playback_url: url };
+}
 
-    return decodeURIComponent(parsedUrl.pathname.slice(markerIndex + marker.length));
-  } catch {
-    return null;
-  }
-};
+export function audioPlaybackUrl(track: AudioTrack): string {
+  return track.playback_url || track.audio_file_url;
+}
 
-export const removeUnreferencedAudioFiles = async (urls: string[]): Promise<void> => {
-  const uniqueUrls = [...new Set(urls.filter(Boolean))];
-  const storage = supabase.storage.from(AUDIO_BUCKET);
-  const storageOrigin = new URL(storage.getPublicUrl("").data.publicUrl).origin;
-  const pathsByUrl = new Map(
-    uniqueUrls
-      .map((url) => [url, getPublicStoragePath(url, AUDIO_BUCKET, storageOrigin)] as const)
-      .filter((entry): entry is readonly [string, string] => entry[1] !== null)
-  );
+export function artworkPlaybackUrl(collection: Collection): string {
+  return collection.artwork_playback_url || collection.artwork_file_url || "";
+}
 
-  if (pathsByUrl.size === 0) return;
-
-  const { data: referencedTracks, error: referenceError } = await supabase
-    .from("audio_tracks")
-    .select("audio_file_url")
-    .in("audio_file_url", [...pathsByUrl.keys()]);
-
-  if (referenceError) throw referenceError;
-
-  const referencedUrls = new Set(referencedTracks.map((track) => track.audio_file_url));
-  const pathsToRemove = [...pathsByUrl]
-    .filter(([url]) => !referencedUrls.has(url))
-    .map(([, path]) => path);
-
-  if (pathsToRemove.length === 0) return;
-
-  const { error } = await storage.remove(pathsToRemove);
-  if (error) throw error;
-};
+export async function deleteAudioFile(key: string): Promise<void> {
+  await storageRequest<void>({ action: "delete", fileType: "audio", key });
+}
