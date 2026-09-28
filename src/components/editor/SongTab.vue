@@ -368,20 +368,8 @@ const updateExistingTracks = async () => {
 
   // Delete removed tracks
   if (tracksToDelete.length > 0) {
-    const removedStorageKeys = currentSong.value.audio_tracks
-      .filter((track) => tracksToDelete.includes(track.id))
-      .flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []));
     const { error } = await deleteAudioTracks(tracksToDelete);
     if (error) throw error;
-    await Promise.all(
-      removedStorageKeys.map(async (key) => {
-        try {
-          await deleteAudioFile(key);
-        } catch (storageError) {
-          console.error("Error deleting audio file:", storageError);
-        }
-      })
-    );
   }
 
   // Update existing tracks
@@ -801,11 +789,7 @@ defineExpose({
                   <div class="flex w-full items-center gap-2">
                     <AudioTrackUploader
                       v-if="currentCollection"
-<<<<<<< HEAD
                       :ref="(instance) => setAudioUploaderRef(track.id, instance)"
-                      :track="formData.audio_tracks[track.renderIndex]!"
-=======
->>>>>>> 8fc8e78 (feat(storage): route media through private R2)
                       :collection="currentCollection"
                       :disabled="!formData.slug && isCreateMode"
                       @upload-start="handleUploadStart(track.renderIndex)"
