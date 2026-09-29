@@ -10,7 +10,7 @@ import {
   IconUpload
 } from "@/components/ui/icons";
 import type { AudioTrack } from "@/data/types";
-import { formatBytes, formatDuration } from "@/utils/songForm";
+import { formatBytes, formatDuration, storedFileName } from "@/utils/songForm";
 
 export type TrackUploadState =
   | { state: "uploading"; progress: number; fileName: string }
@@ -71,8 +71,8 @@ const hasAudio = computed(() => !!(props.track.audio_file_key || props.track.aud
 const fileLabel = computed(() => {
   if (props.upload) return props.upload.fileName;
   if (props.fileInfo) return props.fileInfo.name;
-  if (props.track.audio_file_key) return "Audio guardado";
-  if (props.track.audio_file_url) return "Audio por URL";
+  const stored = props.track.audio_file_key || props.track.audio_file_url;
+  if (stored) return storedFileName(stored) ?? "Audio cargado";
   return null;
 });
 

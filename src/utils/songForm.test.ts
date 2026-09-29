@@ -8,6 +8,7 @@ import {
   moveItem,
   nextColorKey,
   songFormChanges,
+  storedFileName,
   titlesFromFilenames,
   tracksWithoutAudio,
   withOrder
@@ -123,5 +124,22 @@ describe("tracksWithoutAudio", () => {
     const empty = track(3, { audio_file_key: null, audio_file_url: "" });
     const byUrl = track(4, { audio_file_key: null, audio_file_url: "https://x/a.mp3" });
     expect(tracksWithoutAudio([track(1), empty, byUrl])).toEqual([empty]);
+  });
+});
+
+describe("storedFileName", () => {
+  it("shows the format for uploads saved under a random name", () => {
+    expect(storedFileName("audio/12/3f2c9a1e-8b7d-4c6e-9f10-2a3b4c5d6e7f.mp3")).toBe("Audio MP3");
+  });
+
+  it("keeps a readable file name from an old URL", () => {
+    expect(storedFileName("https://cdn.example.com/voces/Voz%201%20-%20soprano.wav?x=1")).toBe(
+      "Voz 1 - soprano.wav"
+    );
+  });
+
+  it("returns null when there is nothing readable", () => {
+    expect(storedFileName("audio/12/3f2c9a1e-8b7d-4c6e-9f10-2a3b4c5d6e7f")).toBeNull();
+    expect(storedFileName("https://cdn.example.com/")).toBeNull();
   });
 });

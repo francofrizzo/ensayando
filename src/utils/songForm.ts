@@ -154,3 +154,24 @@ export function songFormChanges(
 /** Tracks that can't be saved because they have no audio yet. */
 export const tracksWithoutAudio = (tracks: readonly AudioTrack[]) =>
   tracks.filter((track) => !track.audio_file_key && !track.audio_file_url);
+
+const UUID_NAME = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+
+// Label for audio that's already stored. Uploads are saved under random names, so
+// the original file name is gone: show the format instead ("Audio MP3"). Old URLs
+// with a readable file name keep it.
+export function storedFileName(path: string): string | null {
+  const last = path.split("?")[0]!.split("#")[0]!.split("/").pop() ?? "";
+  let name = last;
+  try {
+    name = decodeURIComponent(last);
+  } catch {
+    // keep the raw segment
+  }
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const extension = dot > 0 ? name.slice(dot + 1).toUpperCase() : "";
+  if (!base) return null;
+  if (UUID_NAME.test(base)) return extension ? `Audio ${extension}` : null;
+  return name;
+}

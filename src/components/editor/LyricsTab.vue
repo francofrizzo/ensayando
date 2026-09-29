@@ -341,11 +341,6 @@ defineExpose({
           class="border-base-content/10 flex flex-col gap-0.5 border-dashed pb-3 not-first:mt-2 not-first:border-t not-first:pt-3"
           :data-stanza="i"
         >
-          <h4
-            class="text-base-content/40 pb-1 pl-11 text-[10.5px] font-semibold tracking-[0.12em] uppercase"
-          >
-            Estrofa {{ i + 1 }}
-          </h4>
 
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <LyricsVerseRow

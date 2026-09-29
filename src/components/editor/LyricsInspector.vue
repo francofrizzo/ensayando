@@ -56,21 +56,8 @@ const summary = computed(() =>
   )
 );
 
-/** "Estrofa 2 · verso 1 · “Vidala, vidala”". */
-const where = computed(() => {
-  const position = single.value;
-  if (!position) return "";
-  const stanza = props.lyrics[position.stanzaIndex] ?? [];
-  let number = 0;
-  for (let i = 0; i < position.itemIndex; i++) {
-    const item = stanza[i];
-    number += Array.isArray(item) ? Math.max(...item.map((c) => c.length), 1) : 1;
-  }
-  number += (position.lineIndex ?? 0) + 1;
-  const column = position.columnIndex !== undefined ? ` · columna ${position.columnIndex + 1}` : "";
-  const text = verse.value?.text.trim();
-  return `Estrofa ${position.stanzaIndex + 1} · verso ${number}${column}${text ? ` · “${text}”` : ""}`;
-});
+/** The selected verse's own text, as the panel title. */
+const verseTitle = computed(() => verse.value?.text.trim() || "Verso sin texto");
 
 const colorOrder = (key: string) => {
   const keys = verse.value?.color_keys ?? [];
@@ -138,8 +125,8 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
   >
     <div class="flex items-start gap-3 px-4 pt-4 pb-3">
       <div class="min-w-0 flex-1">
-        <h3 class="font-display text-[17px] leading-tight font-bold">
-          {{ selection.length > 1 ? `${selection.length} versos seleccionados` : "Verso" }}
+        <h3 class="font-display line-clamp-3 text-[17px] leading-tight font-bold">
+          {{ selection.length > 1 ? `${selection.length} versos seleccionados` : verseTitle }}
         </h3>
         <p
           v-if="selection.length > 1"
@@ -158,9 +145,6 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
           <IconCopy class="size-3.5 shrink-0" />
           <span class="truncate">Copiar colores y pistas de “{{ anchorText }}”</span>
         </button>
-        <p v-else-if="single" class="text-base-content/55 mt-1 truncate text-[12.5px]">
-          {{ where }}
-        </p>
       </div>
       <button
         v-if="sheet"

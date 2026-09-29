@@ -741,12 +741,7 @@ defineExpose({ isDirty, enterCreateMode });
       <!-- Tracks -->
       <section class="flex flex-col gap-3" aria-labelledby="song-tracks">
         <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col gap-1">
-            <h2 id="song-tracks" class="font-display text-lg font-bold">Pistas</h2>
-            <p class="text-base-content/60 text-[13px]">
-              El orden de acá es el orden de la mezcladora. Arrastrá desde la manija para cambiarlo.
-            </p>
-          </div>
+          <h2 id="song-tracks" class="font-display text-lg font-bold">Pistas</h2>
           <button
             type="button"
             class="btn btn-sm bg-base-content/7 hover:bg-base-content/12 shrink-0 gap-1.5 rounded-full border-0 font-semibold shadow-none"
@@ -802,7 +797,7 @@ defineExpose({ isDirty, enterCreateMode });
           class="rounded-box flex flex-col items-center gap-2 border-2 border-dashed px-4 py-6 text-center transition-colors"
           :class="
             dropzoneOver
-              ? 'border-primary bg-primary/10'
+              ? 'border-collection-ink bg-primary/10'
               : 'border-base-content/15 hover:border-base-content/30'
           "
           data-testid="track-dropzone"

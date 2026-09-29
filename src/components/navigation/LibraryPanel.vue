@@ -115,8 +115,6 @@ const songRoute = (collection: CollectionWithRole, song: Pick<Song, "slug">) => 
 const otherCollections = computed(() =>
   collectionsStore.collections.filter((collection) => collection.id !== currentCollection.value?.id)
 );
-const songCount = (collection: CollectionWithRole) =>
-  songIndex.countByCollection.get(collection.id);
 
 // ---------- actions ----------
 
@@ -326,15 +324,10 @@ const signIn = () => {
                     <span class="truncate">{{ collection.title }}</span>
                     <component
                       :is="visibilityIcon[collection.visibility]"
-                      class="text-base-content/45 size-3.5 shrink-0"
+                      class="text-base-content/45 ml-auto size-3.5 shrink-0"
                       :aria-label="VISIBILITY_LABELS[collection.visibility]"
                       role="img"
                     />
-                    <small
-                      v-if="songCount(collection) !== undefined"
-                      class="text-base-content/45 ml-auto shrink-0 text-xs"
-                      >{{ songCount(collection) }}</small
-                    >
                   </RouterLink>
                 </li>
               </ul>
@@ -377,15 +370,10 @@ const signIn = () => {
                   <span class="truncate">{{ collection.title }}</span>
                   <component
                     :is="visibilityIcon[collection.visibility]"
-                    class="text-base-content/45 size-3.5 shrink-0"
+                    class="text-base-content/45 ml-auto size-3.5 shrink-0"
                     :aria-label="VISIBILITY_LABELS[collection.visibility]"
                     role="img"
                   />
-                  <small
-                    v-if="songCount(collection) !== undefined"
-                    class="text-base-content/45 ml-auto shrink-0 text-xs"
-                    >{{ songCount(collection) }}</small
-                  >
                 </RouterLink>
               </li>
             </ul>
