@@ -112,6 +112,14 @@ function onCollectionUpdated(updated: Collection) {
   }
 }
 
+// The songs in the store belong to this collection (not a previous one still loading).
+const songsLoaded = computed(
+  () =>
+    !!collection.value &&
+    collectionsStore.songsCollectionId === collection.value.id &&
+    !collectionsStore.isLoading
+);
+
 const userInitials = computed(() => initials(authStore.username ?? "?"));
 </script>
 
@@ -234,6 +242,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             :key="`colors-${collection.id}`"
             :collection="collection"
             :songs="collectionsStore.songs"
+            :songs-loaded="songsLoaded"
             @updated="onCollectionUpdated"
             @songs-changed="collectionsStore.fetchSongsByCollectionId(collection.id, { background: true })"
           />

@@ -26,10 +26,16 @@ import {
   deriveColor,
   type Intensity,
   isNeutral,
+  normalizeHue,
   resolveCollectionPalette
 } from "@/utils/palette";
 
-const props = defineProps<{ collection: CollectionWithRole; songs: Song[] }>();
+const props = defineProps<{
+  collection: CollectionWithRole;
+  songs: Song[];
+  /** Whether `songs` are this collection's: until then usage (and removals) can't be known. */
+  songsLoaded: boolean;
+}>();
 const emit = defineEmits<{ updated: [collection: CollectionWithRole]; "songs-changed": [] }>();
 
 const { resolvedTheme } = useTheme();
@@ -152,6 +158,8 @@ function addColor() {
 }
 
 function removeRow(row: Row) {
+  // Without the songs we can't tell whether a color is in use (and needs a replacement).
+  if (!props.songsLoaded) return;
   const inUse = (usageFor(row)?.tracks ?? 0) + (usageFor(row)?.verses ?? 0) > 0;
   rows.value = rows.value.filter((r) => r !== row);
   if (row.originalKey && inUse) {
@@ -205,6 +213,7 @@ const saveLabel = computed(() => {
 
 const blocked = computed(
   () =>
+    !props.songsLoaded ||
     Object.keys(keyErrors.value).length > 0 ||
     removed.value.some((r) => !rows.value.some((row) => row.key === r.replacement))
 );
@@ -242,6 +251,23 @@ async function save() {
   } finally {
     saving.value = false;
   }
+}
+
+// Typed hues are rounded and wrapped into 0–359 (400 → 40); an empty field keeps the value.
+function readHue(event: Event): number | null {
+  const raw = (event.target as HTMLInputElement).value;
+  const value = Number(raw);
+  return raw.trim() === "" || !Number.isFinite(value) ? null : normalizeHue(value);
+}
+function onMainHueInput(event: Event) {
+  const hue = readHue(event);
+  if (hue !== null) mainHue.value = hue;
+  (event.target as HTMLInputElement).value = String(mainHue.value);
+}
+function onRowHueInput(row: Row, event: Event) {
+  const hue = readHue(event);
+  if (hue !== null) setHue(row, hue);
+  else if (!isNeutral(row.spec)) (event.target as HTMLInputElement).value = String(row.spec.hue);
 }
 
 function discard() {
@@ -342,12 +368,14 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               <HueSlider v-model="mainHue" :intensity="mainIntensity" label="Tono del color principal" />
             </div>
             <input
-              v-model.number="mainHue"
+              :value="mainHue"
               type="number"
               min="0"
               max="359"
               class="input input-sm no-spinner w-20 font-mono"
               aria-label="Tono en grados"
+              :disabled="!songsLoaded"
+              @change="onMainHueInput"
             />
           </div>
           <div class="flex flex-col gap-1.5">
@@ -381,6 +409,8 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
             <button
               class="btn btn-ghost btn-sm btn-square text-error"
               aria-label="Quitar color"
+              :disabled="!songsLoaded"
+              :title="songsLoaded ? undefined : 'Esperá a que carguen las canciones'"
               @click="removeRow(selectedRow)"
             >
               <IconTrash class="size-4" />
@@ -416,7 +446,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               class="input input-sm no-spinner w-20 font-mono"
               aria-label="Tono en grados"
               :disabled="isNeutral(selectedRow.spec)"
-              @change="setHue(selectedRow, Number(($event.target as HTMLInputElement).value) % 360)"
+              @change="onRowHueInput(selectedRow, $event)"
             />
           </div>
           <div class="flex flex-wrap items-center justify-between gap-3">

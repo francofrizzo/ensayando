@@ -102,16 +102,21 @@ async function uploadArtwork(file: File | undefined) {
   }
   uploading.value = true;
   const previousKey = props.collection.artwork_file_key;
+  let uploadedKey: string | null = null;
   try {
     const uploaded = await uploadArtworkFile(file, props.collection.id);
+    uploadedKey = uploaded.key;
     const updated = await updateCollection(props.collection.id, {
       artwork_file_key: uploaded.key,
       artwork_file_url: null
     });
+    uploadedKey = null;
     emit("updated", { ...props.collection, ...updated, artwork_playback_url: uploaded.url });
     if (previousKey) await deleteArtworkFile(previousKey).catch(() => undefined);
     toast.success("Portada actualizada");
   } catch (e) {
+    // Uploaded but not saved on the collection: don't leave the file behind.
+    if (uploadedKey) await deleteArtworkFile(uploadedKey).catch(() => undefined);
     toast.error(`No se pudo subir la portada. ${(e as Error).message}`);
   } finally {
     uploading.value = false;

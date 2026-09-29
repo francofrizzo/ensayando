@@ -81,7 +81,8 @@ export const deriveColor = (
 
 // ---------- legacy values ----------
 
-const normalizeHue = (hue: number) => ((Math.round(hue) % 360) + 360) % 360;
+/** A whole hue in [0, 360). */
+export const normalizeHue = (hue: number) => ((Math.round(hue) % 360) + 360) % 360;
 
 const isIntensity = (value: unknown): value is Intensity =>
   value === "suave" || value === "normal" || value === "intensa";
