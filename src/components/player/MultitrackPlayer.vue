@@ -115,7 +115,10 @@ providePlayerState({
   totalDuration: state.totalDuration,
   isPlaying: state.playing,
   isReady,
-  seekTo: (time: number) => onSeekToTime(time)
+  seekTo: (time: number) => onSeekToTime(time),
+  playPause: (play?: boolean) => {
+    if (play === undefined || play !== state.playing.value) void onPlayPause(play);
+  }
 });
 // Cleanup and reset when switching songs to prevent lingering decoders/buffers
 watch(
@@ -944,8 +947,10 @@ const initializeAudioContext = async () => {
       </p>
     </div>
 
-    <!-- Dock (desktop) / sheet (phone) -->
+    <!-- Dock (desktop) / sheet (phone). Sincronizar brings its own transport, so it hides
+         (v-show: the track players inside must stay mounted to keep playing). -->
     <div
+      v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar')"
       class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
       data-testid="player-dock"
     >

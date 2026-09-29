@@ -6,6 +6,8 @@ export type PlayerState = {
   isPlaying: Ref<boolean>;
   isReady: ComputedRef<boolean>;
   seekTo?: (time: number) => void;
+  /** Toggles playback, or forces it with `play` (Sincronizar's own transport). */
+  playPause?: (play?: boolean) => void;
 };
 
 const PLAYER_STATE_KEY: InjectionKey<PlayerState> = Symbol("player-state");
@@ -23,7 +25,9 @@ export function usePlayerState() {
       currentTime: computed(() => 0),
       totalDuration: computed(() => 0),
       isPlaying: computed(() => false),
-      isReady: computed(() => false)
+      isReady: computed(() => false),
+      seekTo: () => {},
+      playPause: () => {}
     };
   }
 
@@ -32,6 +36,7 @@ export function usePlayerState() {
     totalDuration: computed(() => playerTime.totalDuration.value),
     isPlaying: computed(() => playerTime.isPlaying.value),
     isReady: computed(() => playerTime.isReady.value),
-    seekTo: playerTime.seekTo ?? (() => {})
+    seekTo: playerTime.seekTo ?? (() => {}),
+    playPause: playerTime.playPause ?? (() => {})
   };
 }
