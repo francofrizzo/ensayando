@@ -1,24 +1,24 @@
 import { computed, type Ref, ref, watch } from "vue";
 
 // "Usar la portada como luz de sala" (Ajustes · General). Stored per collection on
-// this device; defaults to on. RoomLight reads it to decide between the colored glows
+// this device; defaults to off. RoomLight reads it to decide between the colored glows
 // and the blurred artwork.
 const KEY = (collectionId: number) => `ens-room-artwork-${collectionId}`;
 
 function read(collectionId: number): boolean {
   try {
-    return window.localStorage.getItem(KEY(collectionId)) !== "off";
+    return window.localStorage.getItem(KEY(collectionId)) === "on";
   } catch {
-    return true;
+    return false;
   }
 }
 
 const versions = ref(0);
 
 export function useRoomLightArtwork(collectionId: Ref<number | null | undefined>) {
-  const stored = ref(collectionId.value ? read(collectionId.value) : true);
+  const stored = ref(collectionId.value ? read(collectionId.value) : false);
   watch([collectionId, versions], () => {
-    stored.value = collectionId.value ? read(collectionId.value) : true;
+    stored.value = collectionId.value ? read(collectionId.value) : false;
   });
 
   const useArtwork = computed({

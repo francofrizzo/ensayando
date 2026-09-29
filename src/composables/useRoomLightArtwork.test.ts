@@ -19,28 +19,28 @@ beforeAll(() => {
 describe("useRoomLightArtwork", () => {
   beforeEach(() => items.clear());
 
-  it("defaults to on and remembers the choice per collection", async () => {
+  it("defaults to off and remembers the choice per collection", async () => {
     const id = ref<number | null>(7);
     const { useArtwork } = useRoomLightArtwork(id);
-    expect(useArtwork.value).toBe(true);
+    expect(useArtwork.value).toBe(false);
 
-    useArtwork.value = false;
-    expect(window.localStorage.getItem("ens-room-artwork-7")).toBe("off");
+    useArtwork.value = true;
+    expect(window.localStorage.getItem("ens-room-artwork-7")).toBe("on");
 
     id.value = 8;
     await nextTick();
-    expect(useArtwork.value).toBe(true);
+    expect(useArtwork.value).toBe(false);
 
     id.value = 7;
     await nextTick();
-    expect(useArtwork.value).toBe(false);
+    expect(useArtwork.value).toBe(true);
   });
 
   it("keeps other instances in sync", async () => {
     const a = useRoomLightArtwork(ref(3));
     const b = useRoomLightArtwork(ref(3));
-    a.useArtwork.value = false;
+    a.useArtwork.value = true;
     await nextTick();
-    expect(b.useArtwork.value).toBe(false);
+    expect(b.useArtwork.value).toBe(true);
   });
 });
