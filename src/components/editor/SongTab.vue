@@ -36,7 +36,11 @@ import type { AudioTrack, TrackPeaks } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { generateTrackPeaks } from "@/utils/audio-utils";
-import { generateSlugFromTitle as generateSlug, validateSongForm } from "@/utils/songUtils";
+import {
+  generateSlugFromTitle as generateSlug,
+  songDurationFromTracks,
+  validateSongForm
+} from "@/utils/songUtils";
 
 // Composables and stores
 const { currentSong } = useCurrentSong();
@@ -421,7 +425,8 @@ const handleCreateSong = async () => {
       collection_id: currentCollection.value.id,
       title: formData.title,
       slug: formData.slug,
-      visible: formData.visible
+      visible: formData.visible,
+      duration: songDurationFromTracks(formData.audio_tracks)
     });
 
     if (songError) throw songError;
@@ -467,7 +472,8 @@ const handleUpdateSong = async () => {
     const { error: songError } = await updateSongBasicInfo(currentSong.value.id, {
       title: formData.title,
       slug: formData.slug,
-      visible: formData.visible
+      visible: formData.visible,
+      duration: songDurationFromTracks(formData.audio_tracks)
     });
 
     if (songError) throw songError;

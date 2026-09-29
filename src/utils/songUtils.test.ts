@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { generateSlugFromTitle, validateSongForm } from "@/utils/songUtils";
+import { generateSlugFromTitle, songDurationFromTracks, validateSongForm } from "@/utils/songUtils";
 
 describe("generateSlugFromTitle", () => {
   it("converts a basic title to a slug", () => {
@@ -76,5 +76,35 @@ describe("validateSongForm", () => {
     expect(result.errors.title).toBeTruthy();
     expect(result.errors.slug).toBeTruthy();
     expect(result.errors.audio_tracks).toBeTruthy();
+  });
+});
+
+describe("reserved song slugs", () => {
+  it.each(["nueva", "ajustes", "editar"])("rejects %s", (slug) => {
+    const result = validateSongForm({ title: "Canción", slug, audio_tracks: [{}] });
+    expect(result.isValid).toBe(false);
+    expect(result.errors.slug).toContain("reservada");
+  });
+
+  it("accepts slugs that only contain a reserved word", () => {
+    expect(validateSongForm({ title: "x", slug: "nueva-cancion", audio_tracks: [{}] }).isValid).toBe(
+      true
+    );
+  });
+});
+
+describe("songDurationFromTracks", () => {
+  it("uses the longest track with peaks", () => {
+    expect(
+      songDurationFromTracks([
+        { peaks: { duration: 241.5 } },
+        { peaks: null },
+        { peaks: { duration: 245.1 } }
+      ])
+    ).toBe(245.1);
+  });
+
+  it("is null without peaks", () => {
+    expect(songDurationFromTracks([{ peaks: null }, { peaks: undefined }])).toBeNull();
   });
 });

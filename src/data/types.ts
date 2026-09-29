@@ -13,6 +13,7 @@ export type Collection = {
   artwork_file_key?: string | null;
   artwork_playback_url?: string;
   visibility: CollectionVisibility;
+  created_by: string | null;
   created_at: string;
 };
 
@@ -30,6 +31,9 @@ export type Song = {
   lyrics: LyricStanza[] | null;
   audio_tracks: AudioTrack[];
   visible: boolean;
+  // Seconds, from the tracks' peaks; written when the song is saved.
+  duration: number | null;
+  order: number | null;
   created_at: string;
 };
 
@@ -62,3 +66,30 @@ export type TrackPeaks = {
   channels: number[][];
   duration: number;
 };
+
+// ---------------------------------------------------------------------------
+// Administration (collection settings)
+// ---------------------------------------------------------------------------
+
+export type CollectionMember = {
+  user_id: string;
+  email: string;
+  username: string;
+  // Username-only account (<user>@ensayando.com.ar): no inbox, passwords are reset
+  // by an admin.
+  is_managed: boolean;
+  role: CollectionRole;
+  last_sign_in_at: string | null;
+};
+
+export type AccountMatch = Pick<CollectionMember, "user_id" | "email" | "username" | "is_managed">;
+
+export type CreatedManagedAccount = { userId: string; username: string; password: string };
+
+export type InvitedMember = { userId: string; email: string };
+
+export type PasswordReset =
+  | { kind: "password"; password: string }
+  | { kind: "email"; email: string };
+
+export type DeletionResult = { orphanedKeys: string[] };
