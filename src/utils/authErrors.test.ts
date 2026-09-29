@@ -12,6 +12,10 @@ describe("loginErrorMessage", () => {
     expect(loginErrorMessage(new TypeError("Failed to fetch"))).toMatch(/conexión/);
   });
 
+  it("says when there's no account for a sign-in link", () => {
+    expect(loginErrorMessage(new Error("Signups not allowed for otp"))).toMatch(/ninguna cuenta/);
+  });
+
   it("never shows an unknown English message", () => {
     expect(loginErrorMessage(new Error("Database error querying schema"))).toBe(
       "No se pudo iniciar sesión. Probá de nuevo en un momento."

@@ -47,6 +47,15 @@ export const signOut = async () => {
   return await supabase.auth.signOut();
 };
 
+// Passwordless login: Supabase mails a sign-in link (the magic_link template).
+// Only existing accounts: signups are closed.
+export const sendLoginLink = async (email: string, redirectTo: string) => {
+  return await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: redirectTo }
+  });
+};
+
 export const resetPasswordForEmail = async (email: string, redirectTo: string) => {
   return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 };

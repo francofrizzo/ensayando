@@ -108,6 +108,18 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  /** Mails a sign-in link to a real email. Managed accounts have no inbox. */
+  const requestLoginLink = async (emailInput: string, redirectTo: string) => {
+    const email = emailInput.trim().toLowerCase();
+    if (isAdminManagedEmail(email)) {
+      throw new AdminManagedAccountError();
+    }
+    const { error } = await supabase.sendLoginLink(email, redirectTo);
+    if (error) {
+      throw error;
+    }
+  };
+
   const updatePassword = async (newPassword: string) => {
     const { error } = await supabase.updatePassword(newPassword);
     if (error) {
@@ -126,6 +138,7 @@ export const useAuthStore = defineStore("auth", () => {
     signUp,
     signOut,
     requestPasswordReset,
+    requestLoginLink,
     updatePassword
   };
 });
