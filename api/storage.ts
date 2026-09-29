@@ -45,9 +45,15 @@ function authorizationHeader(req: VercelRequest): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function requireEditor(
+// Audio is for editors and admins; the collection's artwork only for its admins.
+export function rolesForFileType(fileType: StorageFileType): string[] {
+  return fileType === "artwork" ? ["admin"] : ["admin", "editor"];
+}
+
+async function requireRole(
   authorization: string | undefined,
-  collectionId: number
+  collectionId: number,
+  fileType: StorageFileType
 ): Promise<void> {
   if (!authorization) throw new Error("AUTH_REQUIRED");
   const supabase = createRequestSupabaseClient(authorization);
@@ -55,7 +61,7 @@ async function requireEditor(
     .from("user_collections")
     .select("role")
     .eq("collection_id", collectionId)
-    .in("role", ["admin", "editor"])
+    .in("role", rolesForFileType(fileType))
     .maybeSingle();
 
   if (error || !data) throw new Error("FORBIDDEN");
@@ -130,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     if (body.action === "sign-upload") {
       validateUpload(body.fileType, body.contentType, body.size);
-      await requireEditor(authorization, body.collectionId);
+      await requireRole(authorization, body.collectionId, body.fileType);
       const key = createObjectKey(body.fileType, body.collectionId, body.filename);
       const signed = await createUploadUrl({
         key,
@@ -144,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     if (body.action === "complete-upload" || body.action === "delete") {
       const collectionId = collectionIdFromKey(body.key, body.fileType);
       if (!collectionId) throw new Error("FORBIDDEN");
-      await requireEditor(authorization, collectionId);
+      await requireRole(authorization, collectionId, body.fileType);
 
       if (body.action === "delete") {
         await deleteObject(body.key);

@@ -13,6 +13,7 @@ import type {
   PasswordReset
 } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
+import type { ColorSpec, Intensity } from "@/utils/palette";
 
 // Codes raised by the database functions, in the words the UI shows.
 const ADMIN_ERRORS: Record<string, string> = {
@@ -21,7 +22,9 @@ const ADMIN_ERRORS: Record<string, string> = {
   LAST_ADMIN: "La colección tiene que tener al menos un admin.",
   ALREADY_MEMBER: "Esa persona ya está en la colección.",
   INVALID_ROLE: "Ese rol no existe.",
-  INVALID_ORDER: "El orden tiene que incluir cada canción de la colección una sola vez."
+  INVALID_ORDER: "El orden tiene que incluir cada canción de la colección una sola vez.",
+  INVALID_PALETTE: "Los colores no son válidos. Revisá que cada reemplazo exista.",
+  KEY_IN_USE: "Hay pistas que usan un color que quitaste. Elegí con qué reemplazarlo."
 };
 
 export class AdminError extends Error {}
@@ -161,6 +164,31 @@ export async function reorderSongs(collectionId: number, songIds: number[]): Pro
 
 export async function deleteSong(songId: number): Promise<DeletionResult> {
   return await apiRequest("/api/content", { action: "delete-song", songId });
+}
+
+// ---------- colors ----------
+
+// Saves hue, intensity and track colors at once. keyMap sends each key that
+// disappears (renamed or removed) to its replacement; tracks and verses are rewritten
+// in the same transaction.
+export async function updateCollectionPalette(
+  collectionId: number,
+  palette: {
+    hue: number;
+    intensity: Intensity;
+    trackColors: Record<string, ColorSpec>;
+    keyMap: Record<string, string>;
+  }
+): Promise<void> {
+  check(
+    await supabase.rpc("update_collection_palette", {
+      p_collection_id: collectionId,
+      p_hue: palette.hue,
+      p_intensity: palette.intensity,
+      p_track_colors: palette.trackColors,
+      p_key_map: palette.keyMap
+    })
+  );
 }
 
 // ---------- collections ----------

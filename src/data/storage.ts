@@ -47,14 +47,31 @@ function contentTypeForAudio(file: File): string {
 }
 
 export async function uploadAudioFile(file: File, collectionId: number): Promise<UploadResult> {
-  const contentType = contentTypeForAudio(file);
+  return await uploadFile(file, collectionId, "audio", contentTypeForAudio(file));
+}
+
+// Collection artwork: only the collection's admins may upload it (api/storage.ts).
+export async function uploadArtworkFile(file: File, collectionId: number): Promise<UploadResult> {
+  return await uploadFile(file, collectionId, "artwork", file.type || "image/jpeg");
+}
+
+export async function deleteArtworkFile(key: string): Promise<void> {
+  await storageRequest<void>({ action: "delete", fileType: "artwork", key });
+}
+
+async function uploadFile(
+  file: File,
+  collectionId: number,
+  fileType: "audio" | "artwork",
+  contentType: string
+): Promise<UploadResult> {
   const signed = await storageRequest<{
     key: string;
     url: string;
     headers: Record<string, string>;
   }>({
     action: "sign-upload",
-    fileType: "audio",
+    fileType,
     collectionId,
     filename: file.name,
     contentType,
@@ -72,7 +89,7 @@ export async function uploadAudioFile(file: File, collectionId: number): Promise
 
   const completed = await storageRequest<{ url: string; size: number }>({
     action: "complete-upload",
-    fileType: "audio",
+    fileType,
     key: signed.key
   });
 

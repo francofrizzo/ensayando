@@ -88,3 +88,16 @@ SUPABASE_DB_TEST=1 pnpm test:db # RLS, RPCs and account flows against local Supa
 
 `pnpm test:db` reads `SUPABASE_TEST_URL` (default `http://127.0.0.1:54321`) and the
 standard local keys. It never targets a linked project.
+
+## Local development
+
+`pnpm dev` serves the functions in `api/` from the Vite dev server (`server/dev-api.ts`), so settings, members and deletions work without `vercel dev`. Start local Supabase and pass the local keys:
+
+```bash
+VITE_SUPABASE_URL=http://127.0.0.1:54321 \
+VITE_SUPABASE_ANON_KEY=<anon key from `npx supabase status`> \
+SUPABASE_SERVICE_ROLE_KEY=<service role key from `npx supabase status`> \
+pnpm dev
+```
+
+Uploads (audio, artwork) also need the `R2_*` variables; without them the rest of the settings still work.

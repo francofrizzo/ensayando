@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveGuard, type GuardInput } from "./index";
+import router, { resolveGuard, type GuardInput } from "./index";
 
 const base: GuardInput = {
   requiresAuth: false,
@@ -64,5 +64,17 @@ describe("resolveGuard", () => {
   it("proceeds for non-auth page when not authenticated", () => {
     const result = resolveGuard({ ...base, requiresAuth: false, isAuthenticated: false });
     expect(result).toEqual({ action: "proceed" });
+  });
+});
+
+describe("routes", () => {
+  it("resolves collection settings before songs", () => {
+    expect(router.resolve("/coro/ajustes").name).toBe("collection-settings");
+    expect(router.resolve("/coro/ajustes/miembros").params).toMatchObject({
+      collectionSlug: "coro",
+      section: "miembros"
+    });
+    expect(router.resolve("/coro/vidala").name).toBe("song");
+    expect(router.resolve("/nueva-coleccion").name).toBe("new-collection");
   });
 });
