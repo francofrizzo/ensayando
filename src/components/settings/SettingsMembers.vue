@@ -242,9 +242,6 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
       </li>
     </ul>
 
-    <p class="text-base-content/50 px-1 text-xs">
-      Si sos el único admin, no podés cambiar tu rol ni irte.
-    </p>
 
     <!-- phone sheet -->
     <dialog class="modal modal-bottom" :class="{ 'modal-open': !!sheet }">

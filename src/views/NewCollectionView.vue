@@ -13,7 +13,7 @@ import { AdminError, createCollection, fetchIsAppAdmin } from "@/data/admin";
 import type { Collection, CollectionVisibility } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
 import { collectionSlugError } from "@/utils/collectionSlug";
-import { deriveColor } from "@/utils/palette";
+import { deriveColor, type Intensity } from "@/utils/palette";
 import { generateSlugFromTitle } from "@/utils/songUtils";
 
 // Nueva colección (/nueva-coleccion): only app admins. The creator becomes the
@@ -38,15 +38,22 @@ watch(title, (value) => {
 
 const PRESETS = [300, 45, 150, 250, 10, 95];
 const hue = ref(300);
+const intensity = ref<Intensity>("media");
 const customHue = ref(false);
+const INTENSITIES = [
+  { value: "suave" as const, label: "Suave" },
+  { value: "media" as const, label: "Media" },
+  { value: "intensa" as const, label: "Intensa" }
+];
 const visibility = ref<CollectionVisibility>("private");
 const busy = ref(false);
 const error = ref("");
 
-const swatch = (h: number) => deriveColor({ hue: h, intensity: "media" }, "fill", resolvedTheme.value);
+const swatch = (h: number) =>
+  deriveColor({ hue: h, intensity: intensity.value }, "fill", resolvedTheme.value);
 // RoomLight only reads the palette fields.
 const previewCollection = computed(
-  () => ({ hue: hue.value, intensity: "media", track_colors: {} }) as unknown as Collection
+  () => ({ hue: hue.value, intensity: intensity.value, track_colors: {} }) as unknown as Collection
 );
 
 const slugError = computed(() =>
@@ -63,7 +70,7 @@ async function create() {
       title: title.value.trim(),
       slug: slug.value,
       hue: hue.value,
-      intensity: "media",
+      intensity: intensity.value,
       track_colors: {},
       visibility: visibility.value
     });
@@ -107,10 +114,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
       class="glass-2 rounded-box flex w-full max-w-lg flex-col gap-4 p-5 sm:p-7"
       @submit.prevent="create"
     >
-      <div>
-        <h1 class="font-display text-2xl font-bold">Nueva colección</h1>
-        <p class="text-base-content/60 text-sm">Vas a quedar como admin.</p>
-      </div>
+      <h1 class="font-display text-2xl font-bold">Nueva colección</h1>
 
       <label class="flex flex-col gap-1.5">
         <span class="text-base-content/70 text-sm font-semibold">Nombre</span>
@@ -129,9 +133,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
             @input="slugTouched = true"
           />
         </span>
-        <span class="text-xs" :class="slugError ? 'text-error' : 'text-base-content/50'">
-          {{ slugError || "Se arma sola desde el nombre. Podés cambiarla." }}
-        </span>
+        <span v-if="slugError" class="text-error text-xs">{{ slugError }}</span>
       </label>
 
       <div class="flex flex-col gap-2">
@@ -159,7 +161,14 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
             <IconPalette class="size-4" /> Otro
           </button>
         </div>
-        <HueSlider v-if="customHue" v-model="hue" intensity="media" label="Tono del color principal" />
+        <HueSlider v-if="customHue" v-model="hue" :intensity="intensity" label="Tono del color principal" />
+        <SegmentedControl
+          v-model="intensity"
+          :options="INTENSITIES"
+          label="Intensidad"
+          class="self-start"
+          data-testid="new-intensity"
+        />
       </div>
 
       <div class="flex flex-col gap-1.5">

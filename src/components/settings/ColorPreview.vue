@@ -34,7 +34,7 @@ const themes = computed(() =>
     <div
       v-for="t in themes"
       :key="t.theme"
-      class="rounded-box border-base-content/10 flex flex-col gap-3 border p-4"
+      class="rounded-box border-base-content/10 flex min-w-0 flex-col gap-3 overflow-hidden border p-4"
       :style="{ background: t.background }"
       :data-theme="t.theme"
     >
@@ -50,14 +50,24 @@ const themes = computed(() =>
           >{{ line }}</span
         >
       </div>
-      <div class="flex h-8 items-center gap-[2px]" aria-hidden="true">
-        <span
+      <!-- Scales to the card width: bars are drawn in a fixed viewBox -->
+      <svg
+        class="block h-8 w-full"
+        :viewBox="`0 0 ${BARS.length * 5} 100`"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <rect
           v-for="(height, i) in BARS"
           :key="i"
-          class="w-[3px] shrink-0 rounded-full"
-          :style="{ height: `${height}%`, background: i < 18 ? t.wave : t.waveDim }"
+          :x="i * 5"
+          :y="(100 - height) / 2"
+          width="3"
+          :height="height"
+          rx="1.5"
+          :fill="i < 18 ? t.wave : t.waveDim"
         />
-      </div>
+      </svg>
     </div>
   </div>
 </template>

@@ -141,7 +141,7 @@ const hasLyrics = (song: Song) => (song.lyrics?.length ?? 0) > 0;
 </script>
 
 <template>
-  <SettingsSection title="Canciones" description="Arrastrá para ordenar.">
+  <SettingsSection title="Canciones">
     <template #actions>
       <RouterLink :to="`/${props.collection.slug}/nueva`" class="btn btn-soft btn-sm">
         <IconPlus class="size-4" /> Nueva canción

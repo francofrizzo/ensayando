@@ -222,7 +222,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             :key="item.id"
             :to="sectionTo(item.id)"
             replace
-            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold"
+            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collection-ink"
             :class="
               section === item.id
                 ? 'bg-collection-soft text-collection-ink'
@@ -239,7 +239,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
           <RouterLink
             :to="sectionTo('peligro')"
             replace
-            class="text-error flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold"
+            class="text-error flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collection-ink"
             :class="section === 'peligro' ? 'bg-error/10' : 'hover:bg-error/5'"
           >
             <IconWarning class="size-4.5" /> Zona de peligro
