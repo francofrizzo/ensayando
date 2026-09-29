@@ -143,6 +143,10 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - El resumen de cambios de Colores muestra tono e intensidad (p. ej. "Tenor: 195° → 210°, media → intensa") y el paso a neutra.
 - Ajustes: la sección "Colores" se llama **Pistas** (`/ajustes/pistas`; `/ajustes/colores` redirige). Cada pista tiene un nombre editable ("Voz 1", "Pista") guardado junto a su tono en `track_colors`; sin nombre, se usa el título más común de las pistas que la usan.
 - Aviso de tonos cercanos: solo cuando las dos pistas tienen la misma intensidad o una vecina (suave–media, media–intensa). Suave al lado de intensa se distingue aunque el tono sea casi el mismo.
+- Sincronizar: en una línea con columnas, cada columna es una voz independiente (sus versos no tienen por qué coincidir con los de la otra). Se marca verso por verso, columna por columna; el fin automático del verso anterior solo se completa dentro de la misma columna. Las regiones de columnas distintas se superponen en carriles.
+- Sincronizar: las regiones y los puntos de la lista muestran todos los colores del verso, en degradé.
+- Sincronizar: hacer scroll a mano mientras suena pausa el seguimiento del cursor por 3 s; las ondas siempre se dibujan con la posición real del scroll.
+- Editor de letra: la columna de colores tiene ancho fijo (hasta 4 puntos, o 3 y "+N") y el texto usa un peso más liviano.
 
 ## Estructura
 

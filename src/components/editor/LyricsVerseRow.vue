@@ -30,6 +30,16 @@ const emit = defineEmits<{
   dragend: [];
 }>();
 
+// The gutter has a fixed width so the text always starts at the same place: up to
+// four overlapping dots, or three and "+N" when the verse has more colors.
+const MAX_DOTS = 4;
+const shownDots = computed(() =>
+  props.dots.length > MAX_DOTS ? props.dots.slice(0, MAX_DOTS - 1) : props.dots
+);
+const extraDots = computed(() =>
+  props.dots.length > MAX_DOTS ? props.dots.length - (MAX_DOTS - 1) : 0
+);
+
 const start = computed(() => formatVerseTime(props.verse.start_time));
 const end = computed(() => formatVerseTime(props.verse.end_time));
 
@@ -68,7 +78,7 @@ const focusTextarea = (event: MouseEvent) => {
     />
 
     <!-- Gutter: drag handle and the verse's colors as dots -->
-    <div class="flex w-11 shrink-0 items-center gap-0.5 pl-2">
+    <div class="flex w-[64px] shrink-0 items-center gap-1 pl-2">
       <span
         v-if="draggable"
         draggable="true"
@@ -81,13 +91,18 @@ const focusTextarea = (event: MouseEvent) => {
         <IconDragHandle class="size-4" />
       </span>
       <span v-else class="w-3" />
-      <span class="flex items-center">
+      <span class="flex w-[34px] shrink-0 items-center justify-end" :title="`${dots.length} colores`">
         <span
-          v-for="(dot, i) in dots"
+          v-for="(dot, i) in shownDots"
           :key="i"
-          class="ring-base-100 size-2 rounded-full ring-2 not-first:-ml-0.5"
+          class="ring-base-100 size-2 shrink-0 rounded-full ring-2 not-first:-ml-1"
           :style="{ background: dot }"
         />
+        <span
+          v-if="extraDots"
+          class="text-base-content/50 ml-0.5 font-mono text-[9.5px] leading-none font-semibold"
+          >+{{ extraDots }}</span
+        >
       </span>
     </div>
 
