@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from "vue";
+import { computed, ref } from "vue";
 
 export type TrackInit = {
   id: number;
@@ -24,7 +24,7 @@ export type TrackState = {
 
 export type MyPartState = {
   trackIds: number[];
-  /** Lower the tracks outside "Mi parte" by 6 dB. */
+  /** "Bajar el resto": the other tracks' sliders go to half (see lowerRestVolumes). */
   duckOthers: boolean;
 };
 
@@ -32,30 +32,19 @@ export type PlayerStateCallbacks = {
   onSeekTrack?: (trackIndex: number, time: number) => void;
 };
 
-export type PlayerStateOptions = {
-  myPart?: Ref<MyPartState | null>;
-};
-
-/** −6 dB as a linear gain. */
-export const DUCK_GAIN = 0.5;
-
 /**
  * What a track actually sounds at: volume × not muted × (no solos, or this one
- * is soloed) × Mi parte ducking. Playback, the mix download and sync all use it.
+ * is soloed). Playback, the mix download and sync all use it. "Bajar el resto"
+ * moves the volume sliders themselves, so it needs nothing here.
  */
 export function appliedGain(
   track: Pick<TrackState, "id" | "volume" | "muted" | "soloed" | "failed"> &
     Partial<Pick<TrackState, "retrying">>,
-  anySoloed: boolean,
-  myPart?: MyPartState | null
+  anySoloed: boolean
 ): number {
   if (track.failed || track.retrying || track.muted) return 0;
   if (anySoloed && !track.soloed) return 0;
-  const duck =
-    myPart?.duckOthers && myPart.trackIds.length > 0 && !myPart.trackIds.includes(track.id)
-      ? DUCK_GAIN
-      : 1;
-  return Math.max(0, Math.min(1, track.volume)) * duck;
+  return Math.max(0, Math.min(1, track.volume));
 }
 
 function createTrackState(init: TrackInit): TrackState {
@@ -75,8 +64,7 @@ function createTrackState(init: TrackInit): TrackState {
 
 export function usePlayerState(
   initialTracks: TrackInit[],
-  callbacks?: PlayerStateCallbacks,
-  options: PlayerStateOptions = {}
+  callbacks?: PlayerStateCallbacks
 ) {
   const trackStates = ref<TrackState[]>(initialTracks.map(createTrackState));
   const playing = ref(false);
@@ -84,7 +72,7 @@ export function usePlayerState(
 
   const anySoloed = computed(() => trackStates.value.some((t) => t.soloed && !t.failed));
   const gains = computed(() =>
-    trackStates.value.map((t) => appliedGain(t, anySoloed.value, options.myPart?.value))
+    trackStates.value.map((t) => appliedGain(t, anySoloed.value))
   );
 
   // A failed (or retrying) track counts as resolved; the player is ready once every

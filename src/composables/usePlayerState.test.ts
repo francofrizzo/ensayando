@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
 
-import {
-  appliedGain,
-  DUCK_GAIN,
-  type MyPartState,
-  usePlayerState,
-  type TrackInit
-} from "./usePlayerState";
+import { appliedGain, usePlayerState, type TrackInit } from "./usePlayerState";
 
 const threeTracks: TrackInit[] = [
   { id: 10, hasLyrics: true },
@@ -41,14 +34,6 @@ describe("appliedGain", () => {
 
   it("failed tracks are silent", () => {
     expect(appliedGain({ ...base, failed: true }, false)).toBe(0);
-  });
-
-  it("Mi parte ducks the other tracks by 6 dB only when asked", () => {
-    const myPart: MyPartState = { trackIds: [2], duckOthers: true };
-    expect(appliedGain(base, false, myPart)).toBeCloseTo(0.8 * DUCK_GAIN);
-    expect(appliedGain({ ...base, id: 2 }, false, myPart)).toBe(0.8);
-    expect(appliedGain(base, false, { ...myPart, duckOthers: false })).toBe(0.8);
-    expect(appliedGain(base, false, { trackIds: [], duckOthers: true })).toBe(0.8);
   });
 });
 
@@ -258,18 +243,6 @@ describe("solo", () => {
     expect(trackStates.value.map((t) => t.lyricsEnabled)).toEqual([false, true, false]);
     onSoloTrack(1, true);
     expect(trackStates.value.every((t) => t.lyricsEnabled)).toBe(true);
-  });
-});
-
-// --- Mi parte ---
-
-describe("Mi parte", () => {
-  it("feeds the applied gain reactively", () => {
-    const myPart = ref<MyPartState | null>(null);
-    const { gains } = usePlayerState(threeTracks, undefined, { myPart });
-    expect(gains.value).toEqual([1, 1, 1]);
-    myPart.value = { trackIds: [20], duckOthers: true };
-    expect(gains.value).toEqual([DUCK_GAIN, 1, DUCK_GAIN]);
   });
 });
 

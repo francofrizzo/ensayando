@@ -45,7 +45,7 @@ import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
 import { COMMAND_EVENT, type CommandEventDetail, dispatchPlayback } from "@/utils/appEvents";
 import { mixAndEncodeMp3 } from "@/utils/mixdown";
-import { myPartForSong } from "@/utils/myPart";
+import { lowerRestVolumes, myPartForSong } from "@/utils/myPart";
 import { isIOS } from "@/utils/platform";
 import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
@@ -109,8 +109,24 @@ const state = usePlayerState(
     onSeekTrack: (trackIndex, time) => {
       trackPlayers.value[trackIndex]?.seekTo(time);
     }
+  }
+);
+
+// "Bajar el resto": the other tracks' sliders go to half, visibly, and come back
+// when the option goes off (see lowerRestVolumes).
+let lowerRestSaved: Record<number, number> = {};
+watch(
+  [myPart, () => state.trackStates.value.length],
+  () => {
+    const tracks = state.trackStates.value.map((t) => ({ id: t.id, volume: t.volume }));
+    const { changes, saved } = lowerRestVolumes(tracks, myPart.value, lowerRestSaved);
+    lowerRestSaved = saved;
+    state.trackStates.value.forEach((t, index) => {
+      const volume = changes[t.id];
+      if (volume !== undefined) state.onVolumeChange(index, volume);
+    });
   },
-  { myPart }
+  { immediate: true, deep: true }
 );
 
 const { isReady, trackIdsWithLyricsEnabled } = state;
@@ -1032,7 +1048,7 @@ const initializeAudioContext = async () => {
          (v-show: the track players inside must stay mounted to keep playing). -->
     <div
       v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar') && (sortedTracks.length > 0 || uiStore.editMode)"
-      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
+      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-2"
       data-testid="player-dock"
     >
       <button

@@ -54,9 +54,6 @@ const label = computed(() =>
       tabindex="0"
       class="dropdown-content glass-3 rounded-box z-50 mt-2 flex w-72 flex-col gap-0.5 p-1.5"
     >
-      <p class="text-base-content/60 px-2.5 pt-2 pb-1.5 text-xs leading-snug">
-        Tus versos quedan a pleno y el resto se atenúa.
-      </p>
       <label
         v-for="track in props.tracks"
         :key="track.id"
@@ -86,7 +83,7 @@ const label = computed(() =>
       </label>
       <div class="bg-base-content/10 mx-1 my-1 h-px" />
       <label class="flex cursor-pointer items-center justify-between gap-3 px-2.5 py-2 text-sm">
-        <span>Bajar el resto 6 dB</span>
+        <span>Bajar el resto</span>
         <input
           type="checkbox"
           class="toggle toggle-primary toggle-sm"
@@ -100,7 +97,7 @@ const label = computed(() =>
         class="btn btn-ghost btn-sm justify-start font-medium"
         @click="emit('clear')"
       >
-        Quitar mi parte
+        Deseleccionar todo
       </button>
     </div>
   </div>

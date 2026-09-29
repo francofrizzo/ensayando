@@ -24,26 +24,35 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
 </script>
 
 <template>
-  <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+  <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-2">
     <div class="flex min-w-0 items-center">
       <span
         v-if="props.isReady"
-        class="font-mono text-[15px] tracking-tight whitespace-nowrap tabular-nums"
+        class="flex items-baseline font-mono leading-none tracking-tight whitespace-nowrap tabular-nums"
       >
-        <span data-testid="time-display" class="text-base-content text-[18px] font-semibold">{{
-          formatTime(props.currentTime)
-        }}</span
-        ><span class="text-base-content/40 hidden text-[13px] sm:inline"
+        <span
+          data-testid="time-display"
+          class="text-base-content text-[18px] font-semibold lg:text-[22px]"
+          >{{ formatTime(props.currentTime) }}</span
+        ><span class="text-base-content/40 hidden text-[13px] sm:inline lg:text-[15px]"
           >.{{ tenths(props.currentTime) }}</span
+        ><span class="text-base-content/60 ml-1.5 text-[15px] lg:text-[17px]"
+          >/ {{ formatTime(props.totalDuration) }}</span
         >
-        <span class="text-base-content/60"> / {{ formatTime(props.totalDuration) }}</span>
       </span>
     </div>
 
-    <div class="flex items-center gap-1.5 sm:gap-2.5">
+    <div
+      class="flex items-center gap-1.5 sm:gap-2.5"
+      :class="
+        props.compact
+          ? ''
+          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%+0.5rem)]'
+      "
+    >
       <button
-        class="btn btn-circle btn-ghost"
-        :class="props.compact ? 'btn-sm' : 'btn-md'"
+        class="btn btn-circle"
+        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:border-0'"
         :disabled="!props.prevSong"
         aria-label="Canción anterior"
         @click="emit('skip-prev')"
@@ -53,7 +62,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       <button
         class="btn btn-circle btn-primary play-glow border-0"
         :class="[
-          props.compact ? 'size-11' : 'size-14 md:size-16 md:-translate-y-7',
+          props.compact ? 'size-11' : 'size-14 md:size-16',
           !props.isReady && 'cursor-default'
         ]"
         aria-label="Play/Pause"
@@ -75,8 +84,8 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
         </Transition>
       </button>
       <button
-        class="btn btn-circle btn-ghost"
-        :class="props.compact ? 'btn-sm' : 'btn-md'"
+        class="btn btn-circle"
+        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:border-0'"
         :disabled="!props.nextSong"
         aria-label="Canción siguiente"
         @click="emit('skip-next')"
@@ -85,7 +94,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </button>
     </div>
 
-    <div class="flex min-w-0 items-center justify-end gap-1.5">
+    <div class="col-start-3 flex min-w-0 items-center justify-end gap-1.5">
       <slot />
     </div>
   </div>
