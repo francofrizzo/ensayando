@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { LyricStanza, Song } from "@/data/types";
+import type { ColorSpec } from "@/utils/palette";
 
 import {
   hueLabelRows,
@@ -10,10 +11,9 @@ import {
   colorUsage,
   confirmationMatches,
   describeColorChange,
-  competingHues,
-  hueConflicts,
-  hueDistance,
-  intensitiesClash,
+  colorConflicts,
+  colorDistance,
+  tooSimilar,
   initials,
   lastSignInLabel,
   nearestFreeHue,
@@ -40,56 +40,47 @@ describe("changedFields", () => {
   });
 });
 
-describe("hues", () => {
-  it("measures distance around the circle", () => {
-    expect(hueDistance(10, 350)).toBe(20);
-    expect(hueDistance(195, 207)).toBe(12);
-    expect(hueDistance(0, 180)).toBe(180);
-  });
+describe("color conflicts", () => {
+  const media = (hue: number): ColorSpec => ({ hue, intensity: "media" });
 
-  it("flags tracks closer than 25°, ignoring neutral ones", () => {
-    const conflicts = hueConflicts([
-      { key: "ten", name: "Tenor", spec: { hue: 195, intensity: "media" } },
-      { key: "baj", name: "Bajo", spec: { hue: 207, intensity: "media" } },
-      { key: "sop", name: "Soprano", spec: { hue: 350, intensity: "media" } },
+  it("flags colors that look alike, ignoring neutral ones", () => {
+    const conflicts = colorConflicts([
+      { key: "ten", name: "Tenor", spec: media(195) },
+      { key: "baj", name: "Bajo", spec: media(207) },
+      { key: "sop", name: "Soprano", spec: media(350) },
       { key: "clic", name: "Clic", spec: { neutral: true } }
     ]);
-    expect(conflicts).toEqual([{ a: "ten", b: "baj", distance: 12 }]);
+    expect(conflicts).toEqual([{ a: "ten", b: "baj" }]);
   });
 
-  it("ignores close hues whose intensities are far apart", () => {
-    const pair = (a: "suave" | "media" | "intensa", b: "suave" | "media" | "intensa") =>
-      hueConflicts([
-        { key: "v1", name: "Voz 1", spec: { hue: 20, intensity: a } },
-        { key: "orf", name: "Orfeo", spec: { hue: 33, intensity: b } }
-      ]);
-    expect(pair("intensa", "suave")).toEqual([]);
-    expect(pair("suave", "intensa")).toEqual([]);
-    expect(pair("intensa", "media")).toHaveLength(1);
-    expect(pair("suave", "suave")).toHaveLength(1);
+  it("counts intensity: suave next to intensa reads apart even at the same hue", () => {
+    for (let hue = 0; hue < 360; hue += 10) {
+      expect(tooSimilar({ hue, intensity: "suave" }, { hue, intensity: "intensa" })).toBe(false);
+      expect(tooSimilar({ hue, intensity: "media" }, { hue: hue + 5, intensity: "media" })).toBe(true);
+    }
   });
 
-  it("only same or neighboring intensities compete for a hue", () => {
-    expect(intensitiesClash("suave", "intensa")).toBe(false);
-    expect(intensitiesClash("media", "intensa")).toBe(true);
-    expect(
-      competingHues("intensa", [
-        { hue: 10, intensity: "suave" },
-        { hue: 20, intensity: "media" },
-        { hue: 30, intensity: "intensa" },
-        { neutral: true }
-      ])
-    ).toEqual([20, 30]);
+  it("lets well-separated hues through", () => {
+    for (let hue = 0; hue < 360; hue += 10) {
+      expect(tooSimilar(media(hue), media(hue + 60)), `@${hue}`).toBe(false);
+    }
   });
 
-  it("finds the closest free hue", () => {
-    expect(nearestFreeHue(207, [195, 350, 70])).toBe(220);
-    expect(nearestFreeHue(100, [])).toBe(100);
+  it("never lets a neutral color compete", () => {
+    expect(colorDistance({ neutral: true }, media(10))).toBe(Infinity);
+  });
+
+  it("finds the closest hue that reads apart from the others", () => {
+    const others = [media(195), media(350), media(70)];
+    const hue = nearestFreeHue(207, "media", others)!;
+    expect(hue).toBeGreaterThan(207);
+    expect(others.every((o) => !tooSimilar(media(hue), o))).toBe(true);
+    expect(nearestFreeHue(100, "media", [])).toBe(100);
   });
 
   it("returns null when every hue is taken", () => {
-    const everyTwenty = Array.from({ length: 18 }, (_, i) => i * 20);
-    expect(nearestFreeHue(5, everyTwenty)).toBeNull();
+    const everyTen = Array.from({ length: 36 }, (_, i) => media(i * 10));
+    expect(nearestFreeHue(5, "media", everyTen)).toBeNull();
   });
 });
 

@@ -1,6 +1,15 @@
 // Pure helpers for the collection settings screen (design/pantallas/coleccion.html).
+import { differenceEuclidean } from "culori";
+
 import type { LyricStanza, LyricVerse, Song } from "@/data/types";
-import { type ColorSpec, type Intensity, isNeutral } from "@/utils/palette";
+import {
+  type ColorRole,
+  type ColorSpec,
+  deriveColor,
+  type Intensity,
+  isNeutral,
+  type Theme
+} from "@/utils/palette";
 
 // ---------- dirty state ----------
 
@@ -29,53 +38,55 @@ export function describeColorChange(label: string, before: ColorSpec, after: Col
 
 // ---------- hues ----------
 
-/** Shortest distance between two hues on the circle (0–180). */
-export function hueDistance(a: number, b: number): number {
-  const d = Math.abs((((a - b) % 360) + 360) % 360);
-  return Math.min(d, 360 - d);
-}
-
-/** Two track hues closer than this are hard to tell apart. */
-export const MIN_HUE_DISTANCE = 25;
+/**
+ * Two track colors closer than this (ΔE in OKLab, ×100) are hard to tell apart.
+ * For scale: two "media" colors 25° apart sit around 5.7 and 15° apart around
+ * 3.4; "suave" next to "intensa" never drops below 6.5, even at the same hue.
+ */
+export const MIN_COLOR_DISTANCE = 4;
 
 export type PaletteEntry = { key: string; name: string; spec: ColorSpec };
 
-export type HueConflict = { a: string; b: string; distance: number };
+export type ColorConflict = { a: string; b: string };
 
-const INTENSITY_STEP: Record<Intensity, number> = { suave: 0, media: 1, intensa: 2 };
-
-/**
- * Whether two intensities can be confused at close hues: the same level or
- * neighbors (suave–media, media–intensa). Suave next to intensa reads clearly
- * different even at the same hue.
- */
-export function intensitiesClash(a: Intensity, b: Intensity): boolean {
-  return Math.abs(INTENSITY_STEP[a] - INTENSITY_STEP[b]) <= 1;
-}
-
-/** Hues of the other colors that compete with a color of this intensity. */
-export function competingHues(intensity: Intensity, others: ColorSpec[]): number[] {
-  return others
-    .filter((o): o is { hue: number; intensity: Intensity } => !isNeutral(o))
-    .filter((o) => intensitiesClash(intensity, o.intensity))
-    .map((o) => o.hue);
-}
+// Where tracks show their color: waveforms, player lyrics and swatches.
+const COMPARED: [ColorRole, Theme][] = (["wave", "stage", "fill"] as const).flatMap((role) =>
+  (["light", "dark"] as const).map((theme): [ColorRole, Theme] => [role, theme])
+);
+const deltaE = differenceEuclidean("oklab");
+const paintedCache = new Map<string, string[]>();
+const painted = (spec: { hue: number; intensity: Intensity }) => {
+  const key = `${spec.hue}|${spec.intensity}`;
+  let colors = paintedCache.get(key);
+  if (!colors) {
+    colors = COMPARED.map(([role, theme]) => deriveColor(spec, role, theme));
+    paintedCache.set(key, colors);
+  }
+  return colors;
+};
 
 /**
- * Pairs of colored (non-neutral) tracks that are hard to tell apart: close in hue
- * and with the same or neighboring intensity.
+ * How far apart two track colors look: the smallest ΔE (OKLab, ×100) among
+ * the colors both paint, per role and theme. Hue, intensity and each hue's
+ * lightness all count, so greens (which change slowly with hue) need more
+ * degrees apart than reds. Neutral colors never compete: Infinity.
  */
-export function hueConflicts(entries: PaletteEntry[]): HueConflict[] {
-  const colored = entries.filter((e) => !isNeutral(e.spec)) as (PaletteEntry & {
-    spec: { hue: number; intensity: Intensity };
-  })[];
-  const conflicts: HueConflict[] = [];
-  for (let i = 0; i < colored.length; i++) {
-    for (let j = i + 1; j < colored.length; j++) {
-      const [a, b] = [colored[i]!.spec, colored[j]!.spec];
-      const distance = hueDistance(a.hue, b.hue);
-      if (distance < MIN_HUE_DISTANCE && intensitiesClash(a.intensity, b.intensity)) {
-        conflicts.push({ a: colored[i]!.key, b: colored[j]!.key, distance });
+export function colorDistance(a: ColorSpec, b: ColorSpec): number {
+  if (isNeutral(a) || isNeutral(b)) return Infinity;
+  const [pa, pb] = [painted(a), painted(b)];
+  return Math.min(...pa.map((color, i) => deltaE(color, pb[i]!) * 100));
+}
+
+export const tooSimilar = (a: ColorSpec, b: ColorSpec) =>
+  colorDistance(a, b) < MIN_COLOR_DISTANCE;
+
+/** Pairs of colored (non-neutral) tracks that are hard to tell apart. */
+export function colorConflicts(entries: PaletteEntry[]): ColorConflict[] {
+  const conflicts: ColorConflict[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      if (tooSimilar(entries[i]!.spec, entries[j]!.spec)) {
+        conflicts.push({ a: entries[i]!.key, b: entries[j]!.key });
       }
     }
   }
@@ -83,14 +94,18 @@ export function hueConflicts(entries: PaletteEntry[]): HueConflict[] {
 }
 
 /**
- * The hue closest to `from` that keeps at least MIN_HUE_DISTANCE from every
- * other hue, or null when the circle is full.
+ * The hue closest to `from` that, at this intensity, stays distinguishable
+ * from every other color, or null when there is none.
  */
-export function nearestFreeHue(from: number, others: number[]): number | null {
+export function nearestFreeHue(
+  from: number,
+  intensity: Intensity,
+  others: ColorSpec[]
+): number | null {
   for (let step = 0; step <= 180; step++) {
     for (const candidate of [from + step, from - step]) {
       const hue = ((Math.round(candidate) % 360) + 360) % 360;
-      if (others.every((other) => hueDistance(hue, other) >= MIN_HUE_DISTANCE)) return hue;
+      if (others.every((other) => !tooSimilar({ hue, intensity }, other))) return hue;
     }
   }
   return null;

@@ -16,13 +16,10 @@ import {
   COLOR_KEY_PATTERN,
   colorKeyFromName,
   colorUsage,
-  competingHues,
+  colorConflicts,
   describeColorChange,
-  hueConflicts,
-  hueDistance,
-  intensitiesClash,
-  MIN_HUE_DISTANCE,
   nearestFreeHue,
+  tooSimilar,
   usageLabel
 } from "@/utils/collectionSettings";
 import {
@@ -98,7 +95,7 @@ const selectedRow = computed(() =>
 );
 
 const conflicts = computed(() =>
-  hueConflicts(rows.value.map((r) => ({ key: String(r.uid), name: labelFor(r), spec: r.spec })))
+  colorConflicts(rows.value.map((r) => ({ key: String(r.uid), name: labelFor(r), spec: r.spec })))
 );
 const conflictFor = (row: Row) =>
   conflicts.value.find((c) => c.a === String(row.uid) || c.b === String(row.uid));
@@ -119,11 +116,7 @@ const marksFor = (row: Row | null) =>
     .map((r) => ({
       hue: (r.spec as { hue: number }).hue,
       label: labelFor(r),
-      warn:
-        !!row &&
-        !isNeutral(row.spec) &&
-        hueDistance((r.spec as { hue: number }).hue, row.spec.hue) < MIN_HUE_DISTANCE &&
-        intensitiesClash((r.spec as { intensity: Intensity }).intensity, row.spec.intensity)
+      warn: !!row && tooSimilar(r.spec, row.spec)
     }));
 
 function setHue(row: Row, hue: number) {
@@ -138,7 +131,7 @@ function setNeutral(row: Row, neutral: boolean) {
   if (neutral) row.spec = { neutral: true };
   else {
     const others = rows.value.filter((r) => r !== row).map((r) => r.spec);
-    const hue = nearestFreeHue(mainHue.value + 180, competingHues("media", others));
+    const hue = nearestFreeHue(mainHue.value + 180, "media", others);
     row.spec = { hue: hue ?? 0, intensity: "media" };
   }
 }
@@ -147,13 +140,13 @@ const suggestion = computed(() => {
   const row = selectedRow.value;
   if (!row || isNeutral(row.spec) || !conflictFor(row)) return null;
   const others = rows.value.filter((r) => r !== row).map((r) => r.spec);
-  return nearestFreeHue(row.spec.hue, competingHues(row.spec.intensity, others));
+  return nearestFreeHue(row.spec.hue, row.spec.intensity, others);
 });
 
 function addColor() {
   const taken = rows.value.map((r) => r.key);
   const others = rows.value.map((r) => r.spec);
-  const hue = nearestFreeHue((mainHue.value + 180) % 360, competingHues("media", others)) ?? 0;
+  const hue = nearestFreeHue((mainHue.value + 180) % 360, "media", others) ?? 0;
   const row: Row = {
     uid: nextUid++,
     originalKey: null,
@@ -362,8 +355,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
             <span class="flex items-center gap-2 font-semibold">
               <span class="truncate">{{ labelFor(row) }}</span>
               <span v-if="conflictFor(row)" class="badge badge-warning badge-soft badge-xs gap-1">
-                <IconWarning class="size-3" />{{ conflictFor(row)!.distance }}° de
-                {{ labelFor(conflictPartner(row)!) }}
+                <IconWarning class="size-3" />parecido a {{ labelFor(conflictPartner(row)!) }}
               </span>
             </span>
             <span class="text-base-content/50 truncate font-mono text-xs"
@@ -509,8 +501,8 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
           <div v-if="conflictFor(selectedRow)" class="alert alert-warning alert-soft text-sm">
             <IconWarning class="size-4" />
             <span>
-              {{ labelFor(selectedRow) }} y {{ labelFor(conflictPartner(selectedRow)!) }} están a
-              {{ conflictFor(selectedRow)!.distance }}° de tono: cuesta distinguirlos.
+              {{ labelFor(selectedRow) }} y {{ labelFor(conflictPartner(selectedRow)!) }} se ven muy
+              parecidos: cuesta distinguirlos.
               <template v-if="suggestion !== null">
                 <button class="link font-semibold" @click="setHue(selectedRow, suggestion)">
                   Probá {{ suggestion }}°
