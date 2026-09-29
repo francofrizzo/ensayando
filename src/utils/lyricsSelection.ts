@@ -200,35 +200,125 @@ export const setCommentInVerses = (
   });
 
 /**
- * Drag and drop: moves a whole item (a verse, or a row of columns) so it lands just
- * before the target item, or at the end of the target stanza when targetItemIndex is
- * the stanza length. Returns the new lyrics and where the moved item ended up.
- * A stanza left empty is removed.
+ * Where a dragged verse lands: before item `itemIndex` of the stanza (the stanza length
+ * means "at the end"), or, with a column, before line `lineIndex` of that column (the
+ * column length means "at the end of the column").
  */
-export const moveItemTo = (
+export type DropTarget = FocusPosition;
+
+/** Same fields, same drop spot (for skipping redundant updates while dragging). */
+export const sameDropTarget = (a: DropTarget | null, b: DropTarget | null): boolean =>
+  a === b ||
+  (!!a &&
+    !!b &&
+    a.stanzaIndex === b.stanzaIndex &&
+    a.itemIndex === b.itemIndex &&
+    a.columnIndex === b.columnIndex &&
+    a.lineIndex === b.lineIndex);
+
+const MOVED = Symbol("moved");
+type Hole = { [MOVED]: true };
+const isHole = (value: unknown): value is Hole =>
+  typeof value === "object" && value !== null && MOVED in value;
+
+/**
+ * Drag and drop, verse-aware: moves a whole item (a verse or a row of columns) or a
+ * single line of a column, to a stanza position or into a column. A row of columns
+ * can't go inside a column (no nested columns). Columns, rows of columns and stanzas
+ * left empty are removed; a row left with a single one-line column becomes that verse.
+ * Returns the new lyrics and where the moved verse ended up (for a row of columns, its
+ * first line), or null when nothing would change or the move isn't allowed.
+ */
+export const moveVerseTo = (
   lyrics: LyricStanza[],
-  from: { stanzaIndex: number; itemIndex: number },
-  to: { stanzaIndex: number; itemIndex: number }
-): { lyrics: LyricStanza[]; position: { stanzaIndex: number; itemIndex: number } } | null => {
+  from: FocusPosition,
+  to: DropTarget
+): { lyrics: LyricStanza[]; position: FocusPosition } | null => {
   const next = cloneLyrics(lyrics);
-  const source = next[from.stanzaIndex];
-  const item = source?.[from.itemIndex];
-  if (!source || item === undefined || !next[to.stanzaIndex]) return null;
+  const hole: Hole = { [MOVED]: true };
 
-  let targetStanza = to.stanzaIndex;
-  let targetItem = to.itemIndex;
-  if (targetStanza === from.stanzaIndex && targetItem > from.itemIndex) targetItem -= 1;
-  if (targetStanza === from.stanzaIndex && targetItem === from.itemIndex) return null;
-
-  source.splice(from.itemIndex, 1);
-  if (source.length === 0) {
-    next.splice(from.stanzaIndex, 1);
-    if (targetStanza > from.stanzaIndex) targetStanza -= 1;
+  // 1. Take the moving element out, leaving a hole so no index shifts yet.
+  const sourceStanza = next[from.stanzaIndex];
+  const sourceItem = sourceStanza?.[from.itemIndex];
+  if (!sourceStanza || sourceItem === undefined) return null;
+  let moving: LyricVerse | LyricVerse[][];
+  if (from.columnIndex !== undefined && from.lineIndex !== undefined) {
+    if (!Array.isArray(sourceItem)) return null;
+    const column = sourceItem[from.columnIndex];
+    const line = column?.[from.lineIndex];
+    if (!column || !line) return null;
+    moving = line;
+    (column as unknown[])[from.lineIndex] = hole;
+  } else {
+    moving = sourceItem;
+    (sourceStanza as unknown[])[from.itemIndex] = hole;
   }
-  const destination = next[targetStanza]!;
-  targetItem = Math.min(targetItem, destination.length);
-  destination.splice(targetItem, 0, item);
-  return { lyrics: next, position: { stanzaIndex: targetStanza, itemIndex: targetItem } };
+
+  // 2. Put it at the target (indices still match the original lyrics).
+  const targetStanza = next[to.stanzaIndex];
+  if (!targetStanza) return null;
+  if (to.columnIndex !== undefined) {
+    if (Array.isArray(moving)) return null;
+    const group = targetStanza[to.itemIndex];
+    const column = Array.isArray(group) ? group[to.columnIndex] : undefined;
+    const lineIndex = to.lineIndex ?? 0;
+    if (!column || lineIndex < 0 || lineIndex > column.length) return null;
+    column.splice(lineIndex, 0, moving);
+  } else {
+    if (to.itemIndex < 0 || to.itemIndex > targetStanza.length) return null;
+    targetStanza.splice(to.itemIndex, 0, moving);
+  }
+
+  // 3. Remove the hole and whatever it leaves empty.
+  const cleaned: LyricStanza[] = [];
+  for (const stanza of next) {
+    const items: LyricStanza = [];
+    for (const item of stanza) {
+      if (isHole(item)) continue;
+      if (!Array.isArray(item)) {
+        items.push(item);
+        continue;
+      }
+      const columns = item
+        .map((column) => column.filter((line) => !isHole(line)))
+        .filter((column) => column.length > 0);
+      if (columns.length === 0) continue;
+      const touched = item.some((column) => column.some(isHole));
+      if (touched && columns.length === 1 && columns[0]!.length === 1) items.push(columns[0]![0]!);
+      else items.push(columns);
+    }
+    if (items.length > 0) cleaned.push(items);
+  }
+
+  if (JSON.stringify(cleaned) === JSON.stringify(lyrics)) return null;
+
+  // 4. Find where it landed.
+  for (let s = 0; s < cleaned.length; s++) {
+    const stanza = cleaned[s]!;
+    for (let i = 0; i < stanza.length; i++) {
+      const item = stanza[i]!;
+      if (item === moving) {
+        return {
+          lyrics: cleaned,
+          position: Array.isArray(item)
+            ? { stanzaIndex: s, itemIndex: i, columnIndex: 0, lineIndex: 0 }
+            : { stanzaIndex: s, itemIndex: i }
+        };
+      }
+      if (Array.isArray(item)) {
+        for (let c = 0; c < item.length; c++) {
+          const l = item[c]!.indexOf(moving as LyricVerse);
+          if (l !== -1) {
+            return {
+              lyrics: cleaned,
+              position: { stanzaIndex: s, itemIndex: i, columnIndex: c, lineIndex: l }
+            };
+          }
+        }
+      }
+    }
+  }
+  return null;
 };
 
 /** Nudges a verse time by a step (e.g. ±0,1 s), rounded to hundredths, never below 0. */

@@ -19,6 +19,8 @@ const props = defineProps<{
   /** Whole verses can be dragged; lines inside columns move with ⌘⇧↑↓. */
   draggable: boolean;
   dropBefore?: boolean;
+  /** For the last line of a column: a verse would land after it. */
+  dropAfter?: boolean;
   placeholder?: string;
 }>();
 
@@ -73,12 +75,16 @@ const focusTextarea = (event: MouseEvent) => {
       class="bg-primary pointer-events-none absolute inset-x-2 -top-px h-0.5 rounded-full"
     />
     <span
+      v-if="dropAfter"
+      class="bg-primary pointer-events-none absolute inset-x-2 -bottom-px h-0.5 rounded-full"
+    />
+    <span
       class="absolute inset-y-1.5 left-0 w-[3px] rounded-full transition-colors"
       :class="focused ? 'bg-primary' : selected ? 'bg-primary/50' : 'bg-transparent'"
     />
 
     <!-- Gutter: drag handle and the verse's colors as dots -->
-    <div class="flex w-[64px] shrink-0 items-center gap-1 pl-2">
+    <div class="flex w-[52px] shrink-0 items-center gap-1 pl-2 md:w-[64px]">
       <span
         v-if="draggable"
         draggable="true"
@@ -91,7 +97,10 @@ const focusTextarea = (event: MouseEvent) => {
         <IconDragHandle class="size-4" />
       </span>
       <span v-else class="w-3" />
-      <span class="flex w-[34px] shrink-0 items-center justify-end" :title="`${dots.length} colores`">
+      <span
+        class="flex w-7 shrink-0 items-center justify-end md:w-[34px]"
+        :title="`${dots.length} colores`"
+      >
         <span
           v-for="(dot, i) in shownDots"
           :key="i"
@@ -122,11 +131,27 @@ const focusTextarea = (event: MouseEvent) => {
         @update:model-value="emit('update:text', $event)"
         @focus="emit('focus')"
       />
+      <!-- Phone: the times go under the text, so they never cover it -->
+      <span
+        v-if="showTimes"
+        class="text-base-content/40 flex items-center gap-1.5 px-1 font-mono text-[10.5px] leading-tight tabular-nums md:hidden"
+        data-testid="verse-times-compact"
+      >
+        <span
+          v-if="sounding"
+          class="bg-primary size-1.5 shrink-0 animate-pulse rounded-full"
+          aria-label="Sonando"
+        />
+        <span v-if="start" class="truncate">
+          {{ start }}<template v-if="end"> → {{ end }}</template>
+        </span>
+        <i v-else class="text-base-content/35 font-sans">sin tiempo</i>
+      </span>
     </div>
 
     <span
       v-if="showTimes"
-      class="text-base-content/40 flex shrink-0 items-center gap-1.5 pr-3 font-mono text-[11.5px] whitespace-nowrap tabular-nums"
+      class="text-base-content/40 hidden shrink-0 items-center gap-1.5 pr-3 font-mono text-[11.5px] whitespace-nowrap tabular-nums md:flex"
       data-testid="verse-times"
     >
       <span

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, type CSSProperties } from "vue";
 
 import LyricsInspector from "@/components/editor/LyricsInspector.vue";
 import LyricsToolbar from "@/components/editor/LyricsToolbar.vue";
@@ -12,6 +12,7 @@ import { useEditorSession } from "@/composables/useEditorSession";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useLyricsEditor, type FocusPosition } from "@/composables/useLyricsEditor";
 import { useReactionOffset } from "@/composables/useReactionOffset";
+import { useTheme } from "@/composables/useTheme";
 import type { LyricStanza, LyricVerse } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
@@ -22,15 +23,17 @@ import {
   createEmptyLyrics,
   adjacentPosition,
   getVerseAt,
-  moveItemTo,
+  moveVerseTo,
   positionKey,
   pruneSelection,
+  sameDropTarget,
   selectRange,
   setCommentInVerses,
   toggleColorInVerses,
   togglePosition,
   toggleTrackInVerses,
-  updateVerses
+  updateVerses,
+  type DropTarget
 } from "@/utils/lyricsSelection";
 import { addStatusToLyrics } from "@/utils/lyricsViewerUtils";
 
@@ -41,6 +44,7 @@ const uiStore = useUIStore();
 const { currentCollection } = useCurrentCollection();
 const { currentTime, isPlaying, seekTo } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
+const { resolvedTheme } = useTheme();
 const { palette, trackColor } = useCollectionPalette(currentCollection);
 const reaction = useReactionOffset();
 const session = useEditorSession();
@@ -55,23 +59,17 @@ const lyricsToDisplay = computed<LyricStanza[]>(() =>
   store.localLyrics.value.length === 0 ? createEmptyLyrics() : store.localLyrics.value
 );
 
-const {
-  currentFocus,
-  updateLyrics,
-  showHelp,
-  handleInputFocus,
-  focusInput,
-  commandRegistry
-} = useLyricsEditor(
-  lyricsToDisplay,
-  store.updateLocalLyrics,
-  handleSave,
-  // Every mark subtracts the reaction-time correction (remembered on this device).
-  () => reaction.apply(currentTime.value),
-  seekTo,
-  store.undo,
-  store.redo
-);
+const { currentFocus, updateLyrics, showHelp, handleInputFocus, focusInput, commandRegistry } =
+  useLyricsEditor(
+    lyricsToDisplay,
+    store.updateLocalLyrics,
+    handleSave,
+    // Every mark subtracts the reaction-time correction (remembered on this device).
+    () => reaction.apply(currentTime.value),
+    seekTo,
+    store.undo,
+    store.redo
+  );
 
 // ---------- view toggles (remembered on this device) ----------
 const readFlag = (key: string, fallback: boolean) => {
@@ -200,7 +198,29 @@ const setVerseText = (position: FocusPosition, text: string) => {
   updateLyrics(lyrics);
 };
 
-const verseDots = (verse: LyricVerse) => (verse.color_keys ?? []).map((key) => trackInk(key));
+// Styles and dots depend only on a verse's colors: computed once per color combination
+// (per collection and theme) and reused, so rows get the same objects on every render and
+// re-rendering the sheet (e.g. while dragging) doesn't recompute palettes per verse.
+type VerseDecor = { styles: CSSProperties; dots: string[] };
+const decorCache = computed(() => {
+  void currentCollection.value;
+  void palette.value;
+  void resolvedTheme.value;
+  return new Map<string, VerseDecor>();
+});
+const decor = (verse: LyricVerse): VerseDecor => {
+  const cache = decorCache.value;
+  const key = (verse.color_keys ?? []).join("|");
+  let found = cache.get(key);
+  if (!found) {
+    found = {
+      styles: getVerseStyles(verse, currentCollection.value),
+      dots: (verse.color_keys ?? []).map((colorKey) => trackInk(colorKey))
+    };
+    cache.set(key, found);
+  }
+  return found;
+};
 
 // ---------- playback ----------
 const soundingKeys = computed(() =>
@@ -218,25 +238,60 @@ watch(firstSounding, async (key) => {
     ?.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 
-// ---------- drag and drop (whole items) ----------
+// ---------- drag and drop ----------
+// Whole items (a verse or a row of columns) are dragged. A single verse can land between
+// items of a stanza or between the lines of a column; a row of columns only between items.
 const dragFrom = ref<{ stanzaIndex: number; itemIndex: number } | null>(null);
-const dropTarget = ref<{ stanzaIndex: number; itemIndex: number } | null>(null);
+const dropTarget = ref<DropTarget | null>(null);
 
 const onDragStart = (event: DragEvent, stanzaIndex: number, itemIndex: number) => {
   dragFrom.value = { stanzaIndex, itemIndex };
   event.dataTransfer?.setData("text/plain", `${stanzaIndex}-${itemIndex}`);
   if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
 };
+const draggingGroup = () => {
+  const from = dragFrom.value;
+  return !!from && Array.isArray(lyricsToDisplay.value[from.stanzaIndex]?.[from.itemIndex]);
+};
+// dragover fires continuously: only touch reactive state when the spot really changes.
+const setDropTarget = (target: DropTarget) => {
+  if (!sameDropTarget(dropTarget.value, target)) dropTarget.value = target;
+};
+const pointerInLowerHalf = (event: DragEvent) => {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  return event.clientY > rect.top + rect.height / 2;
+};
 const onDragOver = (event: DragEvent, stanzaIndex: number, itemIndex: number) => {
   if (!dragFrom.value) return;
   event.preventDefault();
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  const after = event.clientY > rect.top + rect.height / 2;
-  dropTarget.value = { stanzaIndex, itemIndex: after ? itemIndex + 1 : itemIndex };
+  setDropTarget({ stanzaIndex, itemIndex: pointerInLowerHalf(event) ? itemIndex + 1 : itemIndex });
+};
+const onColumnDragOver = (
+  event: DragEvent,
+  stanzaIndex: number,
+  itemIndex: number,
+  columnIndex: number,
+  lineIndex: number
+) => {
+  // A row of columns can't go inside a column: let the row's own handler place it.
+  if (!dragFrom.value || draggingGroup()) return;
+  event.preventDefault();
+  event.stopPropagation();
+  setDropTarget({
+    stanzaIndex,
+    itemIndex,
+    columnIndex,
+    lineIndex: pointerInLowerHalf(event) ? lineIndex + 1 : lineIndex
+  });
+};
+const onStanzaEndDragOver = (event: DragEvent, stanzaIndex: number, length: number) => {
+  if (!dragFrom.value) return;
+  event.preventDefault();
+  setDropTarget({ stanzaIndex, itemIndex: length });
 };
 const onDrop = () => {
   if (dragFrom.value && dropTarget.value) {
-    const result = moveItemTo(lyricsToDisplay.value, dragFrom.value, dropTarget.value);
+    const result = moveVerseTo(lyricsToDisplay.value, dragFrom.value, dropTarget.value);
     if (result) {
       apply(result.lyrics);
       void focusInput(result.position);
@@ -248,8 +303,8 @@ const onDragEnd = () => {
   dragFrom.value = null;
   dropTarget.value = null;
 };
-const isDropBefore = (stanzaIndex: number, itemIndex: number) =>
-  dropTarget.value?.stanzaIndex === stanzaIndex && dropTarget.value.itemIndex === itemIndex;
+// One string to compare against each row's key in the template.
+const dropKey = computed(() => (dropTarget.value ? positionKey(dropTarget.value) : null));
 
 // ---------- keyboard: selection, preview, help ----------
 const togglePreview = () => uiStore.setEditorPreview(!uiStore.editorPreview);
@@ -303,8 +358,12 @@ watch(currentFocus, (focus) => {
   if (!focus) inspectorSheetOpen.value = false;
 });
 
-const verseKey = (stanzaIndex: number, itemIndex: number, columnIndex?: number, lineIndex?: number) =>
-  positionKey({ stanzaIndex, itemIndex, columnIndex, lineIndex });
+const verseKey = (
+  stanzaIndex: number,
+  itemIndex: number,
+  columnIndex?: number,
+  lineIndex?: number
+) => positionKey({ stanzaIndex, itemIndex, columnIndex, lineIndex });
 const isFocused = (key: string) => !!currentFocus.value && positionKey(currentFocus.value) === key;
 
 defineExpose({
@@ -331,6 +390,7 @@ defineExpose({
       <div
         ref="sheetRef"
         class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 py-3 md:px-4"
+        :class="{ '[&_[data-lyric-hitbox]]:transition-none': dragFrom }"
         data-testid="lyrics-sheet"
         @dragover.prevent
         @drop.prevent="onDrop"
@@ -338,10 +398,9 @@ defineExpose({
         <section
           v-for="(stanza, i) in lyricsToDisplay"
           :key="i"
-          class="border-base-content/10 flex flex-col gap-0.5 border-dashed pb-3 not-first:mt-2 not-first:border-t not-first:pt-3"
+          class="border-base-content/10 relative flex flex-col gap-0.5 border-dashed pb-3 not-first:border-t not-first:pt-3"
           :data-stanza="i"
         >
-
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
             <LyricsVerseRow
               v-if="!Array.isArray(item)"
@@ -351,12 +410,14 @@ defineExpose({
               :focused="isFocused(verseKey(i, j))"
               :sounding="soundingKeys.has(verseKey(i, j))"
               :show-times="showTimestamps"
-              :verse-styles="getVerseStyles(item, currentCollection)"
-              :dots="verseDots(item)"
+              :verse-styles="decor(item).styles"
+              :dots="decor(item).dots"
               :draggable="true"
-              :drop-before="isDropBefore(i, j)"
+              :drop-before="dropKey === verseKey(i, j)"
               :placeholder="i === 0 && j === 0 ? 'Escribí el primer verso' : ''"
-              @select="(event: MouseEvent) => onRowMouseDown(event, { stanzaIndex: i, itemIndex: j })"
+              @select="
+                (event: MouseEvent) => onRowMouseDown(event, { stanzaIndex: i, itemIndex: j })
+              "
               @focus="onVerseFocus({ stanzaIndex: i, itemIndex: j })"
               @update:text="(text) => setVerseText({ stanzaIndex: i, itemIndex: j }, text)"
               @dragstart="(event) => onDragStart(event, i, j)"
@@ -364,14 +425,15 @@ defineExpose({
               @dragover="(event: DragEvent) => onDragOver(event, i, j)"
             />
 
-            <!-- Columns: side by side with a dashed divider; the row moves as a whole -->
+            <!-- Columns: side by side with a dashed divider; the row moves as a whole,
+                 single verses can be dropped between its lines -->
             <div
               v-else
               class="relative flex w-full items-stretch"
               @dragover="(event: DragEvent) => onDragOver(event, i, j)"
             >
               <span
-                v-if="isDropBefore(i, j)"
+                v-if="dropKey === verseKey(i, j)"
                 class="bg-primary pointer-events-none absolute inset-x-2 -top-px h-0.5 rounded-full"
               />
               <div
@@ -388,9 +450,11 @@ defineExpose({
                   :focused="isFocused(verseKey(i, j, k, l))"
                   :sounding="soundingKeys.has(verseKey(i, j, k, l))"
                   :show-times="showTimestamps"
-                  :verse-styles="getVerseStyles(line, currentCollection)"
-                  :dots="verseDots(line)"
+                  :verse-styles="decor(line).styles"
+                  :dots="decor(line).dots"
                   :draggable="k === 0 && l === 0"
+                  :drop-before="dropKey === verseKey(i, j, k, l)"
+                  :drop-after="l === column.length - 1 && dropKey === verseKey(i, j, k, l + 1)"
                   @select="
                     (event: MouseEvent) =>
                       onRowMouseDown(event, {
@@ -412,15 +476,22 @@ defineExpose({
                   "
                   @dragstart="(event) => onDragStart(event, i, j)"
                   @dragend="onDragEnd"
+                  @dragover="(event: DragEvent) => onColumnDragOver(event, i, j, k, l)"
                 />
               </div>
             </div>
           </template>
 
+          <!-- End of the stanza: out of flow, over the bottom padding -->
           <div
-            class="h-2"
-            @dragover="(event: DragEvent) => onDragOver(event, i, stanza.length - 1)"
-          />
+            class="absolute inset-x-0 bottom-0 h-3"
+            @dragover="(event: DragEvent) => onStanzaEndDragOver(event, i, stanza.length)"
+          >
+            <span
+              v-if="dropKey === verseKey(i, stanza.length)"
+              class="bg-primary pointer-events-none absolute inset-x-2 top-[5px] h-0.5 rounded-full"
+            />
+          </div>
         </section>
       </div>
 

@@ -11,7 +11,8 @@ import {
   formatVerseTime,
   getVerseAt,
   listVersePositions,
-  moveItemTo,
+  moveVerseTo,
+  sameDropTarget,
   nudgeTime,
   parseVerseTime,
   positionKey,
@@ -40,7 +41,9 @@ const lyrics = (): LyricStanza[] => [
 ];
 
 const p = (stanzaIndex: number, itemIndex: number, columnIndex?: number, lineIndex?: number) =>
-  columnIndex === undefined ? { stanzaIndex, itemIndex } : { stanzaIndex, itemIndex, columnIndex, lineIndex };
+  columnIndex === undefined
+    ? { stanzaIndex, itemIndex }
+    : { stanzaIndex, itemIndex, columnIndex, lineIndex };
 
 describe("positions", () => {
   it("lists verses in reading order, columns left to right", () => {
@@ -171,34 +174,94 @@ describe("times", () => {
   });
 });
 
-describe("moveItemTo", () => {
-  it("moves a verse down within its stanza", () => {
-    const result = moveItemTo(lyrics(), { stanzaIndex: 0, itemIndex: 0 }, { stanzaIndex: 0, itemIndex: 2 });
-    expect(result!.lyrics[0]!.map((v) => (Array.isArray(v) ? "cols" : v.text))).toEqual([
-      "dos",
-      "uno",
-      "tres"
+// A stanza as its texts: a verse is its text, a row of columns is an array of text arrays.
+const texts = (stanza: LyricStanza | undefined) =>
+  (stanza ?? []).map((item) =>
+    Array.isArray(item) ? item.map((column) => column.map((verse) => verse.text)) : item.text
+  );
+
+describe("moveVerseTo", () => {
+  it("moves a whole item", () => {
+    const result = moveVerseTo(lyrics(), p(0, 0), p(0, 2));
+    expect(texts(result!.lyrics[0])).toEqual(["dos", "uno", "tres"]);
+    expect(result!.position).toEqual(p(0, 1));
+  });
+
+  it("drops a verse into a column, before a line", () => {
+    const result = moveVerseTo(lyrics(), p(0, 2), p(1, 0, 1, 1));
+    expect(texts(result!.lyrics[0])).toEqual(["uno", "dos"]);
+    expect(texts(result!.lyrics[1])).toEqual([[["ay"], ["uh", "tres", "uh 2"]], "cuatro"]);
+    expect(result!.position).toEqual(p(1, 0, 1, 1));
+  });
+
+  it("drops a verse at the end of a column", () => {
+    const result = moveVerseTo(lyrics(), p(0, 0), p(1, 0, 0, 1));
+    expect(texts(result!.lyrics[1])).toEqual([
+      [
+        ["ay", "uno"],
+        ["uh", "uh 2"]
+      ],
+      "cuatro"
     ]);
-    expect(result!.position).toEqual({ stanzaIndex: 0, itemIndex: 1 });
+    expect(result!.position).toEqual(p(1, 0, 0, 1));
   });
 
-  it("moves a verse into another stanza, at the end", () => {
-    const result = moveItemTo(lyrics(), { stanzaIndex: 0, itemIndex: 2 }, { stanzaIndex: 1, itemIndex: 2 });
-    expect(result!.lyrics[0]).toHaveLength(2);
-    expect(result!.lyrics[1]![2]).toMatchObject({ text: "tres" });
+  it("keeps the target right when the verse comes from before the columns in the same stanza", () => {
+    const one: LyricStanza[] = [
+      [{ text: "a" }, { text: "b" }, [[{ text: "x" }], [{ text: "y" }]], { text: "c" }]
+    ];
+    const result = moveVerseTo(one, p(0, 0), p(0, 2, 1, 0));
+    expect(texts(result!.lyrics[0])).toEqual(["b", [["x"], ["a", "y"]], "c"]);
+    expect(result!.position).toEqual(p(0, 1, 1, 0));
   });
 
-  it("removes a stanza left empty and keeps the target index right", () => {
-    const one: LyricStanza[] = [[{ text: "a" }], [{ text: "b" }, { text: "c" }]];
-    const result = moveItemTo(one, { stanzaIndex: 0, itemIndex: 0 }, { stanzaIndex: 1, itemIndex: 1 });
+  it("removes a stanza left empty by moving its only verse into a column", () => {
+    const two: LyricStanza[] = [[{ text: "a" }], [[[{ text: "x" }], [{ text: "y" }]]]];
+    const result = moveVerseTo(two, p(0, 0), p(1, 0, 0, 0));
     expect(result!.lyrics).toHaveLength(1);
-    expect(result!.lyrics[0]!.map((v) => (v as { text: string }).text)).toEqual(["b", "a", "c"]);
-    expect(result!.position).toEqual({ stanzaIndex: 0, itemIndex: 1 });
+    expect(texts(result!.lyrics[0])).toEqual([[["a", "x"], ["y"]]]);
+    expect(result!.position).toEqual(p(0, 0, 0, 0));
   });
 
-  it("does nothing when dropped on itself", () => {
-    expect(moveItemTo(lyrics(), { stanzaIndex: 0, itemIndex: 1 }, { stanzaIndex: 0, itemIndex: 1 })).toBeNull();
-    expect(moveItemTo(lyrics(), { stanzaIndex: 0, itemIndex: 1 }, { stanzaIndex: 0, itemIndex: 2 })).toBeNull();
+  it("refuses to put a row of columns inside a column", () => {
+    expect(moveVerseTo(lyrics(), p(1, 0), p(1, 0, 0, 0))).toBeNull();
+    const two: LyricStanza[] = [
+      [[[{ text: "x" }], [{ text: "y" }]]],
+      [[[{ text: "z" }], [{ text: "w" }]]]
+    ];
+    expect(moveVerseTo(two, p(0, 0), p(1, 0, 1, 0))).toBeNull();
+  });
+
+  it("moves a column line out, dropping the column it leaves empty", () => {
+    const result = moveVerseTo(lyrics(), p(1, 0, 0, 0), p(0, 0));
+    expect(texts(result!.lyrics[0])).toEqual(["ay", "uno", "dos", "tres"]);
+    expect(texts(result!.lyrics[1])).toEqual([[["uh", "uh 2"]], "cuatro"]);
+    expect(result!.position).toEqual(p(0, 0));
+  });
+
+  it("turns a row left with one one-line column into that verse", () => {
+    const one: LyricStanza[] = [[[[{ text: "x" }], [{ text: "y" }]], { text: "c" }]];
+    const result = moveVerseTo(one, p(0, 0, 0, 0), p(0, 2));
+    expect(texts(result!.lyrics[0])).toEqual(["y", "c", "x"]);
+    expect(result!.position).toEqual(p(0, 2));
+  });
+
+  it("does nothing when dropped on itself or with a bad target", () => {
+    expect(moveVerseTo(lyrics(), p(0, 1), p(0, 1))).toBeNull();
+    expect(moveVerseTo(lyrics(), p(0, 1), p(0, 2))).toBeNull();
+    expect(moveVerseTo(lyrics(), p(0, 1), p(0, 0, 0, 0))).toBeNull();
+    expect(moveVerseTo(lyrics(), p(0, 1), p(1, 0, 5, 0))).toBeNull();
+  });
+});
+
+describe("sameDropTarget", () => {
+  it("compares every field", () => {
+    expect(sameDropTarget(p(0, 1), p(0, 1))).toBe(true);
+    expect(sameDropTarget(p(0, 1, 0, 0), p(0, 1, 0, 0))).toBe(true);
+    expect(sameDropTarget(p(0, 1, 0, 0), p(0, 1, 0, 1))).toBe(false);
+    expect(sameDropTarget(p(0, 1), p(0, 1, 0, 0))).toBe(false);
+    expect(sameDropTarget(null, p(0, 1))).toBe(false);
+    expect(sameDropTarget(null, null)).toBe(true);
   });
 });
 
@@ -224,8 +287,17 @@ describe("copyColorsAndTracks", () => {
 
   it("gives every target the source's exact colors and tracks", () => {
     const next = copyColorsAndTracks(lyrics, at(0), [at(0), at(1), at(2)]);
-    expect(next[0]![1]).toEqual({ text: "dos", color_keys: ["sop", "alt"], audio_track_ids: [1, 2], start_time: 3 });
-    expect(next[0]![2]).toEqual({ text: "tres", color_keys: ["sop", "alt"], audio_track_ids: [1, 2] });
+    expect(next[0]![1]).toEqual({
+      text: "dos",
+      color_keys: ["sop", "alt"],
+      audio_track_ids: [1, 2],
+      start_time: 3
+    });
+    expect(next[0]![2]).toEqual({
+      text: "tres",
+      color_keys: ["sop", "alt"],
+      audio_track_ids: [1, 2]
+    });
     expect(next[0]![0]).toEqual(lyrics[0]![0]);
   });
 
