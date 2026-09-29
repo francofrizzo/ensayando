@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
+import SyncLyrics from "@/components/editor/SyncLyrics.vue";
 import SyncTimeline, {
   type TimelineRegion,
   type TimelineTrack
@@ -13,13 +14,11 @@ import {
   IconPause,
   IconPlay,
   IconPlus,
-  IconUndo,
-  IconWarning
+  IconUndo
 } from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { usePlayerState } from "@/composables/useCurrentTime";
 import { useEditorTab } from "@/composables/useEditorSession";
-import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useReactionOffset } from "@/composables/useReactionOffset";
 import type { LyricStanza } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
@@ -32,8 +31,7 @@ import {
   outOfOrderIndices,
   regionEnd,
   setUnitTimes,
-  type SyncUnit,
-  unitState
+  type SyncUnit
 } from "@/utils/syncMarking";
 import {
   applyRegionDrag,
@@ -47,7 +45,6 @@ const store = useCollectionsStore();
 const player = usePlayerState();
 const collection = computed(() => store.currentCollection);
 const { trackColor } = useCollectionPalette(collection);
-const { getVerseStyles } = useLyricsColoring();
 const { offset, nudge: nudgeReaction, apply: applyReaction } = useReactionOffset();
 
 const lyrics = computed(() => store.localLyrics.value as LyricStanza[]);
@@ -76,8 +73,6 @@ watch(
 );
 
 const current = computed<SyncUnit | undefined>(() => units.value[cursor.value]);
-const previous = computed<SyncUnit | undefined>(() => units.value[cursor.value - 1]);
-const upcoming = computed<SyncUnit | undefined>(() => units.value[cursor.value + 1]);
 const markedCount = computed(() => units.value.filter((unit) => unit.start !== undefined).length);
 
 // Times written since the last save: they also light the Sincronizar tab's dot.
@@ -136,10 +131,6 @@ const unitColors = (unit: SyncUnit, role: "lyric" | "wave") =>
   unit.colorKeys.length > 0
     ? unit.colorKeys.map((key) => trackColor(key, role))
     : [trackColor(undefined, role)];
-const dotBackground = (unit: SyncUnit) => {
-  const colors = unitColors(unit, "wave");
-  return colors.length > 1 ? `linear-gradient(135deg, ${colors.join(", ")})` : colors[0];
-};
 
 const outOfOrder = computed(() => outOfOrderIndices(units.value));
 
@@ -196,6 +187,12 @@ watch(currentTime, (time) => {
 watch(playing, (isPlaying) => {
   if (!isPlaying) stopAt.value = null;
 });
+
+// Picking a region in the timeline also makes it the verse to mark next.
+const onSelectRegion = (index: number | null) => {
+  selected.value = index;
+  if (index !== null) cursor.value = index;
+};
 
 const moveSelected = (delta: number) => {
   const region = regions.value.find((r) => r.index === selected.value);
@@ -261,24 +258,9 @@ onBeforeUnmount(() => {
   phoneQuery.removeEventListener("change", onPhoneChange);
 });
 
-const verseStyle = (unit: SyncUnit | undefined, past = false) =>
-  unit && collection.value
-    ? getVerseStyles({ text: "", color_keys: unit.colorKeys }, collection.value, past ? "past" : "future")
-    : {};
-
 const unitText = (unit: SyncUnit | undefined) => unit?.texts.join(" · ") ?? "";
 
-const contextLabel = computed(() => {
-  const unit = current.value;
-  if (!unit) return "";
-  const parts = [unit.comment ?? `Estrofa ${unit.stanzaIndex + 1}`];
-  if (unit.start !== undefined) parts.push(`empezó en ${formatClock(unit.start, 2).replace(".", ",")}`);
-  return parts.join(" · ");
-});
-
 const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",")} s`);
-const listItems = ref<HTMLElement[]>([]);
-watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "nearest" }));
 </script>
 
 <template>
@@ -296,97 +278,28 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
 
     <!-- ================= Desktop ================= -->
     <template v-else-if="!isPhone">
-      <div class="flex min-h-0 flex-1 gap-3 p-3">
-        <!-- Stage: the verse being marked, with the previous and the next -->
-        <div class="flex min-w-0 flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
-          <span
-            v-if="previous"
-            class="font-lyrics text-xl font-medium tracking-[0.02em] uppercase"
-            :style="verseStyle(previous, true)"
-            >{{ unitText(previous) }}</span
-          >
-          <div class="flex flex-col items-center gap-3">
-            <span
-              class="text-base-content/50 flex items-center gap-2 text-[10.5px] font-semibold tracking-[0.14em] uppercase"
-            >
-              <span class="badge badge-sm bg-collection-soft text-collection-ink border-0 font-semibold"
-                >Marcando</span
-              >
-              {{ contextLabel }}
-            </span>
-            <span
-              class="font-lyrics text-[34px] leading-tight font-bold tracking-[0.02em] text-balance uppercase dark:drop-shadow-[0_0_18px_color-mix(in_oklch,var(--collection-ink)_45%,transparent)]"
-              :style="verseStyle(current)"
-              data-testid="sync-current"
-              >{{ unitText(current) }}</span
-            >
-          </div>
-          <div v-if="upcoming" class="flex flex-col items-center gap-2">
-            <span
-              class="text-base-content/50 flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.14em] uppercase"
-            >
-              Sigue · <kbd class="kbd kbd-xs">↓</kbd> al empezar
-            </span>
-            <span
-              class="font-lyrics text-xl font-medium tracking-[0.02em] uppercase"
-              :style="verseStyle(upcoming)"
-              >{{ unitText(upcoming) }}</span
-            >
-          </div>
-        </div>
-
-        <!-- Verse list -->
-        <div
-          class="border-base-content/10 flex w-[332px] shrink-0 flex-col overflow-hidden rounded-box border"
+      <div class="relative flex min-h-0 flex-1 flex-col">
+        <span
+          class="text-base-content/55 absolute top-3 right-4 z-10 text-xs"
+          data-testid="sync-count"
+          >{{ markedCount }} de {{ units.length }} con tiempo<template v-if="newTimes > 0">
+            ·
+            <b class="text-warning font-semibold" data-testid="sync-new-times"
+              >{{ newTimes }} {{ newTimes === 1 ? "nuevo" : "nuevos" }}</b
+            ></template
+          ></span
         >
-          <div class="border-base-content/10 flex items-baseline justify-between border-b px-4 py-3">
-            <span class="text-sm font-semibold">Versos</span>
-            <span class="text-base-content/55 text-xs"
-              >{{ markedCount }} de {{ units.length }} con tiempo<template v-if="newTimes > 0">
-                ·
-                <b class="text-warning font-semibold" data-testid="sync-new-times"
-                  >{{ newTimes }} {{ newTimes === 1 ? "nuevo" : "nuevos" }}</b
-                ></template
-              ></span
-            >
-          </div>
-          <ol class="min-h-0 flex-1 overflow-y-auto" data-testid="sync-list">
-            <li v-for="(unit, index) in units" :key="unit.id" ref="listItems">
-              <button
-                class="border-base-content/8 hover:bg-base-content/5 grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2.5 border-b px-4 py-2 text-left"
-                :class="{ 'bg-collection-soft/60': index === cursor }"
-                :data-state="unitState(unit, index === cursor)"
-                data-testid="sync-row"
-                @click="startFrom(index)"
-              >
-                <span
-                  class="size-2 rounded-full"
-                  :style="{ background: dotBackground(unit) }"
-                />
-                <span
-                  class="font-lyrics truncate text-[12.5px] font-medium tracking-[0.02em] uppercase"
-                  >{{ unitText(unit) }}</span
-                >
-                <span
-                  v-if="index === cursor"
-                  class="badge badge-sm bg-collection-soft text-collection-ink border-0 font-semibold"
-                  >Marcando</span
-                >
-                <span
-                  v-else-if="unit.start !== undefined"
-                  class="flex items-center gap-1 font-mono text-[11.5px] tabular-nums"
-                  :class="outOfOrder.has(index) ? 'text-warning' : 'text-base-content/60'"
-                  :title="outOfOrder.has(index) ? 'Empieza antes que un verso anterior' : undefined"
-                  data-testid="sync-row-time"
-                  ><IconWarning v-if="outOfOrder.has(index)" class="size-3" aria-hidden="true" />{{
-                    formatClock(unit.start, 2)
-                  }}</span
-                >
-                <span v-else class="text-base-content/40 text-[11px] italic uppercase">sin tiempo</span>
-              </button>
-            </li>
-          </ol>
-        </div>
+        <SyncLyrics
+          v-if="collection"
+          :collection="collection"
+          :lyrics="lyrics"
+          :units="units"
+          :cursor="cursor"
+          :current-time="currentTime"
+          :playing="playing"
+          :out-of-order="outOfOrder"
+          @pick="startFrom"
+        />
       </div>
 
       <!-- Transport + timeline -->
@@ -474,8 +387,9 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
           :playing="playing"
           :zoom="zoom"
           :selected-index="selected"
+          :cursor-index="cursor"
           @seek="player.seekTo"
-          @select="(index) => (selected = index)"
+          @select="onSelectRegion"
           @change="onRegionChange"
           @play-region="playRegion"
         />
@@ -484,31 +398,18 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
 
     <!-- ================= Phone: tap along ================= -->
     <template v-else>
-      <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 px-5 text-center">
-        <span
-          v-if="previous"
-          class="font-lyrics text-lg font-medium uppercase"
-          :style="verseStyle(previous, true)"
-          >{{ unitText(previous) }}</span
-        >
-        <span class="badge badge-sm bg-collection-soft text-collection-ink border-0 font-semibold"
-          >Marcando</span
-        >
-        <span
-          class="font-lyrics text-2xl leading-tight font-bold uppercase"
-          :style="verseStyle(current)"
-          data-testid="sync-current"
-          >{{ unitText(current) }}</span
-        >
-        <template v-if="upcoming">
-          <span class="text-base-content/50 text-[10.5px] font-semibold tracking-[0.14em] uppercase"
-            >Sigue</span
-          >
-          <span class="font-lyrics text-lg font-medium uppercase" :style="verseStyle(upcoming)">{{
-            unitText(upcoming)
-          }}</span>
-        </template>
-      </div>
+      <SyncLyrics
+        v-if="collection"
+        compact
+        :collection="collection"
+        :lyrics="lyrics"
+        :units="units"
+        :cursor="cursor"
+        :current-time="currentTime"
+        :playing="playing"
+        :out-of-order="outOfOrder"
+        @pick="startFrom"
+      />
       <div class="border-base-content/10 bg-base-200/60 flex flex-col gap-3 border-t px-4 pt-3 pb-4">
         <div class="flex items-center justify-between">
           <span class="font-mono text-[13px] tabular-nums">

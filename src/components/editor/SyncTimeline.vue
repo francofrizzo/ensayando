@@ -47,6 +47,8 @@ const props = defineProps<{
   playing: boolean;
   zoom: SyncZoom;
   selectedIndex: number | null;
+  /** The verse ↓ marks next: its region gets a dashed outline. */
+  cursorIndex?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -138,6 +140,10 @@ const regionSurface = (region: TimelineRegion) => {
       `${gradient(region.waves, 60)} border-box`
     ].join(", ");
   }
+  if (props.cursorIndex === region.index) {
+    style.outline = "1.5px dashed var(--collection-ink)";
+    style.outlineOffset = "-1.5px";
+  }
   return style;
 };
 
@@ -213,6 +219,21 @@ watch(
       contentWidth.value
     );
     if (next !== scroller.value.scrollLeft) scroller.value.scrollLeft = next;
+  }
+);
+
+// Picking a verse elsewhere brings its region into view (while playing, the playhead leads).
+watch(
+  () => props.cursorIndex,
+  (index) => {
+    const region = props.regions.find((r) => r.index === index);
+    if (props.playing || !region || !scroller.value) return;
+    const x = region.start * pps.value;
+    const { scrollLeft } = scroller.value;
+    if (x < scrollLeft || x > scrollLeft + viewportWidth.value - 40) {
+      scroller.value.scrollLeft = Math.max(0, x - viewportWidth.value * 0.3);
+      scheduleDraw();
+    }
   }
 );
 

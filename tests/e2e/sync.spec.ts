@@ -55,11 +55,11 @@ test("↓ marks each verse while playing, and the player uses the new times", as
   const panel = page.getByTestId("sync-panel");
   await expect(panel).toBeVisible({ timeout: 15000 });
   // Seeded: FIRST, SECOND, THIRD and LAST VERSE
-  await expect(page.getByTestId("sync-row")).toHaveCount(4);
+  await expect(page.getByTestId("sync-verse")).toHaveCount(4);
 
   // Start from the first verse and play
-  await page.getByTestId("sync-row").first().click();
-  await expect(page.getByTestId("sync-row").first()).toHaveAttribute("data-state", "marcando");
+  await page.getByTestId("sync-verse").first().click();
+  await expect(page.getByTestId("sync-verse").first()).toHaveAttribute("data-state", "marcando");
   await expect(page.getByTestId("sync-play")).toBeEnabled();
   await page.getByTestId("sync-play").click();
   await expect(page.getByTestId("sync-play")).toHaveAttribute("aria-label", "Pausar");
@@ -71,9 +71,9 @@ test("↓ marks each verse while playing, and the player uses the new times", as
   await page.waitForTimeout(600);
   await page.keyboard.press("ArrowDown");
 
-  // Three marked rows show their new times; the cursor moved on to the fourth verse
+  // Three marked verses show their new times; the cursor moved on to the fourth verse
   await expect(page.getByTestId("sync-new-times")).toBeVisible();
-  const rows = page.getByTestId("sync-row");
+  const rows = page.getByTestId("sync-verse");
   await expect(rows.nth(0)).toHaveAttribute("data-state", "marcado");
   await expect(rows.nth(1)).toHaveAttribute("data-state", "marcado");
   await expect(rows.nth(2)).toHaveAttribute("data-state", "marcado");
@@ -82,9 +82,9 @@ test("↓ marks each verse while playing, and the player uses the new times", as
     const [minutes, seconds] = clock.trim().split(":");
     return Number(minutes) * 60 + Number(seconds);
   };
-  const first = toSeconds(await rows.nth(0).getByTestId("sync-row-time").innerText());
-  const second = toSeconds(await rows.nth(1).getByTestId("sync-row-time").innerText());
-  const third = toSeconds(await rows.nth(2).getByTestId("sync-row-time").innerText());
+  const first = toSeconds(await rows.nth(0).getByTestId("sync-verse-time").innerText());
+  const second = toSeconds(await rows.nth(1).getByTestId("sync-verse-time").innerText());
+  const third = toSeconds(await rows.nth(2).getByTestId("sync-verse-time").innerText());
   expect(second).toBeGreaterThan(first);
   expect(third).toBeGreaterThan(second);
   // Seeded times were 0.50, 1.50 and 3.00: these come from the marks
@@ -142,14 +142,14 @@ test.describe("multicolumn lines", () => {
   }) => {
     await page.goto(`/test-collection/${COLUMNS_SLUG}?editar=sincronizar`);
     await expect(page.getByTestId("sync-panel")).toBeVisible({ timeout: 15000 });
-    const rows = page.getByTestId("sync-row");
+    const rows = page.getByTestId("sync-verse");
     // Column by column, top to bottom, like the player reads them
     await expect(rows).toHaveText([/INTRO/, /LEFT ONE/, /LEFT TWO/, /RIGHT ONE/, /OUTRO/]);
 
     await rows.nth(1).click();
     await expect(rows.nth(1)).toHaveAttribute("data-state", "marcando");
     await page.keyboard.press("ControlOrMeta+Comma");
-    // Move the cursor away to see the row's state
+    // Move the cursor away to see the verse's state
     await rows.nth(4).click();
     await expect(rows.nth(1)).toHaveAttribute("data-state", "marcado");
     // The other column keeps no time: marking one voice doesn't mark the others
