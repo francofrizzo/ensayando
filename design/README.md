@@ -4,7 +4,7 @@ Propuesta cerrada de rediseño: sistema visual, pantalla por pantalla y lo que p
 
 **Empezá por [`index.html`](index.html).** Todas las páginas comparten una barra con el tema (sistema, claro, oscuro) y un selector de **colección de ejemplo** que cambia el color de la colección en todos los mocks, para ver cómo se comporta el sistema con un violeta, un naranja o un verde.
 
-> Estado: propuesta para revisar. No hay cambios de código. Las etiquetas de cada decisión dicen si algo **se mantiene**, es un **ajuste**, es **nuevo**, **sale del SQL** (hoy se hace con la skill `admin`) o **se quita**.
+> Diseño implementado en la rama `redesign`. Los mocks ilustran la dirección visual; las [decisiones de cierre](#decisiones-de-cierre) de abajo registran lo que cambió durante la implementación. Las etiquetas de cada decisión dicen si algo **se mantiene**, es un **ajuste**, es **nuevo**, **sale del SQL** (lo que antes se hacía con la skill `admin`) o **se quita**.
 
 ## Concepto: luz de sala
 
@@ -91,6 +91,35 @@ Ver [`plan/`](plan/index.html). En resumen:
 - **Canciones:** RPC de orden, borrado con limpieza de R2, `songs.duration` y direcciones reservadas.
 - **Colecciones:** alta, baja, nombre, dirección, visibilidad, colores y portada desde la app.
 - **Skill `admin`:** pierde todo lo que cubre la app (la paleta en la fase 1, el resto en la fase 3). Queda para cambiar el email de una cuenta, eliminar una cuenta, operaciones en lote, limpiar audios huérfanos viejos y SQL a medida.
+
+## Decisiones de cierre
+
+Lo que se resolvió distinto de los mocks, o se agregó, durante la implementación.
+
+- **Sin compatibilidad hacia atrás.** `collections.hue` e `intensity` reemplazan a `main_color`, y los valores de `track_colors` pasan a `{hue, intensity}` o `{neutral: true}` en la misma migración, que convierte los colores existentes en SQL. No hay columnas viejas ni doble escritura.
+- **Derivación en JS.** La app calcula cada color (relleno, tinta, letra, onda, suave, borde) con `src/utils/palette.ts`, con el color ya llevado al gamut de pantalla, y lo inyecta como valor final. Sin sintaxis relativa de color, por Safari de iOS 17. Un barrido de los 360 tonos en las tres intensidades verifica el contraste en los tests.
+- **Colores de la colección.** Las pistas no tienen un nombre editable en Colores: el nombre que se ve sale de los títulos de las pistas y solo se renombra la clave. "Nueva colección" elige el color con muestras y "Otro" (tono libre), no con la barra completa.
+- **Cuentas administradas.** Al crear una, se pide solo el usuario: la contraseña la genera el servidor y se muestra una vez. Los admins de colección pueden restablecer contraseñas solo de cuentas administradas que estén únicamente en colecciones que administran.
+- **Admins de la app.** Tabla `app_admins`. No ven todas las colecciones: al crear una, quedan como su admin. Los primeros se cargan a mano (la skill tiene los comandos).
+- **Tema.** El selector Sistema/Claro/Oscuro vive en el menú de la canción y en el pie de la biblioteca.
+- **Solo y silencio.** Estado separado por pista; varias pistas pueden estar en solo; nunca se reinician los volúmenes. La mezcla descargada usa la misma ganancia aplicada.
+- **Modo edición.** Es un parámetro de la dirección (`?editar=cancion|letra|sincronizar`); "Nueva canción" es `/:colección/nueva`. "Vista previa" (<kbd>P</kbd>) muestra el escenario sin salir de la edición, con un botón para volver.
+- **Letra desde texto.** El menú ⋯ del editor suma "Pegar letra desde texto" (líneas en blanco separan estrofas, `[Comentario]` y columnas con ` / `; agrega o reemplaza en un solo paso de deshacer) y "Copiar letra como texto".
+- **Sincronizar.** El dock del reproductor se oculta mientras está abierta (tiene su propio transporte; el audio sigue sonando). "N nuevos" vive en el encabezado de la lista de versos, no en la barra. Las regiones que se superponen se apilan en hasta tres carriles, y un verso que empieza antes que uno anterior se marca con un aviso en la línea de tiempo y en la lista.
+- **Canción sin pistas.** El dock lo dice ("Esta canción todavía no tiene pistas") y ofrece "Agregar pistas" a quien edita, en lugar de un botón de reproducir que no carga nunca.
+- **Luz de sala.** Estática en pantallas de menos de 768 px y con movimiento reducido. La portada como luz se activa por colección (en General) y se guarda en el dispositivo.
+- **Foco.** Un solo anillo de foco para todos los campos (`field-focus`): 1,5 px en la tinta de la colección y un halo suave.
+- **Errores de ingreso** en castellano; Supabase responde en inglés.
+- **Pausa.** WaveSurfer 7.12 emite un `timeupdate(0)` al pausar; el reloj volvía a 0:00. Ya pasaba antes del rediseño; se lee la posición real.
+- **Desarrollo local.** `pnpm dev` sirve también las funciones de `api/` (`server/dev-api.ts`), así se prueban miembros y borrados sin `vercel dev`.
+
+### Antes de publicar (a cargo del dueño)
+
+- Comparar el esquema de producción con las migraciones (`supabase db diff --linked`): puede haber diferencias, y los índices únicos de dirección fallan si hay duplicados.
+- Configurar `SUPABASE_SERVICE_ROLE_KEY` en Vercel (y `APP_URL` si hace falta).
+- Verificar que Supabase pueda mandar emails (invitaciones y recuperación de contraseña).
+- Cargar los primeros admins de la app.
+- Aplicar las migraciones y revisar los colores convertidos en las colecciones reales.
 
 ## Estructura
 
