@@ -61,6 +61,40 @@ export const applyRegionDrag = (
   return { start: region.start, end: roundTime(end) };
 };
 
+/** Shift-drag snaps an edge to a target this close on screen (px). */
+export const SNAP_DISTANCE_PX = 8;
+
+/**
+ * Shift-drag: pulls the dragged edge (either edge when moving) onto the nearest target
+ * (the playhead, other verses' edges) that is within `threshold` seconds. Returns the
+ * snapped region and the time it snapped to, or the region unchanged and null.
+ * The result keeps applyRegionDrag's limits.
+ */
+export const snapRegion = (
+  region: Region,
+  mode: DragMode,
+  targets: readonly number[],
+  threshold: number,
+  duration: number
+): { region: Region; snappedTo: number | null } => {
+  const edges =
+    mode === "move" ? [region.start, region.end] : mode === "start" ? [region.start] : [region.end];
+  let best: { delta: number; target: number } | null = null;
+  for (const edge of edges) {
+    for (const target of targets) {
+      const delta = target - edge;
+      if (Math.abs(delta) <= threshold && (!best || Math.abs(delta) < Math.abs(best.delta))) {
+        best = { delta, target };
+      }
+    }
+  }
+  if (!best) return { region, snappedTo: null };
+  const snapped = applyRegionDrag(region, mode, best.delta, duration);
+  // Clamping (duration, minimum length) can keep the edge off the target: then it didn't snap.
+  const landed = [snapped.start, snapped.end].some((edge) => Math.abs(edge - best.target) < 0.005);
+  return landed ? { region: snapped, snappedTo: best.target } : { region, snappedTo: null };
+};
+
 /** Tick spacing (seconds) so ticks are at least `minGapPx` apart. */
 export const tickStep = (pps: number, minGapPx = 80): number => {
   const steps = [0.5, 1, 2, 5, 10, 15, 30, 60, 120];
@@ -120,7 +154,9 @@ export const MAX_LANES = 6;
  * Returns one lane index per input region, in input order.
  */
 export const assignLanes = (regions: Region[], maxLanes = MAX_LANES): number[] => {
-  const order = regions.map((_, index) => index).sort((a, b) => regions[a]!.start - regions[b]!.start);
+  const order = regions
+    .map((_, index) => index)
+    .sort((a, b) => regions[a]!.start - regions[b]!.start);
   const laneEnds: number[] = [];
   const lanes = new Array<number>(regions.length).fill(0);
   for (const index of order) {

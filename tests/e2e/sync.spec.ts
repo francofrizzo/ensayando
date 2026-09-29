@@ -17,7 +17,13 @@ const headers = {
 };
 const rest = `${SUPABASE_URL}/rest/v1`;
 
-type SeedTrack = { title: string; color_key: string; order: number | null; audio_file_url: string; peaks: unknown };
+type SeedTrack = {
+  title: string;
+  color_key: string;
+  order: number | null;
+  audio_file_url: string;
+  peaks: unknown;
+};
 
 test.beforeAll(async ({ request }) => {
   await request.delete(`${rest}/songs?slug=eq.${SLUG}`, { headers });
@@ -122,10 +128,7 @@ test.describe("multicolumn lines", () => {
         lyrics: [
           [
             { text: "INTRO", start_time: 0.5 },
-            [
-              [{ text: "LEFT ONE" }, { text: "LEFT TWO" }],
-              [{ text: "RIGHT ONE" }]
-            ],
+            [[{ text: "LEFT ONE" }, { text: "LEFT TWO" }], [{ text: "RIGHT ONE" }]],
             { text: "OUTRO" }
           ]
         ]
@@ -156,4 +159,30 @@ test.describe("multicolumn lines", () => {
     await expect(rows.nth(3)).toHaveAttribute("data-state", "sin-tiempo");
     await expect(rows.nth(2)).toHaveAttribute("data-state", "sin-tiempo");
   });
+});
+
+// Shift while dragging a region snaps its edge to another verse's edge nearby.
+// Nothing is saved, so it can use the shared test song.
+test("shift-dragging a region's end snaps it onto a nearby verse's start", async ({ page }) => {
+  await page.goto("/test-collection/test-song?editar=sincronizar");
+  const region = (label: string) => page.getByTestId("sync-region").filter({ hasText: label });
+  await expect(region("FIRST VERSE")).toBeVisible({ timeout: 15000 });
+
+  const first = (await region("FIRST VERSE").boundingBox())!;
+  const third = (await region("THIRD VERSE").boundingBox())!;
+  const y = first.y + first.height / 2;
+
+  // Grab FIRST VERSE's end handle and drop it 4 px short of THIRD VERSE's start
+  await page.mouse.move(first.x + first.width - 2, y);
+  await page.mouse.down();
+  await page.mouse.move(third.x - 20, y, { steps: 4 });
+  await page.keyboard.down("Shift");
+  await page.mouse.move(third.x - 4, y, { steps: 2 });
+  await expect(page.getByTestId("sync-snap-guide")).toBeVisible();
+  await page.mouse.up();
+  await page.keyboard.up("Shift");
+  await expect(page.getByTestId("sync-snap-guide")).toBeHidden();
+
+  const snapped = (await region("FIRST VERSE").boundingBox())!;
+  expect(Math.abs(snapped.x + snapped.width - third.x)).toBeLessThan(1.5);
 });

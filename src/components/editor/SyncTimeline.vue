@@ -14,6 +14,8 @@ import {
   type Region,
   rulerTicks,
   shouldFollow,
+  SNAP_DISTANCE_PX,
+  snapRegion,
   type SyncZoom,
   tickStep
 } from "@/utils/syncTimeline";
@@ -85,7 +87,18 @@ const drag = reactive<{
   origin: Region;
   preview: Region | null;
   moved: boolean;
-}>({ index: null, mode: "move", originX: 0, origin: { start: 0, end: 0 }, preview: null, moved: false });
+  dx: number;
+}>({
+  index: null,
+  mode: "move",
+  originX: 0,
+  origin: { start: 0, end: 0 },
+  preview: null,
+  moved: false,
+  dx: 0
+});
+// Where a Shift-drag snapped (a guide line is drawn there), or null.
+const snapGuide = ref<number | null>(null);
 
 // Overlapping regions stack in lanes so every label stays readable.
 const LANE_HEIGHT = 24;
@@ -114,7 +127,8 @@ const regionBox = (region: TimelineRegion, position: number) => {
 
 // A verse sung by several tracks shows all their colors, like the player's lyrics: a
 // gradient across the fill, the border and the label.
-const mix = (color: string, percent: number) => `color-mix(in oklch, ${color} ${percent}%, transparent)`;
+const mix = (color: string, percent: number) =>
+  `color-mix(in oklch, ${color} ${percent}%, transparent)`;
 const gradient = (colors: string[], percent = 100) => {
   const stops = colors.map((color) => (percent === 100 ? color : mix(color, percent)));
   return `linear-gradient(90deg, ${(stops.length > 1 ? stops : [stops[0], stops[0]]).join(", ")})`;
@@ -167,7 +181,40 @@ const onRegionPointerDown = (event: PointerEvent, region: TimelineRegion, mode: 
   drag.origin = { start: region.start, end: region.end };
   drag.preview = null;
   drag.moved = false;
+  drag.dx = 0;
   emit("select", region.index);
+};
+
+// With Shift held, the dragged edge snaps to the playhead or to another verse's edge
+// when it's within a few pixels.
+const updatePreview = (shift: boolean) => {
+  if (drag.index === null) return;
+  const free = applyRegionDrag(
+    drag.origin,
+    drag.mode,
+    pxToTime(drag.dx, pps.value),
+    props.duration
+  );
+  if (!shift) {
+    drag.preview = free;
+    snapGuide.value = null;
+    return;
+  }
+  const targets = [
+    props.currentTime,
+    ...props.regions
+      .filter((region) => region.index !== drag.index)
+      .flatMap((region) => [region.start, region.end])
+  ];
+  const snapped = snapRegion(
+    free,
+    drag.mode,
+    targets,
+    pxToTime(SNAP_DISTANCE_PX, pps.value),
+    props.duration
+  );
+  drag.preview = snapped.region;
+  snapGuide.value = snapped.snappedTo;
 };
 
 const onRegionPointerMove = (event: PointerEvent) => {
@@ -175,7 +222,14 @@ const onRegionPointerMove = (event: PointerEvent) => {
   const dx = event.clientX - drag.originX;
   if (!drag.moved && Math.abs(dx) < 3) return;
   drag.moved = true;
-  drag.preview = applyRegionDrag(drag.origin, drag.mode, pxToTime(dx, pps.value), props.duration);
+  drag.dx = dx;
+  updatePreview(event.shiftKey);
+};
+
+// Pressing or releasing Shift mid-drag snaps or frees the region without moving the mouse.
+const onShiftKey = (event: KeyboardEvent) => {
+  if (event.key !== "Shift" || drag.index === null || !drag.moved) return;
+  updatePreview(event.type === "keydown");
 };
 
 const onRegionPointerUp = () => {
@@ -184,6 +238,7 @@ const onRegionPointerUp = () => {
   }
   drag.index = null;
   drag.preview = null;
+  snapGuide.value = null;
 };
 
 // ---------- seeking ----------
@@ -243,7 +298,10 @@ watch(
   () => {
     requestAnimationFrame(() => {
       if (!scroller.value) return;
-      scroller.value.scrollLeft = Math.max(0, props.currentTime * pps.value - viewportWidth.value * 0.3);
+      scroller.value.scrollLeft = Math.max(
+        0,
+        props.currentTime * pps.value - viewportWidth.value * 0.3
+      );
       scheduleDraw();
     });
   }
@@ -326,6 +384,8 @@ const onScroll = () => scheduleDraw();
 
 let observer: ResizeObserver | null = null;
 onMounted(() => {
+  window.addEventListener("keydown", onShiftKey);
+  window.addEventListener("keyup", onShiftKey);
   if (!scroller.value) return;
   viewportWidth.value = scroller.value.clientWidth;
   observer = new ResizeObserver(() => {
@@ -338,6 +398,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onShiftKey);
+  window.removeEventListener("keyup", onShiftKey);
   observer?.disconnect();
   cancelAnimationFrame(frame);
 });
@@ -357,6 +419,13 @@ defineExpose({ pps });
       @pointerdown="onManualScroll"
     >
       <div class="relative" :style="{ width: `${contentWidth}px` }">
+        <!-- Shift-drag snap guide -->
+        <span
+          v-if="snapGuide !== null"
+          class="bg-collection-ink pointer-events-none absolute inset-y-0 z-20 w-px"
+          :style="{ left: `${snapGuide * pps}px` }"
+          data-testid="sync-snap-guide"
+        />
         <!-- Ruler -->
         <div
           class="border-base-content/10 relative h-[18px] cursor-pointer border-b"
@@ -389,13 +458,17 @@ defineExpose({ pps });
           <div
             v-for="(region, position) in regions"
             :key="region.index"
-            class="group absolute top-1 bottom-1 flex cursor-grab touch-none items-center gap-1 overflow-hidden rounded-[9px] px-2 font-lyrics text-[11px] leading-tight font-semibold tracking-[0.02em] whitespace-nowrap uppercase select-none active:cursor-grabbing"
+            class="group font-lyrics absolute top-1 bottom-1 flex cursor-grab touch-none items-center gap-1 overflow-hidden rounded-[9px] px-2 text-[11px] leading-tight font-semibold tracking-[0.02em] whitespace-nowrap uppercase select-none active:cursor-grabbing"
             :class="[
               { 'z-10': selectedIndex === region.index },
               laneCount > 1 ? 'py-0' : 'items-start py-1.5'
             ]"
             :style="{ ...regionBox(region, position), ...regionSurface(region) }"
-            :title="region.outOfOrder ? `${region.label} · Empieza antes que un verso anterior` : region.label"
+            :title="
+              region.outOfOrder
+                ? `${region.label} · Empieza antes que un verso anterior`
+                : region.label
+            "
             data-testid="sync-region"
             @pointerdown="(e) => onRegionPointerDown(e, region, 'move')"
             @pointermove="onRegionPointerMove"
@@ -404,7 +477,11 @@ defineExpose({ pps });
             @click.stop
             @dblclick.stop="emit('play-region', region.index)"
           >
-            <IconWarning v-if="region.outOfOrder" class="text-warning size-3 shrink-0" aria-hidden="true" />
+            <IconWarning
+              v-if="region.outOfOrder"
+              class="text-warning size-3 shrink-0"
+              aria-hidden="true"
+            />
             <span class="block min-w-0 overflow-hidden text-ellipsis" :style="labelStyle(region)">{{
               region.label
             }}</span>
@@ -434,7 +511,11 @@ defineExpose({ pps });
         </div>
 
         <!-- Per-track waves: one canvas pinned to the viewport -->
-        <div class="relative cursor-pointer" :style="{ height: `${wavesHeight}px` }" @click="onBackgroundClick">
+        <div
+          class="relative cursor-pointer"
+          :style="{ height: `${wavesHeight}px` }"
+          @click="onBackgroundClick"
+        >
           <canvas
             ref="canvas"
             class="sticky left-0 block"
