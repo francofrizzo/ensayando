@@ -3,8 +3,9 @@ import { expect, test } from "@playwright/test";
 // Helper: navigate to test song and wait for tracks to load
 async function openTestSong(page: import("@playwright/test").Page) {
   await page.goto("/test-collection/test-song");
-  // Wait for loading overlay to disappear (tracks ready)
-  await expect(page.getByText("Cargando...")).toBeHidden({ timeout: 15000 });
+  // Tracks ready: the play button stops spinning. (The "Cargando..." overlay only
+  // shows with the mixer open, so it can't be waited on.)
+  await expect(playPauseButton(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
 }
 
 // Helper: get the play/pause button
@@ -42,9 +43,9 @@ test("open song and see tracks panel", async ({ page }) => {
 
 // --- Playback ---
 
-test("tracks load and play button is enabled", async ({ page }) => {
+test("tracks load and play button is ready", async ({ page }) => {
   await openTestSong(page);
-  await expect(playPauseButton(page)).toBeEnabled();
+  await expect(playPauseButton(page)).toHaveAttribute("data-ready", "true");
 });
 
 test("play advances time", async ({ page }) => {

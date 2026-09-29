@@ -59,6 +59,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
           !props.isReady && 'cursor-default'
         ]"
         aria-label="Play/Pause"
+        :data-ready="props.isReady || undefined"
         @click="props.isReady && emit('play-pause')"
       >
         <span v-if="!props.isReady" class="loading loading-spinner loading-sm" />
