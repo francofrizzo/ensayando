@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, computed } from "vue";
+import { toast } from "vue-sonner";
+
+import PasteLyricsDialog from "@/components/editor/PasteLyricsDialog.vue";
 
 import {
   IconClose,
   IconCode,
+  IconCopy,
   IconDiscard,
   IconLyrics,
   IconMarkTime,
   IconMore,
   IconMusic,
+  IconPasteText,
   IconSave
 } from "@/components/ui/icons";
 import {
@@ -17,6 +22,8 @@ import {
   savedLabel,
   useEditorSession
 } from "@/composables/useEditorSession";
+import { useCollectionsStore } from "@/stores/collections";
+import { lyricsToText } from "@/utils/lyricsText";
 
 const props = withDefaults(
   defineProps<{
@@ -62,6 +69,29 @@ const status = computed(() => {
 const onSave = async () => {
   now.value = Date.now();
   await session.save();
+};
+
+const store = useCollectionsStore();
+const pasteOpen = ref(false);
+
+const openPaste = (event: Event) => {
+  (event.currentTarget as HTMLElement | null)?.blur();
+  pasteOpen.value = true;
+};
+
+const copyAsText = async (event: Event) => {
+  (event.currentTarget as HTMLElement | null)?.blur();
+  const text = lyricsToText(store.localLyrics.value);
+  if (!text) {
+    toast("Esta canción todavía no tiene letra");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Letra copiada como texto");
+  } catch {
+    toast.error("No se pudo copiar. Probá desde \"Editar como JSON\".");
+  }
 };
 
 const openJson = (event: Event) => {
@@ -172,6 +202,19 @@ const openJson = (event: Event) => {
         </div>
         <ul tabindex="0" class="dropdown-content menu glass-3 rounded-box z-50 mt-2 w-72 p-1.5">
           <li>
+            <button data-testid="paste-lyrics" @click="openPaste">
+              <IconPasteText class="size-[17px] opacity-70" />
+              Pegar letra desde texto
+            </button>
+          </li>
+          <li>
+            <button data-testid="copy-lyrics" @click="copyAsText">
+              <IconCopy class="size-[17px] opacity-70" />
+              Copiar letra como texto
+            </button>
+          </li>
+          <li class="menu-title p-0"><span class="bg-base-content/10 my-1 block h-px" /></li>
+          <li>
             <button data-testid="open-json" @click="openJson">
               <IconCode class="size-[17px] opacity-70" />
               Editar como JSON
@@ -182,6 +225,8 @@ const openJson = (event: Event) => {
       </div>
     </div>
   </header>
+
+  <PasteLyricsDialog v-model:open="pasteOpen" @applied="emit('tab', 'letra')" />
 
   <!-- Phone: tabs under the bar -->
   <div v-if="props.showTabs" class="mt-2 flex md:hidden">
