@@ -31,8 +31,10 @@
      --c es el main_color tal como está en la base. El resto se deriva
      (ver palette): --c-ink para texto e íconos sobre la sala, --c-soft
      para fondos teñidos, --on-c para texto sobre relleno. */
-  --k: 0.15;       /* intensidad de la colección: suave 0,08 · normal 0,15 · intensa 0,21 */
-  --fill-l: 0.5;   /* claridad fija de los rellenos: el texto blanco pasa 4,5:1 en todos los tonos */
+  --k: 0.18;       /* croma de la colección. En la app es relativo al tono: intensidad = parte del máximo que
+                      ese tono admite en sRGB a esa claridad (suave 50 %, normal 95 %, intensa 100 %; topes 0,10 / 0,18 / 0,20).
+                      Acá lo fija nav.js por colección de ejemplo, ya calculado. */
+  --fill-l: 0.5;   /* claridad de los rellenos. En la app depende del tono (0,42 a 0,50); el texto blanco pasa 4,5:1 */
   --c: oklch(var(--fill-l) var(--k) var(--h));
   --on-c: #fff;
   --ci-l: 0.47; --ci-c: 0.4; --cs-l: 0.93; --cs-k: 0.3; --cl-l: 0.8; --cl-k: 0.5;
@@ -71,8 +73,9 @@
   /* luz de sala: intensidad de las manchas de color del fondo */
   --amb-o: 0.16;
   --glow-o: 0; /* brillo de la letra activa: solo en oscuro */
-  /* claridad fija por rol y tema para los colores de pista: tinta (letra) y onda.
-     De cada pista solo se guarda el tono; el croma sale de su intensidad. */
+  /* claridad de referencia por rol y tema para los colores de pista: tinta (letra) y onda.
+     En la app la claridad sigue la cúspide de cada tono, dentro de un rango seguro por rol y tema
+     (letra y onda en oscuro 0,60 a 0,86; letra en claro 0,40 a 0,48); los mocks usan un valor fijo. */
   --lyr-l: 0.48; --wav-l: 0.59;
 
   /* ---------- movimiento ---------- */
@@ -109,13 +112,13 @@
     --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
     --amb-o: 0.24;
     --glow-o: 0.55;
-    --lyr-l: 0.8; --wav-l: 0.7;
+    --lyr-l: 0.76; --wav-l: 0.7;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --ci-l: 0.8; --ci-c: 0.17; --cs-l: 0.3; --cs-k: 0.45; --cl-l: 0.45; --cl-k: 0.6;
-  --lyr-l: 0.8; --wav-l: 0.7;
+  --lyr-l: 0.76; --wav-l: 0.7;
   --canvas: oklch(15.5% 0.012 var(--h));
   --surface: oklch(20% 0.014 var(--h));
   --raised: oklch(24.5% 0.016 var(--h));
@@ -174,7 +177,7 @@
   --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3);
   --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
   --amb-o: 0.24; --glow-o: 0.55;
-  --lyr-l: 0.8; --wav-l: 0.7;
+  --lyr-l: 0.76; --wav-l: 0.7;
   color: var(--ink);
 }
 

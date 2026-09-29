@@ -13,12 +13,12 @@
 .app, .tracks-demo {
   /* de cada pista se guarda solo el tono (y la intensidad, normal por defecto);
      la claridad la pone el rol: tinta (--lyr-l) u onda (--wav-l) */
-  --tk: 0.15;
-  --t-sop: oklch(0.6 var(--tk) 350);   /* Soprano · magenta */
-  --t-alt: oklch(0.6 var(--tk) 70);    /* Contralto · ámbar */
-  --t-ten: oklch(0.6 var(--tk) 195);   /* Tenor · turquesa */
-  --t-baj: oklch(0.6 var(--tk) 275);   /* Bajo · índigo */
-  --t-pno: oklch(0.6 var(--tk) 130);   /* Piano · lima */
+  /* croma de intensidad normal por tono (95 % del máximo sRGB, tope 0,19), como en la app */
+  --t-sop: oklch(0.6 0.19 350);   /* Soprano · magenta */
+  --t-alt: oklch(0.6 0.1 70);     /* Contralto · ámbar */
+  --t-ten: oklch(0.6 0.078 195);  /* Tenor · turquesa */
+  --t-baj: oklch(0.6 0.19 275);   /* Bajo · índigo */
+  --t-pno: oklch(0.6 0.12 130);   /* Piano · lima */
   --a2: var(--t-sop); --a3: var(--t-ten);
 }
 

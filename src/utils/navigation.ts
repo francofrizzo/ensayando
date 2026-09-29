@@ -1,4 +1,5 @@
 import type { CollectionWithRole, Song } from "@/data/types";
+import { type ColorSpec, colorAt } from "@/utils/palette";
 
 // ---------- text matching ----------
 
@@ -213,14 +214,13 @@ export const visibleIndexSongs = (songs: CommandSong[], collections: CollectionW
 // ---------- generated banner ----------
 
 /**
- * Background for a collection card without artwork: the collection hue as a
- * lit gradient. Chroma is capped so no hue clips harshly in sRGB.
+ * Background for a collection card without artwork: the collection color as a
+ * lit gradient. Each stop takes the chroma that hue can show at its lightness
+ * (utils/palette.ts), so no hue clips in sRGB.
  */
-export const bannerBackground = (hue: number, chroma: number) => {
-  const c = Math.min(chroma, 0.16);
-  return [
-    `radial-gradient(80% 70% at 25% 20%, oklch(0.72 ${c} ${hue}), transparent 60%)`,
-    `radial-gradient(70% 60% at 85% 90%, oklch(0.6 ${c} ${(hue + 40) % 360}), transparent 65%)`,
-    `linear-gradient(160deg, oklch(0.5 ${c} ${hue}), oklch(0.32 ${c} ${(hue + 30) % 360}))`
+export const bannerBackground = (spec: ColorSpec) =>
+  [
+    `radial-gradient(80% 70% at 25% 20%, ${colorAt(spec, 0.72)}, transparent 60%)`,
+    `radial-gradient(70% 60% at 85% 90%, ${colorAt(spec, 0.6, 40)}, transparent 65%)`,
+    `linear-gradient(160deg, ${colorAt(spec, 0.5)}, ${colorAt(spec, 0.32, 30)})`
   ].join(", ");
-};

@@ -19,7 +19,7 @@ import {
   songCountLabel,
   VISIBILITY_LABELS
 } from "@/utils/navigation";
-import { INTENSITY_CHROMA } from "@/utils/palette";
+import { resolveCollectionPalette } from "@/utils/palette";
 
 const collectionsStore = useCollectionsStore();
 const songIndex = useSongIndexStore();
@@ -57,10 +57,7 @@ const visibilityIcon: Record<CollectionVisibility, typeof IconGlobe> = {
 };
 
 const banner = (collection: CollectionWithRole) =>
-  bannerBackground(
-    collection.hue,
-    INTENSITY_CHROMA[collection.intensity] ?? INTENSITY_CHROMA.normal
-  );
+  bannerBackground(resolveCollectionPalette(collection).main);
 
 const count = (collection: CollectionWithRole) => songIndex.countByCollection.get(collection.id);
 
