@@ -8,6 +8,7 @@ import SyncTimeline, {
 } from "@/components/editor/SyncTimeline.vue";
 import ProgressBar from "@/components/player/ProgressBar.vue";
 import {
+  IconClose,
   IconHistory,
   IconMarkTime,
   IconMinus,
@@ -24,9 +25,11 @@ import type { LyricStanza } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
 import {
   buildSyncUnits,
+  clearEnd,
   countNewTimes,
+  endTargetIndex,
   firstUnmarkedIndex,
-  markEnd,
+  markEndAndAdvance,
   markStart,
   outOfOrderIndices,
   regionEnd,
@@ -103,12 +106,24 @@ const markStartOnly = () => {
   commit(markStart(lyrics.value, units.value, cursor.value, markTime()));
 };
 
-// The end belongs to the verse that's sounding: the current one once it has a start,
-// otherwise the one just marked.
-const markEndNow = () => {
-  const index = current.value?.start !== undefined ? cursor.value : cursor.value - 1;
-  const unit = units.value[index];
-  if (unit) commit(markEnd(lyrics.value, unit, markTime()));
+// The end belongs to the verse that's sounding: the current one once it has a start
+// (then the cursor moves on), otherwise the one just marked (the cursor is already past it).
+const markEndAndGo = () => {
+  const result = markEndAndAdvance(lyrics.value, units.value, cursor.value, markTime());
+  if (result.lyrics === lyrics.value) return;
+  commit(result.lyrics);
+  cursor.value = result.cursor;
+  selected.value = null;
+};
+
+// "Quitar fin": the selected region's end, or else the one "Marcar fin" would set.
+const clearEndIndex = computed(() => selected.value ?? endTargetIndex(units.value, cursor.value));
+const clearEndUnit = computed(() =>
+  clearEndIndex.value !== undefined ? units.value[clearEndIndex.value] : undefined
+);
+const canClearEnd = computed(() => clearEndUnit.value?.end !== undefined);
+const clearEndNow = () => {
+  if (clearEndUnit.value) commit(clearEnd(lyrics.value, clearEndUnit.value));
 };
 
 const back = (seconds: number) => player.seekTo(Math.max(0, currentTime.value - seconds));
@@ -209,7 +224,12 @@ const isTyping = (target: EventTarget | null) =>
 // Capture phase: with a region selected, ← → move it instead of seeking.
 const onKeydownCapture = (event: KeyboardEvent) => {
   if (isTyping(event.target) || selected.value === null) return;
-  if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+  if (
+    (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  ) {
     event.preventDefault();
     event.stopPropagation();
     const step = event.shiftKey ? 1 : 0.1;
@@ -220,16 +240,30 @@ const onKeydownCapture = (event: KeyboardEvent) => {
 const onKeydown = (event: KeyboardEvent) => {
   if (isTyping(event.target)) return;
   const command = event.metaKey || event.ctrlKey;
+  // ⇧. types ">" or ":" depending on the layout, so the physical key counts too.
+  const period = event.key === "." || event.code === "Period";
   if (event.key === "ArrowDown" && !command && !event.altKey && !event.shiftKey) {
     // No text cursor here, so plain ↓ marks (⌘↓ still does it in Letra).
     event.preventDefault();
     markAndAdvance();
-  } else if (command && !event.altKey && event.key === ",") {
+  } else if (command && !event.altKey && !event.shiftKey && event.key === ",") {
     event.preventDefault();
     markStartOnly();
-  } else if (command && !event.altKey && event.key === ".") {
+  } else if (command && !event.altKey && event.shiftKey && period) {
     event.preventDefault();
-    markEndNow();
+    clearEndNow();
+  } else if (command && !event.altKey && period) {
+    event.preventDefault();
+    markEndAndGo();
+  } else if (
+    (event.key === "Delete" || event.key === "Backspace") &&
+    selected.value !== null &&
+    !command &&
+    !event.altKey &&
+    !event.shiftKey
+  ) {
+    event.preventDefault();
+    clearEndNow();
   } else if (command && event.key.toLowerCase() === "z") {
     event.preventDefault();
     if (event.shiftKey) store.redo();
@@ -303,7 +337,9 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
       </div>
 
       <!-- Transport + timeline -->
-      <div class="border-base-content/10 bg-base-200/60 flex flex-col gap-2.5 border-t px-4 pt-3 pb-3">
+      <div
+        class="border-base-content/10 bg-base-200/60 flex flex-col gap-2.5 border-t px-4 pt-3 pb-3"
+      >
         <div class="flex flex-wrap items-center gap-3">
           <button
             class="btn btn-circle btn-primary play-glow size-11 border-0"
@@ -317,8 +353,10 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
             <IconPause v-else-if="playing" class="size-5" />
             <IconPlay v-else class="size-5 translate-x-[1px]" />
           </button>
-          <span class="font-mono text-[13px] tabular-nums whitespace-nowrap">
-            <span class="text-[15px] font-semibold" data-testid="sync-clock">{{ formatClock(currentTime) }}</span
+          <span class="font-mono text-[13px] whitespace-nowrap tabular-nums">
+            <span class="text-[15px] font-semibold" data-testid="sync-clock">{{
+              formatClock(currentTime)
+            }}</span
             ><span class="text-base-content/40 text-[11px]"
               >.{{ Math.floor((currentTime % 1) * 10) }}</span
             >
@@ -333,10 +371,35 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
             Marcar inicio y avanzar
             <kbd class="kbd kbd-sm border-white/35 bg-white/20 text-inherit">↓</kbd>
           </button>
-          <button class="btn btn-sm bg-base-content/7 gap-1.5 rounded-full border-0" @click="markEndNow">
-            Marcar fin <kbd class="kbd kbd-xs">⌘.</kbd>
+          <button
+            class="btn btn-sm bg-base-content/7 gap-1.5 rounded-full border-0"
+            data-testid="sync-mark-start"
+            @click="markStartOnly"
+          >
+            Marcar inicio <kbd class="kbd kbd-xs">⌘,</kbd>
           </button>
-          <button class="btn btn-sm bg-base-content/7 gap-1.5 rounded-full border-0" @click="back(3)">
+          <div class="flex items-center gap-1">
+            <button
+              class="btn btn-sm bg-base-content/7 gap-1.5 rounded-full border-0"
+              data-testid="sync-mark-end"
+              @click="markEndAndGo"
+            >
+              Marcar fin y avanzar <kbd class="kbd kbd-xs">⌘.</kbd>
+            </button>
+            <button
+              class="btn btn-sm btn-ghost text-base-content/70 gap-1 rounded-full"
+              :disabled="!canClearEnd"
+              title="Quitar fin (⌘⇧. · Supr con un verso elegido)"
+              data-testid="sync-clear-end"
+              @click="clearEndNow"
+            >
+              <IconClose class="size-3.5" /> Quitar fin
+            </button>
+          </div>
+          <button
+            class="btn btn-sm bg-base-content/7 gap-1.5 rounded-full border-0"
+            @click="back(3)"
+          >
             <IconHistory class="size-4" /> Volver 3 s
           </button>
           <div class="ml-auto flex items-center gap-3">
@@ -349,9 +412,11 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
               >
                 <IconMinus class="size-3.5" />
               </button>
-              <b class="text-base-content font-mono text-[13px] tabular-nums" data-testid="sync-offset">{{
-                offsetLabel
-              }}</b>
+              <b
+                class="text-base-content font-mono text-[13px] tabular-nums"
+                data-testid="sync-offset"
+                >{{ offsetLabel }}</b
+              >
               <button
                 class="btn btn-xs btn-circle btn-ghost"
                 aria-label="Más corrección"
@@ -360,7 +425,11 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
                 <IconPlus class="size-3.5" />
               </button>
             </span>
-            <div role="radiogroup" aria-label="Zoom" class="bg-base-content/7 flex gap-0.5 rounded-full p-[3px]">
+            <div
+              role="radiogroup"
+              aria-label="Zoom"
+              class="bg-base-content/7 flex gap-0.5 rounded-full p-[3px]"
+            >
               <button
                 v-for="option in SYNC_ZOOMS"
                 :key="option.id"
@@ -410,7 +479,9 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
         :out-of-order="outOfOrder"
         @pick="startFrom"
       />
-      <div class="border-base-content/10 bg-base-200/60 flex flex-col gap-3 border-t px-4 pt-3 pb-4">
+      <div
+        class="border-base-content/10 bg-base-200/60 flex flex-col gap-3 border-t px-4 pt-3 pb-4"
+      >
         <div class="flex items-center justify-between">
           <span class="font-mono text-[13px] tabular-nums">
             <span class="font-semibold">{{ formatClock(currentTime) }}</span>
@@ -418,26 +489,44 @@ const offsetLabel = computed(() => `−${offset.value.toFixed(2).replace(".", ",
           </span>
           <span class="text-base-content/60 flex items-center gap-1 text-xs">
             Reacción
-            <button class="btn btn-xs btn-circle btn-ghost" aria-label="Menos corrección" @click="nudgeOffset(-1)">
+            <button
+              class="btn btn-xs btn-circle btn-ghost"
+              aria-label="Menos corrección"
+              @click="nudgeOffset(-1)"
+            >
               <IconMinus class="size-3" />
             </button>
             <b class="text-base-content font-mono">{{ offsetLabel }}</b>
-            <button class="btn btn-xs btn-circle btn-ghost" aria-label="Más corrección" @click="nudgeOffset(1)">
+            <button
+              class="btn btn-xs btn-circle btn-ghost"
+              aria-label="Más corrección"
+              @click="nudgeOffset(1)"
+            >
               <IconPlus class="size-3" />
             </button>
           </span>
         </div>
         <ProgressBar :current-time="currentTime" :total-duration="duration" @seek="player.seekTo" />
-        <button
-          class="btn btn-primary play-glow flex h-24 flex-col gap-1 rounded-[22px] border-0 text-lg font-bold"
-          data-testid="sync-mark"
-          @click="markAndAdvance"
-        >
-          <span class="flex items-center gap-2"><IconMarkTime class="size-7" />Marcar</span>
-          <span class="max-w-full truncate px-4 text-xs font-medium opacity-80"
-            >inicio de “{{ unitText(current) }}”</span
+        <div class="flex gap-2">
+          <button
+            class="btn btn-primary play-glow flex h-24 min-w-0 flex-1 flex-col gap-1 rounded-[22px] border-0 text-lg font-bold"
+            data-testid="sync-mark"
+            @click="markAndAdvance"
           >
-        </button>
+            <span class="flex items-center gap-2"><IconMarkTime class="size-7" />Marcar</span>
+            <span class="max-w-full truncate px-4 text-xs font-medium opacity-80"
+              >inicio de “{{ unitText(current) }}”</span
+            >
+          </button>
+          <button
+            class="btn bg-base-content/7 flex h-24 w-24 shrink-0 flex-col gap-1 rounded-[22px] border-0 text-lg font-bold"
+            data-testid="sync-mark-end"
+            @click="markEndAndGo"
+          >
+            Fin
+            <span class="text-xs font-medium opacity-70">y avanzar</span>
+          </button>
+        </div>
         <div class="flex items-center justify-between">
           <button
             class="btn bg-base-content/7 gap-1.5 rounded-full border-0"

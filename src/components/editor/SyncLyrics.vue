@@ -41,12 +41,18 @@ const stanzas = computed<Line[][]>(() =>
   addStatusToLyrics(props.lyrics, props.currentTime).map((stanza, s) =>
     stanza.map((item, i): Line => {
       if (!Array.isArray(item)) {
-        return { key: `${s}-${i}`, columns: [[{ verse: item, index: unitIndexById.value.get(`${s}-${i}`) }]] };
+        return {
+          key: `${s}-${i}`,
+          columns: [[{ verse: item, index: unitIndexById.value.get(`${s}-${i}`) }]]
+        };
       }
       return {
         key: `${s}-${i}`,
         columns: item.map((column, c) =>
-          column.map((verse, l) => ({ verse, index: unitIndexById.value.get(`${s}-${i}-${c}-${l}`) }))
+          column.map((verse, l) => ({
+            verse,
+            index: unitIndexById.value.get(`${s}-${i}-${c}-${l}`)
+          }))
         )
       };
     })
@@ -73,7 +79,9 @@ const lineClass = (columns: number) =>
 // Follow what matters: the verse to mark next, and while playing, the one sounding.
 const scroller = ref<HTMLElement | null>(null);
 const center = (selector: string, behavior: ScrollBehavior = "smooth") =>
-  nextTick(() => scroller.value?.querySelector(selector)?.scrollIntoView({ behavior, block: "center" }));
+  nextTick(() =>
+    scroller.value?.querySelector(selector)?.scrollIntoView({ behavior, block: "center" })
+  );
 onMounted(() => center("[data-cursor]", "instant"));
 watch(
   () => props.cursor,
@@ -117,12 +125,14 @@ watch(activeKey, (key) => {
               <button
                 v-if="shown.index !== undefined"
                 type="button"
-                class="group flex max-w-full flex-col items-center gap-1 rounded-2xl px-3 py-1.5 transition-colors"
-                :class="
+                class="group flex max-w-full flex-col items-center gap-1 rounded-2xl px-3 py-1.5 transition-[color,background-color,box-shadow,scale] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                :class="[
                   shown.index === cursor
                     ? 'bg-collection-soft/50 ring-collection-ink/70 ring-2'
-                    : 'hover:bg-base-content/5'
-                "
+                    : 'hover:bg-base-content/5',
+                  // The whole verse grows, so the ring and background still enclose its text.
+                  shown.verse.status === 'active' && 'scale-[1.06]'
+                ]"
                 :data-state="unitState(units[shown.index]!, shown.index === cursor)"
                 :data-cursor="shown.index === cursor || undefined"
                 :data-active="shown.verse.status === 'active' || undefined"
@@ -137,7 +147,7 @@ watch(activeKey, (key) => {
                 <span
                   class="text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
                   :class="[
-                    shown.verse.status === 'active' ? 'scale-[1.1] font-bold' : 'font-medium',
+                    shown.verse.status === 'active' ? 'font-bold' : 'font-medium',
                     shown.verse.start_time === undefined && shown.index !== cursor && 'opacity-40'
                   ]"
                   :style="verseStyles(shown.verse)"
@@ -153,13 +163,19 @@ watch(activeKey, (key) => {
                   v-else-if="shown.verse.start_time !== undefined"
                   class="flex items-center gap-1 font-mono text-[10.5px] leading-none tabular-nums"
                   :class="outOfOrder.has(shown.index) ? 'text-warning' : 'text-base-content/40'"
-                  :title="outOfOrder.has(shown.index) ? 'Empieza antes que un verso anterior' : undefined"
+                  :title="
+                    outOfOrder.has(shown.index) ? 'Empieza antes que un verso anterior' : undefined
+                  "
                   data-testid="sync-verse-time"
-                  ><IconWarning v-if="outOfOrder.has(shown.index)" class="size-3" aria-hidden="true" />{{
-                    formatClock(shown.verse.start_time, 2)
-                  }}</span
+                  ><IconWarning
+                    v-if="outOfOrder.has(shown.index)"
+                    class="size-3"
+                    aria-hidden="true"
+                  />{{ formatClock(shown.verse.start_time, 2) }}</span
                 >
-                <span v-else class="text-base-content/35 font-sans text-[10.5px] leading-none italic"
+                <span
+                  v-else
+                  class="text-base-content/35 font-sans text-[10.5px] leading-none italic"
                   >sin tiempo</span
                 >
               </button>

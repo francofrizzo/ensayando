@@ -79,7 +79,13 @@ export const buildSyncUnits = (lyrics: LyricStanza[]): SyncUnit[] => {
       if (!Array.isArray(item)) {
         if (!item.text.trim()) return;
         units.push(
-          unitFrom(`${stanzaIndex}-${itemIndex}`, stanzaIndex, "main", [{ stanzaIndex, itemIndex }], [item])
+          unitFrom(
+            `${stanzaIndex}-${itemIndex}`,
+            stanzaIndex,
+            "main",
+            [{ stanzaIndex, itemIndex }],
+            [item]
+          )
         );
         return;
       }
@@ -171,6 +177,48 @@ export const markEnd = (lyrics: LyricStanza[], unit: SyncUnit, time: number): Ly
   return next;
 };
 
+/**
+ * Which unit ⌘. ends: the one at the cursor once it has a start (it's sounding),
+ * otherwise the one just marked (↓ already moved the cursor past it).
+ */
+export const endTargetIndex = (units: SyncUnit[], cursor: number): number | undefined => {
+  const index = units[cursor]?.start !== undefined ? cursor : cursor - 1;
+  return units[index] ? index : undefined;
+};
+
+/**
+ * ⌘.: "Marcar fin y avanzar". Ends the target unit at `time`; if that was the cursor's
+ * unit, the cursor moves on (unless it's the last). If the end went to the unit before
+ * the cursor, the cursor is already past it and stays. A rejected end moves nothing.
+ */
+export const markEndAndAdvance = (
+  lyrics: LyricStanza[],
+  units: SyncUnit[],
+  cursor: number,
+  time: number
+): { lyrics: LyricStanza[]; cursor: number } => {
+  const index = endTargetIndex(units, cursor);
+  if (index === undefined) return { lyrics, cursor };
+  const next = markEnd(lyrics, units[index]!, time);
+  if (next === lyrics) return { lyrics, cursor };
+  const advance = index === cursor && cursor < units.length - 1;
+  return { lyrics: next, cursor: advance ? cursor + 1 : cursor };
+};
+
+/** "Quitar fin": the unit has no end again (same object if it had none). */
+export const clearEnd = (lyrics: LyricStanza[], unit: SyncUnit): LyricStanza[] => {
+  let hasEnd = false;
+  forEachVerse(lyrics, unit, (verse) => {
+    if (verse.end_time !== undefined) hasEnd = true;
+  });
+  if (!hasEnd) return lyrics;
+  const next = cloneLyrics(lyrics);
+  forEachVerse(next, unit, (verse) => {
+    delete verse.end_time;
+  });
+  return next;
+};
+
 /** Region drag result: both times on every verse of the unit. */
 export const setUnitTimes = (
   lyrics: LyricStanza[],
@@ -191,7 +239,11 @@ export const setUnitTimes = (
  * would use (any voice for a regular verse; for a column verse, the next one in its
  * column or else the next regular verse after the line), or start + 4 s.
  */
-export const regionEnd = (units: SyncUnit[], index: number, duration: number): number | undefined => {
+export const regionEnd = (
+  units: SyncUnit[],
+  index: number,
+  duration: number
+): number | undefined => {
   const unit = units[index];
   if (!unit || unit.start === undefined) return undefined;
   if (unit.end !== undefined) return unit.end;
@@ -199,7 +251,9 @@ export const regionEnd = (units: SyncUnit[], index: number, duration: number): n
   const next =
     unit.voice === "main"
       ? later.find((u) => u.start !== undefined && u.start > unit.start!)
-      : (later.find((u) => u.voice === unit.voice && u.start !== undefined && u.start > unit.start!) ??
+      : (later.find(
+          (u) => u.voice === unit.voice && u.start !== undefined && u.start > unit.start!
+        ) ??
         later.find((u) => u.voice === "main" && u.start !== undefined && u.start > unit.start!));
   const fallback = unit.start + 4;
   const end = next?.start ?? fallback;
@@ -215,7 +269,9 @@ const collectTimes = (lyrics: LyricStanza[]) => {
         times.set(`${key}:end`, verse.end_time);
       };
       if (Array.isArray(item)) {
-        item.forEach((column, c) => column.forEach((verse, l) => put(`${s}-${i}-${c}-${l}`, verse)));
+        item.forEach((column, c) =>
+          column.forEach((verse, l) => put(`${s}-${i}-${c}-${l}`, verse))
+        );
       } else {
         put(`${s}-${i}`, item);
       }

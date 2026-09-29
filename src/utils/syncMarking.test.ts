@@ -4,9 +4,12 @@ import type { LyricStanza } from "@/data/types";
 
 import {
   buildSyncUnits,
+  clearEnd,
   countNewTimes,
+  endTargetIndex,
   firstUnmarkedIndex,
   markEnd,
+  markEndAndAdvance,
   markStart,
   outOfOrderIndices,
   regionEnd,
@@ -16,14 +19,22 @@ import {
 
 const lyrics = (): LyricStanza[] => [
   [
-    { text: "Sopla el viento por la loma", color_keys: ["sop"], comment: "Todos", start_time: 12.4 },
+    {
+      text: "Sopla el viento por la loma",
+      color_keys: ["sop"],
+      comment: "Todos",
+      start_time: 12.4
+    },
     { text: "y se lleva mi canción", color_keys: ["alt"] },
     { text: "" }
   ],
   [
     { text: "Vidala, vidala", color_keys: ["sop", "alt"] },
     [
-      [{ text: "Ay, vidala", color_keys: ["sop"] }, { text: "ay", color_keys: ["sop"] }],
+      [
+        { text: "Ay, vidala", color_keys: ["sop"] },
+        { text: "ay", color_keys: ["sop"] }
+      ],
       [{ text: "(uh, uh)", color_keys: ["baj"] }]
     ]
   ]
@@ -45,7 +56,9 @@ describe("buildSyncUnits", () => {
   it("makes every column verse its own unit, column by column, each column its own voice", () => {
     const units = buildSyncUnits(lyrics());
     expect(units.map((u) => u.voice)).toEqual(["main", "main", "main", "1-1-0", "1-1-0", "1-1-1"]);
-    expect(units[5]!.positions).toEqual([{ stanzaIndex: 1, itemIndex: 1, columnIndex: 1, lineIndex: 0 }]);
+    expect(units[5]!.positions).toEqual([
+      { stanzaIndex: 1, itemIndex: 1, columnIndex: 1, lineIndex: 0 }
+    ]);
     expect(units[5]!.colorKeys).toEqual(["baj"]);
   });
 
@@ -143,6 +156,82 @@ describe("marking", () => {
   });
 });
 
+describe("markEndAndAdvance", () => {
+  it("ends the cursor's unit once it has a start, and moves on", () => {
+    const source = lyrics();
+    const units = buildSyncUnits(source);
+    expect(endTargetIndex(units, 0)).toBe(0);
+    const result = markEndAndAdvance(source, units, 0, 14.2);
+    expect(result.lyrics[0]![0]).toMatchObject({ end_time: 14.2 });
+    expect(result.cursor).toBe(1);
+  });
+
+  it("ends the unit just marked when the cursor's has no start, and stays", () => {
+    const source = lyrics();
+    const units = buildSyncUnits(source);
+    // After ↓ on unit 0 the cursor sits on unit 1, still without a start.
+    expect(endTargetIndex(units, 1)).toBe(0);
+    const result = markEndAndAdvance(source, units, 1, 14.2);
+    expect(result.lyrics[0]![0]).toMatchObject({ end_time: 14.2 });
+    expect(result.lyrics[0]![1]).not.toHaveProperty("end_time");
+    expect(result.cursor).toBe(1);
+  });
+
+  it("doesn't move when the end is rejected", () => {
+    const source = lyrics();
+    const result = markEndAndAdvance(source, buildSyncUnits(source), 0, 10);
+    expect(result.lyrics).toBe(source);
+    expect(result.cursor).toBe(0);
+  });
+
+  it("doesn't move past the last unit", () => {
+    const source = lyrics();
+    const units = buildSyncUnits(source);
+    const last = units.length - 1;
+    const marked = markStart(source, units, last, 40);
+    const result = markEndAndAdvance(marked, buildSyncUnits(marked), last, 42);
+    expect(result.lyrics).not.toBe(marked);
+    expect(result.cursor).toBe(last);
+  });
+
+  it("does nothing on the first unit without a start (nothing before it)", () => {
+    const source: LyricStanza[] = [[{ text: "Uno" }, { text: "Dos" }]];
+    const units = buildSyncUnits(source);
+    expect(endTargetIndex(units, 0)).toBeUndefined();
+    const result = markEndAndAdvance(source, units, 0, 3);
+    expect(result).toEqual({ lyrics: source, cursor: 0 });
+  });
+});
+
+describe("clearEnd", () => {
+  it("removes the unit's end and leaves its start", () => {
+    const source = lyrics();
+    const [first] = buildSyncUnits(source);
+    const withEnd = markEnd(source, first!, 14.2);
+    const next = clearEnd(withEnd, buildSyncUnits(withEnd)[0]!);
+    expect(next[0]![0]).toMatchObject({ start_time: 12.4 });
+    expect(next[0]![0]).not.toHaveProperty("end_time");
+    // the input isn't mutated
+    expect(withEnd[0]![0]).toMatchObject({ end_time: 14.2 });
+  });
+
+  it("returns the same lyrics when there's no end to remove", () => {
+    const source = lyrics();
+    expect(clearEnd(source, buildSyncUnits(source)[0]!)).toBe(source);
+  });
+
+  it("only touches its own column verse", () => {
+    let current = lyrics();
+    const units = buildSyncUnits(current);
+    current = setUnitTimes(current, units[3]!, 33, 34);
+    current = setUnitTimes(current, units[5]!, 33.5, 36);
+    const next = clearEnd(current, buildSyncUnits(current)[3]!);
+    const columns = next[1]![1] as { end_time?: number }[][];
+    expect(columns[0]![0]).not.toHaveProperty("end_time");
+    expect(columns[1]![0]).toMatchObject({ end_time: 36 });
+  });
+});
+
 describe("regions and states", () => {
   it("ends an open region at the next marked start, or 4 s later", () => {
     const source = lyrics();
@@ -204,7 +293,9 @@ describe("multicolumn regions", () => {
     const source = multicolumn();
     (source[0]![2] as { start_time?: number }).start_time = 4;
     const units = buildSyncUnits(source);
-    expect([...outOfOrderIndices(units)]).toEqual([units.findIndex((u) => u.texts[0] === "después")]);
+    expect([...outOfOrderIndices(units)]).toEqual([
+      units.findIndex((u) => u.texts[0] === "después")
+    ]);
   });
 });
 
