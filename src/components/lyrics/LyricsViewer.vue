@@ -2,12 +2,15 @@
 import { computed, ref, watch } from "vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
-import type { CollectionWithRole, LyricStanza } from "@/data/types";
+import type { MyPartState } from "@/composables/usePlayerState";
+import { useTheme } from "@/composables/useTheme";
+import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 import {
   addStatusToLyrics,
   filterVisibleLyrics,
   regularizeLyrics
 } from "@/utils/lyricsViewerUtils";
+import { isVerseDimmed } from "@/utils/myPart";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -15,6 +18,8 @@ const props = defineProps<{
   currentTime: number;
   isDisabled: boolean;
   enabledTrackIds: number[];
+  /** "Mi parte": verses of other tracks are dimmed. */
+  myPart?: MyPartState | null;
 }>();
 
 const emit = defineEmits<{
@@ -22,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const { getVerseStyles } = useLyricsColoring();
+const { resolvedTheme } = useTheme();
 
 const allLyricsWithStatus = computed(() => addStatusToLyrics(props.lyrics, props.currentTime));
 
@@ -30,6 +36,18 @@ const lyricsWithStatus = computed(() =>
 );
 
 const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value));
+
+// The active verse emits its color, only in dark (on a light stage a glow reads as blur).
+// drop-shadow instead of text-shadow: the text is a gradient clipped to the glyphs.
+const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) => {
+  const styles: Record<string, string | undefined> = {
+    ...getVerseStyles(verse, props.collection, verse.status)
+  };
+  if (verse.status === "active" && resolvedTheme.value === "dark" && styles.color) {
+    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${styles.color} 55%, transparent))`;
+  }
+  return styles;
+};
 
 const currentVerseElement = ref<Element | null>(null);
 
@@ -47,11 +65,11 @@ watch(
 </script>
 
 <template>
-  <div class="font-lyrics flex flex-col gap-6">
+  <div class="font-lyrics flex flex-col gap-7 md:gap-8">
     <div
       v-for="(stanza, stanzaIndex) in regularizedLyrics"
       :key="stanzaIndex"
-      class="flex flex-col gap-2"
+      class="flex flex-col gap-2.5 md:gap-3"
     >
       <div
         v-for="(line, lineIndex) in stanza"
@@ -60,8 +78,8 @@ watch(
         :class="{
           'cursor-pointer': !isDisabled && line.start_time,
           'cursor-default': isDisabled,
-          'gap-10 px-10 text-xl tracking-wide': line.columns.length < 3,
-          'gap-4 px-4 text-base tracking-tight sm:gap-6 sm:px-6 sm:tracking-normal md:px-10 md:text-xl md:tracking-wide':
+          'gap-10 px-6 text-[19px] tracking-[0.02em] md:px-10 md:text-2xl': line.columns.length < 3,
+          'gap-4 px-4 text-base tracking-tight sm:gap-6 sm:px-6 sm:tracking-normal md:px-10 md:text-xl md:tracking-[0.02em]':
             line.columns.length >= 3,
           'text-sm sm:text-base': line.columns.length >= 4
         }"
@@ -74,12 +92,14 @@ watch(
           <div
             v-for="(verse, verseIndex) in column"
             :key="`${stanzaIndex}-${lineIndex}-${columnIndex}-${verseIndex}`"
-            class="flex snap-center flex-col items-center gap-1.5 text-left"
+            class="flex snap-center flex-col items-center gap-2 text-left"
             @click="() => !isDisabled && verse.start_time && emit('seek', verse.start_time)"
           >
-            <span v-if="verse.comment" class="text-base-content/40 text-center text-sm uppercase">{{
-              verse.comment
-            }}</span>
+            <span
+              v-if="verse.comment"
+              class="text-base-content/45 text-center font-sans text-[11px] leading-none font-semibold tracking-[0.16em] uppercase"
+              >{{ verse.comment }}</span
+            >
             <span
               :ref="
                 (el: any) => {
@@ -89,14 +109,14 @@ watch(
                 }
               "
               :data-active="verse.status === 'active' || undefined"
-              :style="getVerseStyles(verse, collection, verse.status)"
+              :data-dimmed="(myPart && isVerseDimmed(verse, myPart)) || undefined"
+              :style="verseStyles(verse)"
               :class="{
-                'font-semibold': verse.status === 'active',
-                'scale-[1.15]': verse.status === 'active',
-                'dark:drop-shadow-md': verse.status === 'active',
-                'dark:drop-shadow-none': verse.status !== 'active'
+                'scale-[1.14] font-bold': verse.status === 'active',
+                'font-medium': verse.status !== 'active',
+                'opacity-[0.32]': myPart && isVerseDimmed(verse, myPart)
               }"
-              class="text-center uppercase drop-shadow-xs transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
+              class="text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
               >{{ verse.text }}</span
             >
           </div>

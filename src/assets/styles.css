@@ -170,6 +170,35 @@
     var(--shadow-float);
 }
 
+/* Collection color for text/icons (ink) and tinted backgrounds (soft), per theme.
+   The fill (--color-primary) is for buttons; it's too dark for text in dark mode. */
+:root {
+  --collection-ink: oklch(0.47 min(var(--collection-chroma), 0.4) var(--collection-hue));
+  --collection-soft: oklch(0.93 calc(var(--collection-chroma) * 0.3) var(--collection-hue));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --collection-ink: oklch(0.8 min(var(--collection-chroma), 0.17) var(--collection-hue));
+    --collection-soft: oklch(0.3 calc(var(--collection-chroma) * 0.45) var(--collection-hue));
+  }
+}
+:root[data-theme="dark"] {
+  --collection-ink: oklch(0.8 min(var(--collection-chroma), 0.17) var(--collection-hue));
+  --collection-soft: oklch(0.3 calc(var(--collection-chroma) * 0.45) var(--collection-hue));
+}
+
+@theme inline {
+  --color-collection-ink: var(--collection-ink);
+  --color-collection-soft: var(--collection-soft);
+}
+
+/* The play button is the only filled control on the player; it glows in its color. */
+@utility play-glow {
+  box-shadow:
+    0 0 0 6px color-mix(in oklch, var(--color-primary) 14%, transparent),
+    0 12px 32px -8px color-mix(in oklch, var(--color-primary) 70%, transparent);
+}
+
 /* Titles: Bricolage at its display optical size, with light negative tracking. */
 @utility font-display {
   font-family: var(--font-bricolage);
@@ -260,7 +289,8 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
+/* Static on phones: animating under the glass blurs costs too much there. */
+@media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
   .room-light-drift {
     animation: room-light-drift 40s ease-in-out infinite alternate;
   }

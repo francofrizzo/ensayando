@@ -586,7 +586,8 @@ const tracksForRendering = computed(() =>
 
 // Expose isDirty to parent component
 defineExpose({
-  isDirty
+  isDirty,
+  enterCreateMode
 });
 </script>
 

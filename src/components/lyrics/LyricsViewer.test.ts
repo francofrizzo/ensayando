@@ -30,17 +30,17 @@ describe("LyricsViewer", () => {
     expect(verseTexts).toEqual(["Line 1", "Line 2", "Line 3"]);
   });
 
-  it("marks active verse with font-semibold", () => {
+  it("marks active verse with font-bold", () => {
     const lyrics: LyricStanza[] = [
       [timedVerse(1, 5, "Active"), timedVerse(6, 10, "Future")]
     ];
     const wrapper = mountViewer(lyrics, 3);
     const spans = wrapper.findAll("span");
     const activeSpan = spans.find((s) => s.text() === "Active");
-    expect(activeSpan?.classes()).toContain("font-semibold");
+    expect(activeSpan?.classes()).toContain("font-bold");
 
     const futureSpan = spans.find((s) => s.text() === "Future");
-    expect(futureSpan?.classes()).not.toContain("font-semibold");
+    expect(futureSpan?.classes()).not.toContain("font-bold");
   });
 
   it("hides verses with non-matching audio_track_ids", () => {

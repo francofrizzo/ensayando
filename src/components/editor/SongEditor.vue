@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IconCode, IconLyrics, IconMusic, IconClose } from "@/components/ui/icons";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
 import { useCollectionsStore } from "@/stores/collections";
 
@@ -46,6 +46,15 @@ const handleTabChange = (newTab: string) => {
   // The unsaved changes warning will only apply when closing the entire editor
   activeTab.value = newTab;
 };
+
+/** Opens the song tab in "nueva canción" mode (from the library or ⌘K). */
+const startNewSong = async () => {
+  activeTab.value = "song";
+  await nextTick();
+  await songTabRef.value?.enterCreateMode();
+};
+
+defineExpose({ startNewSong });
 
 // Browser navigation protection
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
