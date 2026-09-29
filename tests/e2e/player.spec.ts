@@ -17,9 +17,13 @@ async function getCurrentTimeText(page: import("@playwright/test").Page) {
   return page.getByTestId("time-display").textContent();
 }
 
-// Helper: get the mute button for a track by name
+// Helpers: the M and S buttons of a track by name
 function trackMuteButton(page: import("@playwright/test").Page, trackName: string) {
-  return page.getByTestId(`track-${trackName}`).getByRole("button");
+  return page.getByTestId(`track-${trackName}`).getByTestId("mute-button");
+}
+
+function trackSoloButton(page: import("@playwright/test").Page, trackName: string) {
+  return page.getByTestId(`track-${trackName}`).getByTestId("solo-button");
 }
 
 // --- Navigation ---
@@ -31,9 +35,9 @@ test("collection auto-redirects to first song", async ({ page }) => {
 
 test("open song and see tracks panel", async ({ page }) => {
   await page.goto("/test-collection/test-song");
-  await expect(page.getByText("Guitar")).toBeVisible({ timeout: 15000 });
-  await expect(page.getByText("Vocals")).toBeVisible();
-  await expect(page.getByText("Drums")).toBeVisible();
+  await expect(page.getByTestId("track-Guitar")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId("track-Vocals")).toBeVisible();
+  await expect(page.getByTestId("track-Drums")).toBeVisible();
 });
 
 // --- Playback ---
@@ -76,15 +80,41 @@ test("mute a track via click", async ({ page }) => {
   await expect(page.getByTestId("track-Guitar")).toHaveAttribute("data-muted", "true");
 });
 
-test("solo a track via ctrl+click", async ({ page }) => {
+test("solo a track via ctrl+click on M", async ({ page }) => {
   await openTestSong(page);
 
   await trackMuteButton(page, "Guitar").click({ modifiers: ["ControlOrMeta"] });
 
-  // Guitar stays unmuted, others get muted
-  await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-muted");
+  // Guitar is soloed; the others are silent but not muted
+  await expect(page.getByTestId("track-Guitar")).toHaveAttribute("data-soloed", "true");
+  await expect(page.getByTestId("track-Vocals")).toHaveAttribute("data-silent", "true");
+  await expect(page.getByTestId("track-Vocals")).not.toHaveAttribute("data-muted");
+  await expect(page.getByTestId("track-Drums")).toHaveAttribute("data-silent", "true");
+});
+
+test("several tracks can be soloed with the S buttons", async ({ page }) => {
+  await openTestSong(page);
+
+  await trackSoloButton(page, "Guitar").click();
+  await trackSoloButton(page, "Drums").click();
+
+  await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-silent");
+  await expect(page.getByTestId("track-Drums")).not.toHaveAttribute("data-silent");
+  await expect(page.getByTestId("track-Vocals")).toHaveAttribute("data-silent", "true");
+
+  // Clearing the solos brings everything back
+  await trackSoloButton(page, "Guitar").click();
+  await trackSoloButton(page, "Drums").click();
+  await expect(page.getByTestId("track-Vocals")).not.toHaveAttribute("data-silent");
+});
+
+test("digit keys mute tracks", async ({ page }) => {
+  await openTestSong(page);
+
+  await page.keyboard.press("Digit2");
   await expect(page.getByTestId("track-Vocals")).toHaveAttribute("data-muted", "true");
-  await expect(page.getByTestId("track-Drums")).toHaveAttribute("data-muted", "true");
+  await page.keyboard.press("Digit2");
+  await expect(page.getByTestId("track-Vocals")).not.toHaveAttribute("data-muted");
 });
 
 test("unmute after mute does not get stuck", async ({ page }) => {
@@ -141,4 +171,16 @@ test("seek via lyrics click", async ({ page }) => {
       { timeout: 10000 }
     )
     .toBeGreaterThanOrEqual(2);
+});
+
+// --- Keyboard navigation ---
+
+test("arrow down jumps to the next stanza", async ({ page }) => {
+  await openTestSong(page);
+
+  // Stanzas start at 0.5 s and 4.5 s
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByText("FIRST VERSE")).toHaveAttribute("data-active", "true");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByText("LAST VERSE")).toHaveAttribute("data-active", "true");
 });
