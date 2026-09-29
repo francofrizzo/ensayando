@@ -938,10 +938,10 @@ const initializeAudioContext = async () => {
 
     <div
       v-if="uiStore.editMode && uiStore.editorPreview"
-      class="pointer-events-none absolute inset-x-0 top-[88px] z-20 flex justify-center md:top-[96px]"
+      class="relative z-20 flex shrink-0 justify-center pt-1 pb-2"
     >
       <button
-        class="glass-3 btn btn-sm pointer-events-auto gap-2 rounded-full border-0 font-semibold"
+        class="glass-3 btn btn-sm gap-2 rounded-full border-0 font-semibold"
         data-testid="exit-preview"
         @click="uiStore.setEditorPreview(false)"
       >
