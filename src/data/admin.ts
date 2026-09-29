@@ -165,8 +165,8 @@ export async function deleteSong(songId: number): Promise<DeletionResult> {
 
 // ---------- collections ----------
 
-export type CollectionInsert = Pick<Collection, "slug" | "title" | "visibility"> &
-  Partial<Omit<Collection, "id" | "created_at" | "created_by" | "slug" | "title" | "visibility">>;
+export type CollectionInsert = Pick<Collection, "slug" | "title" | "visibility" | "hue"> &
+  Partial<Omit<Collection, "id" | "created_at" | "created_by" | "slug" | "title" | "visibility" | "hue">>;
 
 // App admins only; the creator becomes the collection's admin.
 export async function createCollection(values: CollectionInsert): Promise<Collection> {

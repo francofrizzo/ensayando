@@ -56,7 +56,7 @@ describe.skipIf(!enabled)("database permissions", () => {
   async function collection(title: string): Promise<number> {
     const { data, error } = await service
       .from("collections")
-      .insert({ slug: `${title}-${run}`, title, track_colors: {}, visibility: "private" })
+      .insert({ slug: `${title}-${run}`, title, hue: 300, track_colors: {}, visibility: "private" })
       .select("id")
       .single();
     if (error) throw error;
@@ -295,12 +295,12 @@ describe.skipIf(!enabled)("database permissions", () => {
   it("lets app admins create collections and makes them admin", async () => {
     const denied = await people.admin!.client
       .from("collections")
-      .insert({ slug: `nope-${run}`, title: "No", track_colors: {}, visibility: "private" });
+      .insert({ slug: `nope-${run}`, title: "No", hue: 300, track_colors: {}, visibility: "private" });
     expect(denied.error).not.toBeNull();
 
     const { data, error } = await people.appAdmin!.client
       .from("collections")
-      .insert({ slug: `nueva-${run}`, title: "Nueva", track_colors: {}, visibility: "private" })
+      .insert({ slug: `nueva-${run}`, title: "Nueva", hue: 300, track_colors: {}, visibility: "private" })
       .select("id")
       .single();
     expect(error).toBeNull();

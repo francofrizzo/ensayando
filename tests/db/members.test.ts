@@ -43,7 +43,7 @@ describe.skipIf(!enabled)("managed accounts", () => {
     createdUsers.push(adminId);
     const { data: collection } = await service
       .from("collections")
-      .insert({ slug: `miembros-${run}`, title: "Miembros", track_colors: {}, visibility: "private" })
+      .insert({ slug: `miembros-${run}`, title: "Miembros", hue: 300, track_colors: {}, visibility: "private" })
       .select("id")
       .single();
     collectionId = collection!.id;
