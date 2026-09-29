@@ -92,5 +92,6 @@ export {
   IconRotateClockwise as IconRetry,
   IconFocus2 as IconFollowPlayback,
   IconPresentation as IconPreview,
-  IconArrowRight as IconGoTo
+  IconArrowRight as IconGoTo,
+  IconMinus as IconMinus
 } from "@tabler/icons-vue";

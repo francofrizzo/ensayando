@@ -27,6 +27,8 @@ export const useCollectionsStore = defineStore("collections", () => {
     isSaving: ref(false)
   };
   const savedLyricsSnapshot = ref<string>("[]");
+  // The last saved lyrics, for comparisons such as "6 tiempos nuevos" in Sincronizar
+  const savedLyrics = computed<LyricStanza[]>(() => JSON.parse(savedLyricsSnapshot.value));
 
   // Undo/redo state
   const MAX_UNDO_STACK = 50;
@@ -312,6 +314,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     ensureCollectionLoaded,
     fetchSongsByCollectionId,
     localLyrics,
+    savedLyrics,
     updateLocalLyrics,
     saveLyrics,
     discardLyricsChanges,
