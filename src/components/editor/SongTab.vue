@@ -536,7 +536,15 @@ const updateSong = async () => {
   activeKeys.forEach((key) => pendingUploadKeys.delete(key));
   await cleanupPendingUploads();
   await cleanupUploadedFiles(unusedSavedKeys);
-  await collectionsStore.fetchSongsByCollectionId(song.collection_id);
+  // Apply the change in place (this also keeps the old address resolving after a slug
+  // change), then refresh tracks quietly: the player keeps playing and nothing reloads.
+  collectionsStore.patchSong(song.id, {
+    title: formData.title,
+    slug: formData.slug,
+    visible: formData.visible,
+    duration: songDurationFromTracks(formData.audio_tracks)
+  });
+  await collectionsStore.fetchSongsByCollectionId(song.collection_id, { background: true });
 
   toast.success("Cambios guardados");
   if (originalSlug !== formData.slug) {

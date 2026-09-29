@@ -235,7 +235,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             :collection="collection"
             :songs="collectionsStore.songs"
             @updated="onCollectionUpdated"
-            @songs-changed="collectionsStore.fetchSongsByCollectionId(collection.id)"
+            @songs-changed="collectionsStore.fetchSongsByCollectionId(collection.id, { background: true })"
           />
           <SettingsSongs
             v-else-if="section === 'canciones'"

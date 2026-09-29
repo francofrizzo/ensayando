@@ -78,14 +78,7 @@ export function provideEditorSession(): EditorSession {
   const lyricsHandle: EditorTabHandle = {
     isDirty: () => store.localLyrics.isDirty,
     isSaving: () => store.localLyrics.isSaving,
-    save: async () => {
-      try {
-        await store.saveLyrics();
-      } finally {
-        // saveLyrics leaves isSaving on when it throws
-        store.localLyrics.isSaving = false;
-      }
-    },
+    save: () => store.saveLyrics(),
     discard: () => store.discardLyricsChanges()
   };
 
@@ -128,8 +121,10 @@ export function provideEditorSession(): EditorSession {
     };
   };
 
-  // Song details first: a slug change navigates, and lyrics are saved by song id.
-  const ORDER: EditorTabId[] = ["cancion", "sincronizar", "letra"];
+  // Lyrics (and Sincronizar, which edits the same lyrics) first: they are saved by song id
+  // while the route still points at the song. The song form goes last because a slug
+  // change navigates.
+  const ORDER: EditorTabId[] = ["letra", "sincronizar", "cancion"];
 
   const save = async () => {
     if (!canSave.value) return !isDirty.value;
