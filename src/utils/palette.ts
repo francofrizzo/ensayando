@@ -135,19 +135,38 @@ const hexToChromaHue = (hex: string) => {
   );
 };
 
-const OKLCH_RE = /^\s*oklch\(\s*[0-9.]+%?\s+([0-9.]+)\s+([0-9.]+)(?:deg)?\s*(?:\/[^)]*)?\)\s*$/i;
+const NUM = "[0-9]*\\.?[0-9]+";
+const OKLCH_RE = new RegExp(
+  `^\\s*oklch\\(\\s*${NUM}%?\\s+(${NUM})\\s+(${NUM})(?:deg)?\\s*(?:/[^)]*)?\\)\\s*$`,
+  "i"
+);
 const HEX_RE = /^\s*#([0-9a-f]{3}|[0-9a-f]{6})\s*$/i;
+const RGB_RE =
+  /^\s*rgba?\(\s*([0-9]{1,3})\s*[, ]\s*([0-9]{1,3})\s*[, ]\s*([0-9]{1,3})\s*(?:[,/]\s*[0-9.]+%?\s*)?\)\s*$/i;
+
+const toHex = (channel: number) => Math.min(channel, 255).toString(16).padStart(2, "0");
 
 /**
- * Parses a pre-migration color string (the formats the database used: oklch()
- * and hex). Mirrors color_to_spec() in the hue migration, and is tested with the
- * same fixtures, so both agree. Returns null for anything else.
+ * Parses a pre-migration color string (the formats the database used: oklch(),
+ * hex and rgb()). Mirrors color_to_spec() in the hue migration, and is tested with
+ * the same fixtures, so both agree. Returns null for anything else, including
+ * malformed numbers.
  */
 export const parseLegacyColor = (value: string): ColorSpec | null => {
   const oklchMatch = OKLCH_RE.exec(value);
-  if (oklchMatch) return chromaToSpec(Number(oklchMatch[2]), Number(oklchMatch[1]));
+  if (oklchMatch) {
+    const chroma = Number(oklchMatch[1]);
+    const hue = Number(oklchMatch[2]);
+    return Number.isFinite(chroma) && Number.isFinite(hue) ? chromaToSpec(hue, chroma) : null;
+  }
   if (HEX_RE.test(value)) {
     const { chroma, hue } = hexToChromaHue(value.trim().toLowerCase());
+    return chromaToSpec(hue, chroma);
+  }
+  const rgbMatch = RGB_RE.exec(value);
+  if (rgbMatch) {
+    const hex = `#${[rgbMatch[1], rgbMatch[2], rgbMatch[3]].map((c) => toHex(Number(c))).join("")}`;
+    const { chroma, hue } = hexToChromaHue(hex);
     return chromaToSpec(hue, chroma);
   }
   return null;
