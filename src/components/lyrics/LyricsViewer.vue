@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useTheme } from "@/composables/useTheme";
@@ -7,6 +7,8 @@ import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 import {
   addStatusToLyrics,
   filterVisibleLyrics,
+  getVerseGlowStrength,
+  GLOW_WINDOW,
   regularizeLyrics
 } from "@/utils/lyricsViewerUtils";
 
@@ -38,20 +40,71 @@ const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value
 // Verses near the playhead keep the same drop-shadow and only its strength changes,
 // so the glow fades in and out with the verse's transition instead of popping. The
 // rest carry no filter at all: a filter on every line is costly while scrolling.
-const GLOW_WINDOW = 1.5; // seconds before a verse starts and after it ends
+//
+// The strength follows `glowTime`, which trails currentTime by two frames: after a
+// seek, the destination verse is first painted with a 0% drop-shadow (eligible by
+// currentTime) and only then brought up, so the change transitions. The time left
+// behind by a jump stays eligible while its verse fades out.
+const GLOW_FADE_MS = 450; // a bit over the verse transition (420ms)
+
+const glowTime = ref(props.currentTime);
+const trailingGlowTimes = ref<number[]>([]);
+let glowFrame: number | null = null;
+const trailingTimeouts = new Set<ReturnType<typeof setTimeout>>();
+
+const keepEligibleWhileFading = (time: number) => {
+  trailingGlowTimes.value = [...trailingGlowTimes.value, time];
+  const timeout = setTimeout(() => {
+    trailingTimeouts.delete(timeout);
+    const index = trailingGlowTimes.value.indexOf(time);
+    if (index !== -1) {
+      trailingGlowTimes.value = trailingGlowTimes.value.filter((_, i) => i !== index);
+    }
+  }, GLOW_FADE_MS);
+  trailingTimeouts.add(timeout);
+};
+
+const settleGlowTime = (target: number) => {
+  const previous = glowTime.value;
+  glowTime.value = target;
+  // Within the window the previous time's verses are still near the new one.
+  if (Math.abs(target - previous) >= GLOW_WINDOW) keepEligibleWhileFading(previous);
+};
+
+const scheduleGlowTime = () => {
+  if (glowFrame !== null) return;
+  const target = props.currentTime;
+  glowFrame = requestAnimationFrame(() => {
+    glowFrame = requestAnimationFrame(() => {
+      glowFrame = null;
+      settleGlowTime(target);
+      if (props.currentTime !== target) scheduleGlowTime();
+    });
+  });
+};
+
+watch(() => props.currentTime, scheduleGlowTime);
+
+onBeforeUnmount(() => {
+  if (glowFrame !== null) cancelAnimationFrame(glowFrame);
+  glowFrame = null;
+  trailingTimeouts.forEach(clearTimeout);
+  trailingTimeouts.clear();
+});
+
 const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) => {
   const styles: Record<string, string | undefined> = {
     ...getVerseStyles(verse, props.collection, verse.status, "stage")
   };
   if (resolvedTheme.value !== "dark") return styles;
 
-  const glows = verse.status === "active";
-  const t = props.currentTime;
-  const nearStart = verse.start_time !== undefined && Math.abs(verse.start_time - t) < GLOW_WINDOW;
-  const nearEnd = verse.end_time !== undefined && Math.abs(t - verse.end_time) < GLOW_WINDOW;
-  if (glows || nearStart || nearEnd) {
+  const strength = getVerseGlowStrength(verse, glowTime.value, [
+    props.currentTime,
+    ...trailingGlowTimes.value
+  ]);
+  if (strength !== null) {
     const glowColor = styles.color ?? "currentColor";
-    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${glowColor} ${glows ? 55 : 0}%, transparent))`;
+    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${glowColor} ${strength}%, transparent))`;
   }
   return styles;
 };
