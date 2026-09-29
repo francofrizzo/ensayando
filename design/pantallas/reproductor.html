@@ -44,11 +44,12 @@
 .p-chips > span { --tc: var(--c); display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px 7px 9px; border-radius: 999px; font: 600 12.5px/1 var(--ui); background: oklch(from var(--ink) l c h / 0.06); white-space: nowrap; }
 .p-chips > span.m { color: var(--faint); text-decoration: line-through; }
 .p-chips > span.m .dot { background: var(--faint); box-shadow: none; }
-.p-trk { --tc: var(--c); display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.p-trk { --tc: var(--c); display: grid; grid-template-columns: minmax(0, 1fr) 72px auto; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
 .p-trk .name { display: flex; align-items: center; gap: 8px; font: 600 14px/1 var(--ui); }
-.p-trk .tb > i, .p-trk .tb > b { width: 34px; height: 30px; border-radius: 9px; font-size: 12px; }
+.p-trk .tb > i, .p-trk .tb > b { width: 30px; height: 28px; border-radius: 9px; font-size: 12px; }
 .p-trk .tb .ic { font-size: 17px; }
-.p-trk .vol { grid-column: 1 / -1; height: 5px; }
+.p-trk .vol { grid-column: auto; height: 4px; }
+.p-trk .wave { grid-column: 1 / -1; height: 30px; }
 
 /* piezas sueltas del deck */
 .legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
@@ -86,7 +87,7 @@
     <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
     <div class="grid-3">
       <div class="note"><span class="tag refine">Ajuste</span><b>La letra manda</b><p>Más aire alrededor del verso activo, que crece un 14 % y en oscuro brilla con su color. Los versos cantados bajan al 30 % del texto. Los comentarios (<i>Coro</i>, <i>Solo soprano</i>) pasan a ser una etiqueta chica y espaciada, no una línea de letra más.</p></div>
-      <div class="note"><span class="tag new">Nuevo</span><b>Dock de vidrio</b><p>Transporte, tiempo y pistas en una sola pieza flotante. Con las pistas a la vista, las ondas son la línea de tiempo: se toca cualquiera para saltar. Solo donde no hay ondas (dock compacto, teléfono) aparece una barra de progreso simple.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Dock de vidrio</b><p>Transporte, tiempo y pistas en una sola pieza flotante. Con las pistas a la vista, las ondas son la línea de tiempo: se toca cualquiera para saltar. Donde las ondas no están a la vista (dock compacto, hoja del teléfono) aparece una barra de progreso simple.</p></div>
       <div class="note"><span class="tag refine">Ajuste</span><b>Solo, silencio y letra visibles</b><p>Hoy el solo es una pulsación larga y el "solo letra" otra, en un botón distinto. Pasan a tres botones chicos por pista: <b>M</b>, <b>S</b> y letra. La pulsación larga queda como atajo, no como único camino.</p></div>
       <div class="note"><span class="tag refine">Ajuste de comportamiento</span><b>Solo y silencio dejan de tocar el volumen</b><p>Hoy el solo es exclusivo y funciona bajando a cero las demás pistas; al salir, todas vuelven al 100 % y se pierden los volúmenes elegidos. Pasan a ser estados propios de cada pista: puede haber varias en solo y los volúmenes no se reinician. Lo que suena es volumen × no silenciada × (sin solos o en solo). Esa misma ganancia usan la reproducción, la descarga de la mezcla y la sincronización entre pistas.</p></div>
       <div class="note"><span class="tag moved">Sale de un atajo</span><b>Descargar mezcla</b><p>Hoy existe solo como <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. Pasa al menú de la canción, usa la ganancia que está sonando (volumen, silencio y solo), normaliza a −1 dB como hoy y muestra el progreso en un aviso.</p></div>
@@ -168,7 +169,7 @@
   <section class="sec">
     <div class="sec-h">
       <h2 class="d">Teléfono</h2>
-      <p>Lo mismo en una columna. El dock se vuelve una hoja con dos alturas: cerrada muestra el transporte y las pistas como fichas; abierta, la mezcladora completa con controles más grandes para el dedo. Las ondas se omiten en la hoja abierta del teléfono: a ese ancho no ayudan a ubicarse y la barra de progreso cumple ese papel.</p>
+      <p>Lo mismo en una columna. El dock se vuelve una hoja con dos alturas: cerrada muestra el transporte y las pistas como fichas; abierta, la mezcladora completa: por pista, el nombre, un volumen corto, M, S y letra en una fila, y la onda debajo, a todo el ancho. La barra de progreso se mantiene sobre el transporte, porque la mezcladora se desplaza dentro de la hoja.</p>
     </div>
     <div class="mocks-row">
       <div class="col phone">
@@ -371,8 +372,9 @@
     const st = STATES[t.key] || {};
     return `<div class="p-trk" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}">
       <span class="name"><span class="dot" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}"></span>${t.title}</span>
-      <span class="tb"><b class="${st.m ? "m-on" : ""}">M</b><b class="${st.s ? "s-on" : ""}">S</b><i class="${st.lOff ? "" : "l-on"}">${ic("lyrics")}</i></span>
       <span class="vol"><span style="width:${st.v * 100}%"></span></span>
+      <span class="tb"><b class="${st.m ? "m-on" : ""}">M</b><b class="${st.s ? "s-on" : ""}">S</b><i class="${st.lOff ? "" : "l-on"}">${ic("lyrics")}</i></span>
+      <div class="wave" data-seed="${ENS.tracks.indexOf(t) + 3}" data-bars="90" data-progress="0.11" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}"></div>
     </div>`;
   }).join("");
   ENS.hydrateWaves();
