@@ -124,7 +124,7 @@ export const EMAILS: Email[] = [
     preheader: "Elegí una contraseña para entrar y empezar a ensayar.",
     heading: "Te invitaron a Ensayando",
     intro: [
-      `{{ if .Data.collection_name }}Te sumaron a <strong>{{ .Data.collection_name }}</strong> en Ensayando{{ else }}Te sumaron a una colección en Ensayando{{ end }}: ahí están las pistas y las letras de las canciones para ensayar.`,
+      `{{ if .Data.collection_name }}Te sumaron a <strong>{{ .Data.collection_name }}</strong> en Ensayando.{{ else }}Te sumaron a una colección en Ensayando.{{ end }}`,
       "Para entrar, elegí una contraseña. Después vas a iniciar sesión con este email."
     ],
     action: { kind: "button", label: "Elegir contraseña" },
