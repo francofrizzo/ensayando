@@ -51,9 +51,9 @@ describe.skipIf(!enabled)("update_collection_palette", () => {
         title: "Paleta",
         hue: 300,
         track_colors: {
-          sop: { hue: 350, intensity: "normal" },
-          alt: { hue: 70, intensity: "normal" },
-          ten: { hue: 195, intensity: "normal" }
+          sop: { hue: 350, intensity: "media" },
+          alt: { hue: 70, intensity: "media" },
+          ten: { hue: 195, intensity: "media" }
         },
         visibility: "private"
       })
@@ -98,7 +98,7 @@ describe.skipIf(!enabled)("update_collection_palette", () => {
     const { error } = await editor.rpc("update_collection_palette", {
       p_collection_id: collectionId,
       p_hue: 10,
-      p_intensity: "normal",
+      p_intensity: "media",
       p_track_colors: {},
       p_key_map: {}
     });
@@ -109,8 +109,8 @@ describe.skipIf(!enabled)("update_collection_palette", () => {
     const { error } = await admin.rpc("update_collection_palette", {
       p_collection_id: collectionId,
       p_hue: 300,
-      p_intensity: "normal",
-      p_track_colors: { sop: { hue: 350, intensity: "normal" } },
+      p_intensity: "media",
+      p_track_colors: { sop: { hue: 350, intensity: "media" } },
       p_key_map: {}
     });
     expect(error?.message).toBe("KEY_IN_USE");
@@ -124,7 +124,7 @@ describe.skipIf(!enabled)("update_collection_palette", () => {
       p_hue: 48,
       p_intensity: "intensa",
       p_track_colors: {
-        sop: { hue: 350, intensity: "normal" },
+        sop: { hue: 350, intensity: "media" },
         con: { hue: 70, intensity: "suave" }
       },
       // alt renamed to con; ten removed and replaced by sop
@@ -163,8 +163,8 @@ describe.skipIf(!enabled)("update_collection_palette", () => {
     const { error } = await admin.rpc("update_collection_palette", {
       p_collection_id: collectionId,
       p_hue: 48,
-      p_intensity: "normal",
-      p_track_colors: { sop: { hue: 350, intensity: "normal" } },
+      p_intensity: "media",
+      p_track_colors: { sop: { hue: 350, intensity: "media" } },
       p_key_map: { con: "nada" }
     });
     expect(error?.message).toBe("INVALID_PALETTE");

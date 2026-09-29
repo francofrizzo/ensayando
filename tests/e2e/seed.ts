@@ -59,7 +59,7 @@ async function seed() {
       slug: "test-collection",
       title: "Test Collection",
       hue: 260,
-      intensity: "normal",
+      intensity: "media",
       track_colors: {
         guitar: { hue: 25, intensity: "intensa" },
         vocals: { hue: 260, intensity: "intensa" },

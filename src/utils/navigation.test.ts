@@ -23,7 +23,7 @@ const collection = (
   slug: `c-${id}`,
   title,
   hue: 300,
-  intensity: "normal",
+  intensity: "media",
   track_colors: {},
   artwork_file_url: null,
   visibility: "private",

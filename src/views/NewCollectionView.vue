@@ -43,10 +43,10 @@ const visibility = ref<CollectionVisibility>("private");
 const busy = ref(false);
 const error = ref("");
 
-const swatch = (h: number) => deriveColor({ hue: h, intensity: "normal" }, "fill", resolvedTheme.value);
+const swatch = (h: number) => deriveColor({ hue: h, intensity: "media" }, "fill", resolvedTheme.value);
 // RoomLight only reads the palette fields.
 const previewCollection = computed(
-  () => ({ hue: hue.value, intensity: "normal", track_colors: {} }) as unknown as Collection
+  () => ({ hue: hue.value, intensity: "media", track_colors: {} }) as unknown as Collection
 );
 
 const slugError = computed(() =>
@@ -63,7 +63,7 @@ async function create() {
       title: title.value.trim(),
       slug: slug.value,
       hue: hue.value,
-      intensity: "normal",
+      intensity: "media",
       track_colors: {},
       visibility: visibility.value
     });
@@ -97,7 +97,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
       <IconLock class="size-16 opacity-40" />
       <h1 class="font-display text-2xl font-bold">No podés crear colecciones</h1>
       <p class="text-base-content/60 max-w-sm">
-        Crear colecciones es de quien administra la app. Pedile que la cree y te sume como admin.
+        Solo quien administra la app puede crearlas.
       </p>
       <button class="btn btn-primary" @click="router.push({ name: 'home' })">Volver al inicio</button>
     </div>
@@ -109,9 +109,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
     >
       <div>
         <h1 class="font-display text-2xl font-bold">Nueva colección</h1>
-        <p class="text-base-content/60 text-sm">
-          Vas a quedar como admin. Después podés sumar personas y cargar canciones.
-        </p>
+        <p class="text-base-content/60 text-sm">Vas a quedar como admin.</p>
       </div>
 
       <label class="flex flex-col gap-1.5">
@@ -161,7 +159,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
             <IconPalette class="size-4" /> Otro
           </button>
         </div>
-        <HueSlider v-if="customHue" v-model="hue" intensity="normal" label="Tono del color principal" />
+        <HueSlider v-if="customHue" v-model="hue" intensity="media" label="Tono del color principal" />
       </div>
 
       <div class="flex flex-col gap-1.5">

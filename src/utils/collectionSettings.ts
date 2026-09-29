@@ -14,6 +14,19 @@ export function changesLabel(count: number): string {
   return count === 1 ? "1 cambio sin guardar" : `${count} cambios sin guardar`;
 }
 
+/**
+ * One line of the Colores change digest: what changed in a color, e.g.
+ * "Tenor: 195° → 210°, media → intensa", "Piano: neutra", "Bajo: 275°, suave".
+ */
+export function describeColorChange(label: string, before: ColorSpec, after: ColorSpec): string {
+  if (isNeutral(after)) return `${label}: neutra`;
+  if (isNeutral(before)) return `${label}: ${after.hue}°, ${after.intensity}`;
+  const parts: string[] = [];
+  if (before.hue !== after.hue) parts.push(`${before.hue}° → ${after.hue}°`);
+  if (before.intensity !== after.intensity) parts.push(`${before.intensity} → ${after.intensity}`);
+  return parts.length ? `${label}: ${parts.join(", ")}` : label;
+}
+
 // ---------- hues ----------
 
 /** Shortest distance between two hues on the circle (0–180). */

@@ -105,7 +105,7 @@ export const mockCollection: CollectionWithRole = {
   slug: "test-collection",
   title: "Test Collection",
   hue: 260,
-  intensity: "normal",
+  intensity: "media",
   track_colors: {
     red: { hue: 25, intensity: "intensa" },
     blue: { hue: 260, intensity: "intensa" },

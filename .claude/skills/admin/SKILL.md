@@ -55,7 +55,7 @@ So `auth.users.email` has two shapes:
 - `auth.users` — `id` (uuid), `email`, `encrypted_password`, `email_confirmed_at`, `raw_user_meta_data`, `last_sign_in_at`, `created_at`.
 - `auth.identities` — provider rows. A user needs a matching `email` identity or GoTrue fails login with "Database error querying schema".
 - `public.app_admins` — `user_id` (pk, FK → auth.users, on delete cascade), `created_at`.
-- `public.collections` — `id`, `slug` (unique), `title`, `hue` (0–359), `intensity` (`suave | normal | intensa`), `track_colors` (jsonb: key → `{hue, intensity}` or `{neutral: true}`), `artwork_file_key`, `visibility` (`private | unlisted | public`), `created_by`, `created_at`.
+- `public.collections` — `id`, `slug` (unique), `title`, `hue` (0–359), `intensity` (`suave | media | intensa`), `track_colors` (jsonb: key → `{hue, intensity}` or `{neutral: true}`), `artwork_file_key`, `visibility` (`private | unlisted | public`), `created_by`, `created_at`.
 - `public.songs` — `id`, `slug` (unique per collection; `nueva`, `ajustes`, `editar` are reserved), `collection_id`, `title`, `visible`, `order` (quote it), `lyrics` (jsonb), `duration`, `created_at`.
 - `public.audio_tracks` — FK → songs, cascades on song delete.
 - `public.user_collections` — `user_id`, `collection_id`, `role` (`admin | editor | viewer`). At least one admin per collection is enforced by a trigger.

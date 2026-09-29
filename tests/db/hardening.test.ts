@@ -80,7 +80,7 @@ describe.skipIf(!enabled)("review hardening", () => {
     await person("spoofer", `h-spoofer-${run}@example.com`);
     await service.from("app_admins").insert({ user_id: people.appAdmin!.id });
 
-    collectionA = await collection(`hard-a-${run}`, { sop: { hue: 350, intensity: "normal" } });
+    collectionA = await collection(`hard-a-${run}`, { sop: { hue: 350, intensity: "media" } });
     collectionB = await collection(`hard-b-${run}`);
     await member("admin", collectionA, "admin");
     await member("coAdmin", collectionA, "admin");
@@ -234,12 +234,12 @@ describe.skipIf(!enabled)("review hardening", () => {
       people.admin!.client.rpc("update_collection_palette", {
         p_collection_id: collectionA,
         p_hue: hue,
-        p_intensity: "normal",
+        p_intensity: "media",
         p_track_colors: trackColors,
         p_key_map: keyMap
       });
 
-    expect((await call(400, { sop: { hue: 350, intensity: "normal" } })).error?.message).toBe(
+    expect((await call(400, { sop: { hue: 350, intensity: "media" } })).error?.message).toBe(
       "INVALID_PALETTE"
     );
     expect((await call(300, { sop: { hue: 350, intensity: "fuerte" } })).error?.message).toBe(

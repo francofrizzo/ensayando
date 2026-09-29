@@ -67,7 +67,7 @@ fixtures.forEach((fixture, i) => {
   const expected = fixture.expected as Spec | null;
   const row = bySlug.get(`hue-check-${i}`)!;
   // A collection needs a hue: grey or unparseable main colors fall back to the brand.
-  const main = !expected || "neutral" in expected ? { hue: 314, intensity: "normal" } : expected;
+  const main = !expected || "neutral" in expected ? { hue: 314, intensity: "media" } : expected;
   const got = { hue: Number(row.hue), intensity: row.intensity };
   if (JSON.stringify(got) !== JSON.stringify(main)) {
     failures.push(

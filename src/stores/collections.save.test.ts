@@ -38,7 +38,7 @@ const collection = {
   slug: "coro",
   title: "Coro",
   hue: 300,
-  intensity: "normal",
+  intensity: "media",
   track_colors: {},
   visibility: "private",
   user_role: "admin",

@@ -8,6 +8,7 @@ import {
   collectionThemeVars,
   deriveColor,
   INTENSITY_RULES,
+  legacyMaxChroma,
   maxChroma,
   ROLE_RULES,
   roleLightness,
@@ -23,6 +24,9 @@ import {
 import legacyColors from "@/__fixtures__/legacy-colors.json";
 
 const THEMES: Theme[] = ["light", "dark"];
+/** Panel background (DaisyUI base-100 in styles.css). */
+const surfaceColor = (theme: Theme, hue: number) =>
+  theme === "light" ? `oklch(0.994 0.003 ${hue})` : `oklch(0.2 0.014 ${hue})`;
 const deltaEOK = differenceEuclidean("oklab");
 
 /** Track colors of the production collection before the redesign (dark mode). */
@@ -34,12 +38,12 @@ const PREVIOUS_APP_COLORS = [
   { name: "Voz 3", hex: "#8ecb28" },
   { name: "Voz 4", hex: "#3db3d8" }
 ];
-const INTENSITIES: Intensity[] = ["suave", "normal", "intensa"];
+const INTENSITIES: Intensity[] = ["suave", "media", "intensa"];
 
 describe("deriveColor", () => {
   it("follows each hue's cusp within the role's contrast-safe range", () => {
     const L = (hue: number, role: ColorRole, theme: Theme) =>
-      Number(deriveColor({ hue, intensity: "normal" }, role, theme).split(" ")[0]!.slice(6));
+      Number(deriveColor({ hue, intensity: "media" }, role, theme).split(" ")[0]!.slice(6));
     // yellows sit high, blues low
     expect(L(95, "lyric", "dark")).toBeGreaterThan(L(265, "lyric", "dark") + 0.1);
     for (let hue = 0; hue < 360; hue += 5) {
@@ -59,9 +63,9 @@ describe("deriveColor", () => {
   it("gives each intensity a share of the hue's maximum chroma at the role's lightness", () => {
     for (const [hue, intensity] of [
       [195, "suave"],
-      [195, "normal"],
+      [195, "media"],
       [195, "intensa"],
-      [60, "normal"]
+      [60, "media"]
     ] as [number, Intensity][]) {
       const l = roleLightness("lyric", "dark", hue);
       const { share, cap } = INTENSITY_RULES[intensity];
@@ -70,11 +74,24 @@ describe("deriveColor", () => {
     }
   });
 
-  it("gives reds more chroma than the old fixed 0.15", () => {
+  it("gives reds more chroma than the old fixed 0.15 at intensa", () => {
     for (const hue of [0, 15, 25, 30, 345]) {
       for (const role of ["fill", "lyric"] as ColorRole[]) {
-        const c = Number(deriveColor({ hue, intensity: "normal" }, role, "light").split(" ")[1]);
+        const c = Number(deriveColor({ hue, intensity: "intensa" }, role, "light").split(" ")[1]);
         expect(c).toBeGreaterThan(0.16);
+      }
+    }
+  });
+
+  it("keeps the three intensities clearly apart", () => {
+    // media reads calmer than intensa, and suave calmer than media, for every hue
+    for (let hue = 0; hue < 360; hue += 5) {
+      for (const theme of THEMES) {
+        const [s, m, i] = INTENSITIES.map((intensity) =>
+          Number(deriveColor({ hue, intensity }, "wave", theme).split(" ")[1])
+        );
+        expect(m! / i!, `media/intensa @${hue} ${theme}`).toBeLessThanOrEqual(0.8);
+        expect(s! / m!, `suave/media @${hue} ${theme}`).toBeLessThanOrEqual(0.7);
       }
     }
   });
@@ -145,6 +162,10 @@ describe("contrast sweep over every hue", () => {
           };
           check("lyric", deriveColor(spec, "lyric", theme), canvas, 4.5);
           check("ink", deriveColor(spec, "ink", theme), canvas, 4.5);
+          // ink is also the text of selected items, badges and tabs on tinted
+          // (soft) backgrounds, and of links on panels (surface)
+          check("ink on soft", deriveColor(spec, "ink", theme), deriveColor(spec, "soft", theme), 4.5);
+          check("ink on surface", deriveColor(spec, "ink", theme), surfaceColor(theme, hue), 4.5);
           check("white on fill", "white", deriveColor(spec, "fill", theme), 4.5);
           check("wave", deriveColor(spec, "wave", theme), canvas, 3);
         }
@@ -156,11 +177,11 @@ describe("contrast sweep over every hue", () => {
 
 describe("toColorSpec", () => {
   it("reads stored specs", () => {
-    expect(toColorSpec({ hue: 195, intensity: "normal" })).toEqual({
+    expect(toColorSpec({ hue: 195, intensity: "media" })).toEqual({
       hue: 195,
-      intensity: "normal"
+      intensity: "media"
     });
-    expect(toColorSpec({ hue: 370 })).toEqual({ hue: 10, intensity: "normal" });
+    expect(toColorSpec({ hue: 370 })).toEqual({ hue: 10, intensity: "media" });
     expect(toColorSpec({ neutral: true })).toEqual({ neutral: true });
   });
 
@@ -186,11 +207,18 @@ describe("parseLegacyColor", () => {
     }
   });
 
-  it("uses the migration thresholds", () => {
-    expect(chromaToSpec(10, 0.039)).toEqual({ neutral: true });
-    expect(chromaToSpec(10, 0.115)).toEqual({ hue: 10, intensity: "suave" });
-    expect(chromaToSpec(10, 0.18)).toEqual({ hue: 10, intensity: "normal" });
-    expect(chromaToSpec(10, 0.181)).toEqual({ hue: 10, intensity: "intensa" });
+  it("maps by chroma relative to the hue's maximum at that lightness", () => {
+    expect(chromaToSpec(0.6, 10, 0.039)).toEqual({ neutral: true });
+    const max = legacyMaxChroma(0.6, 10);
+    expect(chromaToSpec(0.6, 10, max * 0.44)).toEqual({ hue: 10, intensity: "suave" });
+    expect(chromaToSpec(0.6, 10, max * 0.46)).toEqual({ hue: 10, intensity: "media" });
+    expect(chromaToSpec(0.6, 10, max * 0.73)).toEqual({ hue: 10, intensity: "intensa" });
+  });
+
+  it("maps the colors the app used before the redesign to intensa", () => {
+    for (const { hex } of PREVIOUS_APP_COLORS) {
+      expect(parseLegacyColor(hex)).toMatchObject({ intensity: "intensa" });
+    }
   });
 });
 
@@ -199,10 +227,10 @@ describe("resolveCollectionPalette", () => {
     const palette = resolveCollectionPalette({
       hue: 45,
       intensity: "suave",
-      track_colors: { a: { hue: 10, intensity: "normal" }, c: { neutral: true }, broken: "#fff" }
+      track_colors: { a: { hue: 10, intensity: "media" }, c: { neutral: true }, broken: "#fff" }
     });
     expect(palette.main).toEqual({ hue: 45, intensity: "suave" });
-    expect(palette.tracks.a).toEqual({ hue: 10, intensity: "normal" });
+    expect(palette.tracks.a).toEqual({ hue: 10, intensity: "media" });
     expect(palette.tracks.c).toEqual({ neutral: true });
     expect(palette.tracks.broken).toBeUndefined();
   });
@@ -243,9 +271,11 @@ describe("collectionThemeVars", () => {
 
   it("matches the brand defaults in styles.css", () => {
     expect(collectionThemeVars(BRAND_SPEC)).toMatchObject({
-      "--collection-fill": "oklch(0.429 0.18 314)",
-      "--collection-ink-dark": "oklch(0.629 0.17 314)",
-      "--collection-soft-dark": "oklch(0.3 0.081 314)"
+      "--collection-fill": "oklch(0.429 0.2 314)",
+      "--collection-ink-light": "oklch(0.429 0.2 314)",
+      "--collection-ink-dark": "oklch(0.76 0.17 314)",
+      "--collection-soft-light": "oklch(0.93 0.0481 314)",
+      "--collection-soft-dark": "oklch(0.3 0.09 314)"
     });
   });
 });

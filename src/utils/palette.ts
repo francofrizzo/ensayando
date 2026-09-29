@@ -15,7 +15,7 @@
 // Kept free of "@/" imports so scripts/ can use it too.
 import { clampChroma, displayable } from "culori";
 
-export type Intensity = "suave" | "normal" | "intensa";
+export type Intensity = "suave" | "media" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
 export type ColorRole = "fill" | "ink" | "lyric" | "wave" | "soft" | "line";
 export type Theme = "light" | "dark";
@@ -23,10 +23,12 @@ export type Theme = "light" | "dark";
 /**
  * Intensity = share of the hue's maximum sRGB chroma at the role's lightness,
  * with an absolute cap so violets and pinks (which reach ~0.29) don't go neon.
+ * "intensa" is calibrated against the colors the app used before the redesign;
+ * "media" and "suave" sit clearly below it so the three read as different.
  */
 export const INTENSITY_RULES: Record<Intensity, { share: number; cap: number }> = {
-  suave: { share: 0.5, cap: 0.1 },
-  normal: { share: 0.95, cap: 0.18 },
+  suave: { share: 0.4, cap: 0.08 },
+  media: { share: 0.68, cap: 0.14 },
   intensa: { share: 1, cap: 0.2 }
 };
 
@@ -87,7 +89,7 @@ export const naturalLightness = (h: number) =>
   HUE_LIGHTNESS.base + HUE_LIGHTNESS.slope * cuspLightness(h);
 
 /** Hue used when there is no collection (login, home, errors): "violeta Ensayando". */
-export const BRAND_SPEC: ColorSpec = { hue: 314, intensity: "normal" };
+export const BRAND_SPEC: ColorSpec = { hue: 314, intensity: "intensa" };
 
 // Lightness = clamp(naturalLightness(hue) + offset, min, max). A role with
 // min === max has a fixed lightness (backgrounds, borders). The bounds are the
@@ -114,7 +116,7 @@ export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
   },
   dark: {
     fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
-    ink: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => Math.min(c, 0.17) },
+    ink: { offset: 0, min: 0.76, max: 0.86, chroma: (c) => Math.min(c, 0.17) },
     lyric: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
     wave: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
     soft: { offset: 0, min: 0.3, max: 0.3, fromFill: true, chroma: (c) => c * 0.45 },
@@ -183,14 +185,53 @@ export const deriveColor = (
 export const normalizeHue = (hue: number) => ((Math.round(hue) % 360) + 360) % 360;
 
 const isIntensity = (value: unknown): value is Intensity =>
-  value === "suave" || value === "normal" || value === "intensa";
+  value === "suave" || value === "media" || value === "intensa";
 
-/** Maps an OKLCH chroma to the closest intensity, or neutral. Same thresholds as the migration. */
-export const chromaToSpec = (hue: number, chroma: number): ColorSpec => {
-  if (chroma < 0.04) return { neutral: true };
-  if (chroma <= 0.115) return { hue: normalizeHue(hue), intensity: "suave" };
-  if (chroma <= 0.18) return { hue: normalizeHue(hue), intensity: "normal" };
-  return { hue: normalizeHue(hue), intensity: "intensa" };
+// Migration thresholds. Intensity is relative: the share of the most chroma the
+// source color's hue can show in sRGB at the source color's own lightness. Old
+// colors picked at full saturation (a cyan at C 0.11 is already at its limit)
+// become "intensa" even when their absolute chroma is low.
+export const LEGACY_NEUTRAL_CHROMA = 0.04;
+export const LEGACY_INTENSA_SHARE = 0.72;
+export const LEGACY_MEDIA_SHARE = 0.45;
+
+/** OKLCH inside sRGB, with the same matrices and tolerance as the SQL migration. */
+const inLegacyGamut = (l: number, c: number, h: number) => {
+  const rad = (h * Math.PI) / 180;
+  const a = c * Math.cos(rad);
+  const b = c * Math.sin(rad);
+  const l_ = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m_ = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s_ = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const rgb = [
+    4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_,
+    -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_,
+    -0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_
+  ];
+  return rgb.every((v) => v >= -0.0001 && v <= 1.0001);
+};
+
+/** Largest in-gamut chroma at (l, h). Mirrors pg_temp.max_chroma() in the migration. */
+export const legacyMaxChroma = (l: number, h: number) => {
+  if (l <= 0 || l >= 1) return 0;
+  let lo = 0;
+  let hi = 0.5;
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (inLegacyGamut(l, mid, h)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+};
+
+/** Maps an OKLCH color to the closest intensity (relative chroma), or neutral. Same rules as the migration. */
+export const chromaToSpec = (lightness: number, hue: number, chroma: number): ColorSpec => {
+  if (chroma < LEGACY_NEUTRAL_CHROMA) return { neutral: true };
+  const max = legacyMaxChroma(lightness, hue);
+  const share = max > 0 ? chroma / max : 1;
+  const intensity: Intensity =
+    share >= LEGACY_INTENSA_SHARE ? "intensa" : share >= LEGACY_MEDIA_SHARE ? "media" : "suave";
+  return { hue: normalizeHue(hue), intensity };
 };
 
 /** Validates a stored spec (track_colors values are jsonb, so trust nothing). */
@@ -201,20 +242,21 @@ export const toColorSpec = (value: unknown): ColorSpec | null => {
   if (typeof obj.hue === "number" && Number.isFinite(obj.hue)) {
     return {
       hue: normalizeHue(obj.hue),
-      intensity: isIntensity(obj.intensity) ? obj.intensity : "normal"
+      intensity: isIntensity(obj.intensity) ? obj.intensity : "media"
     };
   }
   return null;
 };
 
-/** Converts OKLab a/b to chroma and hue (degrees 0–360). */
-const labToChromaHue = (a: number, b: number) => ({
+/** Converts OKLab to lightness, chroma and hue (degrees 0–360). */
+const labToLch = (lightness: number, a: number, b: number) => ({
+  lightness,
   chroma: Math.sqrt(a * a + b * b),
   hue: ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360
 });
 
-/** sRGB hex (#rrggbb or #rgb) to OKLab chroma and hue. Same math as the SQL migration. */
-const hexToChromaHue = (hex: string) => {
+/** sRGB hex (#rrggbb or #rgb) to OKLCH. Same math as the SQL migration. */
+const hexToLch = (hex: string) => {
   const digits = hex.length === 4 ? [...hex.slice(1)].map((d) => d + d).join("") : hex.slice(1);
   const toLinear = (channel: number) => {
     const c = channel / 255;
@@ -228,7 +270,8 @@ const hexToChromaHue = (hex: string) => {
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-  return labToChromaHue(
+  return labToLch(
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
     1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
     0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
   );
@@ -236,7 +279,7 @@ const hexToChromaHue = (hex: string) => {
 
 const NUM = "[0-9]*\\.?[0-9]+";
 const OKLCH_RE = new RegExp(
-  `^\\s*oklch\\(\\s*${NUM}%?\\s+(${NUM})\\s+(${NUM})(?:deg)?\\s*(?:/[^)]*)?\\)\\s*$`,
+  `^\\s*oklch\\(\\s*(${NUM})(%?)\\s+(${NUM})\\s+(${NUM})(?:deg)?\\s*(?:/[^)]*)?\\)\\s*$`,
   "i"
 );
 const HEX_RE = /^\s*#([0-9a-f]{3}|[0-9a-f]{6})\s*$/i;
@@ -254,19 +297,22 @@ const toHex = (channel: number) => Math.min(channel, 255).toString(16).padStart(
 export const parseLegacyColor = (value: string): ColorSpec | null => {
   const oklchMatch = OKLCH_RE.exec(value);
   if (oklchMatch) {
-    const chroma = Number(oklchMatch[1]);
-    const hue = Number(oklchMatch[2]);
-    return Number.isFinite(chroma) && Number.isFinite(hue) ? chromaToSpec(hue, chroma) : null;
+    const lightness = Number(oklchMatch[1]) / (oklchMatch[2] === "%" ? 100 : 1);
+    const chroma = Number(oklchMatch[3]);
+    const hue = Number(oklchMatch[4]);
+    return [lightness, chroma, hue].every(Number.isFinite)
+      ? chromaToSpec(lightness, hue, chroma)
+      : null;
   }
   if (HEX_RE.test(value)) {
-    const { chroma, hue } = hexToChromaHue(value.trim().toLowerCase());
-    return chromaToSpec(hue, chroma);
+    const { lightness, chroma, hue } = hexToLch(value.trim().toLowerCase());
+    return chromaToSpec(lightness, hue, chroma);
   }
   const rgbMatch = RGB_RE.exec(value);
   if (rgbMatch) {
     const hex = `#${[rgbMatch[1], rgbMatch[2], rgbMatch[3]].map((c) => toHex(Number(c))).join("")}`;
-    const { chroma, hue } = hexToChromaHue(hex);
-    return chromaToSpec(hue, chroma);
+    const { lightness, chroma, hue } = hexToLch(hex);
+    return chromaToSpec(lightness, hue, chroma);
   }
   return null;
 };
@@ -289,7 +335,7 @@ export const resolveCollectionPalette = (
   if (!source) return { main: BRAND_SPEC, tracks: {} };
   const main: ColorSpec = {
     hue: normalizeHue(source.hue),
-    intensity: isIntensity(source.intensity) ? source.intensity : "normal"
+    intensity: isIntensity(source.intensity) ? source.intensity : "media"
   };
   const tracks: Record<string, ColorSpec> = {};
   for (const [key, value] of Object.entries(source.track_colors ?? {})) {

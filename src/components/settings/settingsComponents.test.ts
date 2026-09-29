@@ -32,11 +32,11 @@ describe("SegmentedControl", () => {
   it("marks the selected option and emits the new one", async () => {
     const wrapper = mount(SegmentedControl, {
       props: {
-        modelValue: "normal",
+        modelValue: "media",
         label: "Intensidad",
         options: [
           { value: "suave", label: "Suave" },
-          { value: "normal", label: "Normal" }
+          { value: "media", label: "Media" }
         ]
       }
     });

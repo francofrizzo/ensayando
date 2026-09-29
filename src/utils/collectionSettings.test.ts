@@ -8,6 +8,7 @@ import {
   colorKeyFromName,
   colorUsage,
   confirmationMatches,
+  describeColorChange,
   hueConflicts,
   hueDistance,
   initials,
@@ -45,9 +46,9 @@ describe("hues", () => {
 
   it("flags tracks closer than 25°, ignoring neutral ones", () => {
     const conflicts = hueConflicts([
-      { key: "ten", name: "Tenor", spec: { hue: 195, intensity: "normal" } },
-      { key: "baj", name: "Bajo", spec: { hue: 207, intensity: "normal" } },
-      { key: "sop", name: "Soprano", spec: { hue: 350, intensity: "normal" } },
+      { key: "ten", name: "Tenor", spec: { hue: 195, intensity: "media" } },
+      { key: "baj", name: "Bajo", spec: { hue: 207, intensity: "media" } },
+      { key: "sop", name: "Soprano", spec: { hue: 350, intensity: "media" } },
       { key: "clic", name: "Clic", spec: { neutral: true } }
     ]);
     expect(conflicts).toEqual([{ a: "ten", b: "baj", distance: 12 }]);
@@ -132,6 +133,29 @@ describe("members and confirmations", () => {
     expect(initials("lucia")).toBe("LU");
     expect(shareMessage("https://ensayando.com.ar", "lucia", "abcd-efgh-jkmn")).toBe(
       "Entrá a ensayando.com.ar con el usuario lucia y la contraseña abcd-efgh-jkmn."
+    );
+  });
+});
+
+describe("describeColorChange", () => {
+  it("shows hue and intensity changes", () => {
+    expect(
+      describeColorChange("Tenor", { hue: 195, intensity: "media" }, { hue: 210, intensity: "intensa" })
+    ).toBe("Tenor: 195° → 210°, media → intensa");
+    expect(
+      describeColorChange("Tenor", { hue: 195, intensity: "media" }, { hue: 195, intensity: "suave" })
+    ).toBe("Tenor: media → suave");
+    expect(
+      describeColorChange("Color principal", { hue: 300, intensity: "media" }, { hue: 45, intensity: "media" })
+    ).toBe("Color principal: 300° → 45°");
+  });
+
+  it("shows neutral toggles", () => {
+    expect(describeColorChange("Piano", { hue: 130, intensity: "media" }, { neutral: true })).toBe(
+      "Piano: neutra"
+    );
+    expect(describeColorChange("Piano", { neutral: true }, { hue: 130, intensity: "suave" })).toBe(
+      "Piano: 130°, suave"
     );
   });
 });

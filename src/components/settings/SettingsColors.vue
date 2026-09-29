@@ -16,6 +16,7 @@ import {
   COLOR_KEY_PATTERN,
   colorKeyFromName,
   colorUsage,
+  describeColorChange,
   hueConflicts,
   hueDistance,
   MIN_HUE_DISTANCE,
@@ -131,7 +132,7 @@ function setNeutral(row: Row, neutral: boolean) {
   else {
     const others = rows.value.filter((r) => r !== row && !isNeutral(r.spec));
     const hue = nearestFreeHue(mainHue.value + 180, others.map((r) => (r.spec as { hue: number }).hue));
-    row.spec = { hue: hue ?? 0, intensity: "normal" };
+    row.spec = { hue: hue ?? 0, intensity: "media" };
   }
 }
 
@@ -152,7 +153,7 @@ function addColor() {
     uid: nextUid++,
     originalKey: null,
     key: colorKeyFromName("color", taken),
-    spec: { hue, intensity: "normal" }
+    spec: { hue, intensity: "media" }
   };
   rows.value.push(row);
   selected.value = row.uid;
@@ -188,7 +189,13 @@ const keyErrors = computed(() => {
 const changeList = computed(() => {
   const list: string[] = [];
   if (mainHue.value !== props.collection.hue || mainIntensity.value !== props.collection.intensity) {
-    list.push("color principal");
+    list.push(
+      describeColorChange(
+        "Color principal",
+        { hue: props.collection.hue, intensity: props.collection.intensity },
+        { hue: mainHue.value, intensity: mainIntensity.value }
+      )
+    );
   }
   for (const row of rows.value) {
     const before = savedRows.value.find((r) => r.originalKey === row.originalKey && row.originalKey);
@@ -198,7 +205,7 @@ const changeList = computed(() => {
     }
     if (row.key !== before.key) list.push(`${before.key} renombrado`);
     if (JSON.stringify(row.spec) !== JSON.stringify(before.spec)) {
-      list.push(isNeutral(row.spec) ? `${labelFor(row)} neutra` : `${labelFor(row)} a ${row.spec.hue}°`);
+      list.push(describeColorChange(labelFor(row), before.spec, row.spec));
     }
   }
   for (const before of savedRows.value) {
@@ -290,17 +297,14 @@ useSettingsSection({
 
 const INTENSITIES: { value: Intensity; label: string }[] = [
   { value: "suave", label: "Suave" },
-  { value: "normal", label: "Normal" },
+  { value: "media", label: "Media" },
   { value: "intensa", label: "Intensa" }
 ];
 const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mainIntensity.value }));
 </script>
 
 <template>
-  <SettingsSection
-    title="Colores"
-    description="El color principal tiñe la sala y los botones. Cada pista tiene su tono, que colorea sus versos y su onda."
-  >
+  <SettingsSection title="Colores">
     <template #actions>
       <button class="btn btn-soft btn-sm" data-testid="add-color" @click="addColor">
         <IconPlus class="size-4" /> Agregar color
@@ -312,7 +316,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
       <div class="bg-base-100 rounded-box border-base-content/10 flex flex-col border p-2">
         <button
           class="flex items-center gap-3 rounded-lg p-2.5 text-left"
-          :class="selected === 'main' ? 'bg-primary/15' : 'hover:bg-base-content/5'"
+          :class="selected === 'main' ? 'bg-collection-soft' : 'hover:bg-base-content/5'"
           @click="selected = 'main'"
         >
           <span class="size-9 shrink-0 rounded-lg" :style="{ background: swatch(mainSpec) }" />
@@ -329,7 +333,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
           v-for="row in rows"
           :key="row.uid"
           class="flex items-center gap-3 rounded-lg p-2.5 text-left"
-          :class="selected === row.uid ? 'bg-primary/15' : 'hover:bg-base-content/5'"
+          :class="selected === row.uid ? 'bg-collection-soft' : 'hover:bg-base-content/5'"
           :data-testid="`color-row-${row.key}`"
           @click="selected = row.uid"
         >
@@ -441,7 +445,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               <span class="text-base-content/70 mb-1 block text-sm font-semibold">Tono</span>
               <HueSlider
                 :model-value="isNeutral(selectedRow.spec) ? 0 : selectedRow.spec.hue"
-                :intensity="isNeutral(selectedRow.spec) ? 'normal' : selectedRow.spec.intensity"
+                :intensity="isNeutral(selectedRow.spec) ? 'media' : selectedRow.spec.intensity"
                 :marks="marksFor(selectedRow)"
                 :disabled="isNeutral(selectedRow.spec)"
                 @update:model-value="setHue(selectedRow, $event)"
@@ -462,7 +466,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
             <div class="flex flex-col gap-1.5">
               <span class="text-base-content/70 text-sm font-semibold">Intensidad</span>
               <SegmentedControl
-                :model-value="isNeutral(selectedRow.spec) ? 'normal' : selectedRow.spec.intensity"
+                :model-value="isNeutral(selectedRow.spec) ? 'media' : selectedRow.spec.intensity"
                 :options="INTENSITIES"
                 :disabled="isNeutral(selectedRow.spec)"
                 label="Intensidad"

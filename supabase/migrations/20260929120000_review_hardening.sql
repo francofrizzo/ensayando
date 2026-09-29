@@ -263,7 +263,7 @@ AS $$
     ELSE jsonb_typeof(p_value -> 'hue') = 'number'
       AND (p_value ->> 'hue')::numeric = trunc((p_value ->> 'hue')::numeric)
       AND (p_value ->> 'hue')::numeric BETWEEN 0 AND 359
-      AND p_value ->> 'intensity' IN ('suave', 'normal', 'intensa')
+      AND p_value ->> 'intensity' IN ('suave', 'media', 'intensa')
       AND (SELECT count(*) FROM jsonb_object_keys(p_value)) = 2
   END;
 $$;
@@ -288,7 +288,7 @@ BEGIN
   END IF;
 
   IF p_hue IS NULL OR p_hue < 0 OR p_hue > 359
-     OR p_intensity IS NULL OR p_intensity NOT IN ('suave', 'normal', 'intensa')
+     OR p_intensity IS NULL OR p_intensity NOT IN ('suave', 'media', 'intensa')
      OR p_track_colors IS NULL OR jsonb_typeof(p_track_colors) <> 'object'
      OR jsonb_typeof(key_map) <> 'object'
      OR EXISTS (
