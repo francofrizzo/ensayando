@@ -118,7 +118,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
 
       <label class="flex flex-col gap-1.5">
         <span class="text-base-content/70 text-sm font-semibold">Nombre</span>
-        <input v-model="title" class="input w-full field-focus" placeholder="Taller de musicales 2027" data-testid="new-title" />
+        <input v-model="title" class="input w-full field-focus" data-testid="new-title" />
       </label>
 
       <label class="flex flex-col gap-1.5">
