@@ -2,7 +2,6 @@
 import { computed, ref, watch } from "vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
-import type { MyPartState } from "@/composables/usePlayerState";
 import { useTheme } from "@/composables/useTheme";
 import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 import {
@@ -10,7 +9,6 @@ import {
   filterVisibleLyrics,
   regularizeLyrics
 } from "@/utils/lyricsViewerUtils";
-import { isVerseDimmed } from "@/utils/myPart";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -18,8 +16,6 @@ const props = defineProps<{
   currentTime: number;
   isDisabled: boolean;
   enabledTrackIds: number[];
-  /** "Mi parte": verses of other tracks are dimmed. */
-  myPart?: MyPartState | null;
 }>();
 
 const emit = defineEmits<{
@@ -120,12 +116,10 @@ watch(
                 }
               "
               :data-active="verse.status === 'active' || undefined"
-              :data-dimmed="(myPart && isVerseDimmed(verse, myPart)) || undefined"
               :style="verseStyles(verse)"
               :class="{
                 'scale-[1.14] font-bold': verse.status === 'active',
-                'font-medium': verse.status !== 'active',
-                'opacity-[0.32]': myPart && isVerseDimmed(verse, myPart)
+                'font-medium': verse.status !== 'active'
               }"
               class="text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
               >{{ verse.text }}</span

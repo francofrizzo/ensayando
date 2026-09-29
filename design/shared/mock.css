@@ -156,7 +156,6 @@
 .v.past { color: var(--past); background-image: none; -webkit-text-fill-color: currentColor; }
 .v.now { font-weight: 700; transform: scale(1.14); text-shadow: 0 0 30px oklch(from var(--tc) l c h / var(--glow-o)); }
 .v.multi.now { text-shadow: none; filter: drop-shadow(0 0 18px oklch(from var(--tc) l c h / calc(var(--glow-o) * 0.8))); }
-.v.dim { opacity: 0.32; }
 .cmt { font: 600 11px/1 var(--ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
 .cols { display: flex; justify-content: space-evenly; gap: 40px; width: 100%; }
 .cols > div { display: flex; flex-direction: column; gap: 10px; align-items: center; }

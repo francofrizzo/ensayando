@@ -13,7 +13,6 @@ import EditBar from "@/components/editor/EditBar.vue";
 import EditorPanels from "@/components/editor/EditorPanels.vue";
 import UnsavedChangesDialog from "@/components/editor/UnsavedChangesDialog.vue";
 import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
-import MyPartMenu from "@/components/player/MyPartMenu.vue";
 import PlayerControls from "@/components/player/PlayerControls.vue";
 import PlayerShortcutsModal from "@/components/player/PlayerShortcutsModal.vue";
 import PlayerTopBar from "@/components/player/PlayerTopBar.vue";
@@ -36,7 +35,6 @@ import { useCurrentSong } from "@/composables/useCurrentSong";
 import { provideEditorSession } from "@/composables/useEditorSession";
 import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
-import { useMyPart } from "@/composables/useMyPart";
 import { useNavigation } from "@/composables/useNavigation";
 import { type TrackInit, usePlayerState } from "@/composables/usePlayerState";
 import { artworkPlaybackUrl, audioPlaybackUrl } from "@/data/storage";
@@ -45,7 +43,6 @@ import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
 import { COMMAND_EVENT, type CommandEventDetail, dispatchPlayback } from "@/utils/appEvents";
 import { mixAndEncodeMp3 } from "@/utils/mixdown";
-import { lowerRestVolumes, myPartForSong } from "@/utils/myPart";
 import { isIOS } from "@/utils/platform";
 import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
@@ -94,15 +91,6 @@ const buildTrackInits = (): TrackInit[] =>
     hasLyrics: tracksIdsWithLyrics.value.includes(track.id)
   }));
 
-// "Mi parte": remembered per collection; only this song's tracks count here.
-const myPartStore = useMyPart(computed(() => props.collection.id));
-const myPart = computed(() =>
-  myPartForSong(
-    myPartStore.part.value,
-    sortedTracks.value.map((track) => track.id)
-  )
-);
-
 const state = usePlayerState(
   buildTrackInits(),
   {
@@ -110,23 +98,6 @@ const state = usePlayerState(
       trackPlayers.value[trackIndex]?.seekTo(time);
     }
   }
-);
-
-// "Bajar el resto": the other tracks' sliders go to half, visibly, and come back
-// when the option goes off (see lowerRestVolumes).
-let lowerRestSaved: Record<number, number> = {};
-watch(
-  [myPart, () => state.trackStates.value.length],
-  () => {
-    const tracks = state.trackStates.value.map((t) => ({ id: t.id, volume: t.volume }));
-    const { changes, saved } = lowerRestVolumes(tracks, myPart.value, lowerRestSaved);
-    lowerRestSaved = saved;
-    state.trackStates.value.forEach((t, index) => {
-      const volume = changes[t.id];
-      if (volume !== undefined) state.onVolumeChange(index, volume);
-    });
-  },
-  { immediate: true, deep: true }
 );
 
 const { isReady, trackIdsWithLyricsEnabled } = state;
@@ -555,7 +526,7 @@ const onDownloadMix = async () => {
   const toastId = toast.loading("Preparando la mezcla…");
 
   try {
-    // The mix uses what you hear: volume, mute, solo and Mi parte. Failed tracks stay out.
+    // The mix uses what you hear: volume, mute and solo. Failed tracks stay out.
     const urls = sortedTracks.value.map((track, i) =>
       state.trackStates.value[i]?.failed ? null : audioPlaybackUrl(track) || null
     );
@@ -907,8 +878,6 @@ const initializeAudioContext = async () => {
         :collection="collection"
         :song="song"
         :song-count="collectionsStore.songs.length"
-        :tracks="sortedTracks"
-        :my-part="myPart"
         :can-edit="canEdit"
         :is-admin="isAdmin"
         :edit-mode="uiStore.editMode"
@@ -920,9 +889,6 @@ const initializeAudioContext = async () => {
         @download="onDownloadMix"
         @shortcuts="showShortcuts = true"
         @settings="openSettings"
-        @my-part-toggle="myPartStore.toggleTrack"
-        @my-part-duck="myPartStore.setDuckOthers"
-        @my-part-clear="myPartStore.clear"
       />
     </div>
 
@@ -967,7 +933,6 @@ const initializeAudioContext = async () => {
         :is-disabled="!isReady"
         :collection="collection"
         :enabled-track-ids="trackIdsWithLyricsEnabled"
-        :my-part="myPart"
         @seek="onSeekToTime"
       />
     </div>
@@ -1145,22 +1110,6 @@ const initializeAudioContext = async () => {
         :aria-hidden="!mixerOpen || undefined"
         data-testid="mixer"
       >
-        <div
-          v-if="sortedTracks.length > 1"
-          class="flex items-center justify-between pb-2 md:hidden"
-        >
-          <span class="text-base-content/50 text-[11px] font-semibold tracking-[0.1em] uppercase"
-            >Pistas</span
-          >
-          <MyPartMenu
-            :collection="collection"
-            :tracks="sortedTracks"
-            :part="myPart"
-            @toggle-track="myPartStore.toggleTrack"
-            @set-duck="myPartStore.setDuckOthers"
-            @clear="myPartStore.clear"
-          />
-        </div>
         <div class="relative flex flex-col md:py-1">
           <TrackPlayer
             v-for="(track, index) in sortedTracks"

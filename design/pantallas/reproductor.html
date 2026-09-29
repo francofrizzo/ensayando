@@ -28,9 +28,6 @@
 .mixer .trk { height: 46px; grid-template-columns: 198px minmax(0, 1fr); }
 .mixer .wave { height: 34px; }
 .mixer .ph { position: absolute; top: 0; bottom: 0; left: calc(14px + 198px + 16px + (100% - 14px - 198px - 16px) * var(--p)); }
-.mypart { display: inline-flex; align-items: center; gap: 8px; }
-.mypart .dots { display: inline-flex; }
-.mypart .dots .dot { width: 9px; height: 9px; margin-left: -3px; box-shadow: 0 0 0 2px var(--surface); }
 
 /* teléfono */
 .p-top { position: absolute; left: 10px; right: 10px; top: 52px; height: 56px; border-radius: 18px; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 6px; z-index: 3; }
@@ -90,10 +87,9 @@
     <div class="grid-3">
       <div class="note"><span class="tag refine">Ajuste</span><b>La letra manda</b><p>Más aire alrededor del verso activo, que crece un 14 % y en oscuro brilla con su color. Los versos cantados bajan al 30 % del texto. Los comentarios (<i>Coro</i>, <i>Solo soprano</i>) pasan a ser una etiqueta chica y espaciada, no una línea de letra más.</p></div>
       <div class="note"><span class="tag new">Nuevo</span><b>Dock de vidrio</b><p>Transporte, tiempo y pistas en una sola pieza flotante. Con las pistas a la vista, las ondas son la línea de tiempo: se toca cualquiera para saltar. Solo donde no hay ondas (dock compacto, teléfono) aparece una barra de progreso simple.</p></div>
-      <div class="note"><span class="tag new">Nuevo</span><b>Mi parte</b><p>Cada persona marca sus pistas (por ejemplo, Contralto). Sus versos quedan a pleno y el resto se atenúa. Se recuerda por colección y por dispositivo.</p></div>
       <div class="note"><span class="tag refine">Ajuste</span><b>Solo, silencio y letra visibles</b><p>Hoy el solo es una pulsación larga y el "solo letra" otra, en un botón distinto. Pasan a tres botones chicos por pista: <b>M</b>, <b>S</b> y letra. La pulsación larga queda como atajo, no como único camino.</p></div>
       <div class="note"><span class="tag refine">Ajuste de comportamiento</span><b>Solo y silencio dejan de tocar el volumen</b><p>Hoy el solo es exclusivo y funciona bajando a cero las demás pistas; al salir, todas vuelven al 100 % y se pierden los volúmenes elegidos. Pasan a ser estados propios de cada pista: puede haber varias en solo y los volúmenes no se reinician. Lo que suena es volumen × no silenciada × (sin solos o en solo). Esa misma ganancia usan la reproducción, la descarga de la mezcla y la sincronización entre pistas.</p></div>
-      <div class="note"><span class="tag moved">Sale de un atajo</span><b>Descargar mezcla</b><p>Hoy existe solo como <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. Pasa al menú de la canción, usa la ganancia que está sonando (volumen, silencio, solo y Mi parte), normaliza a −1 dB como hoy y muestra el progreso en un aviso.</p></div>
+      <div class="note"><span class="tag moved">Sale de un atajo</span><b>Descargar mezcla</b><p>Hoy existe solo como <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. Pasa al menú de la canción, usa la ganancia que está sonando (volumen, silencio y solo), normaliza a −1 dB como hoy y muestra el progreso en un aviso.</p></div>
       <div class="note"><span class="tag drop">Se quita</span><b>Copiador de tiempos</b><p>El aviso que copia <span class="mono">"start_time": 12.40</span> con <kbd>⌘</kbd><kbd>,</kbd> es de cuando la letra se editaba a mano en JSON. Lo reemplaza el modo Sincronizar del editor.</p></div>
     </div>
   </section>
@@ -111,7 +107,6 @@
           <div class="colbtn"><span class="b icon soft"><i data-ic="playlist"></i></span><div class="t"><b>Coro del Puerto · 2026 <i data-ic="selector" style="font-size:14px;color:var(--faint)"></i></b><span>7 canciones</span></div></div>
           <div class="songtitle"><b>Vidala del viento</b></div>
           <div class="m-grow"></div>
-          <span class="b sm soft mypart"><span class="dots"><span class="dot" style="--tc:var(--t-alt)"></span></span>Mi parte: Contralto</span>
           <span class="b sm soft"><i data-ic="pencil"></i>Editar</span>
           <span class="b icon sm"><i data-ic="search"></i></span>
           <span class="b icon sm"><i data-ic="dots"></i></span>
@@ -163,7 +158,7 @@
     <ol class="legend">
       <li><span><b>Botón de biblioteca</b>Nombre de la colección; la portada aparece solo si la colección tiene una. Abre la biblioteca (canciones y colecciones). Reemplaza al botón de menú de color pleno.</span></li>
       <li><span><b>Canción en el centro</b>Solo el título, en Bricolage display.</span></li>
-      <li><span><b>Acciones a la derecha</b>Mi parte, Editar (solo editores y admins), buscar <kbd>⌘K</kbd>, menú de la canción y cuenta.</span></li>
+      <li><span><b>Acciones a la derecha</b>Editar (solo editores y admins), buscar <kbd>⌘K</kbd>, menú de la canción y cuenta.</span></li>
       <li><span><b>Verso activo</b>Crece, sube a 700 y en oscuro emite su color. Los versos con dos pistas llevan un degradé entre sus tintas.</span></li>
       <li><span><b>Transporte</b>Tiempo en Geist Mono con décimas, anterior, reproducir y siguiente. El botón de reproducir es el único relleno pleno de la pantalla.</span></li>
       <li><span><b>Mezcladora</b>Por pista: nombre, M, S, letra y volumen; a la derecha, la onda. La línea de reproducción cruza todas las ondas.</span></li>
@@ -275,46 +270,6 @@
       <div class="note"><b><span class="kbd">S</span> Solo</b><p>Toque: deja sonar solo esta pista. Varias pistas pueden estar en solo a la vez y los volúmenes se conservan. Hoy es una pulsación larga (o <kbd>⌘</kbd>+clic) sobre el parlante; <kbd>⌘</kbd>+clic sobre M sigue haciendo solo.</p></div>
       <div class="note"><b><i data-ic="lyrics"></i> Letra</b><p>Toque: muestra u oculta los versos de la pista. Pulsación larga o <kbd>⌘</kbd>+clic: solo la letra de esta pista (como hoy). Pintado con la tinta de la pista cuando está activo.</p></div>
       <div class="note"><b><i data-ic="vol"></i> Volumen</b><p>Deslizador en la tinta de la pista. Doble clic vuelve al 100 %. Llevarlo a cero equivale a silenciar.</p></div>
-    </div>
-  </section>
-
-  <section class="sec">
-    <div class="sec-h">
-      <h2 class="d">Mi parte</h2>
-      <p>En un ensayo cada persona canta una voz. Mi parte deja en primer plano los versos de las pistas elegidas sin ocultar el resto, que sigue siendo la referencia de entrada. Se elige desde la barra superior; opcionalmente baja 6 dB las demás pistas.</p>
-    </div>
-    <div class="compare">
-      <div>
-        <div class="cap"><b>Sin elegir</b><span>como hoy</span></div>
-        <div class="app mini auto" style="border-radius:var(--r-box)"><div class="amb"></div>
-          <div class="lyr">
-            <div class="stz"><span class="cmt">Todos</span>
-              <span class="v" style="--tc:var(--t-sop)">Sopla el viento por la loma</span>
-              <span class="v now" style="--tc:var(--t-alt)">y se lleva mi canción</span>
-              <span class="v" style="--tc:var(--t-ten)">cada nota que se asoma</span>
-              <span class="v" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="cap"><b>Mi parte: Contralto</b><span>el resto al 32 %</span></div>
-        <div class="app mini auto" style="border-radius:var(--r-box)"><div class="amb"></div>
-          <div class="lyr">
-            <div class="stz"><span class="cmt">Todos</span>
-              <span class="v dim" style="--tc:var(--t-sop)">Sopla el viento por la loma</span>
-              <span class="v now" style="--tc:var(--t-alt)">y se lleva mi canción</span>
-              <span class="v dim" style="--tc:var(--t-ten)">cada nota que se asoma</span>
-              <span class="v dim" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="grid-3">
-      <div class="note"><b>Dónde se guarda</b><p>En el dispositivo, por colección (<span class="mono">localStorage</span>). No hace falta tocar la base. Si más adelante se quiere que siga a la persona entre dispositivos, se agrega a <span class="mono">user_collections</span>.</p></div>
-      <div class="note"><b>Relación con "letra"</b><p>Mi parte no oculta nada: atenúa. Ocultar la letra de una pista sigue siendo el botón de letra en la mezcladora.</p></div>
-      <div class="note"><b>Sin sesión</b><p>Las colecciones públicas se escuchan sin cuenta. Mi parte funciona igual porque vive en el dispositivo.</p></div>
     </div>
   </section>
 

@@ -372,7 +372,7 @@ function renderRoles() {
     ["Texto de la colección", "íconos y enlaces sobre la sala", P(L.name, "ci", i, h), P(D.name, "ci", i, h)],
     ["Letra de pista", "tinta de los versos", P(L.name, "lyr", i, h), P(D.name, "lyr", i, h)],
     ["Onda y punto", "ondas, puntos, barra de progreso", P(L.name, "wav", i, h), P(D.name, "wav", i, h)],
-    ["Fondo suave", "Mi parte, pestaña activa", P(L.name, "csl", i, h), P(D.name, "csl", i, h)],
+    ["Fondo suave", "Pestaña activa", P(L.name, "csl", i, h), P(D.name, "csl", i, h)],
     ["Borde", "lo seleccionado sin relleno", P(L.name, "cll", i, h), P(D.name, "cll", i, h)],
   ];
   document.getElementById("roles").innerHTML = `<tr><th>Rol</th><th>Claro</th><th>Oscuro</th></tr>` +
@@ -434,13 +434,13 @@ function deriveHTML(col) {
       <div class="theme-light" style="--h:${h};--k:${k.toFixed(3)};--c:${css(fill)};--on-c:#fff">
         <span class="b sm fill">Guardar</span><span class="num">texto blanco · ${f2(contrast(fill, WHITE))}:1</span>
         <span class="ink">${ic("pencil")} Editar</span><span class="num">--c-ink · ${f2(contrast(inkL, BG.light(h)))}:1</span>
-        <span class="soft">Mi parte</span>
+        <span class="soft">Pestaña activa</span>
         <span class="line">Pista seleccionada</span>
       </div>
       <div class="theme-dark" style="--h:${h};--k:${k.toFixed(3)};--c:${css(fillD)};--on-c:#fff">
         <span class="b sm fill">Guardar</span><span class="num">texto blanco · ${f2(contrast(fillD, WHITE))}:1</span>
         <span class="ink">${ic("pencil")} Editar</span><span class="num">--c-ink · ${f2(contrast(inkD, BG.dark(h)))}:1</span>
-        <span class="soft">Mi parte</span>
+        <span class="soft">Pestaña activa</span>
         <span class="line">Pista seleccionada</span>
       </div>
     </div>
@@ -460,7 +460,7 @@ function renderIntens() {
         <span class="fillb" style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;color:#fff;font:600 12.5px/1 var(--ui);background:${css(P(T.name, "fill", name, h))}">Guardar</span>
         <span class="t" style="color:${css(P(T.name, "lyr", name, h))}">Vidala</span>
         <div class="wave wv" style="--tc:${trackCss(h, name)}">${ENS.waveSVG(5, 40, 0.5)}</div>
-        <span class="chipx" style="background:${css(P(T.name, "csl", name, h))};color:${css(P(T.name, "ci", name, h))}">Mi parte</span>
+        <span class="chipx" style="background:${css(P(T.name, "csl", name, h))};color:${css(P(T.name, "ci", name, h))}">Pestaña activa</span>
       </div>`).join("");
   }
 }
@@ -552,7 +552,7 @@ function renderTool() {
       <div class="rowx"><span class="fillb" style="background:${css(fill)}">${ic("play")} Relleno</span>${grade(contrast(fill, WHITE))}<span class="xs faint">texto blanco sobre ${css(fill).replace("oklch", "")}</span></div>
       <div class="rowx"><span class="t" style="color:${css(ink)}">Sopla el viento</span>${grade(contrast(ink, bg))}<span class="xs faint">letra · ${css(ink).replace("oklch", "")}</span></div>
       <div class="wave" style="--tc:${tN.checked ? "oklch(0.6 0 0)" : trackCss(h, iname)};height:32px">${ENS.waveSVG(7, 70, 0.45)}</div>
-      <span class="chipx" style="align-self:flex-start;font:600 12px/1 var(--ui);padding:6px 10px;border-radius:999px;background:${css(P(T.name, "csl", iname, h))};color:${css(P(T.name, "ci", iname, h))}">Mi parte</span>
+      <span class="chipx" style="align-self:flex-start;font:600 12px/1 var(--ui);padding:6px 10px;border-radius:999px;background:${css(P(T.name, "csl", iname, h))};color:${css(P(T.name, "ci", iname, h))}">Pestaña activa</span>
       ${near.length ? `<span class="badge warn">${ic("alert")} A ${near[0][1]}° de ${near[0][0]}: cuesta distinguirlos</span>` : ""}`;
   };
   document.getElementById("tool-l").innerHTML = side("light");

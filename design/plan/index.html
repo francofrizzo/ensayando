@@ -66,7 +66,7 @@
           <tr><td class="what">Direcciones reservadas</td><td>Las canciones no pueden llamarse <span class="mono">nueva</span>, <span class="mono">ajustes</span> ni <span class="mono">editar</span> (chocan con las rutas nuevas). Validación en <span class="mono">validateSongForm</span> y restricción en la base; se renombran las que existan.</td><td>Migración + cliente</td><td><span class="size s">S</span></td></tr>
           <tr><td class="what">Portada</td><td>Cuadrada, al menos 1000 px. Se recorta en el banner de inicio y se usa en la pantalla de bloqueo. Solo admins (hoy <span class="mono">api/storage.ts</span> deja subirla a editores). Subida con el mismo circuito firmado de R2 que el audio.</td><td><span class="mono">api/storage.ts</span></td><td><span class="size s">S</span></td></tr>
           <tr><td class="what">Letra</td><td>Sin cambios de esquema. El editor nuevo escribe el mismo JSON de <span class="mono">lyric-schema.json</span>.</td><td><span class="muted">No aplica</span></td><td><span class="size s">S</span></td></tr>
-          <tr><td class="what">Mi parte, tema y corrección</td><td>Sin esquema: <span class="mono">localStorage</span>, por colección y por dispositivo. La corrección por reacción también se guarda ahí (hoy se pierde al recargar).</td><td>Cliente</td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Tema y corrección</td><td>Sin esquema: <span class="mono">localStorage</span>, por colección y por dispositivo. La corrección por reacción también se guarda ahí (hoy se pierde al recargar).</td><td>Cliente</td><td><span class="size s">S</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -89,12 +89,12 @@
         <div class="n"><b>Fase 2</b><span class="size l">L</span></div>
         <div><h3 class="d">Reproductor y biblioteca</h3><ul>
           <li>Barra superior con solo el título, dock con mezcladora (M, S y letra) y barra de progreso simple donde no hay ondas.</li>
-          <li>Mi parte, menú de la canción (descargar mezcla, tema), hoja del teléfono.</li>
+          <li>Menú de la canción (descargar mezcla, tema), hoja del teléfono.</li>
           <li>Biblioteca en lugar del menú lateral, grilla de inicio y <kbd>⌘</kbd><kbd>K</kbd>.</li>
           <li>Solo y silencio como estados propios de cada pista (varios solos, sin reiniciar volúmenes); la misma ganancia para reproducir, descargar y sincronizar.</li>
           <li>Una pista que falla no bloquea la reproducción. Anterior y siguiente en la sesión multimedia. No se toca la carga secuencial de iOS ni el desbloqueo de audio.</li>
           <li>Se quita el copiador de tiempos.</li></ul></div>
-        <div class="test"><b>Qué probar</b><ul><li>Vitest: ganancia aplicada con solos, silencios y Mi parte; estado de Mi parte; iniciales del banner de inicio.</li><li>Extender <span class="mono">player.spec.ts</span>: solo y silencio por botón, salto por estrofa con <kbd>↑</kbd><kbd>↓</kbd>, cambio de canción desde la biblioteca, una pista rota que no bloquea.</li></ul></div>
+        <div class="test"><b>Qué probar</b><ul><li>Vitest: ganancia aplicada con solos y silencios; iniciales del banner de inicio.</li><li>Extender <span class="mono">player.spec.ts</span>: solo y silencio por botón, salto por estrofa con <kbd>↑</kbd><kbd>↓</kbd>, cambio de canción desde la biblioteca, una pista rota que no bloquea.</li></ul></div>
       </li>
       <li class="phase">
         <div class="n"><b>Fase 3</b><span class="size l">L</span></div>
@@ -158,7 +158,6 @@
       <li><div><b>¿Un admin de colección puede crear cuentas?</b><p>Crear cuentas nuevas afecta a toda la app, no solo a la colección.</p><p class="rec">sí, pero la cuenta nace atada a esa colección; eliminarla sigue siendo de admins de la app.</p></div></li>
       <li><div><b>¿Un admin de colección puede restablecer contraseñas?</b><p>Una cuenta administrada puede estar en varias colecciones, con admins distintos.</p><p class="rec">sí para cuentas administradas que solo están en sus colecciones; si está en otras, solo admins de la app.</p></div></li>
       <li><div><b>¿Se siguen creando cuentas administradas?</b><p>Son cómodas para el ensayo pero no pueden recuperar la contraseña solas.</p><p class="rec">sí, como opción por defecto, con invitación por email al lado.</p></div></li>
-      <li><div><b>¿Mi parte en el dispositivo o en la base?</b><p>En la base seguiría a la persona entre el teléfono y la compu.</p><p class="rec">dispositivo primero; base si se pide.</p></div></li>
       <li><div><b>¿Se mantiene el editor JSON?</b><p>Hoy es una pestaña. Con el inspector casi no hace falta.</p><p class="rec">se mantiene como opción avanzada del menú del editor.</p></div></li>
       <li><div><b>¿Atajos numéricos para pistas?</b><p><kbd>1</kbd> a <kbd>9</kbd> silencian y <kbd>⌥</kbd> + número hace solo (por tecla física, para que <kbd>⌥</kbd> no cambie el carácter en Mac).</p><p class="rec">sí, en escritorio.</p></div></li>
       <li><div><b>¿Inicio en grilla o directo a la canción?</b><p>Hoy <span class="mono">/</span> salta a la primera canción de la primera colección.</p><p class="rec">directo si hay una sola colección; grilla si hay varias.</p></div></li>

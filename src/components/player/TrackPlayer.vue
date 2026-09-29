@@ -18,7 +18,7 @@ const props = defineProps<{
   track: AudioTrack;
   /** Slider position. */
   volume: number;
-  /** What the track actually sounds at (volume, mute, solo, Mi parte). */
+  /** What the track actually sounds at (volume, mute, solo). */
   gain: number;
   muted: boolean;
   soloed: boolean;

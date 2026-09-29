@@ -22,20 +22,13 @@ export type TrackState = {
   lyricsEnabled: boolean;
 };
 
-export type MyPartState = {
-  trackIds: number[];
-  /** "Bajar el resto": the other tracks' sliders go to half (see lowerRestVolumes). */
-  duckOthers: boolean;
-};
-
 export type PlayerStateCallbacks = {
   onSeekTrack?: (trackIndex: number, time: number) => void;
 };
 
 /**
  * What a track actually sounds at: volume × not muted × (no solos, or this one
- * is soloed). Playback, the mix download and sync all use it. "Bajar el resto"
- * moves the volume sliders themselves, so it needs nothing here.
+ * is soloed). Playback, the mix download and sync all use it.
  */
 export function appliedGain(
   track: Pick<TrackState, "id" | "volume" | "muted" | "soloed" | "failed"> &

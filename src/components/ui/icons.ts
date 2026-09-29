@@ -84,7 +84,6 @@ export {
   IconChevronUp as IconChevronUp,
   IconChevronRight as IconChevronRight,
   IconSelector as IconSelector,
-  IconMicrophone2 as IconMyPart,
   IconCactus as IconEmpty,
   IconBubbleX as IconNoLyrics,
   IconCornerDownLeft as IconEnter,

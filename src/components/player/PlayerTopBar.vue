@@ -2,19 +2,15 @@
 import { computed } from "vue";
 
 import AccountMenu from "@/components/player/AccountMenu.vue";
-import MyPartMenu from "@/components/player/MyPartMenu.vue";
 import SongActionsMenu from "@/components/player/SongActionsMenu.vue";
 import { IconEdit, IconLibrary, IconSearch, IconSelector } from "@/components/ui/icons";
-import type { MyPartState } from "@/composables/usePlayerState";
 import { artworkPlaybackUrl } from "@/data/storage";
-import type { AudioTrack, CollectionWithRole, Song } from "@/data/types";
+import type { CollectionWithRole, Song } from "@/data/types";
 
 const props = defineProps<{
   collection: CollectionWithRole;
   song: Song;
   songCount: number;
-  tracks: AudioTrack[];
-  myPart: MyPartState;
   canEdit: boolean;
   isAdmin: boolean;
   editMode: boolean;
@@ -29,9 +25,6 @@ const emit = defineEmits<{
   download: [];
   shortcuts: [];
   settings: [];
-  "my-part-toggle": [trackId: number];
-  "my-part-duck": [value: boolean];
-  "my-part-clear": [];
 }>();
 
 const artwork = computed(() =>
@@ -83,27 +76,6 @@ const artwork = computed(() =>
     </Transition>
 
     <div class="ml-auto flex shrink-0 items-center gap-1 md:gap-1.5">
-      <MyPartMenu
-        v-if="props.tracks.length > 1"
-        class="hidden lg:block"
-        :collection="props.collection"
-        :tracks="props.tracks"
-        :part="props.myPart"
-        @toggle-track="(id) => emit('my-part-toggle', id)"
-        @set-duck="(v) => emit('my-part-duck', v)"
-        @clear="emit('my-part-clear')"
-      />
-      <MyPartMenu
-        v-if="props.tracks.length > 1"
-        class="hidden md:block lg:hidden"
-        compact
-        :collection="props.collection"
-        :tracks="props.tracks"
-        :part="props.myPart"
-        @toggle-track="(id) => emit('my-part-toggle', id)"
-        @set-duck="(v) => emit('my-part-duck', v)"
-        @clear="emit('my-part-clear')"
-      />
       <button
         v-if="props.canEdit"
         class="btn btn-sm bg-base-content/7 hover:bg-base-content/12 hidden gap-1.5 rounded-full border-0 font-semibold shadow-none md:inline-flex"
