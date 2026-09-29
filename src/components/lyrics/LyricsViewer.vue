@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
+
+import VerseGlow from "@/components/lyrics/VerseGlow.vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useTheme } from "@/composables/useTheme";
@@ -7,8 +9,6 @@ import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 import {
   addStatusToLyrics,
   filterVisibleLyrics,
-  getVerseGlowStrength,
-  GLOW_WINDOW,
   regularizeLyrics
 } from "@/utils/lyricsViewerUtils";
 
@@ -35,79 +35,10 @@ const lyricsWithStatus = computed(() =>
 
 const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value));
 
-// The active verse emits its color, only in dark (on a light stage a glow reads as blur).
-// drop-shadow instead of text-shadow: the text is a gradient clipped to the glyphs.
-// Verses near the playhead keep the same drop-shadow and only its strength changes,
-// so the glow fades in and out with the verse's transition instead of popping. The
-// rest carry no filter at all: a filter on every line is costly while scrolling.
-//
-// The strength follows `glowTime`, which trails currentTime by two frames: after a
-// seek, the destination verse is first painted with a 0% drop-shadow (eligible by
-// currentTime) and only then brought up, so the change transitions. The time left
-// behind by a jump stays eligible while its verse fades out.
-const GLOW_FADE_MS = 450; // a bit over the verse transition (420ms)
-
-const glowTime = ref(props.currentTime);
-const trailingGlowTimes = ref<number[]>([]);
-let glowFrame: number | null = null;
-const trailingTimeouts = new Set<ReturnType<typeof setTimeout>>();
-
-const keepEligibleWhileFading = (time: number) => {
-  trailingGlowTimes.value = [...trailingGlowTimes.value, time];
-  const timeout = setTimeout(() => {
-    trailingTimeouts.delete(timeout);
-    const index = trailingGlowTimes.value.indexOf(time);
-    if (index !== -1) {
-      trailingGlowTimes.value = trailingGlowTimes.value.filter((_, i) => i !== index);
-    }
-  }, GLOW_FADE_MS);
-  trailingTimeouts.add(timeout);
-};
-
-const settleGlowTime = (target: number) => {
-  const previous = glowTime.value;
-  glowTime.value = target;
-  // Within the window the previous time's verses are still near the new one.
-  if (Math.abs(target - previous) >= GLOW_WINDOW) keepEligibleWhileFading(previous);
-};
-
-const scheduleGlowTime = () => {
-  if (glowFrame !== null) return;
-  const target = props.currentTime;
-  glowFrame = requestAnimationFrame(() => {
-    glowFrame = requestAnimationFrame(() => {
-      glowFrame = null;
-      settleGlowTime(target);
-      if (props.currentTime !== target) scheduleGlowTime();
-    });
-  });
-};
-
-watch(() => props.currentTime, scheduleGlowTime);
-
-onBeforeUnmount(() => {
-  if (glowFrame !== null) cancelAnimationFrame(glowFrame);
-  glowFrame = null;
-  trailingTimeouts.forEach(clearTimeout);
-  trailingTimeouts.clear();
-});
-
-const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) => {
-  const styles: Record<string, string | undefined> = {
-    ...getVerseStyles(verse, props.collection, verse.status, "stage")
-  };
-  if (resolvedTheme.value !== "dark") return styles;
-
-  const strength = getVerseGlowStrength(verse, glowTime.value, [
-    props.currentTime,
-    ...trailingGlowTimes.value
-  ]);
-  if (strength !== null) {
-    const glowColor = styles.color ?? "currentColor";
-    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${glowColor} ${strength}%, transparent))`;
-  }
-  return styles;
-};
+// The active verse emits its color (VerseGlow), only in dark: on a light stage a glow
+// reads as blur.
+const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) =>
+  getVerseStyles(verse, props.collection, verse.status, "stage");
 
 const currentVerseElement = ref<Element | null>(null);
 
@@ -160,23 +91,31 @@ watch(
               class="text-base-content/45 text-center font-sans text-[11px] leading-none font-semibold tracking-[0.16em] uppercase"
               >{{ verse.comment }}</span
             >
-            <span
-              :ref="
-                (el: any) => {
-                  if (verse.status === 'active') {
-                    currentVerseElement = el;
-                  }
-                }
-              "
-              :data-active="verse.status === 'active' || undefined"
-              :style="verseStyles(verse)"
-              :class="{
-                'scale-[1.14] font-bold': verse.status === 'active',
-                'font-medium': verse.status !== 'active'
-              }"
-              class="text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-              >{{ verse.text }}</span
+            <!-- The verse grows as a whole, so its glow grows with it -->
+            <div
+              class="relative transition-[scale] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+              :class="{ 'scale-[1.14]': verse.status === 'active' }"
             >
+              <VerseGlow
+                :show="resolvedTheme === 'dark' && verse.status === 'active'"
+                :text="verse.text"
+                :color="verseStyles(verse).color"
+              />
+              <span
+                :ref="
+                  (el: any) => {
+                    if (verse.status === 'active') {
+                      currentVerseElement = el;
+                    }
+                  }
+                "
+                :data-active="verse.status === 'active' || undefined"
+                :style="verseStyles(verse)"
+                :class="verse.status === 'active' ? 'font-bold' : 'font-medium'"
+                class="relative block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                >{{ verse.text }}</span
+              >
+            </div>
           </div>
         </div>
       </div>

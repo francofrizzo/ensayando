@@ -4,10 +4,7 @@ import {
   addStatusToLyrics,
   calculateOverlap,
   filterVisibleLyrics,
-  getVerseGlowStrength,
   getVerseStatus,
-  GLOW_STRENGTH,
-  GLOW_WINDOW,
   isVerseVisible,
   regularizeLyrics,
   type LyricVerseWithStatus
@@ -210,50 +207,5 @@ describe("regularizeLyrics", () => {
     result[0].forEach((line) => {
       expect(line.columns.length).toBe(1);
     });
-  });
-});
-
-// --- getVerseGlowStrength ---
-
-describe("getVerseGlowStrength", () => {
-  const verse = { start_time: 10, end_time: 14 };
-  const farVerse = { start_time: 60, end_time: 64 };
-
-  it("glows at full strength when active at the glow time", () => {
-    expect(getVerseGlowStrength(verse, 12)).toBe(GLOW_STRENGTH);
-  });
-
-  it("keeps a 0% filter just before the verse starts and just after it ends", () => {
-    expect(getVerseGlowStrength(verse, 10 - GLOW_WINDOW / 2)).toBe(0);
-    expect(getVerseGlowStrength(verse, 14 + GLOW_WINDOW / 2)).toBe(0);
-  });
-
-  it("returns null (no filter) for verses away from every time", () => {
-    expect(getVerseGlowStrength(farVerse, 12, [12])).toBeNull();
-    expect(getVerseGlowStrength(verse, 10 - GLOW_WINDOW - 0.1)).toBeNull();
-  });
-
-  it("returns null for untimed verses", () => {
-    expect(getVerseGlowStrength({}, 12, [12])).toBeNull();
-  });
-
-  it("gives a seek destination a 0% filter while the glow time still lags", () => {
-    // currentTime already jumped to 62, glowTime is still at 12
-    expect(getVerseGlowStrength(farVerse, 12, [62])).toBe(0);
-    // Two frames later the glow time catches up and the verse lights up
-    expect(getVerseGlowStrength(farVerse, 62, [62])).toBe(GLOW_STRENGTH);
-  });
-
-  it("keeps the verse left behind by a jump eligible while it fades out", () => {
-    // Before the glow time catches up, the old verse still glows
-    expect(getVerseGlowStrength(verse, 12, [62])).toBe(GLOW_STRENGTH);
-    // After, it fades to 0% instead of losing the filter at once
-    expect(getVerseGlowStrength(verse, 62, [62, 12])).toBe(0);
-    // Once the trailing time is dropped, the filter goes away
-    expect(getVerseGlowStrength(verse, 62, [62])).toBeNull();
-  });
-
-  it("stays eligible through the playhead even if the glow time is far", () => {
-    expect(getVerseGlowStrength(verse, 40, [12])).toBe(0);
   });
 });

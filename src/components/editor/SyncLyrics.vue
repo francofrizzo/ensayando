@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
+import VerseGlow from "@/components/lyrics/VerseGlow.vue";
 import { IconWarning } from "@/components/ui/icons";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useTheme } from "@/composables/useTheme";
@@ -59,15 +60,9 @@ const stanzas = computed<Line[][]>(() =>
   )
 );
 
-const verseStyles = (verse: LyricVerseWithStatus) => {
-  const styles: Record<string, string | undefined> = {
-    ...getVerseStyles(verse, props.collection, verse.status, "stage")
-  };
-  if (resolvedTheme.value === "dark" && verse.status === "active") {
-    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${styles.color ?? "currentColor"} 55%, transparent))`;
-  }
-  return styles;
-};
+// The sounding verse glows in dark (VerseGlow), like on the player's stage.
+const verseStyles = (verse: LyricVerseWithStatus) =>
+  getVerseStyles(verse, props.collection, verse.status, "stage");
 
 const lineClass = (columns: number) =>
   columns < 3
@@ -144,15 +139,22 @@ watch(activeKey, (key) => {
                   class="text-base-content/45 font-sans text-[11px] leading-none font-semibold tracking-[0.16em] uppercase"
                   >{{ shown.verse.comment }}</span
                 >
-                <span
-                  class="text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-                  :class="[
-                    shown.verse.status === 'active' ? 'font-bold' : 'font-medium',
-                    shown.verse.start_time === undefined && shown.index !== cursor && 'opacity-40'
-                  ]"
-                  :style="verseStyles(shown.verse)"
-                  >{{ shown.verse.text }}</span
-                >
+                <span class="relative block max-w-full">
+                  <VerseGlow
+                    :show="resolvedTheme === 'dark' && shown.verse.status === 'active'"
+                    :text="shown.verse.text"
+                    :color="verseStyles(shown.verse).color"
+                  />
+                  <span
+                      class="relative block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    :class="[
+                      shown.verse.status === 'active' ? 'font-bold' : 'font-medium',
+                      shown.verse.start_time === undefined && shown.index !== cursor && 'opacity-40'
+                    ]"
+                    :style="verseStyles(shown.verse)"
+                    >{{ shown.verse.text }}</span
+                  >
+                </span>
                 <span
                   v-if="shown.index === cursor"
                   class="text-collection-ink flex items-center gap-1 font-sans text-[10.5px] leading-none font-semibold tracking-[0.12em] uppercase"
