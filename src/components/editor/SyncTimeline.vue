@@ -13,6 +13,7 @@ import {
   pxToTime,
   type Region,
   rulerTicks,
+  shouldFollow,
   type SyncZoom,
   tickStep
 } from "@/utils/syncTimeline";
@@ -22,10 +23,10 @@ export type TimelineRegion = {
   start: number;
   end: number;
   label: string;
-  /** Lyric ink of the verse's first track (label and selected outline). */
-  ink: string;
-  /** Wave color of that track (fill and border). */
-  wave: string;
+  /** Lyric ink of each of the verse's tracks, in order (label, handles, selected outline). */
+  inks: string[];
+  /** Wave color of each of those tracks (fill and border). */
+  waves: string[];
   /** Starts before an earlier verse: shown with a warning outline. */
   outOfOrder?: boolean;
 };
@@ -63,7 +64,6 @@ const ROW_GAP = 5;
 const scroller = ref<HTMLElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
 const viewportWidth = ref(0);
-const scrollLeft = ref(0);
 
 const pps = computed(() => pxPerSecond(props.zoom, props.duration, viewportWidth.value));
 const contentWidth = computed(() =>
@@ -110,11 +110,46 @@ const regionBox = (region: TimelineRegion, position: number) => {
   return box;
 };
 
-const regionOutline = (region: TimelineRegion) => {
-  if (selectedIndex.value === region.index) return `inset 0 0 0 2px ${region.ink}`;
-  if (region.outOfOrder) return "inset 0 0 0 1.5px var(--color-warning)";
-  return `inset 0 0 0 1px color-mix(in oklch, ${region.wave} 60%, transparent)`;
+// A verse sung by several tracks shows all their colors, like the player's lyrics: a
+// gradient across the fill, the border and the label.
+const mix = (color: string, percent: number) => `color-mix(in oklch, ${color} ${percent}%, transparent)`;
+const gradient = (colors: string[], percent = 100) => {
+  const stops = colors.map((color) => (percent === 100 ? color : mix(color, percent)));
+  return `linear-gradient(90deg, ${(stops.length > 1 ? stops : [stops[0], stops[0]]).join(", ")})`;
 };
+
+const regionSurface = (region: TimelineRegion) => {
+  const selected = selectedIndex.value === region.index;
+  const fill = gradient(region.waves, selected ? 34 : 22);
+  const style: Record<string, string> = {};
+  if (selected) {
+    style.background = fill;
+    style.boxShadow = `inset 0 0 0 2px ${region.inks[0]}`;
+  } else if (region.outOfOrder) {
+    style.background = fill;
+    style.boxShadow = "inset 0 0 0 1.5px var(--color-warning)";
+  } else {
+    // Fill on the padding box, gradient border on the border box. The sheet color sits
+    // between them so the border gradient doesn't show through the translucent fill.
+    style.border = "1px solid transparent";
+    style.background = [
+      `${fill} padding-box`,
+      "linear-gradient(var(--color-base-100), var(--color-base-100)) padding-box",
+      `${gradient(region.waves, 60)} border-box`
+    ].join(", ");
+  }
+  return style;
+};
+
+const labelStyle = (region: TimelineRegion) =>
+  region.inks.length > 1
+    ? {
+        backgroundImage: gradient(region.inks),
+        WebkitBackgroundClip: "text",
+        backgroundClip: "text",
+        color: "transparent"
+      }
+    : { color: region.inks[0] };
 
 const onRegionPointerDown = (event: PointerEvent, region: TimelineRegion, mode: DragMode) => {
   if (event.button !== 0) return;
@@ -159,10 +194,18 @@ const onBackgroundClick = (event: MouseEvent) => {
 };
 
 // ---------- follow playback ----------
+// Scrolling by hand (wheel, trackpad, touch, scrollbar) pauses following for a moment,
+// so the view doesn't snap back to the playhead while the user looks elsewhere.
+let lastManualScrollAt: number | null = null;
+const onManualScroll = () => {
+  lastManualScrollAt = performance.now();
+};
+
 watch(
   () => props.currentTime,
   (time) => {
     if (!props.playing || !scroller.value || drag.index !== null) return;
+    if (!shouldFollow(performance.now(), lastManualScrollAt)) return;
     const next = followScroll(
       time * pps.value,
       scroller.value.scrollLeft,
@@ -186,10 +229,17 @@ watch(
 );
 
 // ---------- waves (one canvas the size of the viewport, redrawn on scroll) ----------
+// The canvas is pinned to the viewport and paints the visible window, so it must always
+// be drawn from the scroller's real position (read at draw time, never cached). While
+// playing it redraws every frame: scroll can change from wheel, touch, following or a
+// re-render, and the waves have to move with the ruler and the regions.
 let frame = 0;
 const scheduleDraw = () => {
   cancelAnimationFrame(frame);
-  frame = requestAnimationFrame(draw);
+  frame = requestAnimationFrame(() => {
+    draw();
+    if (props.playing) scheduleDraw();
+  });
 };
 
 const bucketMax = (peaks: number[], from: number, to: number) => {
@@ -217,7 +267,7 @@ function draw() {
   if (pps.value <= 0) return;
 
   const step = 3; // 2 px bar + 1 px gap
-  const t0 = scrollLeft.value / pps.value;
+  const t0 = (scroller.value?.scrollLeft ?? 0) / pps.value;
   const playheadX = (props.currentTime - t0) * pps.value;
 
   props.tracks.forEach((track, row) => {
@@ -246,16 +296,12 @@ function draw() {
 }
 
 watch(
-  () => [props.tracks, props.currentTime, pps.value, wavesHeight.value],
+  () => [props.tracks, props.currentTime, props.playing, pps.value, wavesHeight.value],
   scheduleDraw,
   { deep: false }
 );
 
-const onScroll = () => {
-  if (!scroller.value) return;
-  scrollLeft.value = scroller.value.scrollLeft;
-  scheduleDraw();
-};
+const onScroll = () => scheduleDraw();
 
 let observer: ResizeObserver | null = null;
 onMounted(() => {
@@ -285,6 +331,9 @@ defineExpose({ pps });
       class="relative min-w-0 overflow-x-auto overflow-y-hidden"
       style="scrollbar-width: thin"
       @scroll.passive="onScroll"
+      @wheel.passive="onManualScroll"
+      @touchmove.passive="onManualScroll"
+      @pointerdown="onManualScroll"
     >
       <div class="relative" :style="{ width: `${contentWidth}px` }">
         <!-- Ruler -->
@@ -324,12 +373,7 @@ defineExpose({ pps });
               { 'z-10': selectedIndex === region.index },
               laneCount > 1 ? 'py-0' : 'items-start py-1.5'
             ]"
-            :style="{
-              ...regionBox(region, position),
-              color: region.ink,
-              background: `color-mix(in oklch, ${region.wave} ${selectedIndex === region.index ? 34 : 22}%, transparent)`,
-              boxShadow: regionOutline(region)
-            }"
+            :style="{ ...regionBox(region, position), ...regionSurface(region) }"
             :title="region.outOfOrder ? `${region.label} · Empieza antes que un verso anterior` : region.label"
             data-testid="sync-region"
             @pointerdown="(e) => onRegionPointerDown(e, region, 'move')"
@@ -340,7 +384,9 @@ defineExpose({ pps });
             @dblclick.stop="emit('play-region', region.index)"
           >
             <IconWarning v-if="region.outOfOrder" class="text-warning size-3 shrink-0" aria-hidden="true" />
-            <span class="block min-w-0 overflow-hidden text-ellipsis">{{ region.label }}</span>
+            <span class="block min-w-0 overflow-hidden text-ellipsis" :style="labelStyle(region)">{{
+              region.label
+            }}</span>
             <span
               class="absolute inset-y-0 left-0 w-2 cursor-ew-resize"
               aria-hidden="true"
@@ -349,7 +395,7 @@ defineExpose({ pps });
               <span
                 v-if="selectedIndex === region.index"
                 class="absolute top-1/2 left-0 h-[22px] w-[5px] -translate-y-1/2 rounded-full"
-                :style="{ background: region.ink }"
+                :style="{ background: region.inks[0] }"
               />
             </span>
             <span
@@ -360,7 +406,7 @@ defineExpose({ pps });
               <span
                 v-if="selectedIndex === region.index"
                 class="absolute top-1/2 right-0 h-[22px] w-[5px] -translate-y-1/2 rounded-full"
-                :style="{ background: region.ink }"
+                :style="{ background: region.inks[region.inks.length - 1] }"
               />
             </span>
           </div>

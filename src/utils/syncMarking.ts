@@ -1,16 +1,20 @@
 // Pure logic for Sincronizar: what gets marked (units) and how marking changes the lyrics.
 //
-// A unit is what one ↓ marks: a regular verse, or one row of a multicolumn line
-// (the verses side by side are sung together, so they share their times).
+// A unit is what one ↓ marks: one verse. In a multicolumn line each column is its own
+// voice, with its own lines and times (columns don't have to line up), so its verses
+// are separate units, in the same order the player reads them: column by column, top
+// to bottom (see getVerseStatus, which ends a column verse at the next one in its column).
 
 import type { LyricStanza, LyricVerse } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 import { roundTime } from "@/utils/syncTimeline";
 
 export type SyncUnit = {
-  /** Stable within one lyrics shape: "s-i" or "s-i-r" for a column row. */
+  /** Stable within one lyrics shape: "s-i" or "s-i-c-l" for a column verse. */
   id: string;
   stanzaIndex: number;
+  /** "main" for regular verses; "s-i-c" for the verses of one column. */
+  voice: string;
   positions: FocusPosition[];
   texts: string[];
   colorKeys: string[];
@@ -46,6 +50,7 @@ const maxDefined = (values: (number | undefined)[]) => {
 const unitFrom = (
   id: string,
   stanzaIndex: number,
+  voice: string,
   positions: FocusPosition[],
   verses: LyricVerse[]
 ): SyncUnit => {
@@ -56,6 +61,7 @@ const unitFrom = (
   return {
     id,
     stanzaIndex,
+    voice,
     positions,
     texts: verses.map((verse) => verse.text),
     colorKeys,
@@ -72,24 +78,26 @@ export const buildSyncUnits = (lyrics: LyricStanza[]): SyncUnit[] => {
     stanza.forEach((item, itemIndex) => {
       if (!Array.isArray(item)) {
         if (!item.text.trim()) return;
-        units.push(unitFrom(`${stanzaIndex}-${itemIndex}`, stanzaIndex, [{ stanzaIndex, itemIndex }], [item]));
+        units.push(
+          unitFrom(`${stanzaIndex}-${itemIndex}`, stanzaIndex, "main", [{ stanzaIndex, itemIndex }], [item])
+        );
         return;
       }
-      const rows = Math.max(0, ...item.map((column) => column.length));
-      for (let lineIndex = 0; lineIndex < rows; lineIndex++) {
-        const positions: FocusPosition[] = [];
-        const verses: LyricVerse[] = [];
-        item.forEach((column, columnIndex) => {
-          const verse = column[lineIndex];
-          if (verse && verse.text.trim()) {
-            positions.push({ stanzaIndex, itemIndex, columnIndex, lineIndex });
-            verses.push(verse);
-          }
+      item.forEach((column, columnIndex) => {
+        column.forEach((verse, lineIndex) => {
+          if (!verse.text.trim()) return;
+          const position = { stanzaIndex, itemIndex, columnIndex, lineIndex };
+          units.push(
+            unitFrom(
+              `${stanzaIndex}-${itemIndex}-${columnIndex}-${lineIndex}`,
+              stanzaIndex,
+              `${stanzaIndex}-${itemIndex}-${columnIndex}`,
+              [position],
+              [verse]
+            )
+          );
         });
-        if (verses.length) {
-          units.push(unitFrom(`${stanzaIndex}-${itemIndex}-${lineIndex}`, stanzaIndex, positions, verses));
-        }
-      }
+      });
     });
   });
   return units;
@@ -112,8 +120,8 @@ const forEachVerse = (lyrics: LyricStanza[], unit: SyncUnit, fn: (verse: LyricVe
 };
 
 /**
- * ↓: the unit starts at `time`. The previous unit, when it's in the same stanza, ends
- * here too if it had no end yet, or if its end was tied to this unit's old start (so
+ * ↓: the unit starts at `time`. The previous unit, when it's in the same stanza and the
+ * same voice (never across columns), ends here too if it had no end yet, or if its end was tied to this unit's old start (so
  * re-marking moves both together instead of opening a gap or an overlap). Across a
  * stanza break the previous end is left alone: the last verse of a stanza shouldn't stay
  * lit through an instrumental.
@@ -137,7 +145,7 @@ export const markStart = (
   });
 
   const previous = units[index - 1];
-  if (previous && previous.stanzaIndex === unit.stanzaIndex) {
+  if (previous && previous.stanzaIndex === unit.stanzaIndex && previous.voice === unit.voice) {
     forEachVerse(next, previous, (verse) => {
       const tied = oldStart !== undefined && verse.end_time === oldStart;
       if (
@@ -178,14 +186,23 @@ export const setUnitTimes = (
   return next;
 };
 
-/** Where a unit's region ends when it has no end: the next marked start, or start + 4 s. */
+/**
+ * Where a unit's region ends when it has no end: the next marked start that the player
+ * would use (any voice for a regular verse; for a column verse, the next one in its
+ * column or else the next regular verse after the line), or start + 4 s.
+ */
 export const regionEnd = (units: SyncUnit[], index: number, duration: number): number | undefined => {
   const unit = units[index];
   if (!unit || unit.start === undefined) return undefined;
   if (unit.end !== undefined) return unit.end;
-  const nextStart = units.slice(index + 1).find((u) => u.start !== undefined)?.start;
+  const later = units.slice(index + 1);
+  const next =
+    unit.voice === "main"
+      ? later.find((u) => u.start !== undefined && u.start > unit.start!)
+      : (later.find((u) => u.voice === unit.voice && u.start !== undefined && u.start > unit.start!) ??
+        later.find((u) => u.voice === "main" && u.start !== undefined && u.start > unit.start!));
   const fallback = unit.start + 4;
-  const end = nextStart !== undefined && nextStart > unit.start ? nextStart : fallback;
+  const end = next?.start ?? fallback;
   return duration > 0 ? Math.min(end, duration) : end;
 };
 
@@ -219,15 +236,29 @@ export const countNewTimes = (saved: LyricStanza[], current: LyricStanza[]): num
 
 /**
  * Units that start before an earlier unit in reading order: usually a mistake while
- * marking (a key pressed late, or a verse marked twice). Units without a start are skipped.
+ * marking (a key pressed late, or a verse marked twice). Columns are separate voices, so
+ * a column verse is only compared with its own column and with the regular verses before
+ * its line; a regular verse is compared with everything before it. Units without a start
+ * are skipped.
  */
 export const outOfOrderIndices = (units: SyncUnit[]): Set<number> => {
   const flagged = new Set<number>();
-  let latest = -Infinity;
+  let latestAll = -Infinity;
+  let latestMain = -Infinity;
+  const latestByVoice = new Map<string, number>();
   units.forEach((unit, index) => {
     if (unit.start === undefined) return;
-    if (unit.start < latest - 1e-9) flagged.add(index);
-    else latest = unit.start;
+    const bound =
+      unit.voice === "main"
+        ? latestAll
+        : Math.max(latestMain, latestByVoice.get(unit.voice) ?? -Infinity);
+    if (unit.start < bound - 1e-9) {
+      flagged.add(index);
+      return;
+    }
+    latestAll = Math.max(latestAll, unit.start);
+    if (unit.voice === "main") latestMain = unit.start;
+    else latestByVoice.set(unit.voice, unit.start);
   });
   return flagged;
 };

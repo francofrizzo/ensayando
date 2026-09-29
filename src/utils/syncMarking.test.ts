@@ -36,18 +36,17 @@ describe("buildSyncUnits", () => {
       ["Sopla el viento por la loma"],
       ["y se lleva mi canción"],
       ["Vidala, vidala"],
-      ["Ay, vidala", "(uh, uh)"],
-      ["ay"]
+      ["Ay, vidala"],
+      ["ay"],
+      ["(uh, uh)"]
     ]);
   });
 
-  it("groups each multicolumn row into one unit", () => {
-    const row = buildSyncUnits(lyrics())[3]!;
-    expect(row.positions).toEqual([
-      { stanzaIndex: 1, itemIndex: 1, columnIndex: 0, lineIndex: 0 },
-      { stanzaIndex: 1, itemIndex: 1, columnIndex: 1, lineIndex: 0 }
-    ]);
-    expect(row.colorKeys).toEqual(["sop", "baj"]);
+  it("makes every column verse its own unit, column by column, each column its own voice", () => {
+    const units = buildSyncUnits(lyrics());
+    expect(units.map((u) => u.voice)).toEqual(["main", "main", "main", "1-1-0", "1-1-0", "1-1-1"]);
+    expect(units[5]!.positions).toEqual([{ stanzaIndex: 1, itemIndex: 1, columnIndex: 1, lineIndex: 0 }]);
+    expect(units[5]!.colorKeys).toEqual(["baj"]);
   });
 
   it("carries times, colors and comments", () => {
@@ -99,13 +98,27 @@ describe("marking", () => {
     expect(next[1]![0]).toMatchObject({ start_time: 27 });
   });
 
-  it("marks every verse of a multicolumn row together", () => {
+  it("marks one column verse without touching the other columns", () => {
     const source = lyrics();
     const next = markStart(source, buildSyncUnits(source), 3, 33.4);
     const columns = next[1]![1] as { start_time?: number }[][];
     expect(columns[0]![0]!.start_time).toBe(33.4);
-    expect(columns[1]![0]!.start_time).toBe(33.4);
+    expect(columns[1]![0]!.start_time).toBeUndefined();
     expect(columns[0]![1]!.start_time).toBeUndefined();
+  });
+
+  it("fills a missing end only within the same column, never across columns", () => {
+    let current = lyrics();
+    current = markStart(current, buildSyncUnits(current), 3, 33.4); // column 0, line 0
+    current = markStart(current, buildSyncUnits(current), 4, 35); // column 0, line 1
+    current = markStart(current, buildSyncUnits(current), 5, 33.6); // column 1, line 0
+    const columns = current[1]![1] as { start_time?: number; end_time?: number }[][];
+    expect(columns[0]![0]).toMatchObject({ start_time: 33.4, end_time: 35 });
+    expect(columns[0]![1]).toMatchObject({ start_time: 35 });
+    expect(columns[0]![1]).not.toHaveProperty("end_time");
+    expect(columns[1]![0]).toMatchObject({ start_time: 33.6 });
+    // The regular verse before the line isn't ended by a column verse either
+    expect(current[1]![0]).not.toHaveProperty("end_time");
   });
 
   it("drops an end that would come before the new start", () => {
@@ -158,8 +171,53 @@ describe("regions and states", () => {
   });
 });
 
+describe("multicolumn regions", () => {
+  const multicolumn = (): LyricStanza[] => [
+    [
+      { text: "antes", start_time: 1 },
+      [
+        [
+          { text: "a1", start_time: 2 },
+          { text: "a2", start_time: 5 }
+        ],
+        [{ text: "b1", start_time: 3 }]
+      ],
+      { text: "después", start_time: 9 }
+    ]
+  ];
+
+  it("ends a column verse at the next verse of its column, else at the next regular verse", () => {
+    const units = buildSyncUnits(multicolumn());
+    const byText = (text: string) => units.findIndex((u) => u.texts[0] === text);
+    expect(regionEnd(units, byText("a1"), 240)).toBe(5);
+    expect(regionEnd(units, byText("a2"), 240)).toBe(9);
+    expect(regionEnd(units, byText("b1"), 240)).toBe(9);
+    // A regular verse ends at the line's earliest start
+    expect(regionEnd(units, byText("antes"), 240)).toBe(2);
+  });
+
+  it("doesn't flag columns that overlap in time as out of order", () => {
+    expect([...outOfOrderIndices(buildSyncUnits(multicolumn()))]).toEqual([]);
+  });
+
+  it("flags a verse after the line that starts before a column verse", () => {
+    const source = multicolumn();
+    (source[0]![2] as { start_time?: number }).start_time = 4;
+    const units = buildSyncUnits(source);
+    expect([...outOfOrderIndices(units)]).toEqual([units.findIndex((u) => u.texts[0] === "después")]);
+  });
+});
+
 describe("outOfOrderIndices", () => {
-  const unit = (start?: number) => ({ id: String(start), stanzaIndex: 0, positions: [], texts: [], colorKeys: [], start });
+  const unit = (start?: number) => ({
+    id: String(start),
+    stanzaIndex: 0,
+    voice: "main",
+    positions: [],
+    texts: [],
+    colorKeys: [],
+    start
+  });
 
   it("flags a unit that starts before an earlier one", () => {
     expect([...outOfOrderIndices([unit(1), unit(2), unit(1.5), unit(3)])]).toEqual([2]);

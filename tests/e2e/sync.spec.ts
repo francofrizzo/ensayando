@@ -102,3 +102,58 @@ test("↓ marks each verse while playing, and the player uses the new times", as
   await secondVerse.click();
   await expect(secondVerse).toHaveAttribute("data-active", "true");
 });
+
+// Multicolumn lines: each column is its own voice, with its own lines and times.
+const COLUMNS_SLUG = "sincronizar-columnas-e2e";
+
+test.describe("multicolumn lines", () => {
+  test.beforeAll(async ({ request }) => {
+    await request.delete(`${rest}/songs?slug=eq.${COLUMNS_SLUG}`, { headers });
+    const [source] = await (
+      await request.get(`${rest}/songs?slug=eq.test-song&select=collection_id`, { headers })
+    ).json();
+    await request.post(`${rest}/songs`, {
+      headers,
+      data: {
+        collection_id: source.collection_id,
+        slug: COLUMNS_SLUG,
+        title: "Columnas e2e",
+        visible: true,
+        lyrics: [
+          [
+            { text: "INTRO", start_time: 0.5 },
+            [
+              [{ text: "LEFT ONE" }, { text: "LEFT TWO" }],
+              [{ text: "RIGHT ONE" }]
+            ],
+            { text: "OUTRO" }
+          ]
+        ]
+      }
+    });
+  });
+
+  test.afterAll(async ({ request }) => {
+    await request.delete(`${rest}/songs?slug=eq.${COLUMNS_SLUG}`, { headers });
+  });
+
+  test("lists every column verse on its own and marks one column without the other", async ({
+    page
+  }) => {
+    await page.goto(`/test-collection/${COLUMNS_SLUG}?editar=sincronizar`);
+    await expect(page.getByTestId("sync-panel")).toBeVisible({ timeout: 15000 });
+    const rows = page.getByTestId("sync-row");
+    // Column by column, top to bottom, like the player reads them
+    await expect(rows).toHaveText([/INTRO/, /LEFT ONE/, /LEFT TWO/, /RIGHT ONE/, /OUTRO/]);
+
+    await rows.nth(1).click();
+    await expect(rows.nth(1)).toHaveAttribute("data-state", "marcando");
+    await page.keyboard.press("ControlOrMeta+Comma");
+    // Move the cursor away to see the row's state
+    await rows.nth(4).click();
+    await expect(rows.nth(1)).toHaveAttribute("data-state", "marcado");
+    // The other column keeps no time: marking one voice doesn't mark the others
+    await expect(rows.nth(3)).toHaveAttribute("data-state", "sin-tiempo");
+    await expect(rows.nth(2)).toHaveAttribute("data-state", "sin-tiempo");
+  });
+});

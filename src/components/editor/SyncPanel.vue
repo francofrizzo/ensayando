@@ -131,6 +131,16 @@ const startFrom = (index: number) => {
 const nudgeOffset = (direction: 1 | -1) => nudgeReaction(direction);
 
 // ---------- timeline ----------
+// A verse with several tracks shows all their colors, in order, like the player's lyrics.
+const unitColors = (unit: SyncUnit, role: "lyric" | "wave") =>
+  unit.colorKeys.length > 0
+    ? unit.colorKeys.map((key) => trackColor(key, role))
+    : [trackColor(undefined, role)];
+const dotBackground = (unit: SyncUnit) => {
+  const colors = unitColors(unit, "wave");
+  return colors.length > 1 ? `linear-gradient(135deg, ${colors.join(", ")})` : colors[0];
+};
+
 const outOfOrder = computed(() => outOfOrderIndices(units.value));
 
 const regions = computed<TimelineRegion[]>(() =>
@@ -143,8 +153,8 @@ const regions = computed<TimelineRegion[]>(() =>
         start: unit.start,
         end,
         label: unit.texts.join(" · "),
-        ink: trackColor(unit.colorKeys[0], "lyric"),
-        wave: trackColor(unit.colorKeys[0], "wave"),
+        inks: unitColors(unit, "lyric"),
+        waves: unitColors(unit, "wave"),
         outOfOrder: outOfOrder.value.has(index)
       }
     ];
@@ -351,7 +361,7 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
               >
                 <span
                   class="size-2 rounded-full"
-                  :style="{ background: trackColor(unit.colorKeys[0], 'wave') }"
+                  :style="{ background: dotBackground(unit) }"
                 />
                 <span
                   class="font-lyrics truncate text-[12.5px] font-medium tracking-[0.02em] uppercase"

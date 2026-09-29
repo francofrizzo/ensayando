@@ -104,6 +104,13 @@ export const followScroll = (
   return Math.min(Math.max(0, target), Math.max(0, contentWidth - viewportWidth));
 };
 
+/** After the user scrolls the timeline by hand, following the playhead waits this long. */
+export const FOLLOW_PAUSE_MS = 3000;
+
+/** Whether the view should follow the playhead, given when the user last scrolled by hand. */
+export const shouldFollow = (now: number, lastManualScrollAt: number | null): boolean =>
+  lastManualScrollAt === null || now - lastManualScrollAt >= FOLLOW_PAUSE_MS;
+
 /** At most this many stacked lanes; further overlaps share the last one. */
 export const MAX_LANES = 3;
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyRegionDrag,
   assignLanes,
+  FOLLOW_PAUSE_MS,
   followScroll,
   formatClock,
   MIN_REGION,
@@ -10,6 +11,7 @@ import {
   pxToTime,
   roundTime,
   rulerTicks,
+  shouldFollow,
   snapTime,
   timeToPx
 } from "./syncTimeline";
@@ -133,5 +135,13 @@ describe("assignLanes", () => {
   it("caps the number of lanes", () => {
     const all = [0, 0.1, 0.2, 0.3].map((start) => ({ start, end: 5 }));
     expect(assignLanes(all, 3)).toEqual([0, 1, 2, 2]);
+  });
+});
+
+describe("shouldFollow", () => {
+  it("follows until the user scrolls by hand, then waits a moment", () => {
+    expect(shouldFollow(10_000, null)).toBe(true);
+    expect(shouldFollow(10_000, 9_000)).toBe(false);
+    expect(shouldFollow(9_000 + FOLLOW_PAUSE_MS, 9_000)).toBe(true);
   });
 });
