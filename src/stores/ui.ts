@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { type EditorTabId, isEditorTabId } from "@/composables/useEditorSession";
 import router from "@/router";
@@ -40,6 +40,16 @@ export const useUIStore = defineStore("ui", () => {
     void router.push({ query });
   };
 
+  // "Vista previa" in the Letra tab: the stage comes back (with unsaved lyrics) without
+  // leaving edit mode. Any change of tab or leaving edit mode turns it off.
+  const editorPreview = ref(false);
+  const setEditorPreview = (value: boolean) => {
+    editorPreview.value = value && editTab.value === "letra";
+  };
+  watch(editTab, (tab) => {
+    if (tab !== "letra") editorPreview.value = false;
+  });
+
   const setEditMode = (value: boolean) =>
     value ? openEditor(editTab.value ?? "cancion") : closeEditor();
   const toggleEditMode = () => setEditMode(!editMode.value);
@@ -70,6 +80,8 @@ export const useUIStore = defineStore("ui", () => {
     closeEditor,
     setEditMode,
     toggleEditMode,
+    editorPreview,
+    setEditorPreview,
     libraryOpen,
     openLibrary,
     closeLibrary,

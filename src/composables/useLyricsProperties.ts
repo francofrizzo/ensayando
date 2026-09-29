@@ -1,14 +1,10 @@
 import type { LyricVerse } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
-import { ref } from "vue";
 
 export function useLyricsProperties(
   getCurrentVerse?: (position: FocusPosition) => LyricVerse | null,
   updateCurrentVerse?: (position: FocusPosition, updater: (verse: LyricVerse) => void) => boolean
 ) {
-  const copyPropertiesToMode = ref(false);
-  const sourcePosition = ref<FocusPosition | null>(null);
-
   const getColorsForInheritance = (currentFocus: FocusPosition | null): string[] => {
     if (!currentFocus || !getCurrentVerse) return [];
     const verse = getCurrentVerse(currentFocus);
@@ -57,36 +53,6 @@ export function useLyricsProperties(
     });
   };
 
-  const toggleCopyPropertiesToMode = (currentFocus: FocusPosition | null) => {
-    if (!copyPropertiesToMode.value) {
-      // Entering copy mode - store the source position
-      sourcePosition.value = currentFocus ? { ...currentFocus } : null;
-      copyPropertiesToMode.value = true;
-    } else {
-      // Exiting copy mode - clear source position
-      sourcePosition.value = null;
-      copyPropertiesToMode.value = false;
-    }
-  };
-
-  const exitCopyPropertiesToMode = () => {
-    sourcePosition.value = null;
-    copyPropertiesToMode.value = false;
-  };
-
-  const copyPropertiesToVerse = (targetPosition: FocusPosition) => {
-    if (!copyPropertiesToMode.value || !sourcePosition.value || !getCurrentVerse) return;
-
-    const sourceVerse = getCurrentVerse(sourcePosition.value);
-    if (!sourceVerse) return;
-
-    const sourceColors = sourceVerse.color_keys || [];
-    const sourceTrackIds = sourceVerse.audio_track_ids || [];
-
-    setCurrentVerseColors(targetPosition, [...sourceColors]);
-    setCurrentVerseAudioTrackIds(targetPosition, [...sourceTrackIds]);
-  };
-
   const getCurrentVerseComment = (currentFocus: FocusPosition | null): string | undefined => {
     if (!currentFocus || !getCurrentVerse) return undefined;
     const verse = getCurrentVerse(currentFocus);
@@ -108,17 +74,12 @@ export function useLyricsProperties(
   };
 
   return {
-    copyPropertiesToMode,
-    sourcePosition,
     getColorsForInheritance,
     getAudioTrackIdsForInheritance,
     getCurrentVerseColors,
     setCurrentVerseColors,
     getCurrentVerseAudioTrackIds,
     setCurrentVerseAudioTrackIds,
-    toggleCopyPropertiesToMode,
-    exitCopyPropertiesToMode,
-    copyPropertiesToVerse,
     getCurrentVerseComment,
     setCurrentVerseComment
   };

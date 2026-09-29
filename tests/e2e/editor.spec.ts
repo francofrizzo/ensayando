@@ -62,3 +62,49 @@ test("nueva canción opens the song form in create mode", async ({ page }) => {
   await expect(page.getByTestId("edit-bar")).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId("save-changes")).toContainText("Crear canción");
 });
+
+test("the inspector sets a verse's color", async ({ page }) => {
+  await page.goto(`${SONG}?editar=letra`);
+  const verses = page.locator("[data-lyrics-input]");
+  await expect(verses.first()).toBeVisible({ timeout: 15000 });
+
+  await verses.first().click();
+  const vocals = page.getByTestId("inspector-color-vocals");
+  await expect(vocals).toHaveAttribute("aria-pressed", "false");
+  await vocals.click();
+  await expect(vocals).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("save-changes")).toBeEnabled();
+
+  // One undo step brings it back
+  await verses.first().click();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(vocals).toHaveAttribute("aria-pressed", "false");
+});
+
+test("⇧+clic selects several verses and the inspector applies to all", async ({ page }) => {
+  await page.goto(`${SONG}?editar=letra`);
+  const verses = page.locator("[data-lyrics-input]");
+  await expect(verses.first()).toBeVisible({ timeout: 15000 });
+
+  await verses.nth(0).click();
+  await verses.nth(2).click({ modifiers: ["Shift"] });
+  await expect(page.getByTestId("inspector-count")).toBeVisible();
+  await expect(page.getByTestId("lyrics-inspector")).toContainText("3 versos seleccionados");
+
+  const guitar = page.getByTestId("inspector-color-guitar");
+  await guitar.click();
+  await expect(guitar).toHaveAttribute("aria-pressed", "true");
+
+  // Each of the three has it now; the fourth doesn't
+  for (const index of [0, 1, 2]) {
+    await verses.nth(index).click();
+    await expect(guitar).toHaveAttribute("aria-pressed", "true");
+  }
+  await verses.nth(3).click();
+  await expect(guitar).toHaveAttribute("aria-pressed", "false");
+
+  // Leave the seed data as it was
+  await page.getByTestId("exit-edit").click();
+  await page.getByTestId("unsaved-discard").click();
+  await expect(page).not.toHaveURL(/editar=/);
+});

@@ -1,47 +1,68 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
 
+import {
+  applyReactionOffset,
+  clampReactionOffset,
+  DEFAULT_REACTION_OFFSET,
+  REACTION_OFFSET_STORAGE_KEY
+} from "./useReactionOffset";
+
+// Node's own experimental localStorage global shadows happy-dom's and is unusable
+// without a backing file, so give the test a plain in-memory storage.
 const items = new Map<string, string>();
-
-// Node's experimental localStorage shadows happy-dom's (see useTheme.test.ts).
 beforeAll(() => {
   Object.defineProperty(window, "localStorage", {
     configurable: true,
     value: {
       getItem: (key: string) => items.get(key) ?? null,
       setItem: (key: string, value: string) => items.set(key, value),
-      removeItem: (key: string) => items.delete(key)
+      removeItem: (key: string) => items.delete(key),
+      clear: () => items.clear()
     }
+  });
+});
+
+describe("clampReactionOffset", () => {
+  it("keeps the value between 0 and 1 s, rounded to hundredths", () => {
+    expect(clampReactionOffset(0.234)).toBe(0.23);
+    expect(clampReactionOffset(-0.5)).toBe(0);
+    expect(clampReactionOffset(3)).toBe(1);
+  });
+
+  it("falls back to the default for non-numbers", () => {
+    expect(clampReactionOffset(Number.NaN)).toBe(DEFAULT_REACTION_OFFSET);
+  });
+});
+
+describe("applyReactionOffset", () => {
+  it("subtracts the correction and never goes below zero", () => {
+    expect(applyReactionOffset(12.5, 0.2)).toBe(12.3);
+    expect(applyReactionOffset(0.1, 0.2)).toBe(0);
   });
 });
 
 describe("useReactionOffset", () => {
   beforeEach(() => {
-    items.clear();
+    window.localStorage.clear();
     vi.resetModules();
   });
 
-  it("defaults to 0.2 s", async () => {
+  it("reads the stored value and persists changes", async () => {
+    window.localStorage.setItem(REACTION_OFFSET_STORAGE_KEY, "0.35");
     const { useReactionOffset } = await import("./useReactionOffset");
-    expect(useReactionOffset().value).toBe(0.2);
+    const { offset, setOffset, nudge, apply } = useReactionOffset();
+    expect(offset.value).toBe(0.35);
+
+    setOffset(0.5);
+    expect(window.localStorage.getItem(REACTION_OFFSET_STORAGE_KEY)).toBe("0.5");
+
+    nudge(-1);
+    expect(offset.value).toBe(0.45);
+    expect(apply(10)).toBe(9.55);
   });
 
-  it("persists changes on the device", async () => {
-    const { useReactionOffset, REACTION_OFFSET_KEY } = await import("./useReactionOffset");
-    useReactionOffset().value = 0.35;
-    await nextTick();
-    expect(window.localStorage.getItem(REACTION_OFFSET_KEY)).toBe("0.35");
-  });
-
-  it("reads a stored value, clamped to 0–1", async () => {
-    window.localStorage.setItem("ens-reaction-offset", "3");
+  it("uses the default when nothing is stored", async () => {
     const { useReactionOffset } = await import("./useReactionOffset");
-    expect(useReactionOffset().value).toBe(1);
-  });
-
-  it("shares one value between callers", async () => {
-    const { useReactionOffset } = await import("./useReactionOffset");
-    useReactionOffset().value = 0.1;
-    expect(useReactionOffset().value).toBe(0.1);
+    expect(useReactionOffset().offset.value).toBe(DEFAULT_REACTION_OFFSET);
   });
 });

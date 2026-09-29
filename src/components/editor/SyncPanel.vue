@@ -46,7 +46,7 @@ const player = usePlayerState();
 const collection = computed(() => store.currentCollection);
 const { trackColor } = useCollectionPalette(collection);
 const { getVerseStyles } = useLyricsColoring();
-const offset = useReactionOffset();
+const { offset, nudge: nudgeReaction, apply: applyReaction } = useReactionOffset();
 
 const lyrics = computed(() => store.localLyrics.value as LyricStanza[]);
 const units = computed(() => buildSyncUnits(lyrics.value));
@@ -91,7 +91,7 @@ const commit = (next: LyricStanza[]) => {
   if (next !== lyrics.value) void store.updateLocalLyrics(next);
 };
 
-const markTime = () => currentTime.value - offset.value;
+const markTime = () => applyReaction(currentTime.value);
 
 // ---------- actions ----------
 const markAndAdvance = () => {
@@ -126,9 +126,7 @@ const startFrom = (index: number) => {
   player.seekTo(Math.max(0, anchor - 2));
 };
 
-const nudgeOffset = (delta: number) => {
-  offset.value = Math.round(Math.min(1, Math.max(0, offset.value + delta)) * 100) / 100;
-};
+const nudgeOffset = (direction: 1 | -1) => nudgeReaction(direction);
 
 // ---------- timeline ----------
 const regions = computed<TimelineRegion[]>(() =>
@@ -378,10 +376,12 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
           <button
             class="btn btn-circle btn-primary play-glow size-11 border-0"
             :aria-label="playing ? 'Pausar' : 'Reproducir'"
+            :disabled="!player.isReady.value"
             data-testid="sync-play"
             @click="player.playPause()"
           >
-            <IconPause v-if="playing" class="size-5" />
+            <span v-if="!player.isReady.value" class="loading loading-spinner loading-sm" />
+            <IconPause v-else-if="playing" class="size-5" />
             <IconPlay v-else class="size-5 translate-x-[1px]" />
           </button>
           <span class="font-mono text-[13px] tabular-nums whitespace-nowrap">
@@ -412,7 +412,7 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
               <button
                 class="btn btn-xs btn-circle btn-ghost"
                 aria-label="Menos corrección"
-                @click="nudgeOffset(-0.05)"
+                @click="nudgeOffset(-1)"
               >
                 <IconMinus class="size-3.5" />
               </button>
@@ -422,7 +422,7 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
               <button
                 class="btn btn-xs btn-circle btn-ghost"
                 aria-label="Más corrección"
-                @click="nudgeOffset(0.05)"
+                @click="nudgeOffset(1)"
               >
                 <IconPlus class="size-3.5" />
               </button>
@@ -497,11 +497,11 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
           </span>
           <span class="text-base-content/60 flex items-center gap-1 text-xs">
             Reacción
-            <button class="btn btn-xs btn-circle btn-ghost" aria-label="Menos corrección" @click="nudgeOffset(-0.05)">
+            <button class="btn btn-xs btn-circle btn-ghost" aria-label="Menos corrección" @click="nudgeOffset(-1)">
               <IconMinus class="size-3" />
             </button>
             <b class="text-base-content font-mono">{{ offsetLabel }}</b>
-            <button class="btn btn-xs btn-circle btn-ghost" aria-label="Más corrección" @click="nudgeOffset(0.05)">
+            <button class="btn btn-xs btn-circle btn-ghost" aria-label="Más corrección" @click="nudgeOffset(1)">
               <IconPlus class="size-3" />
             </button>
           </span>
@@ -528,6 +528,7 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
           <button
             class="btn btn-circle btn-primary play-glow size-11 border-0"
             :aria-label="playing ? 'Pausar' : 'Reproducir'"
+            :disabled="!player.isReady.value"
             @click="player.playPause()"
           >
             <IconPause v-if="playing" class="size-5" />

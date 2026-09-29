@@ -90,5 +90,8 @@ export {
   IconCornerDownLeft as IconEnter,
   IconArrowsUpDown as IconUpDown,
   IconRotateClockwise as IconRetry,
+  IconFocus2 as IconFollowPlayback,
+  IconPresentation as IconPreview,
+  IconArrowRight as IconGoTo,
   IconMinus as IconMinus
 } from "@tabler/icons-vue";
