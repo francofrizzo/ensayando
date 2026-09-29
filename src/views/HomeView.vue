@@ -14,6 +14,7 @@ import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
 import { useNavigation } from "@/composables/useNavigation";
+import { useTheme } from "@/composables/useTheme";
 import type { CollectionVisibility, CollectionWithRole } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
@@ -27,7 +28,7 @@ import {
   songCountLabel,
   VISIBILITY_LABELS
 } from "@/utils/navigation";
-import { resolveCollectionPalette } from "@/utils/palette";
+import { deriveColor, resolveCollectionPalette } from "@/utils/palette";
 
 const collectionsStore = useCollectionsStore();
 const songIndex = useSongIndexStore();
@@ -66,6 +67,16 @@ const visibilityIcon: Record<CollectionVisibility, typeof IconGlobe> = {
 
 const banner = (collection: CollectionWithRole) =>
   bannerBackground(resolveCollectionPalette(collection).main);
+
+// Each card carries a faint wash of its collection's color, a little stronger on hover.
+const { resolvedTheme } = useTheme();
+const tint = (collection: CollectionWithRole) => {
+  const main = resolveCollectionPalette(collection).main;
+  return {
+    "--card-tint": deriveColor(main, "fill", resolvedTheme.value, 0.08),
+    "--card-tint-hover": deriveColor(main, "fill", resolvedTheme.value, 0.16)
+  };
+};
 
 const count = (collection: CollectionWithRole) => songIndex.countByCollection.get(collection.id);
 </script>
@@ -113,15 +124,16 @@ const count = (collection: CollectionWithRole) => songIndex.countByCollection.ge
           v-for="(collection, index) in cards"
           :key="collection.id"
           :to="{ name: 'collection', params: { collectionSlug: collection.slug } }"
-          class="glass-2 group flex flex-col gap-2.5 rounded-[18px] p-2.5 transition-transform duration-200 hover:-translate-y-0.5 sm:gap-3.5 sm:rounded-[20px] sm:p-3"
+          class="glass-2 group flex items-center gap-3 rounded-[18px] bg-[linear-gradient(var(--card-tint),var(--card-tint))] p-2.5 transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(var(--card-tint-hover),var(--card-tint-hover))] sm:gap-4 sm:rounded-[20px] sm:p-3"
           :style="{
+            ...tint(collection),
             animation: `empty-stagger 400ms ease-out both`,
             animationDelay: `${index * 60}ms`
           }"
           data-testid="collection-card"
         >
           <div
-            class="relative h-16 overflow-hidden rounded-[13px] shadow-[inset_0_0_0_1px_oklch(100%_0_0/0.14)] sm:aspect-[16/7] sm:h-auto"
+            class="relative size-20 shrink-0 overflow-hidden rounded-[13px] shadow-[inset_0_0_0_1px_oklch(100%_0_0/0.14)] sm:size-24"
             :style="collection.artwork_playback_url ? {} : { backgroundImage: banner(collection) }"
             aria-hidden="true"
           >
@@ -133,11 +145,11 @@ const count = (collection: CollectionWithRole) => songIndex.countByCollection.ge
             />
             <span
               v-else
-              class="font-display absolute bottom-[8%] left-[5%] text-[26px] leading-[0.9] font-extrabold text-white/90 sm:text-5xl"
+              class="font-display absolute bottom-[8%] left-[10%] text-[26px] leading-[0.9] font-extrabold text-white/90 sm:text-[32px]"
               >{{ collectionInitials(collection.title) }}</span
             >
           </div>
-          <div class="flex flex-col gap-2 px-0 pb-0 sm:px-1.5 sm:pb-1.5">
+          <div class="flex min-w-0 flex-col gap-2">
             <b class="font-display text-[17px] leading-[1.05] font-bold sm:text-xl">{{
               collection.title
             }}</b>

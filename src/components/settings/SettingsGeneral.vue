@@ -225,7 +225,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
 
     <div class="bg-base-100 rounded-box border-base-content/10 flex flex-col gap-3 border p-5">
       <h2 class="font-semibold">Portada</h2>
-      <p class="text-base-content/60 text-sm">Cuadrada, mínimo 1000 × 1000 px.</p>
+      <p class="text-base-content/60 text-sm">Cuadrada.</p>
       <div class="flex flex-wrap items-center gap-4">
         <img
           v-if="artworkUrl"
