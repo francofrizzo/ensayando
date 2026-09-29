@@ -475,9 +475,7 @@ const handleUpdateSong = async () => {
 
     await updateExistingTracks();
     const activeKeys = new Set(
-      formData.audio_tracks.flatMap((track) =>
-        track.audio_file_key ? [track.audio_file_key] : []
-      )
+      formData.audio_tracks.flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []))
     );
     const replacedOrRemovedKeys = currentSong.value.audio_tracks
       .flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []))

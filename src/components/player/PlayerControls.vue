@@ -21,7 +21,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex items-center gap-5 text-right tracking-wide tabular-nums">
+  <div class="flex items-center gap-5 text-right font-mono tabular-nums">
     <Transition name="time-reveal">
       <div v-if="props.isReady" class="flex items-baseline">
         <span data-testid="time-display" class="relative cursor-default text-xl transition-colors"

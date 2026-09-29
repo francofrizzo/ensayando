@@ -32,8 +32,12 @@ describe("deriveColor", () => {
   });
 
   it("keeps the hue and maps intensity to chroma", () => {
-    expect(deriveColor({ hue: 300, intensity: "suave" }, "fill", "light")).toBe("oklch(0.5 0.08 300)");
-    expect(deriveColor({ hue: 300, intensity: "normal" }, "fill", "light")).toBe("oklch(0.5 0.15 300)");
+    expect(deriveColor({ hue: 300, intensity: "suave" }, "fill", "light")).toBe(
+      "oklch(0.5 0.08 300)"
+    );
+    expect(deriveColor({ hue: 300, intensity: "normal" }, "fill", "light")).toBe(
+      "oklch(0.5 0.15 300)"
+    );
   });
 
   it("caps collection ink chroma in dark", () => {
@@ -76,7 +80,10 @@ describe("contrast sweep over every hue", () => {
 
 describe("toColorSpec", () => {
   it("reads stored specs", () => {
-    expect(toColorSpec({ hue: 195, intensity: "normal" })).toEqual({ hue: 195, intensity: "normal" });
+    expect(toColorSpec({ hue: 195, intensity: "normal" })).toEqual({
+      hue: 195,
+      intensity: "normal"
+    });
     expect(toColorSpec({ hue: 370 })).toEqual({ hue: 10, intensity: "normal" });
     expect(toColorSpec({ neutral: true })).toEqual({ neutral: true });
   });

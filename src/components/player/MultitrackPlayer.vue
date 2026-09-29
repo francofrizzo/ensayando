@@ -9,6 +9,7 @@ import TimeCopier from "@/components/editor/TimeCopier.vue";
 import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
 import PlayerControls from "@/components/player/PlayerControls.vue";
 import PlayerHeader from "@/components/player/PlayerHeader.vue";
+import RoomLight from "@/components/ui/RoomLight.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 import { providePlayerState } from "@/composables/useCurrentTime";
@@ -679,9 +680,12 @@ const initializeAudioContext = async () => {
 
     <div class="drawer-content">
       <div
-        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
+        class="bg-base-200 relative isolate flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
       >
-        <div class="relative flex items-center justify-between gap-3 p-3 md:p-0 md:pb-3">
+        <RoomLight :collection="collection" :playing="state.playing.value" />
+        <div
+          class="glass-1 rounded-box relative z-10 m-2 flex items-center justify-between gap-3 p-2 pl-2.5 md:m-0"
+        >
           <PlayerHeader
             :collection="collection"
             :song="song"
@@ -705,20 +709,17 @@ const initializeAudioContext = async () => {
 
         <div
           v-if="lyrics.length > 0"
-          class="relative flex-grow-1 snap-y overflow-auto"
-          style="animation: fade-in 300ms ease-out 100ms both"
+          class="relative flex-grow-1 snap-y overflow-auto py-8"
+          style="
+            animation: fade-in 300ms ease-out 100ms both;
+            mask-image: linear-gradient(
+              transparent,
+              #000 32px,
+              #000 calc(100% - 32px),
+              transparent
+            );
+          "
         >
-          <div
-            class="sticky inset-0 h-[32px]"
-            style="
-              background: linear-gradient(
-                to bottom,
-                var(--color-base-200) 0%,
-                color-mix(in oklch, var(--color-base-200) 40%, transparent) 50%,
-                transparent 100%
-              );
-            "
-          />
           <LyricsViewer
             :lyrics="lyrics"
             :current-time="state.currentTime.value"
@@ -726,17 +727,6 @@ const initializeAudioContext = async () => {
             :collection="collection"
             :enabled-track-ids="trackIdsWithLyricsEnabled"
             @seek="onSeekToTime"
-          />
-          <div
-            class="sticky inset-0 h-[32px]"
-            style="
-              background: linear-gradient(
-                to top,
-                var(--color-base-200) 0%,
-                color-mix(in oklch, var(--color-base-200) 40%, transparent) 50%,
-                transparent 100%
-              );
-            "
           />
         </div>
         <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
@@ -759,7 +749,7 @@ const initializeAudioContext = async () => {
         </div>
 
         <div
-          class="border-base-300 md:rounded-box bg-base-100 relative border-t shadow-sm transition-[max-height] duration-300 md:border"
+          class="glass-2 md:rounded-box relative transition-[max-height] duration-300"
           :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
         >
           <div
@@ -814,7 +804,7 @@ const initializeAudioContext = async () => {
             class="pointer-events-none absolute inset-x-0 top-0 z-10 -mt-6 flex h-6 cursor-pointer justify-center"
           >
             <button
-              class="bg-base-100 text-base-content/50 rounded-t-box border-base-300 pointer-events-auto flex w-16 cursor-pointer items-center justify-center border-t border-r border-l p-2"
+              class="glass-2 text-base-content/50 rounded-t-box pointer-events-auto flex w-16 cursor-pointer items-center justify-center p-2 shadow-none"
               @click="tracksVisible = !tracksVisible"
             >
               <IconChevronDown
@@ -843,7 +833,7 @@ const initializeAudioContext = async () => {
     <div class="drawer-side z-50">
       <label for="song-editor-drawer" aria-label="Cerrar editor" class="drawer-overlay"></label>
       <div
-        class="bg-base-100/75 lg:bg-base-100 min-h-full w-full shadow-lg backdrop-blur-lg sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
+        class="bg-base-100 min-h-full w-full shadow-lg sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
       >
         <SongEditor v-if="uiStore.editMode" @toggle-edit="uiStore.toggleEditMode" />
       </div>

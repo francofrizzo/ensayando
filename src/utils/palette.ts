@@ -165,7 +165,9 @@ export type CollectionPalette = {
 };
 
 /** Resolves a collection's palette; without a collection, the brand color. */
-export const resolveCollectionPalette = (source: PaletteSource | null | undefined): CollectionPalette => {
+export const resolveCollectionPalette = (
+  source: PaletteSource | null | undefined
+): CollectionPalette => {
   if (!source) return { main: BRAND_SPEC, tracks: {} };
   const main: ColorSpec = {
     hue: normalizeHue(source.hue),

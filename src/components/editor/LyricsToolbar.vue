@@ -84,9 +84,7 @@ const getKeybindingParts = (commandId: string): string[] => {
 </script>
 
 <template>
-  <div
-    class="bg-base-100/50 border-base-content/10 rounded-box flex flex-wrap items-center justify-center gap-1.5 border p-1.5 shadow-lg backdrop-blur-sm"
-  >
+  <div class="glass-3 rounded-box flex flex-wrap items-center justify-center gap-1.5 p-1.5">
     <!-- Undo/Redo -->
     <div
       class="bg-base-content/5 flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
@@ -327,10 +325,7 @@ const getKeybindingParts = (commandId: string): string[] => {
             >−{{ props.timestampOffset.toFixed(2) }}s</span
           >
         </div>
-        <div
-          tabindex="0"
-          class="dropdown-content bg-base-100 rounded-box border-base-content/10 z-50 border p-3 shadow-xl"
-        >
+        <div tabindex="0" class="dropdown-content glass-3 rounded-box z-50 p-3">
           <div class="flex flex-col gap-2">
             <span class="text-base-content/50 text-[10px] font-medium tracking-wider uppercase"
               >Corrección por reacción</span

@@ -9,7 +9,9 @@ import {
   resolveCollectionPalette
 } from "@/utils/palette";
 
-type MaybeCollection = ComputedRef<Collection | null | undefined> | Ref<Collection | null | undefined>;
+type MaybeCollection =
+  | ComputedRef<Collection | null | undefined>
+  | Ref<Collection | null | undefined>;
 
 /**
  * Theme-aware colors for a collection. Everything that paints a collection or

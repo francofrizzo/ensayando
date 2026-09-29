@@ -19,10 +19,14 @@ const MIGRATION = join(
 type Spec = { hue: number; intensity: string } | { neutral: true };
 
 const psql = (sql: string) =>
-  execFileSync("docker", ["exec", "-i", CONTAINER, "psql", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-tA"], {
-    input: sql,
-    encoding: "utf8"
-  });
+  execFileSync(
+    "docker",
+    ["exec", "-i", CONTAINER, "psql", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-tA"],
+    {
+      input: sql,
+      encoding: "utf8"
+    }
+  );
 
 const quote = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
@@ -50,7 +54,9 @@ const rows = psql(
   .map((line) => line.split("|"));
 
 const failures: string[] = [];
-const bySlug = new Map(rows.map(([slug, hue, intensity, tracks]) => [slug, { hue, intensity, tracks }]));
+const bySlug = new Map(
+  rows.map(([slug, hue, intensity, tracks]) => [slug, { hue, intensity, tracks }])
+);
 
 fixtures.forEach((fixture, i) => {
   const expected = fixture.expected as Spec | null;
@@ -59,7 +65,9 @@ fixtures.forEach((fixture, i) => {
   const main = !expected || "neutral" in expected ? { hue: 314, intensity: "normal" } : expected;
   const got = { hue: Number(row.hue), intensity: row.intensity };
   if (JSON.stringify(got) !== JSON.stringify(main)) {
-    failures.push(`main ${fixture.input}: expected ${JSON.stringify(main)}, got ${JSON.stringify(got)}`);
+    failures.push(
+      `main ${fixture.input}: expected ${JSON.stringify(main)}, got ${JSON.stringify(got)}`
+    );
   }
 });
 
@@ -68,7 +76,9 @@ fixtures.forEach((fixture, i) => {
   const expected = (fixture.expected as Spec | null) ?? { neutral: true };
   const got = tracks[`t${i}`];
   if (JSON.stringify(got) !== JSON.stringify(expected)) {
-    failures.push(`track ${fixture.input}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(got)}`);
+    failures.push(
+      `track ${fixture.input}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(got)}`
+    );
   }
 });
 

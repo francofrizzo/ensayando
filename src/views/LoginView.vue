@@ -3,6 +3,7 @@ import { IconKey, IconLogIn, IconUser, IconUserPlus } from "@/components/ui/icon
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import RoomLight from "@/components/ui/RoomLight.vue";
 import { AdminManagedAccountError, useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
@@ -125,9 +126,8 @@ watch(username, () => {
 </script>
 
 <template>
-  <div
-    class="bg-base-200 from-primary/15 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
-  >
+  <div class="bg-base-200 relative isolate flex min-h-dvh items-center justify-center p-3 sm:p-6">
+    <RoomLight />
     <div class="w-full max-w-md">
       <div
         class="mb-8 text-center"
@@ -136,11 +136,11 @@ watch(username, () => {
         <div class="mb-3 flex justify-center">
           <img src="/pwa-512x512.png" alt="Ensayando" class="h-16 w-16" />
         </div>
-        <h1 class="text-3xl font-bold tracking-tight">Ensayando</h1>
+        <h1 class="font-display text-3xl font-bold">Ensayando</h1>
       </div>
 
       <div
-        class="bg-base-200/80 rounded-box p-4 shadow-lg sm:p-8"
+        class="glass-2 rounded-box p-4 sm:p-8"
         style="animation: empty-stagger 400ms ease-out both; animation-delay: 100ms"
       >
         <div v-if="isSignUpEnabled" role="tablist" class="tabs tabs-box mb-8 w-full">

@@ -117,7 +117,7 @@ const isColorSelected = (colorKey: string) => {
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 min-w-max border p-2 shadow-xl"
+      class="dropdown-content menu glass-3 rounded-box z-50 min-w-max p-2"
     >
       <div class="flex flex-col gap-2">
         <span
