@@ -151,7 +151,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       } catch (storageError) {
         console.error(storageError);
       }
-      collections.value.push({ ...collection, user_role: "viewer" });
+      collections.value.push({ ...collection, user_role: "viewer", is_member: false });
     }
     isLoadingCollections.value = false;
   }

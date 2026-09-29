@@ -85,5 +85,8 @@ export {
   IconChevronRight as IconChevronRight,
   IconSelector as IconSelector,
   IconMicrophone2 as IconMyPart,
-  IconCactus as IconEmpty
+  IconCactus as IconEmpty,
+  IconBubbleX as IconNoLyrics,
+  IconCornerDownLeft as IconEnter,
+  IconArrowsUpDown as IconUpDown
 } from "@tabler/icons-vue";

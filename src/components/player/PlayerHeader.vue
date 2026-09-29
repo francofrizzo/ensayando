@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import SongMenu from "@/components/navigation/SongMenu.vue";
+import LibraryButton from "@/components/navigation/LibraryButton.vue";
+import { IconEdit } from "@/components/ui/icons";
 import type { CollectionWithRole, Song } from "@/data/types";
+import { useCollectionsStore } from "@/stores/collections";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -10,11 +12,23 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "toggle-edit"): void;
 }>();
+
+const collectionsStore = useCollectionsStore();
 </script>
 
 <template>
   <div class="flex min-w-0 items-center gap-3 to-transparent sm:gap-4">
-    <SongMenu :collection="props.collection" class="shrink-0" @toggle-edit="emit('toggle-edit')" />
+    <LibraryButton />
+    <button
+      v-if="collectionsStore.canEditCurrentCollection"
+      type="button"
+      class="btn btn-circle btn-ghost btn-sm shrink-0"
+      aria-label="Editar canción"
+      title="Editar canción"
+      @click="emit('toggle-edit')"
+    >
+      <IconEdit class="size-4" />
+    </button>
 
     <Transition name="song-change" mode="out-in">
       <div :key="props.song.id" class="flex min-w-0 flex-col gap-1 tracking-wide">

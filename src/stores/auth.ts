@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 
 import * as supabase from "@/data/supabase";
 import { useCollectionsStore } from "@/stores/collections";
+import { useSongIndexStore } from "@/stores/songIndex";
 
 const EMAIL_DOMAIN = "ensayando.com.ar";
 
@@ -42,6 +43,7 @@ export const useAuthStore = defineStore("auth", () => {
     const newUserId = newUser?.id ?? null;
     if (newUserId !== lastUserId.value) {
       collectionsStore.reset();
+      useSongIndexStore().reset();
       lastUserId.value = newUserId;
     }
   };
