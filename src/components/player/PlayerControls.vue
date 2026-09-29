@@ -47,17 +47,17 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       :class="
         props.compact
           ? ''
-          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%-0.25rem)]'
+          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%-0.75rem)]'
       "
     >
       <button
         class="btn btn-circle"
-        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:border-0'"
+        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:size-9 md:border-0'"
         :disabled="!props.prevSong"
         aria-label="Canción anterior"
         @click="emit('skip-prev')"
       >
-        <IconSkipPrev class="size-[18px]" />
+        <IconSkipPrev class="size-[18px] md:size-4" />
       </button>
       <button
         class="btn btn-circle btn-primary play-glow border-0"
@@ -85,12 +85,12 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </button>
       <button
         class="btn btn-circle"
-        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:border-0'"
+        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:size-9 md:border-0'"
         :disabled="!props.nextSong"
         aria-label="Canción siguiente"
         @click="emit('skip-next')"
       >
-        <IconSkipNext class="size-[18px]" />
+        <IconSkipNext class="size-[18px] md:size-4" />
       </button>
     </div>
 
