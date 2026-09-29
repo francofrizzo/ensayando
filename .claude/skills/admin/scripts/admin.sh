@@ -58,8 +58,8 @@ cmd_preflight() {
     echo "$out" >&2
     echo "error: 'supabase projects list' failed — ask user to run: npx supabase login" >&2; exit 1
   }
-  if ! echo "$out" | grep -qE "●.*${PROJECT_REF}.*Ensayando"; then
-    echo "$out" >&2
+  # `supabase link` records the linked project here (the CLI's list output format varies).
+  if [ "$(cat supabase/.temp/project-ref 2>/dev/null)" != "${PROJECT_REF}" ]; then
     echo "error: Ensayando not linked — ask user to run: npx supabase link --project-ref ${PROJECT_REF}" >&2
     exit 1
   fi
