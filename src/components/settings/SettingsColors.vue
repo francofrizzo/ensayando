@@ -5,6 +5,7 @@ import { toast } from "vue-sonner";
 import ColorPreview from "@/components/settings/ColorPreview.vue";
 import HueSlider from "@/components/settings/HueSlider.vue";
 import SaveBar from "@/components/settings/SaveBar.vue";
+import SegmentedControl from "@/components/settings/SegmentedControl.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import { IconPlus, IconTrash, IconWarning } from "@/components/ui/icons";
 import { useTheme } from "@/composables/useTheme";
@@ -351,17 +352,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
           </div>
           <div class="flex flex-col gap-1.5">
             <span class="text-base-content/70 text-sm font-semibold">Intensidad</span>
-            <div class="join">
-              <button
-                v-for="i in INTENSITIES"
-                :key="i.value"
-                class="btn btn-sm join-item"
-                :class="mainIntensity === i.value ? 'btn-active' : 'btn-ghost'"
-                @click="mainIntensity = i.value"
-              >
-                {{ i.label }}
-              </button>
-            </div>
+            <SegmentedControl v-model="mainIntensity" :options="INTENSITIES" label="Intensidad" />
           </div>
           <ColorPreview :spec="mainSpec" :collection-hue="mainHue" />
         </template>
@@ -431,22 +422,13 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-col gap-1.5">
               <span class="text-base-content/70 text-sm font-semibold">Intensidad</span>
-              <div class="join">
-                <button
-                  v-for="i in INTENSITIES"
-                  :key="i.value"
-                  class="btn btn-sm join-item"
-                  :class="
-                    !isNeutral(selectedRow.spec) && selectedRow.spec.intensity === i.value
-                      ? 'btn-active'
-                      : 'btn-ghost'
-                  "
-                  :disabled="isNeutral(selectedRow.spec)"
-                  @click="setIntensity(selectedRow, i.value)"
-                >
-                  {{ i.label }}
-                </button>
-              </div>
+              <SegmentedControl
+                :model-value="isNeutral(selectedRow.spec) ? 'normal' : selectedRow.spec.intensity"
+                :options="INTENSITIES"
+                :disabled="isNeutral(selectedRow.spec)"
+                label="Intensidad"
+                @update:model-value="setIntensity(selectedRow, $event)"
+              />
             </div>
             <label class="flex items-center gap-2 text-sm">
               <input

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
+import SegmentedControl from "@/components/settings/SegmentedControl.vue";
 import { IconKey, IconMail, IconSearch, IconUserPlus } from "@/components/ui/icons";
 import {
   addMember,
@@ -111,7 +112,10 @@ async function submit() {
   }
 }
 
-const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
+const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((value) => ({
+  value,
+  label: ROLE_LABELS[value]
+}));
 </script>
 
 <template>
@@ -218,17 +222,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
 
       <div class="flex flex-col gap-1.5">
         <span class="text-base-content/70 text-sm font-semibold">Rol</span>
-        <div class="join">
-          <button
-            v-for="r in ROLES"
-            :key="r"
-            class="btn btn-sm join-item flex-1"
-            :class="role === r ? 'btn-active' : 'btn-ghost'"
-            @click="role = r"
-          >
-            {{ ROLE_LABELS[r] }}
-          </button>
-        </div>
+        <SegmentedControl v-model="role" :options="ROLE_OPTIONS" label="Rol" stretch />
       </div>
 
       <p v-if="error" class="text-error text-sm" data-testid="add-member-error">{{ error }}</p>

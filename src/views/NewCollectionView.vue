@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
 import HueSlider from "@/components/settings/HueSlider.vue";
+import SegmentedControl from "@/components/settings/SegmentedControl.vue";
 import { IconGlobe, IconLink, IconLock, IconPalette, IconPlus } from "@/components/ui/icons";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
@@ -164,18 +165,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
 
       <div class="flex flex-col gap-1.5">
         <span class="text-base-content/70 text-sm font-semibold">Visibilidad</span>
-        <div class="join w-full">
-          <button
-            v-for="v in VISIBILITY"
-            :key="v.value"
-            type="button"
-            class="btn btn-sm join-item flex-1"
-            :class="visibility === v.value ? 'btn-active' : 'btn-ghost'"
-            @click="visibility = v.value"
-          >
-            <component :is="v.icon" class="size-4" /> {{ v.label }}
-          </button>
-        </div>
+        <SegmentedControl v-model="visibility" :options="VISIBILITY" label="Visibilidad" stretch />
       </div>
 
       <p v-if="error" class="text-error text-sm">{{ error }}</p>

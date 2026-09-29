@@ -4,6 +4,7 @@ import { toast } from "vue-sonner";
 
 import AddMemberDialog from "@/components/settings/AddMemberDialog.vue";
 import OneTimePasswordDialog from "@/components/settings/OneTimePasswordDialog.vue";
+import SegmentedControl from "@/components/settings/SegmentedControl.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import {
   IconCopy,
@@ -260,18 +261,17 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
           </div>
         </div>
         <span class="text-base-content/70 text-sm font-semibold">Rol</span>
-        <div class="join">
-          <button
-            v-for="r in ROLES"
-            :key="r"
-            class="btn btn-sm join-item flex-1"
-            :class="sheet.role === r ? 'btn-active' : 'btn-ghost'"
-            :disabled="roleLocked(sheet)"
-            @click="changeRole(sheet, r); sheet = null"
-          >
-            {{ ROLE_LABELS[r] }}
-          </button>
-        </div>
+        <SegmentedControl
+          :model-value="sheet.role"
+          :options="ROLES.map((value) => ({ value, label: ROLE_LABELS[value] }))"
+          :disabled="roleLocked(sheet)"
+          label="Rol"
+          stretch
+          @update:model-value="
+            changeRole(sheet, $event);
+            sheet = null;
+          "
+        />
         <ul class="menu w-full p-0">
           <li v-if="!isSelf(sheet)">
             <button @click="resetPassword(sheet); sheet = null">
