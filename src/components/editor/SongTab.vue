@@ -328,13 +328,22 @@ const onTrackDragStart = (event: DragEvent, id: number) => {
   event.dataTransfer?.setData("application/x-ensayando-track", String(id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
 };
+// Swapping on any dragover looped: the other card slid in under the pointer and
+// swapped back. Only swap once the pointer passes the other card's middle in the
+// direction of travel, measured on its layout box (the move animation transforms it).
+const layoutMiddle = (element: HTMLElement) => {
+  const parent = element.offsetParent as HTMLElement | null;
+  const top = (parent?.getBoundingClientRect().top ?? 0) + element.offsetTop;
+  return top + element.offsetHeight / 2;
+};
 const onTrackDragOver = (event: DragEvent, index: number) => {
   if (liftedId.value === null) return;
   event.preventDefault();
   const from = formData.audio_tracks.findIndex((t) => t.id === liftedId.value);
-  if (from !== -1 && from !== index) {
-    formData.audio_tracks = withOrder(moveItem(formData.audio_tracks, from, index));
-  }
+  if (from === -1 || from === index) return;
+  const middle = layoutMiddle(event.currentTarget as HTMLElement);
+  const passed = from < index ? event.clientY > middle : event.clientY < middle;
+  if (passed) formData.audio_tracks = withOrder(moveItem(formData.audio_tracks, from, index));
 };
 
 // ---------- advanced ----------
