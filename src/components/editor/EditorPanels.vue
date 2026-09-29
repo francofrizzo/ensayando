@@ -4,7 +4,8 @@ import { ref, watch } from "vue";
 import LyricsJsonTab from "@/components/editor/LyricsJsonTab.vue";
 import LyricsTab from "@/components/editor/LyricsTab.vue";
 import SongTab from "@/components/editor/SongTab.vue";
-import { IconBack, IconMarkTime } from "@/components/ui/icons";
+import SyncPanel from "@/components/editor/SyncPanel.vue";
+import { IconBack } from "@/components/ui/icons";
 import { type EditorTabId, useEditorSession } from "@/composables/useEditorSession";
 
 const props = defineProps<{ tab: EditorTabId }>();
@@ -72,16 +73,8 @@ watch(
       </div>
     </div>
 
-    <div
-      v-if="props.tab === 'sincronizar'"
-      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-10 text-center"
-      role="tabpanel"
-    >
-      <IconMarkTime class="text-base-content/40 size-12" />
-      <h2 class="font-display text-xl font-bold">Sincronizar</h2>
-      <p class="text-base-content/60 max-w-sm text-sm">
-        Próximamente. Mientras tanto, los tiempos de cada verso se marcan desde la pestaña Letra.
-      </p>
+    <div v-if="props.tab === 'sincronizar'" class="flex min-h-0 flex-1 flex-col" role="tabpanel">
+      <SyncPanel />
     </div>
   </div>
 </template>
