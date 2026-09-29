@@ -47,7 +47,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       :class="
         props.compact
           ? ''
-          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%+0.5rem)]'
+          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%-0.25rem)]'
       "
     >
       <button
