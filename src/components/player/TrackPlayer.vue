@@ -216,11 +216,11 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
     :data-failed="failed || undefined"
   >
     <div
-      class="pointer-events-none absolute inset-y-0 -left-3.5 hidden w-[260px] rounded-l-xl md:block"
+      class="pointer-events-none absolute inset-y-0.5 -left-3.5 hidden w-[260px] rounded-l-xl md:block"
       :style="{ background: `linear-gradient(90deg, ${glowColor}, transparent)` }"
     />
 
-    <div class="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5">
+    <div class="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-[3px]">
       <span class="flex min-w-0 items-center gap-2 text-[13.5px] leading-none font-semibold max-md:text-sm">
         <span
           class="size-2.5 shrink-0 rounded-full"
