@@ -1,0 +1,319 @@
+/* ------------------------------------------------------------------
+   Ensayando · propuesta de diseño
+   Tokens compartidos por todas las páginas de design/ y por los mocks.
+   Los mocks usan los mismos tokens que se proponen para la app:
+   si un color o un vidrio se ve bien acá, es el que se implementa.
+
+   Concepto: "Luz de sala". El color de la colección es la luz del
+   escenario; la interfaz es vidrio que flota en esa luz; la letra es
+   lo que está en escena.
+   ------------------------------------------------------------------ */
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Geist+Mono:wght@100..900&display=swap");
+
+:root {
+  /* ---------- tipografía (se mantiene) ---------- */
+  --ui: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --lyr: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* escala: display (títulos de canción/colección), UI y letra */
+  --t-hero: 64px; --t-d1: 44px; --t-d2: 30px; --t-d3: 22px;
+  --t-lg: 18px; --t-md: 15px; --t-sm: 13.5px; --t-xs: 12px; --t-2xs: 11px;
+  --t-lyr: 24px; --t-lyr-m: 19px;
+
+  /* ---------- tono base ----------
+     --h es el tono de la colección. Los neutros se tiñen apenas con él
+     (croma 0,004 a 0,016), así cada colección tiñe su sala. 314 es el
+     violeta Ensayando, el tono por defecto sin colección. */
+  --h: 314;
+  --brand: oklch(50% 0.2 314);
+
+  /* ---------- color de la colección ----------
+     --c es el main_color tal como está en la base. El resto se deriva
+     (ver palette): --c-ink para texto e íconos sobre la sala, --c-soft
+     para fondos teñidos, --on-c para texto sobre relleno. */
+  --k: 0.15;       /* intensidad de la colección: suave 0,08 · normal 0,15 · intensa 0,21 */
+  --fill-l: 0.5;   /* claridad fija de los rellenos: el texto blanco pasa 4,5:1 en todos los tonos */
+  --c: oklch(var(--fill-l) var(--k) var(--h));
+  --on-c: #fff;
+  --ci-l: 0.47; --ci-c: 0.4; --cs-l: 0.93; --cs-k: 0.3; --cl-l: 0.8; --cl-k: 0.5;
+
+  /* ---------- neutros claros ---------- */
+  --canvas: oklch(97.4% 0.006 var(--h));
+  --surface: oklch(99.4% 0.003 var(--h));
+  --raised: oklch(100% 0 0);
+  --sunken: oklch(94.2% 0.009 var(--h));
+  --line: oklch(89.5% 0.011 var(--h));
+  --line-strong: oklch(81% 0.015 var(--h));
+  --ink: oklch(21% 0.014 var(--h));
+  --muted: oklch(47% 0.02 var(--h));
+  --faint: oklch(63% 0.016 var(--h));
+  --past: oklch(21% 0.014 var(--h) / 0.3); /* versos ya cantados */
+
+  /* ---------- estados ---------- */
+  --ok: oklch(52% 0.13 158); --ok-soft: oklch(94% 0.045 158);
+  --warn: oklch(55% 0.13 70); --warn-soft: oklch(95% 0.05 85);
+  --danger: oklch(55% 0.19 25); --danger-soft: oklch(94.5% 0.035 25);
+  --info: oklch(52% 0.13 240); --info-soft: oklch(94.5% 0.03 240);
+
+  /* ---------- materiales ---------- */
+  --r-field: 10px; --r-box: 16px; --r-dock: 22px; --r-pill: 999px;
+  /* vidrio: 1 velo (barras), 2 panel (dock, biblioteca, editor), 3 pop (menús) */
+  --glass-1: oklch(99% 0.004 var(--h) / 0.52);
+  --glass-2: oklch(99% 0.004 var(--h) / 0.7);
+  --glass-3: oklch(99.5% 0.003 var(--h) / 0.86);
+  --blur-1: blur(18px) saturate(1.6);
+  --blur-2: blur(28px) saturate(1.8);
+  --blur-3: blur(14px) saturate(1.4);
+  --edge: oklch(22% 0.03 var(--h) / 0.09);
+  --edge-hi: oklch(100% 0 0 / 0.75); /* luz en el borde superior del vidrio */
+  --shadow-1: 0 1px 2px oklch(25% 0.05 var(--h) / 0.06);
+  --shadow-float: 0 24px 48px -20px oklch(25% 0.08 var(--h) / 0.3), 0 2px 6px oklch(25% 0.05 var(--h) / 0.08);
+  /* luz de sala: intensidad de las manchas de color del fondo */
+  --amb-o: 0.16;
+  --glow-o: 0; /* brillo de la letra activa: solo en oscuro */
+  /* claridad fija por rol y tema para los colores de pista: tinta (letra) y onda.
+     De cada pista solo se guarda el tono; el croma sale de su intensidad. */
+  --lyr-l: 0.48; --wav-l: 0.59;
+
+  /* ---------- movimiento ---------- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --d-fast: 120ms; --d-med: 220ms; --d-slow: 420ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ci-l: 0.8; --ci-c: 0.17; --cs-l: 0.3; --cs-k: 0.45; --cl-l: 0.45; --cl-k: 0.6;
+    --canvas: oklch(15.5% 0.012 var(--h));
+    --surface: oklch(20% 0.014 var(--h));
+    --raised: oklch(24.5% 0.016 var(--h));
+    --sunken: oklch(13% 0.01 var(--h));
+    --line: oklch(29% 0.016 var(--h));
+    --line-strong: oklch(37% 0.018 var(--h));
+    --ink: oklch(96.5% 0.006 var(--h));
+    --muted: oklch(73% 0.02 var(--h));
+    --faint: oklch(56% 0.018 var(--h));
+    --past: oklch(96.5% 0.006 var(--h) / 0.28);
+    --ok: oklch(78% 0.14 158); --ok-soft: oklch(28% 0.05 158);
+    --warn: oklch(82% 0.13 80); --warn-soft: oklch(29% 0.05 75);
+    --danger: oklch(72% 0.16 25); --danger-soft: oklch(28% 0.06 25);
+    --info: oklch(76% 0.11 240); --info-soft: oklch(28% 0.05 240);
+    --glass-1: oklch(22% 0.016 var(--h) / 0.46);
+    --glass-2: oklch(21% 0.016 var(--h) / 0.62);
+    --glass-3: oklch(23% 0.016 var(--h) / 0.84);
+    --edge: oklch(100% 0 0 / 0.08);
+    --edge-hi: oklch(100% 0 0 / 0.11);
+    --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3);
+    --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
+    --amb-o: 0.24;
+    --glow-o: 0.55;
+    --lyr-l: 0.8; --wav-l: 0.7;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ci-l: 0.8; --ci-c: 0.17; --cs-l: 0.3; --cs-k: 0.45; --cl-l: 0.45; --cl-k: 0.6;
+  --lyr-l: 0.8; --wav-l: 0.7;
+  --canvas: oklch(15.5% 0.012 var(--h));
+  --surface: oklch(20% 0.014 var(--h));
+  --raised: oklch(24.5% 0.016 var(--h));
+  --sunken: oklch(13% 0.01 var(--h));
+  --line: oklch(29% 0.016 var(--h));
+  --line-strong: oklch(37% 0.018 var(--h));
+  --ink: oklch(96.5% 0.006 var(--h));
+  --muted: oklch(73% 0.02 var(--h));
+  --faint: oklch(56% 0.018 var(--h));
+  --past: oklch(96.5% 0.006 var(--h) / 0.28);
+  --ok: oklch(78% 0.14 158); --ok-soft: oklch(28% 0.05 158);
+  --warn: oklch(82% 0.13 80); --warn-soft: oklch(29% 0.05 75);
+  --danger: oklch(72% 0.16 25); --danger-soft: oklch(28% 0.06 25);
+  --info: oklch(76% 0.11 240); --info-soft: oklch(28% 0.05 240);
+  --glass-1: oklch(22% 0.016 var(--h) / 0.46);
+  --glass-2: oklch(21% 0.016 var(--h) / 0.62);
+  --glass-3: oklch(23% 0.016 var(--h) / 0.84);
+  --edge: oklch(100% 0 0 / 0.08);
+  --edge-hi: oklch(100% 0 0 / 0.11);
+  --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
+  --amb-o: 0.24;
+  --glow-o: 0.55;
+}
+
+/* Un bloque puede forzar un tema propio (p. ej. un mock claro al lado de uno
+   oscuro): .theme-light / .theme-dark redefinen los mismos tokens. */
+.theme-light {
+  color-scheme: light;
+  --ci-l: 0.47; --ci-c: 0.4; --cs-l: 0.93; --cs-k: 0.3; --cl-l: 0.8; --cl-k: 0.5;
+  --canvas: oklch(97.4% 0.006 var(--h)); --surface: oklch(99.4% 0.003 var(--h)); --raised: oklch(100% 0 0);
+  --sunken: oklch(94.2% 0.009 var(--h)); --line: oklch(89.5% 0.011 var(--h)); --line-strong: oklch(81% 0.015 var(--h));
+  --ink: oklch(21% 0.014 var(--h)); --muted: oklch(47% 0.02 var(--h)); --faint: oklch(63% 0.016 var(--h));
+  --past: oklch(21% 0.014 var(--h) / 0.3);
+  --ok: oklch(52% 0.13 158); --ok-soft: oklch(94% 0.045 158); --warn: oklch(55% 0.13 70); --warn-soft: oklch(95% 0.05 85);
+  --danger: oklch(55% 0.19 25); --danger-soft: oklch(94.5% 0.035 25); --info: oklch(52% 0.13 240); --info-soft: oklch(94.5% 0.03 240);
+  --glass-1: oklch(99% 0.004 var(--h) / 0.52); --glass-2: oklch(99% 0.004 var(--h) / 0.7); --glass-3: oklch(99.5% 0.003 var(--h) / 0.86);
+  --edge: oklch(22% 0.03 var(--h) / 0.09); --edge-hi: oklch(100% 0 0 / 0.75);
+  --shadow-1: 0 1px 2px oklch(25% 0.05 var(--h) / 0.06);
+  --shadow-float: 0 24px 48px -20px oklch(25% 0.08 var(--h) / 0.3), 0 2px 6px oklch(25% 0.05 var(--h) / 0.08);
+  --amb-o: 0.16; --glow-o: 0;
+  --lyr-l: 0.48; --wav-l: 0.59;
+  color: var(--ink);
+}
+.theme-dark {
+  color-scheme: dark;
+  --ci-l: 0.8; --ci-c: 0.17; --cs-l: 0.3; --cs-k: 0.45; --cl-l: 0.45; --cl-k: 0.6;
+  --canvas: oklch(15.5% 0.012 var(--h)); --surface: oklch(20% 0.014 var(--h)); --raised: oklch(24.5% 0.016 var(--h));
+  --sunken: oklch(13% 0.01 var(--h)); --line: oklch(29% 0.016 var(--h)); --line-strong: oklch(37% 0.018 var(--h));
+  --ink: oklch(96.5% 0.006 var(--h)); --muted: oklch(73% 0.02 var(--h)); --faint: oklch(56% 0.018 var(--h));
+  --past: oklch(96.5% 0.006 var(--h) / 0.28);
+  --ok: oklch(78% 0.14 158); --ok-soft: oklch(28% 0.05 158); --warn: oklch(82% 0.13 80); --warn-soft: oklch(29% 0.05 75);
+  --danger: oklch(72% 0.16 25); --danger-soft: oklch(28% 0.06 25); --info: oklch(76% 0.11 240); --info-soft: oklch(28% 0.05 240);
+  --glass-1: oklch(22% 0.016 var(--h) / 0.46); --glass-2: oklch(21% 0.016 var(--h) / 0.62); --glass-3: oklch(23% 0.016 var(--h) / 0.84);
+  --edge: oklch(100% 0 0 / 0.08); --edge-hi: oklch(100% 0 0 / 0.11);
+  --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
+  --amb-o: 0.24; --glow-o: 0.55;
+  --lyr-l: 0.8; --wav-l: 0.7;
+  color: var(--ink);
+}
+
+/* Derivados del color de colección. Se declaran en cada contenedor que
+   puede traer su propio --c (o su propio tema), así se recalculan ahí. */
+:root, .app, .theme-light, .theme-dark, [data-recolor] {
+  --c-ink: oklch(from var(--c) var(--ci-l) min(c, var(--ci-c)) h);
+  --c-soft: oklch(from var(--c) var(--cs-l) calc(c * var(--cs-k)) h);
+  --c-line: oklch(from var(--c) var(--cl-l) calc(c * var(--cl-k)) h);
+}
+
+/* ==================================================================
+   Chrome del deck
+   ================================================================== */
+* { box-sizing: border-box; }
+html { background: var(--canvas); -webkit-text-size-adjust: 100%; }
+body.ds {
+  margin: 0; background: var(--canvas); color: var(--ink);
+  font: 400 var(--t-md)/1.55 var(--ui);
+  font-optical-sizing: auto;
+  padding-inline: 16px; padding-block: 0 56px;
+}
+body.ds::before { /* luz de sala del propio deck, muy tenue */
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60vw 40vw at 85% -10%, oklch(from var(--brand) l c h / calc(var(--amb-o) * 0.55)), transparent 70%),
+    radial-gradient(50vw 40vw at -10% 30%, oklch(70% 0.14 200 / calc(var(--amb-o) * 0.3)), transparent 70%);
+}
+:focus-visible { outline: 2px solid var(--c-ink); outline-offset: 3px; }
+[id] { scroll-margin-top: 110px; }
+
+.ds-nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
+  margin-inline: -16px; margin-bottom: 48px;
+  background: var(--glass-1); -webkit-backdrop-filter: var(--blur-1); backdrop-filter: var(--blur-1);
+  border-bottom: 1px solid var(--edge);
+}
+.ds-nav-in { max-width: 1240px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 20px; }
+.ds-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); flex: none; }
+.ds-brand img { width: 30px; height: 30px; border-radius: 8px; }
+.ds-brand span { font: 700 16px/1 var(--ui); letter-spacing: -0.005em; }
+.ds-brand small { font: 500 12px/1 var(--ui); color: var(--muted); margin-left: 2px; }
+.ds-links { display: flex; gap: 2px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.ds-links::-webkit-scrollbar { display: none; }
+.ds-links a { font: 600 14px/1 var(--ui); color: var(--muted); text-decoration: none; padding: 9px 12px; border-radius: 9px; white-space: nowrap; }
+.ds-links a:hover { color: var(--ink); background: var(--sunken); }
+.ds-links a[aria-current="page"] { color: var(--ink); background: var(--c-soft); }
+.ds-theme { display: flex; gap: 2px; flex: none; background: var(--sunken); border-radius: var(--r-pill); padding: 3px; }
+.ds-theme button { font: 600 12px/1 var(--ui); color: var(--muted); background: transparent; border: 0; border-radius: var(--r-pill); padding: 7px 10px; cursor: pointer; }
+.ds-theme button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: var(--shadow-1); }
+.ds-sub { max-width: 1240px; margin: 0 auto; padding: 0 16px 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.ds-sub a { font: 600 12.5px/1 var(--ui); color: var(--muted); text-decoration: none; padding: 7px 11px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); }
+.ds-sub a[aria-current="page"] { color: var(--c-ink); border-color: var(--c-line); background: var(--c-soft); }
+.ds-foot { max-width: 1240px; margin: 80px auto 0; padding-top: 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font: 600 14px/1.4 var(--ui); }
+.ds-foot a { color: var(--c-ink); text-decoration: none; }
+.ds-foot a:hover { text-decoration: underline; }
+.ds-foot span { color: var(--muted); font-weight: 500; font-size: 12.5px; display: block; }
+.ds-col select { font: 600 12.5px/1 var(--ui); color: var(--ink); background: var(--sunken); border: 0; border-radius: var(--r-pill); padding: 8px 12px; cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 760px) { .ds-col { display: none; } .ds-brand span, .ds-brand small { display: none; } .ds-theme button { padding: 7px 8px; } }
+
+/* ---------- tipografía y bloques del deck ---------- */
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 64px; }
+.wrap p { margin: 0; max-width: 68ch; }
+.wrap a { color: var(--c-ink); font-weight: 600; }
+.d { font-family: var(--ui); font-weight: 700; letter-spacing: -0.0125em; line-height: 1.02; margin: 0; text-wrap: balance; font-variation-settings: "opsz" 96; }
+h1.d { font-size: var(--t-hero); }
+h2.d { font-size: var(--t-d2); }
+h3.d { font-size: var(--t-d3); letter-spacing: -0.0075em; }
+.eyebrow { font: 600 var(--t-2xs)/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: var(--t-lg); color: var(--muted); max-width: 70ch; text-wrap: pretty; }
+.muted { color: var(--muted); } .faint { color: var(--faint); }
+.sm { font-size: var(--t-sm); } .xs { font-size: var(--t-xs); }
+.mono { font-family: var(--mono); font-size: 0.92em; }
+.page-head { display: flex; flex-direction: column; gap: 16px; }
+.page-head .lede { margin-top: 2px; }
+.sec { display: flex; flex-direction: column; gap: 20px; }
+.sec-h { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line-strong); padding-top: 18px; }
+.sec-h p { color: var(--muted); }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 960px) { .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } h1.d { font-size: 44px; } }
+
+/* notas de decisión: tarjeta plana, sin sombra */
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 18px; display: flex; flex-direction: column; gap: 8px; font-size: var(--t-sm); min-width: 0; }
+.note > b, .note > strong { font-size: var(--t-md); font-weight: 650; letter-spacing: -0.0025em; }
+.note p { color: var(--muted); }
+.note ul { margin: 0; padding-left: 18px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+
+/* etiquetas de estado de cada propuesta */
+.tag { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font: 650 11.5px/1 var(--ui); letter-spacing: 0.02em; padding: 5px 9px; border-radius: var(--r-pill); white-space: nowrap; }
+.tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.tag.keep { background: var(--sunken); color: var(--muted); }      /* Se mantiene */
+.tag.refine { background: var(--info-soft); color: var(--info); }  /* Ajuste */
+.tag.new { background: var(--c-soft); color: var(--c-ink); }       /* Nuevo */
+.tag.moved { background: var(--warn-soft); color: var(--warn); }   /* Sale del SQL / skill */
+.tag.drop { background: var(--danger-soft); color: var(--danger); }/* Se quita */
+
+/* comparación antes / después */
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.compare > div { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+@media (max-width: 800px) { .compare { grid-template-columns: 1fr; } }
+.cap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: var(--t-sm); color: var(--muted); }
+.cap b { color: var(--ink); font-weight: 650; }
+
+kbd, .kbd { font: 500 11px/1 var(--mono); padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; background: var(--surface); color: var(--ink); white-space: nowrap; }
+
+/* tablas de especificación */
+.spec { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.spec th { text-align: left; font: 600 var(--t-2xs)/1 var(--ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line-strong); }
+.spec td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.spec td:first-child { font-weight: 600; }
+.scroll-x { overflow-x: auto; max-width: 100%; }
+
+/* ---------- marcos de mock ----------
+   .frame contiene un mock de ancho fijo (data-w) y lo escala al ancho
+   disponible (nav.js). .mock-desk = 1280 px, .mock-phone = 390 px. */
+.frame { width: 100%; position: relative; }
+.frame > .fit { transform-origin: top left; }
+.frame.phone-frame { max-width: 390px; }
+.mocks-row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.mocks-row > .col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mocks-row > .col.grow { flex: 1 1 560px; }
+.mocks-row > .col.phone { flex: 0 1 390px; width: 390px; max-width: 100%; }
+
+/* ---------- utilidades comunes ---------- */
+.ic { width: 1em; height: 1em; flex: none; display: inline-block; vertical-align: -0.125em; }
+.swatch { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--edge); flex: none; }
+.row { display: flex; align-items: center; gap: 10px; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 12px/1 var(--ui); padding: 6px 10px; border-radius: var(--r-pill); background: var(--sunken); color: var(--muted); }
+.find { counter-increment: find; }
+.findings { counter-reset: find; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 800px) { .findings { grid-template-columns: 1fr; } }
+.findings .note b::before { content: "H" counter(find) " · "; color: var(--faint); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}

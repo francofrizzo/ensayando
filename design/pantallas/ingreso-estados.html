@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Ingreso y estados</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* el ingreso no tiene colección: usa el violeta Ensayando */
+.brand-room { --c: var(--brand); --h: 314; --on-c: #fff; --a2: oklch(82% 0.16 95); --a3: oklch(60% 0.2 280);
+  /* los derivados se resuelven en :root con la colección de ejemplo; acá se rederivan del violeta */
+  --c-ink: oklch(from var(--c) var(--lyr-l) c h);
+  --c-soft: color-mix(in oklch, var(--c) 16%, var(--surface));
+  --c-line: color-mix(in oklch, var(--c) 45%, var(--surface)); }
+.login { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 400px; border-radius: 24px; padding: 30px; display: flex; flex-direction: column; gap: 14px; }
+.login .logo { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 8px; }
+.login .logo img { width: 64px; height: 64px; }
+.login .logo b { font: 700 30px/1 var(--ui); letter-spacing: -0.015em; font-variation-settings: "opsz" 96; }
+.login .logo span { font: 500 13.5px/1.3 var(--ui); color: var(--muted); }
+.login .link { align-self: flex-end; font: 600 12.5px/1 var(--ui); color: var(--c-ink); margin-top: -4px; }
+.alert { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; border-radius: 12px; font: 500 13px/1.4 var(--ui); }
+.alert .ic { font-size: 17px; margin-top: 1px; flex: none; }
+.alert.info { background: var(--info-soft); color: var(--info); }
+.alert.err { background: var(--danger-soft); color: var(--danger); }
+.alert.ok { background: var(--ok-soft); color: var(--ok); }
+.phone-login { position: absolute; left: 14px; right: 14px; top: 170px; border-radius: 26px; padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+/* cargando: la onda animada de LoadingWaveform.vue */
+.loadwave { display: flex; align-items: center; gap: 4px; height: 50px; color: var(--c-ink); }
+.loadwave i { width: 4px; border-radius: 2px; background: currentColor; height: var(--mn); animation: lw 1.6s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes lw { 0%, 15%, 100% { height: var(--mn); } 45%, 65% { height: var(--mx); } }
+
+.state { position: relative; border-radius: var(--r-box); min-height: 330px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 28px 24px; }
+.state .big { font-size: 64px; color: var(--faint); }
+.state .big .ic { stroke-width: 1.25; }
+.state h4 { margin: 0; font: 700 22px/1.1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; }
+.state p { margin: 0; font: 400 14px/1.45 var(--ui); color: var(--muted); max-width: 36ch; }
+.state .acts { display: flex; gap: 8px; margin-top: 6px; }
+.state .who { position: absolute; top: 12px; left: 12px; }
+.states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 960px) { .states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .states { grid-template-columns: 1fr; } }
+.state-wrap { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.state-wrap .note { border: 0; padding: 4px 2px; background: transparent; }
+
+.toasts { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; padding: 24px; border-radius: var(--r-box); }
+.toast .bar { position: absolute; left: 14px; right: 14px; bottom: 7px; height: 3px; border-radius: 2px; background: oklch(from var(--ink) l c h / 0.1); overflow: hidden; }
+.toast .bar i { display: block; height: 100%; width: 62%; background: var(--c); border-radius: 2px; }
+.toast { position: relative; }
+.toast.err .ic { color: var(--danger); }
+.toast.ok .ic { color: var(--ok); }
+.toast small { display: block; font: 400 12.5px/1.3 var(--ui); color: var(--muted); margin-top: 2px; }
+.dlg { border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 14px; width: 440px; }
+.dlg h4 { margin: 0; font: 700 20px/1.15 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; }
+.dlg p { margin: 0; font: 400 14px/1.45 var(--ui); color: var(--muted); }
+.dlg .acts { display: flex; justify-content: flex-end; gap: 8px; }
+.center { display: flex; align-items: center; justify-content: center; }
+.trk-err { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 16px; border-radius: 16px; }
+.trk-err .ph-wave { height: 34px; border-radius: 8px; background: repeating-linear-gradient(90deg, oklch(from var(--ink) l c h / 0.08) 0 3px, transparent 3px 5px); display: flex; align-items: center; justify-content: center; }
+.trk-err .ph-wave span { background: var(--surface); padding: 4px 10px; border-radius: 999px; font: 600 12.5px/1 var(--ui); color: var(--danger); display: inline-flex; gap: 6px; align-items: center; box-shadow: 0 0 0 1px var(--line); }
+.legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
+.legend li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: var(--t-sm); color: var(--muted); counter-increment: an; }
+.legend li::before { content: counter(an); width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--ink); font-weight: 650; display: block; }
+@media (max-width: 900px) { .legend { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas · 6 de 6</span>
+    <h1 class="d">Ingreso y estados</h1>
+    <p class="lede">Todo lo que aparece cuando no hay una canción sonando: el ingreso, las cargas, las pantallas vacías, los errores y los avisos. Mientras no hay colección, la sala se ilumina con el violeta Ensayando y el amarillo de las notas del logo. Cada estado dice qué pasó y, si se puede hacer algo, ofrece la acción.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Ingreso</h2>
+      <p>El formulario de hoy funciona y se mantiene: un campo acepta usuario o email, y "¿Olvidaste tu contraseña?" solo aparece cuando lo escrito es un email real. Cambia la superficie (vidrio sobre la luz de marca) y el texto para cuentas administradas.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk brand-room">
+        <div class="amb"></div>
+        <div class="login g2">
+          <div class="logo"><img src="../shared/logo.png" alt=""><b>Ensayando</b></div>
+          <div class="field"><span class="lbl">Usuario o email</span><div class="in focus"><i data-ic="user"></i>sofia@ejemplo.com</div></div>
+          <div class="field"><span class="lbl">Contraseña</span><div class="in"><i data-ic="key"></i>••••••••••</div></div>
+          <span class="link">¿Olvidaste tu contraseña?</span>
+          <div class="alert err"><i data-ic="alert"></i><span>El usuario o la contraseña no coinciden. Revisá que no haya espacios de más.</span></div>
+          <span class="b lg fill" style="width:100%;margin-top:4px"><i data-ic="login"></i>Entrar</span>
+        </div>
+        <span class="annot solo" data-n="1" style="left:880px;top:352px"></span>
+        <span class="annot solo" data-n="2" style="left:880px;top:462px"></span>
+        <span class="annot solo" data-n="3" style="left:880px;top:506px"></span>
+      </div>
+    </div></div>
+    <ol class="legend">
+      <li><span><b>Un solo campo</b>Usuario o email, como hoy. Sin <span class="mono">@</span>, la app arma <span class="mono">usuario@ensayando.com.ar</span> por dentro.</span></li>
+      <li><span><b>Recuperar solo con email real</b>El enlace aparece cuando lo escrito tiene un dominio distinto de ensayando.com.ar.</span></li>
+      <li><span><b>Errores junto al formulario</b>Dicen qué revisar. No se limpian los campos.</span></li>
+    </ol>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Cuenta administrada</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone brand-room">
+            <div class="amb"></div>
+            <div class="m-col" style="position:absolute;top:84px;left:0;right:0;align-items:center;gap:8px"><img src="../shared/logo.png" alt="" style="width:56px;height:56px"><b style="font:700 26px/1 var(--ui);letter-spacing:-0.015em">Ensayando</b></div>
+            <div class="phone-login g2">
+              <div class="field"><span class="lbl">Usuario o email</span><div class="in focus"><i data-ic="user"></i>lucia</div></div>
+              <div class="field"><span class="lbl">Contraseña</span><div class="in"><i data-ic="key"></i><span class="ph">Contraseña</span></div></div>
+              <div class="alert info"><i data-ic="info"></i><span>Tu cuenta la administra la persona a cargo de la colección. Si no te acordás la contraseña, pedile que te la restablezca.</span></div>
+              <span class="b lg fill" style="width:100%"><i data-ic="login"></i>Entrar</span>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col phone">
+        <div class="cap"><b>Contraseña nueva</b><span>desde el enlace del email</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone brand-room">
+            <div class="amb"></div>
+            <div class="m-col" style="position:absolute;top:84px;left:0;right:0;align-items:center;gap:8px"><img src="../shared/logo.png" alt="" style="width:56px;height:56px"><b style="font:700 26px/1 var(--ui);letter-spacing:-0.015em">Elegí una contraseña</b></div>
+            <div class="phone-login g2">
+              <div class="field"><span class="lbl">Contraseña nueva</span><div class="in focus"><i data-ic="key"></i>•••••••••••</div><span class="help">Al menos 8 caracteres.</span></div>
+              <div class="field"><span class="lbl">Repetila</span><div class="in err"><i data-ic="key"></i>••••••••</div><span class="help" style="color:var(--danger)">No coincide con la primera.</span></div>
+              <span class="b lg fill" style="width:100%"><i data-ic="check"></i>Guardar y entrar</span>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col" style="flex:1 1 280px">
+        <div class="note"><span class="tag keep">Se mantiene</span><b>Sin registro abierto</b><p>El alta de cuentas sigue cerrada (hoy <span class="mono">isSignUpEnabled = false</span>). Las cuentas nuevas se crean desde Miembros, en <a href="coleccion.html">Ajustes de colección</a>.</p></div>
+        <div class="note"><span class="tag refine">Ajuste</span><b>Mensaje de cuenta administrada</b><p>Hoy dice "Tu cuenta es administrada manualmente. Pedile al administrador que te la resetee." Se reescribe sin "resetear" y apuntando a quien la puede resolver, que ahora lo hace desde la app.</p></div>
+        <div class="note"><span class="tag refine">Ajuste</span><b>Luz de marca</b><p>El degradé primario de hoy pasa a ser la luz de sala con el violeta y el amarillo del logo, y el formulario, vidrio panel.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Cargando</h2>
+      <p>La onda animada de hoy es de lo mejor que tiene la app y se mantiene. Toma la tinta de la colección y va sobre la sala, sin tarjeta. Se muestra recién después de 300 ms, para que las cargas rápidas no parpadeen.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Abriendo una canción</b><span>pantalla completa</span></div>
+        <div class="app auto state" style="min-height:300px"><div class="amb"></div>
+          <div class="loadwave" id="lw1"></div>
+          <p style="font-weight:500">Cargando Vidala del viento…</p>
+        </div>
+      </div>
+      <div>
+        <div class="cap"><b>Pistas cargando</b><span>dentro del dock</span></div>
+        <div class="app auto state" style="min-height:300px"><div class="amb"></div>
+          <div class="g2" style="border-radius:var(--r-dock);padding:22px 26px;display:flex;flex-direction:column;align-items:center;gap:12px;width:88%">
+            <div class="loadwave" id="lw2" style="height:34px"></div>
+            <p style="font-weight:500">Cargando pistas · 3 de 5</p>
+            <div class="prog" style="--p:60%;width:100%"><i></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Vacíos</h2>
+      <p>Un vacío le dice a quien escucha que todavía no hay nada, y a quien edita, cómo llenarlo. El mismo lugar, dos versiones según el rol.</p>
+    </div>
+    <div class="states">
+      <div class="state-wrap">
+        <div class="app auto state"><div class="amb"></div><span class="badge who">Lector</span>
+          <span class="big"><i data-ic="lyrics"></i></span><h4>Todavía no hay letra</h4><p>Podés escuchar las pistas igual. La letra aparece acá cuando alguien la cargue.</p></div>
+        <div class="note"><span class="tag refine">Ajuste</span><p>Hoy: "Letra faltante". Se reemplaza por una frase que no suena a error.</p></div>
+      </div>
+      <div class="state-wrap">
+        <div class="app auto state"><div class="amb"></div><span class="badge c who">Editor</span>
+          <span class="big"><i data-ic="lyrics"></i></span><h4>Esta canción no tiene letra</h4><p>Escribila o pegala; después la sincronizás con las pistas.</p>
+          <div class="acts"><span class="b fill"><i data-ic="pencil"></i>Escribir la letra</span></div></div>
+        <div class="note"><span class="tag new">Nuevo</span><p>Abre el editor directo en la pestaña Letra.</p></div>
+      </div>
+      <div class="state-wrap">
+        <div class="app auto state"><div class="amb"></div><span class="badge c who">Editor</span>
+          <span class="big"><i data-ic="music"></i></span><h4>Todavía no hay canciones</h4><p>Creá la primera y subí sus pistas. Quienes escuchan la van a ver en cuanto la guardes.</p>
+          <div class="acts"><span class="b fill"><i data-ic="plus"></i>Crear canción</span></div></div>
+        <div class="note"><span class="tag keep">Se mantiene</span><p>Ya existe para editores; se ajusta el texto. Para lectores: "Todavía no hay canciones en esta colección."</p></div>
+      </div>
+      <div class="state-wrap">
+        <div class="app auto state brand-room"><div class="amb"></div>
+          <span class="big"><i data-ic="cactus"></i></span><h4>No tenés colecciones</h4><p>Tu cuenta todavía no está en ninguna colección. Pedile a quien la administra que te sume.</p>
+          <div class="acts"><span class="b soft"><i data-ic="logout"></i>Salir</span></div></div>
+        <div class="note"><span class="tag refine">Ajuste</span><p>Hoy: "No hay nada por acá". Se mantiene el cactus y se explica qué hacer. Con permiso de admin de la app, suma "Nueva colección".</p></div>
+      </div>
+      <div class="state-wrap">
+        <div class="app auto state"><div class="amb"></div>
+          <span class="big"><i data-ic="search"></i></span><h4>No encontramos esa canción</h4><p>Puede que la hayan renombrado, ocultado o eliminado.</p>
+          <div class="acts"><span class="b soft"><i data-ic="playlist"></i>Ver canciones de la colección</span></div></div>
+        <div class="note"><span class="tag keep">Se mantiene</span><p>Igual para colección no encontrada, con "Volver al inicio".</p></div>
+      </div>
+      <div class="state-wrap">
+        <div class="app auto state brand-room"><div class="amb"></div>
+          <span class="big" style="font:800 64px/1 var(--mono);color:var(--faint)">404</span><h4>Esta página no existe</h4><p>Revisá la dirección o volvé al inicio.</p>
+          <div class="acts"><span class="b fill"><i data-ic="home"></i>Ir al inicio</span></div></div>
+        <div class="note"><span class="tag keep">Se mantiene</span><p>Con la luz de marca, porque no hay colección.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Errores en el reproductor</h2>
+      <p>Cuando falla una sola pista, no se detiene todo: la pista queda marcada en la mezcladora con un botón para reintentar, y el resto suena. Sin conexión, una franja en la barra superior lo avisa sin tapar la letra.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Una pista no cargó</b><span>en la mezcladora</span></div>
+        <div class="app auto" style="padding:22px;border-radius:var(--r-box)"><div class="amb"></div>
+          <div class="trk-err g2">
+            <div class="m-col" style="gap:4px"><span class="m-row" style="gap:8px;font:600 13.5px/1 var(--ui)"><span class="dot" style="--tc:var(--t-ten)"></span>Tenor</span><span class="m-sub">No se pudo cargar el audio</span></div>
+            <div class="ph-wave"><span><i data-ic="alert"></i>Error de red · <b style="color:var(--c-ink)">Reintentar</b></span></div>
+          </div>
+        </div>
+        <div class="note"><span class="tag new">Nuevo</span><p>Hoy un error de pista pasa al siguiente en silencio y solo queda en la consola.</p></div>
+      </div>
+      <div>
+        <div class="cap"><b>Sin conexión</b><span>franja en la barra</span></div>
+        <div class="app auto" style="padding:22px;border-radius:var(--r-box)"><div class="amb"></div>
+          <div class="g1" style="border-radius:18px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <b style="font:650 14px/1 var(--ui)">Vidala del viento</b><div class="m-grow"></div>
+            <span class="badge warn"><i data-ic="wifiOff"></i>Sin conexión</span>
+          </div>
+          <p class="help" style="margin:12px 4px 0">Lo que ya está cargado sigue sonando. Los cambios del editor no se pueden guardar hasta que vuelva la conexión.</p>
+        </div>
+        <div class="note"><span class="tag new">Nuevo</span><p>La app es PWA pero hoy no avisa nada al perder la red.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Avisos y confirmaciones</h2>
+      <p>Los avisos (hoy vue-sonner) pasan a vidrio pop, abajo al centro, uno por vez. Confirmación breve en aviso; los errores de un campo quedan junto al campo. Para lo que se puede revertir, <b>Deshacer</b> en lugar de pedir confirmación; para lo que no, un diálogo que dice exactamente qué se pierde.</p>
+    </div>
+    <div class="compare">
+      <div class="app auto toasts"><div class="amb"></div>
+        <div class="toast g3 ok"><i data-ic="check"></i><span>Cambios guardados</span></div>
+        <div class="toast g3"><i data-ic="download" style="color:var(--c-ink)"></i><span>Preparando la mezcla…<small>vidala-del-viento-mezcla.mp3</small></span><span class="bar"><i></i></span></div>
+        <div class="toast g3 err"><i data-ic="alert"></i><span>No se pudo guardar la letra<small>Revisá la conexión. Tus cambios siguen acá.</small></span><span class="act">Reintentar</span></div>
+        <div class="toast g3"><i data-ic="trash" style="color:var(--muted)"></i><span>Quitaste la pista Piano</span><span class="act">Deshacer</span></div>
+      </div>
+      <div class="app auto center" style="padding:28px;border-radius:var(--r-box);min-height:330px"><div class="amb"></div><div class="scrim"></div>
+        <div class="dlg g3" style="position:relative">
+          <h4>¿Descartar los cambios de la letra?</h4>
+          <p>Hay 12 cambios sin guardar en Vidala del viento. Si salís ahora, se pierden.</p>
+          <div class="acts"><span class="b">Seguir editando</span><span class="b danger soft"><i data-ic="trash"></i>Descartar cambios</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="note"><span class="tag refine">Ajuste</span><b>Vidrio pop, abajo al centro</b><p>Sobre el dock en el reproductor, con la misma luz y borde que los menús. En el teléfono, arriba de la hoja.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Deshacer por 8 segundos</b><p>Quitar una pista, un color o un verso muestra Deshacer. No se pide confirmación antes.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Diálogos que nombran la pérdida</b><p>Botón con el verbo exacto ("Descartar cambios", "Eliminar colección"), nunca "Aceptar". El seguro es el botón sin relleno.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // Misma receta que LoadingWaveform.vue (mulberry32, semilla 42)
+  function bars(el, n) {
+    let s = 42; const r = [];
+    for (let i = 0; i < 32; i++) { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; r.push(((t ^ (t >>> 14)) >>> 0) / 4294967296); }
+    let h = "";
+    for (let i = 1; i <= n; i++) {
+      const w = Math.sin(((i - 1) / (n - 1)) * Math.PI);
+      const mn = Math.round(5 + w * 10 + r[(i + 5) % 32] * 15), mx = Math.round(35 + w * 45 + r[(i + 17) % 32] * 20);
+      h += `<i style="--mn:${mn}%;--mx:${mx}%;--d:${-(r[i % 32] * 1.6).toFixed(2)}s"></i>`;
+    }
+    el.innerHTML = h;
+  }
+  bars(document.getElementById("lw1"), 12);
+  bars(document.getElementById("lw2"), 16);
+  ENS.hydrateWaves();
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>

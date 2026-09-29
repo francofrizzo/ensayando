@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · La app de hoy</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ------------------------------------------------------------------
+   .legacy: la app tal como está hoy (DaisyUI, tema light/dark de
+   src/assets/styles.css). No usa los vidrios ni los neutros nuevos.
+   ------------------------------------------------------------------ */
+.legacy {
+  --lb1: oklch(98% 0 0); --lb2: oklch(100% 0 0); --lb3: oklch(95% 0 0);
+  --lbc: oklch(21% 0.006 285.885);
+  --lzinc4: oklch(70.5% 0.015 286.067); --lzinc5: oklch(55.2% 0.016 285.938);
+  --lp: var(--c); --lpc: var(--on-c);
+  --lmix: white; --lmixp: 45%;
+  --t-sop: oklch(62% 0.22 350); --t-alt: oklch(80% 0.16 75); --t-ten: oklch(72% 0.13 190); --t-baj: oklch(52% 0.2 275); --t-pno: oklch(84% 0.19 128);
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--lb2); color: var(--lbc);
+  font: 400 14px/1.4 var(--ui); border-radius: 14px; box-shadow: 0 0 0 1px var(--line-strong);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .legacy {
+  --lb1: oklch(27% 0.006 286.033); --lb2: oklch(21% 0.006 285.885); --lb3: oklch(14% 0.005 285.823); --lbc: oklch(98% 0 0);
+  --lmix: black; --lmixp: 40%; color-scheme: dark;
+} }
+:root[data-theme="dark"] .legacy {
+  --lb1: oklch(27% 0.006 286.033); --lb2: oklch(21% 0.006 285.885); --lb3: oklch(14% 0.005 285.823); --lbc: oklch(98% 0 0);
+  --lmix: black; --lmixp: 40%; color-scheme: dark;
+}
+.legacy.desk { width: 1280px; height: 800px; }
+.legacy.phone { width: 390px; height: 844px; border-radius: 40px; }
+.legacy .ic { width: 1em; height: 1em; }
+.lg-a { color: oklch(from var(--lbc) l c h / 0.5); }
+.lg-b { color: oklch(from var(--lbc) l c h / 0.7); }
+.lbtn { display: inline-grid; place-items: center; border-radius: 0.5rem; background: oklch(from var(--lbc) l c h / 0.06); color: var(--lbc); font: 600 12px/1 var(--ui); flex: none; }
+.lbtn.pri { background: var(--lp); color: var(--lpc); }
+.lbtn.ghost { background: transparent; }
+.lbtn.circle { border-radius: 50%; }
+.lbtn.xs { height: 24px; min-width: 24px; padding: 0 7px; font-size: 11px; gap: 4px; display: inline-flex; align-items: center; }
+.lbtn.xs .ic { font-size: 13px; }
+.lbtn.sq { padding: 0; width: 24px; }
+.lbtn.dis { opacity: 0.35; }
+
+/* reproductor */
+.l-player { position: absolute; inset: 0; background: var(--lb2); display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+.l-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; }
+.l-head .ttl { display: flex; flex-direction: column; gap: 4px; }
+.l-head .ttl b { font: 600 18px/1.1 var(--ui); letter-spacing: -0.005em; }
+.l-head .ttl span { font: 500 12px/1 var(--ui); text-transform: uppercase; letter-spacing: 0.04em; color: oklch(from var(--lbc) l c h / 0.5); }
+.l-time { display: flex; align-items: baseline; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.l-lyrics { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 24px; font-family: var(--lyr); text-transform: uppercase; text-align: center; -webkit-mask-image: linear-gradient(transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(transparent, #000 8%, #000 92%, transparent); justify-content: center; }
+.l-stz { display: flex; flex-direction: column; gap: 8px; }
+.l-line { display: flex; justify-content: space-evenly; gap: 40px; padding: 0 40px; font-size: 20px; letter-spacing: 0.025em; }
+.l-v { --tc: var(--lp); color: var(--tc); }
+.l-v.past { color: var(--lzinc4); }
+.l-v.now { font-weight: 600; transform: scale(1.15); display: inline-block; }
+.l-v.multi { color: transparent; -webkit-background-clip: text; background-clip: text; background-image: linear-gradient(90deg, var(--tc), var(--tc2)); }
+.l-cmt { font-size: 13px; color: oklch(from var(--lbc) l c h / 0.4); display: block; margin-bottom: 6px; }
+.l-panel { position: relative; background: var(--lb1); border: 1px solid var(--lb3); border-radius: 1rem; box-shadow: 0 1px 2px oklch(0% 0 0 / 0.06); padding: 8px 0; flex: none; }
+.l-panel .tab { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); width: 64px; height: 25px; background: var(--lb1); border: 1px solid var(--lb3); border-bottom: 0; border-radius: 1rem 1rem 0 0; display: grid; place-items: center; color: oklch(from var(--lbc) l c h / 0.5); font-size: 22px; }
+.l-trk { --tc: var(--lp); position: relative; display: flex; gap: 8px; align-items: stretch; padding-left: 16px; height: 68px; }
+.l-trk::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, oklch(from var(--tc) l c h / 0.12), transparent 180px); pointer-events: none; }
+.l-trk .meta { width: 144px; display: flex; gap: 4px; position: relative; flex: none; }
+.l-trk .meta .col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 0; }
+.l-trk .meta .col span { font-size: 13px; color: oklch(from var(--lbc) l c h / 0.7); }
+.l-range { height: 4px; border-radius: 3px; background: oklch(from var(--tc) l c h / 0.2); position: relative; }
+.l-range i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--tc); }
+.l-range i::after { content: ""; position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; border-radius: 50%; background: var(--tc); box-shadow: inset 0 0 0 3px var(--lb1); }
+.l-trk .btns { display: flex; flex-direction: column; justify-content: center; }
+.l-trk .btns span { width: 32px; height: 28px; display: grid; place-items: center; color: var(--tc); font-size: 16px; }
+.l-trk .w { flex: 1; min-width: 0; height: 64px; }
+.l-trk .w svg { width: 100%; height: 100%; display: block; }
+.l-trk .w .p { fill: var(--tc); }
+.l-trk .w .u { fill: color-mix(in oklch, var(--tc) var(--lmixp), var(--lmix)); }
+.l-trk.muted { --tc: var(--lzinc5); }
+.l-trk.muted .btns span:first-child { color: var(--lp); }
+
+/* menú lateral */
+.l-drawer { position: absolute; inset: 0; z-index: 10; }
+.l-drawer .ov { position: absolute; inset: 0; background: oklch(0% 0 0 / 0.4); }
+.l-side { position: absolute; top: 12px; bottom: 12px; left: 12px; width: 296px; border-radius: 1rem; padding: 16px 4px; display: flex; flex-direction: column; gap: 24px;
+  background: linear-gradient(to top, oklch(from var(--lp) l c h / 0.12), oklch(from var(--lb1) l c h / 0.12)), oklch(from var(--lb1) l c h / 0.4);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--lb2); box-shadow: 0 25px 50px -12px oklch(0% 0 0 / 0.25); }
+.l-side .hd { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 20px; font: 500 14px/1 var(--ui); text-transform: uppercase; letter-spacing: 0.04em; color: oklch(from var(--lbc) l c h / 0.6); }
+.l-side ul { list-style: none; margin: 0; padding: 0 8px; display: flex; flex-direction: column; gap: 2px; }
+.l-side li { padding: 8px 12px; border-radius: 0.5rem; border-left: 2px solid transparent; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.l-side li.on { background: oklch(from var(--lp) l c h / 0.2); color: var(--lp); border-left-color: var(--lp); font-weight: 600; }
+.l-side .auth { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; opacity: 0.6; font-size: 12px; }
+
+/* editor */
+.l-split { position: absolute; inset: 0; display: grid; grid-template-columns: 640px 640px; }
+.l-split .l-player { position: relative; inset: auto; }
+.l-editor { background: var(--lb1); box-shadow: -8px 0 24px oklch(0% 0 0 / 0.1); display: flex; flex-direction: column; min-width: 0; }
+.l-ed-top { display: flex; align-items: center; justify-content: space-between; padding: 8px; }
+.l-tabs { display: flex; gap: 4px; border-bottom: 1px solid oklch(from var(--lbc) l c h / 0.1); }
+.l-tabs span { display: flex; align-items: center; gap: 4px; padding: 6px 8px; font-size: 11.5px; color: oklch(from var(--lbc) l c h / 0.6); border-bottom: 2px solid transparent; }
+.l-tabs span.on { color: var(--lbc); border-bottom-color: var(--lbc); }
+.l-tabs .dirty { width: 6px; height: 6px; border-radius: 50%; background: var(--lp); }
+.l-ed-body { flex: 1; min-height: 0; overflow: hidden; padding: 8px 8px 12px 12px; display: flex; flex-direction: column; gap: 16px; }
+.l-card { background: var(--lb2); border: 1px solid var(--lb3); border-radius: 1rem; box-shadow: 0 1px 2px oklch(0% 0 0 / 0.05); padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.l-card h4 { margin: 0; font: 500 14px/1 var(--ui); text-transform: uppercase; letter-spacing: 0.04em; }
+.l-input { height: 40px; border-radius: 0.5rem; border: 1px solid oklch(from var(--lbc) l c h / 0.2); background: var(--lb1); display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 14px; }
+.l-input.sm { height: 32px; font-size: 13px; }
+.l-input .ic { opacity: 0.7; }
+.l-input.mono { font-family: var(--mono); font-size: 12px; color: oklch(from var(--lbc) l c h / 0.8); }
+.l-tgl { width: 32px; height: 18px; border-radius: 99px; background: var(--lp); position: relative; }
+.l-tgl::after { content: ""; position: absolute; right: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--lpc); }
+.l-track { background: var(--lb1); border: 1px solid var(--lb3); border-top: 3px solid var(--tc); border-radius: 0.5rem; padding: 14px; display: flex; gap: 12px; align-items: center; }
+.l-track .arrows { display: flex; flex-direction: column; gap: 0; }
+.l-track .body { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.l-swatch { width: 32px; height: 32px; border-radius: 0.5rem; background: var(--tc); display: grid; place-items: center; font: 600 10px/1 var(--ui); color: oklch(0% 0 0 / 0.7); }
+.l-toolbar { align-self: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 6px; border-radius: 1rem; border: 1px solid oklch(from var(--lbc) l c h / 0.1); background: oklch(from var(--lb1) l c h / 0.5); box-shadow: 0 10px 15px -3px oklch(0% 0 0 / 0.1); margin: 0 12px; }
+.l-toolbar .grp { display: flex; gap: 2px; padding: 2px 4px; border-radius: 10px; background: oklch(from var(--lbc) l c h / 0.05); }
+.l-toolbar .grp.on { background: oklch(from var(--lp) l c h / 0.1); }
+.l-toolbar .lbtn { background: transparent; }
+.l-stanzas { display: flex; flex-direction: column; }
+.l-stanza { background: var(--lb2); border: 1px solid var(--lb3); padding: 14px 0; display: flex; flex-direction: column; gap: 4px; }
+.l-stanza:first-child { border-radius: 1rem 1rem 0 0; }
+.l-stanza + .l-stanza { border-top: 0; }
+.l-stanza:last-child { border-radius: 0 0 1rem 1rem; }
+.l-stanza:not(:last-child) { border-bottom-color: oklch(from var(--lbc) l c h / 0.2); }
+.l-verse { display: flex; align-items: stretch; }
+.l-verse::before { content: ""; width: 3px; border-radius: 0 2px 2px 0; }
+.l-verse.sel { background: oklch(from var(--lbc) l c h / 0.08); }
+.l-verse.sel::before { background: var(--lp); }
+.l-verse > div { flex: 1; padding: 2px 20px; display: flex; flex-direction: column; gap: 2px; }
+.l-verse .ts { font: 400 11px/1.4 var(--mono); color: oklch(from var(--lbc) l c h / 0.4); display: flex; justify-content: space-between; }
+.l-verse .tx { font: 500 15px/1.4 var(--lyr); text-transform: uppercase; color: var(--tc); }
+.l-verse.cols > div { flex-direction: row; gap: 0; padding: 0; }
+.l-verse.cols > div > div { flex: 1; padding: 2px 16px 2px 20px; border-right: 1px dashed oklch(from var(--lbc) l c h / 0.2); }
+.l-verse.cols > div > div:last-child { border-right: 0; }
+
+/* teléfono */
+.legacy.phone .l-player { padding: 0; gap: 0; padding-top: 44px; }
+.legacy.phone .l-head { padding: 12px; }
+.legacy.phone .l-line { font-size: 17px; padding: 0 20px; gap: 16px; }
+.legacy.phone .l-panel { border-radius: 0; border-width: 1px 0 0; padding-bottom: 28px; }
+.legacy.phone .l-trk { padding-left: 16px; height: 60px; }
+.legacy.phone .l-trk .meta { width: 80px; }
+.legacy.phone .l-trk .w { height: 56px; }
+
+/* ingreso */
+.l-login { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(to top, oklch(50% 0.197 314 / 0.15), var(--lb2) 60%); }
+.l-login .box { width: 400px; }
+.l-login .box > .panel { background: oklch(from var(--lb2) l c h / 0.8); border-radius: 1rem; box-shadow: 0 10px 15px -3px oklch(0% 0 0 / 0.1); padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+
+/* deck */
+.routes td:nth-child(1) { font-family: var(--mono); font-weight: 500; font-size: 12.5px; white-space: nowrap; }
+.who { display: flex; gap: 4px; flex-wrap: wrap; }
+.legend-an { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: var(--t-sm); color: var(--muted); }
+.legend-an span { display: inline-flex; gap: 6px; align-items: center; }
+.legend-an i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.findings .note a { font-size: var(--t-sm); }
+.legacy .annot { font-family: var(--ui); }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Hoy</span>
+    <h1 class="d">La app de hoy</h1>
+    <p class="lede">Antes de proponer, un inventario honesto. Las pantallas de abajo están redibujadas a partir del código actual (Vue, DaisyUI y los temas de <span class="mono">styles.css</span>), con su paleta, sus tamaños y sus textos. Los círculos rojos numerados señalan los hallazgos, que están al final con un enlace a la parte de la propuesta que los resuelve.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Pantallas y flujos</h2>
+      <p>La app tiene pocas rutas y una sola pantalla de verdad: el reproductor. Todo lo demás es un redireccionamiento, un panel encima del reproductor o un estado vacío.</p>
+    </div>
+    <div class="scroll-x">
+      <table class="spec routes">
+        <thead><tr><th>Ruta</th><th>Qué muestra</th><th>Quién la ve</th><th>Notas</th></tr></thead>
+        <tbody>
+          <tr><td>/</td><td>Nada propio: carga las colecciones y redirige a la primera.</td><td><div class="who"><span class="chip">con sesión</span></div></td><td class="muted">Sin sesión, va al ingreso. No hay un inicio ni una lista de colecciones. <a href="#h1">H1</a></td></tr>
+          <tr><td>/login</td><td>Ingreso con usuario o email y contraseña. La pestaña “Crear cuenta” existe pero está apagada.</td><td><div class="who"><span class="chip">público</span></div></td><td class="muted">Un usuario sin <span class="mono">@</span> se completa con <span class="mono">@ensayando.com.ar</span>. “¿Olvidaste tu contraseña?” solo aparece con emails reales.</td></tr>
+          <tr><td>/reset-password</td><td>Nueva contraseña desde el link del email.</td><td><div class="who"><span class="chip">público</span></div></td><td class="muted">Las cuentas administradas (sin email real) se resetean por SQL.</td></tr>
+          <tr><td>/:colección</td><td>Redirige a la primera canción. Sin canciones: vacío “No hay canciones”, con “Crear canción” para editores.</td><td><div class="who"><span class="chip">según visibilidad</span></div></td><td class="muted">Privada: solo miembros. No listada: cualquiera con el link. Pública: aparece en el menú de todos.</td></tr>
+          <tr><td>/:colección/:canción</td><td>Reproductor: letra sincronizada, transporte y pistas.</td><td><div class="who"><span class="chip">lector</span><span class="chip">editor</span><span class="chip">admin</span></div></td><td class="muted">Menú lateral con canciones y otras colecciones. Sin letra: vacío “Letra faltante”.</td></tr>
+          <tr><td>panel de edición</td><td>Cajón a la derecha con pestañas Canción, Letra y Letra (JSON).</td><td><div class="who"><span class="chip">editor</span><span class="chip">admin</span></div></td><td class="muted">En pantallas grandes comparte el ancho con el reproductor (50 %). En chicas lo tapa, con vidrio.</td></tr>
+          <tr><td>/404</td><td>“Página no encontrada”, con el menú lateral arriba a la izquierda.</td><td><div class="who"><span class="chip">todos</span></div></td><td class="muted">También “Colección no encontrada” y “Canción no encontrada” con volver.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid-3">
+      <div class="note"><span class="tag moved">Por fuera de la app</span><b>Usuarios y roles</b><p>Crear, borrar, restablecer contraseña, cambiar email y dar o quitar acceso a una colección se hace con la skill <span class="mono">admin</span> y SQL contra la base. <a href="#h9">H9</a></p></div>
+      <div class="note"><span class="tag moved">Por fuera de la app</span><b>Colecciones</b><p>Crear, borrar, renombrar, cambiar la dirección, la visibilidad o la portada es SQL. Los colores se editan en una página HTML aparte que abre la skill y devuelve un JSON para pegar.</p></div>
+      <div class="note"><span class="tag moved">Por fuera de la app</span><b>Canciones</b><p>Borrar una canción o cambiar el orden de la colección es SQL. Borrar no limpia los audios del almacenamiento. <a href="#h8">H8</a></p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Reproductor</h2>
+      <p>Arriba, el botón de menú de color pleno, la canción y el reloj con el transporte. Al centro, la letra. Abajo, el panel de pistas, opaco, que ocupa hasta el 45 % de la altura y se esconde con la pestaña del centro.</p>
+    </div>
+    <div class="legend-an">
+      <span><i>1</i>Sin inicio: se entra directo acá</span><span><i>2</i>Solo por pulsación larga</span><span><i>5</i>Colores de pista crudos</span><span><i>10</i>Panel opaco, resto con vidrio</span><span><i>11</i>Fondo oscuro gris medio</span><span><i>14</i>Reloj sin Geist Mono</span>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="legacy desk" id="l-desk"></div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Menú lateral</h2>
+      <p>Se abre con el botón de color pleno. Es la única forma de ver las canciones de la colección y de cambiar de colección. Tiene vidrio con un degradé del color de la colección y, abajo, el usuario con el botón de salir.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="legacy desk" id="l-side"></div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Editor: pestaña Canción</h2>
+      <p>En pantallas grandes el editor ocupa la mitad derecha y el reproductor se comprime a la izquierda. Las acciones de guardar, nueva canción y opciones avanzadas son botones extra chicos que cada pestaña inyecta en la cabecera.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="legacy desk" id="l-ed-song"></div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Editor: pestaña Letra</h2>
+      <p>Una barra de herramientas flotante con 17 botones de solo ícono en seis grupos, y cada estrofa como una caja con un campo por verso. La potencia está en los 30 atajos de teclado; la barra existe pero hay que pasar el mouse por cada botón para saber qué hace.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="legacy desk" id="l-ed-lyrics"></div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Teléfono e ingreso</h2>
+      <p>En el teléfono el reproductor es el mismo en una columna: el reloj pierde las décimas y la duración, y las pistas quedan con 80 px para el nombre. El ingreso es una tarjeta centrada sobre un degradé violeta.</p>
+    </div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Reproductor</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit"><div class="legacy phone" id="l-phone"></div></div></div>
+      </div>
+      <div class="col phone">
+        <div class="cap"><b>Ingreso</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit"><div class="legacy phone" id="l-login"></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Hallazgos</h2>
+      <p>Catorce cosas para resolver, de las más visibles a las más finas. Cada una enlaza a la parte de la propuesta que la toma.</p>
+    </div>
+    <div class="findings">
+      <div class="note find" id="h1"><b>No hay inicio ni vista de colección</b><p>“/” redirige a la primera colección y la colección a su primera canción. Nunca se ve la colección como tal: sus canciones solo aparecen en el menú lateral.</p><a href="../pantallas/biblioteca.html">Biblioteca</a></div>
+      <div class="note find" id="h2"><b>Solo y solo letra, escondidos</b><p>El solo de una pista es una pulsación larga sobre el parlante; el solo de letra, otra sobre el botón de letra; Mayús+clic silencia y además oculta la letra. Nada de eso se ve en pantalla.</p><a href="../pantallas/reproductor.html">Reproductor</a></div>
+      <div class="note find" id="h3"><b>Descargar mezcla solo con atajo</b><p>La app sabe mezclar las pistas con sus volúmenes y bajar un MP3, pero solo con <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. No hay botón ni mención en ningún lado.</p><a href="../pantallas/reproductor.html">Reproductor</a></div>
+      <div class="note find" id="h4"><b>Copiador de tiempos de otra época</b><p><kbd>⌘</kbd><kbd>,</kbd> y <kbd>⌘</kbd><kbd>.</kbd> copian <span class="mono">"start_time": 12.40,</span> al portapapeles, de cuando la letra se editaba en JSON a mano. El editor ya marca tiempos con <kbd>,</kbd> y <kbd>.</kbd>.</p><a href="../pantallas/editor-letra.html">Editor de letra</a></div>
+      <div class="note find" id="h5"><b>Colores de pista crudos en los dos temas</b><p>La letra y las ondas usan el color guardado tal cual. Un ámbar o un lima que se leen bien sobre negro quedan casi invisibles sobre blanco, y un índigo se pierde en oscuro.</p><a href="../fundamentos/paleta.html">Paleta</a></div>
+      <div class="note find" id="h6"><b>Acciones del editor diminutas</b><p>Guardar, descartar, ayuda y nueva canción son botones <span class="mono">xs</span> (24 px) inyectados en la cabecera; en el teléfono pierden el texto. La barra de letra suma 17 botones de solo ícono.</p><a href="../pantallas/editor-letra.html">Editor de letra</a></div>
+      <div class="note find" id="h7"><b>Pistas con campo de URL</b><p>Cada pista tiene un campo para pegar la URL del audio además del botón de subir. La forma de onda se genera con un botón que solo aparece en “opciones avanzadas”.</p><a href="../pantallas/editor-cancion.html">Editor de canción</a></div>
+      <div class="note find" id="h8"><b>Orden y altas en lugares raros</b><p>Las pistas se reordenan con flechas de a una. Las canciones no se pueden reordenar ni borrar desde la app, y “Nueva canción” vive dentro del editor de otra canción.</p><a href="../pantallas/coleccion.html">Ajustes de colección</a></div>
+      <div class="note find" id="h9"><b>La administración es SQL</b><p>Usuarios, roles, colecciones, visibilidad y colores dependen de alguien con acceso a la base y a la skill. Para los colores hay una página HTML aparte que devuelve JSON.</p><a href="../pantallas/coleccion.html">Ajustes de colección</a> · <a href="../plan/index.html">Plan</a></div>
+      <div class="note find" id="h10"><b>Vidrio sin reglas</b><p>El menú lateral usa desenfoque grande con degradé, el editor solo tiene vidrio debajo de 1024 px, la barra de letra un desenfoque chico y el panel de pistas es opaco. Cada pieza decidió por su cuenta.</p><a href="../fundamentos/materiales.html">Materiales</a></div>
+      <div class="note find" id="h11"><b>Oscuro gris medio</b><p>El fondo oscuro es <span class="mono">oklch(27%)</span> y el del reproductor 21 %: grises neutros con poco contraste contra las tarjetas. El color de la colección y el vidrio casi no se notan.</p><a href="../fundamentos/paleta.html">Paleta</a></div>
+      <div class="note find" id="h12"><b>Tokens que nadie usa</b><p><span class="mono">secondary</span> (amarillo) y <span class="mono">accent</span> (turquesa) están definidos en los dos temas y no aparecen en ningún componente.</p><a href="../fundamentos/paleta.html">Paleta</a></div>
+      <div class="note find" id="h13"><b>Idioma del documento en inglés</b><p><span class="mono">index.html</span> declara <span class="mono">lang="en"</span> y toda la interfaz está en castellano. Afecta a lectores de pantalla, corrección y separación en sílabas.</p><a href="../plan/index.html">Plan</a></div>
+      <div class="note find" id="h14"><b>Geist Mono cargada y casi sin uso</b><p>Los tiempos del reloj y del editor usan Bricolage con cifras tabulares. Geist Mono se descarga igual y solo aparece en el slug y en algunas marcas de tiempo.</p><a href="../fundamentos/tipografia.html">Tipografía</a></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Lo que funciona y se queda</h2>
+      <p>Buena parte de la app ya está resuelta. La propuesta construye sobre esto, no lo reemplaza.</p>
+    </div>
+    <div class="grid-3">
+      <div class="note"><span class="tag keep">Se mantiene</span><b>La estructura del reproductor</b><p>Canción arriba, letra al centro, pistas abajo. Se aprende en segundos y es la correcta para ensayar.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Un color por colección</b><p><span class="mono">main_color</span> reemplaza al primary y cada colección se siente propia. La propuesta lo lleva más lejos, no lo cambia.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Letra con color de pista y columnas</b><p>Saber de un vistazo qué voz canta cada verso, con degradés cuando cantan dos y columnas para voces simultáneas, es lo más propio de Ensayando.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Editor de letra con teclado</b><p>Treinta comandos, deshacer y rehacer, marcar y avanzar. Rápido para quien lo conoce; la propuesta lo hace descubrible.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>PWA y sesión de medios</b><p>Se instala en el teléfono y responde a los controles del sistema y de los auriculares.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Movimiento con intención</b><p>La onda de carga, las entradas escalonadas y el cambio de canción ya tienen el tono justo. Se ordenan en una curva y tres duraciones.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const T = { sop: "var(--t-sop)", alt: "var(--t-alt)", ten: "var(--t-ten)", baj: "var(--t-baj)", pno: "var(--t-pno)" };
+  const an = (n, x, y) => `<span class="annot solo" data-n="${n}" style="left:${x}px;top:${y}px"></span>`;
+  const STATES = { sop: 0.8, alt: 1, ten: 0, baj: 0.65, pno: 0.45 };
+
+  function header(compact) {
+    return `<div class="l-head">
+      <div style="display:flex;align-items:center;gap:16px;min-width:0">
+        <span class="lbtn pri" style="width:48px;height:48px;font-size:20px">${ic("menu")}</span>
+        <div class="ttl"><b>Vidala del viento</b><span>Coro del Puerto · 2026</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px">
+        <div class="l-time">
+          <span style="font-size:20px;position:relative"><span style="position:absolute;left:-16px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--lp)"></span>0:27</span>
+          ${compact ? "" : `<span class="lg-a" style="font-size:16px">.40</span><span class="lg-b" style="font-size:20px;margin:0 4px">/</span><span class="lg-a">4:05</span><span style="font-size:11px;opacity:.3">.00</span>`}
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="lbtn ghost circle" style="width:32px;height:32px;font-size:15px">${ic("prev")}</span>
+          <span class="lbtn pri circle" style="width:48px;height:48px;font-size:19px">${ic("pause")}</span>
+          <span class="lbtn ghost circle" style="width:32px;height:32px;font-size:15px">${ic("next")}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+  function lyrics() {
+    return `<div class="l-lyrics">
+      <div class="l-stz">
+        <div class="l-line"><span class="l-v past">cada nota que se asoma</span></div>
+        <div class="l-line"><span class="l-v past">vuelve al mismo corazón</span></div>
+      </div>
+      <div class="l-stz">
+        <div class="l-line"><span><span class="l-cmt">Coro</span><span class="l-v multi now" style="--tc:${T.sop};--tc2:${T.alt}">Vidala, vidala</span></span></div>
+        <div class="l-line"><span class="l-v multi" style="--tc:${T.ten};--tc2:${T.baj}">que el viento te va a llevar</span></div>
+        <div class="l-line"><span class="l-v" style="--tc:${T.sop}">Ay, vidala</span><span class="l-v" style="--tc:${T.baj}">(uh, uh)</span></div>
+      </div>
+      <div class="l-stz">
+        <div class="l-line"><span><span class="l-cmt">Solo soprano</span><span class="l-v" style="--tc:${T.sop}">Si me quedo en esta orilla</span></span></div>
+        <div class="l-line"><span class="l-v" style="--tc:${T.sop}">no me olvides al pasar</span></div>
+      </div>
+      <div class="l-stz">
+        <div class="l-line"><span class="l-v" style="--tc:${T.alt}">y se lleva mi canción</span></div>
+      </div>
+    </div>`;
+  }
+  function panel(count, bars) {
+    return `<div class="l-panel"><span class="tab">${ic("chevDown")}</span>` + ENS.tracks.slice(0, count).map((t, i) => {
+      const v = STATES[t.key], muted = v === 0;
+      return `<div class="l-trk${muted ? " muted" : ""}" style="--tc:${muted ? "var(--lzinc5)" : T[t.key]}">
+        <div class="meta"><div class="col"><span>${t.title}</span><div class="l-range"><i style="width:${v * 100}%"></i></div></div>
+          <div class="btns"><span>${ic("lyrics")}</span><span>${ic(muted ? "volOff" : "vol")}</span></div></div>
+        <div class="w">${ENS.waveSVG(i + 3, bars, 0.11)}</div>
+      </div>`;
+    }).join("") + `</div>`;
+  }
+  function player(opts) {
+    opts = opts || {};
+    return `<div class="l-player">${header(opts.compact)}${lyrics()}${panel(opts.tracks || 5, opts.bars || 170)}</div>`;
+  }
+
+  // (a) reproductor
+  document.getElementById("l-desk").innerHTML = player() +
+    an(1, 22, 74) + an(2, 196, 612) + an(5, 930, 250) + an(10, 1180, 470) + an(11, 1200, 190) + an(14, 1000, 44);
+
+  // (b) menú lateral
+  document.getElementById("l-side").innerHTML = player() + `<div class="l-drawer"><div class="ov"></div>
+    <div class="l-side">
+      <div>
+        <div class="hd"><span>Coro del Puerto · 2026</span><span style="display:flex;gap:8px"><span class="lbtn circle" style="width:32px;height:32px">${ic("edit")}</span><span class="lbtn circle" style="width:32px;height:32px">${ic("x")}</span></span></div>
+        <ul style="margin-top:10px">${ENS.songs.map((s) => `<li class="${s.current ? "on" : ""}">${s.hidden ? `<span style="color:var(--lp);font-size:12px;display:inline-flex">${ic("lock")}</span>` : ""}${s.title}</li>`).join("")}</ul>
+      </div>
+      <div>
+        <div class="hd" style="font-size:13px">Otras colecciones</div>
+        <ul style="margin-top:8px"><li>Taller de musicales <span style="opacity:.6;font-size:12px;display:inline-flex">${ic("link")}</span></li><li>Ensamble vocal abierto <span style="opacity:.6;font-size:12px;display:inline-flex">${ic("globe")}</span></li></ul>
+      </div>
+      <div class="auth"><span style="display:flex;gap:8px;align-items:center">${ic("user")} franco</span><span class="lbtn ghost circle" style="width:32px;height:32px">${ic("logout")}</span></div>
+    </div></div>` + an(1, 300, 112) + an(8, 300, 230) + an(9, 300, 390) + an(10, 150, 740);
+
+  // (c) editor: canción
+  const track = (t, i, n) => `<div class="l-track" style="--tc:${T[t.key]}">
+      <div class="arrows"><span class="lbtn ghost xs sq ${i === 0 ? "dis" : ""}">${ic("up")}</span><span class="lbtn ghost xs sq ${i === n - 1 ? "dis" : ""}">${ic("down")}</span></div>
+      <div class="body">
+        <span class="l-swatch">${t.key}</span>
+        <span class="l-input sm" style="flex:1;min-width:90px">${t.title}</span>
+        <span class="l-input sm mono" style="flex:3;min-width:180px">${ic("link")} https://media.ensayando.com.ar/…/${t.key}.mp3</span>
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <span class="lbtn xs" style="height:32px;padding:0 12px">${ic("upload")} Subir audio</span>
+          <span style="font-size:12px;opacity:.5;margin-right:auto">o arrastralo sobre toda la pista</span>
+          <span class="lbtn xs sq" style="height:32px;width:32px;background:oklch(from oklch(71% .194 13.4) l c h / .15);color:oklch(60% .19 13.4)">${ic("trash")}</span>
+        </div>
+      </div>
+    </div>`;
+  const editorTop = (tab, actions) => `<div class="l-ed-top">
+      <div class="l-tabs"><span class="${tab === "song" ? "on" : ""}">${ic("music")} Canción <i class="dirty"></i></span><span class="${tab === "lyrics" ? "on" : ""}">${ic("lyrics")} Letra</span><span>${ic("braces")} Letra (JSON)</span></div>
+      <div style="display:flex;gap:8px;align-items:center">${actions}<span class="lbtn xs sq">${ic("x")}</span></div>
+    </div>`;
+  document.getElementById("l-ed-song").innerHTML = `<div class="l-split">${player({ compact: true, tracks: 5, bars: 80 })}
+    <div class="l-editor">${editorTop("song", `<span class="lbtn xs" style="background:oklch(from var(--lp) l c h / .15);color:var(--lp)">${ic("plus")} Nueva canción</span><span class="lbtn xs pri">${ic("save")} Guardar cambios</span><span class="lbtn xs sq">${ic("settings")}</span>`)}
+      <div class="l-ed-body">
+        <div class="l-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><h4>Información básica</h4><span style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500">${ic("eye")} Visible <span class="l-tgl"></span></span></div>
+          <span style="font-size:13px;font-weight:500">Título</span>
+          <span class="l-input">${ic("music")} Vidala del viento</span>
+        </div>
+        <div class="l-card" style="gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><h4>Tracks de audio</h4><span class="lbtn" style="width:32px;height:32px">${ic("plus")}</span></div>
+          ${ENS.tracks.slice(0, 3).map((t, i) => track(t, i, 5)).join("")}
+        </div>
+      </div>
+    </div></div>` + an(6, 1050, 46) + an(7, 1150, 316) + an(8, 646, 342);
+
+  // (d) editor: letra
+  const tbtn = (n) => `<span class="lbtn xs sq">${ic(n)}</span>`;
+  const verse = (v, sel) => `<div class="l-verse${sel ? " sel" : ""}" style="--tc:${T[v.k[0]]}"><div><div class="ts"><span>${v.s.toFixed(2)} - ${v.e.toFixed(2)}</span><span>${v.k.map((k) => ENS.tracks.find((t) => t.key === k).title).join(", ")}</span></div><span class="tx" style="${v.k.length > 1 ? `background:linear-gradient(90deg,${T[v.k[0]]},${T[v.k[1]]});-webkit-background-clip:text;background-clip:text;color:transparent` : ""}">${v.t}</span></div></div>`;
+  const L = ENS.lyrics;
+  document.getElementById("l-ed-lyrics").innerHTML = `<div class="l-split">${player({ compact: true, tracks: 5, bars: 80 })}
+    <div class="l-editor">${editorTop("lyrics", `<span class="lbtn xs ghost">${ic("help")} Ayuda</span><span class="lbtn xs pri">${ic("save")} Guardar cambios</span><span class="lbtn xs ghost sq">${ic("refresh")}</span>`)}
+      <div class="l-ed-body" style="padding-top:4px">
+        <div class="l-toolbar">
+          <div class="grp">${tbtn("undo")}${tbtn("redo")}</div>
+          <div class="grp">${tbtn("insAfter")}${tbtn("insBefore")}${tbtn("copy")}</div>
+          <div class="grp">${tbtn("columns")}</div>
+          <div class="grp"><span class="lbtn xs sq" style="background:linear-gradient(135deg,${T.sop},${T.alt});color:#000">2</span><span class="lbtn xs sq">${ic("music")}</span>${tbtn("paint")}${tbtn("comment")}</div>
+          <div class="grp on"><span class="lbtn xs sq pri">${ic("clock")}</span><span class="lbtn xs" style="background:transparent;font-family:var(--mono);font-size:10px;opacity:.5">−0.20s</span>${tbtn("colLeft")}${tbtn("colRight")}${tbtn("ban")}</div>
+          <div class="grp">${tbtn("addStanza")}${tbtn("split")}${tbtn("fold")}${tbtn("trash")}</div>
+        </div>
+        <div class="l-stanzas">
+          <div class="l-stanza">${L[0].verses.map((v, i) => verse(v, false)).join("")}</div>
+          <div class="l-stanza">${verse(L[1].verses[0], true)}${verse(L[1].verses[1])}
+            <div class="l-verse cols"><div>${L[1].verses[2].cols.map((c) => `<div style="--tc:${T[c[0].k[0]]}"><div class="ts"><span>${c[0].s.toFixed(2)} - ${c[0].e.toFixed(2)}</span></div><span class="tx">${c[0].t}</span></div>`).join("")}</div></div>
+          </div>
+          <div class="l-stanza">${L[2].verses.map((v) => verse(v)).join("")}</div>
+        </div>
+      </div>
+    </div></div>` + an(6, 880, 50) + an(4, 1190, 50) + an(5, 1180, 170);
+
+  // (e) teléfono
+  document.getElementById("l-phone").innerHTML = player({ compact: true, tracks: 4, bars: 70 }) + an(5, 290, 390) + an(2, 70, 560);
+
+  // (f) ingreso
+  document.getElementById("l-login").innerHTML = `<div class="l-login"><div class="box" style="width:354px">
+    <div style="text-align:center;margin-bottom:32px"><img src="../shared/logo.png" alt="" style="width:64px;height:64px"><div style="font:700 30px/1.1 var(--ui);letter-spacing:-0.01em;margin-top:12px">Ensayando</div></div>
+    <div class="panel" style="padding:16px">
+      <span class="l-input" style="height:44px">${ic("user")} <span style="opacity:.5">Usuario o email</span></span>
+      <span class="l-input" style="height:44px">${ic("key")} <span style="opacity:.5">Contraseña</span></span>
+      <span class="lbtn pri" style="height:44px;margin-top:16px;display:flex;justify-content:center;gap:8px;font-size:14px;background:oklch(50% .197 314);color:#fff">${ic("login")} Iniciar sesión</span>
+    </div></div></div>`;
+
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>

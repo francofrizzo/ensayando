@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Plan</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<style>
+.spec td { min-width: 120px; }
+.spec td.what { min-width: 220px; }
+.size { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; font: 700 12px/1 var(--mono); }
+.size.s { background: var(--ok-soft); color: var(--ok); }
+.size.m { background: var(--warn-soft); color: var(--warn); }
+.size.l { background: var(--danger-soft); color: var(--danger); }
+.phases { display: flex; flex-direction: column; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.phase { display: grid; grid-template-columns: 110px minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 20px; }
+.phase .n { display: flex; flex-direction: column; gap: 8px; }
+.phase .n b { font: 700 30px/1 var(--ui); letter-spacing: -0.015em; font-variation-settings: "opsz" 96; color: var(--c-ink); }
+.phase h3 { margin: 0 0 8px; }
+.phase ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: var(--t-sm); }
+.phase .test { background: var(--sunken); border-radius: 12px; padding: 14px; font-size: var(--t-sm); display: flex; flex-direction: column; gap: 6px; }
+.phase .test b { font: 600 var(--t-2xs)/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.phase .test ul { padding-left: 16px; }
+@media (max-width: 900px) { .phase { grid-template-columns: 1fr; } }
+.skill { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 800px) { .skill { grid-template-columns: 1fr; } }
+.skill ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.skill li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: var(--t-sm); }
+.skill li span:last-child { color: var(--muted); text-align: right; }
+.qs { counter-reset: q; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 800px) { .qs { grid-template-columns: 1fr; } }
+.qs li { counter-increment: q; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 16px 18px; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; font-size: var(--t-sm); }
+.qs li::before { content: counter(q); width: 28px; height: 28px; border-radius: 50%; background: var(--c-soft); color: var(--c-ink); font: 700 13px/28px var(--ui); text-align: center; }
+.qs b { display: block; font-size: var(--t-md); font-weight: 650; margin-bottom: 4px; }
+.qs p { color: var(--muted); }
+.qs .rec { margin-top: 8px; font-size: 12.5px; color: var(--ink); }
+.qs .rec::before { content: "Propuesta: "; font-weight: 700; color: var(--c-ink); }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Plan</span>
+    <h1 class="d">Datos, orden y preguntas</h1>
+    <p class="lede">Qué le pide la propuesta a la base y a los permisos, en qué orden conviene implementarla y qué decisiones quedan de tu lado. La letra no cambia de formato; casi todo lo nuevo es administración que hoy vive en la skill <span class="mono">admin</span>.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Cambios de datos y permisos</h2><p>Tamaño aproximado: <span class="size s">S</span> horas, <span class="size m">M</span> uno o dos días, <span class="size l">L</span> varios días.</p></div>
+    <div class="scroll-x">
+      <table class="spec">
+        <thead><tr><th>Qué</th><th>Cambio</th><th>Dónde</th><th>Tamaño</th></tr></thead>
+        <tbody>
+          <tr><td class="what">Administrar la app</td><td>Tabla <span class="mono">app_admins (user_id)</span> o un claim en el JWT. Da permiso para crear colecciones y, si se decide, cuentas.</td><td>Migración + RLS en <span class="mono">collections</span> (insert)</td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Cuentas administradas</td><td>Crear cuenta con usuario y contraseña, restablecer contraseña, leer <span class="mono">last_sign_in_at</span>. Necesitan la clave de servicio, así que no pueden ir desde el navegador.</td><td>Funciones en Vercel junto a <span class="mono">api/storage.ts</span> (p. ej. <span class="mono">api/members.ts</span>), validando que quien llama sea admin de la colección</td><td><span class="size m">M</span></td></tr>
+          <tr><td class="what">Miembros y roles</td><td>Agregar, cambiar rol y quitar en <span class="mono">user_collections</span>. Regla: siempre queda al menos un admin.</td><td>RPC <span class="mono">security definer</span> + RLS para admins de la colección</td><td><span class="size m">M</span></td></tr>
+          <tr><td class="what">Invitar por email</td><td>Alta con enlace para elegir contraseña (<span class="mono">inviteUserByEmail</span> de Supabase).</td><td>Misma función de servidor</td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Orden de canciones</td><td>La columna <span class="mono">order</span> ya existe. Falta un RPC que reordene en una transacción.</td><td>RPC + RLS (admin)</td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Eliminar canción</td><td>Borrar canción y pistas (ya en cascada) y sus audios en R2. Hoy la skill deja los archivos huérfanos.</td><td>Función de servidor con <span class="mono">deleteObject</span> de <span class="mono">server/storage/r2.ts</span></td><td><span class="size m">M</span></td></tr>
+          <tr><td class="what">Colecciones</td><td>Crear, eliminar (con sus audios y portada), renombrar, cambiar dirección y visibilidad desde la app. Sin cambios de esquema.</td><td>RLS de update para admins; delete por función de servidor</td><td><span class="size m">M</span></td></tr>
+          <tr><td class="what">Colores por tono</td><td>Cambio de esquema: <span class="mono">collections.hue smallint</span> y <span class="mono">collections.intensity text</span> (<span class="mono">suave</span>, <span class="mono">normal</span>, <span class="mono">intensa</span>). Los valores de <span class="mono">track_colors</span> pasan a ser <span class="mono">{"hue": 195, "intensity": "normal"}</span> o <span class="mono">{"neutral": true}</span>. Renombrar una clave sigue reescribiendo <span class="mono">color_key</span> de las pistas y <span class="mono">color_keys</span> de la letra en la misma operación.</td><td>Migración + RPC transaccional</td><td><span class="size m">M</span></td></tr>
+          <tr><td class="what">Migrar los colores</td><td>Script con <span class="mono">culori</span> que lee <span class="mono">main_color</span> y cada color de pista (OKLCH o hex), guarda el tono y lleva el croma a la intensidad más cercana: menos de 0,04 es neutra, hasta 0,115 suave, hasta 0,18 normal, y más, intensa. <span class="mono">main_color</span> y los valores viejos se conservan hasta confirmar que nada se ve peor; después se borran.</td><td><span class="mono">scripts/</span>, una vez, con revisión de las colecciones reales</td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Portada</td><td>Subida con el mismo circuito firmado de R2 que el audio (tipo nuevo: imagen).</td><td><span class="mono">api/storage.ts</span></td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Letra</td><td>Sin cambios de esquema. El editor nuevo escribe el mismo JSON de <span class="mono">lyric-schema.json</span>.</td><td class="muted">No aplica</td><td><span class="size s">S</span></td></tr>
+          <tr><td class="what">Mi parte y tema</td><td>Sin esquema: <span class="mono">localStorage</span>, por colección y por dispositivo.</td><td>Cliente</td><td><span class="size s">S</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Orden de implementación</h2><p>Cinco fases que se pueden publicar por separado. Cada una deja la app mejor que antes, aunque las siguientes no lleguen.</p></div>
+    <ol class="phases">
+      <li class="phase">
+        <div class="n"><b>Fase 1</b><span class="size m">M</span></div>
+        <div><h3 class="d">Tokens y materiales</h3><ul>
+          <li>Neutros teñidos por el tono de la colección y oscuro más profundo, en el tema de DaisyUI.</li>
+          <li>Colores por tono: columnas nuevas, migración con <span class="mono">culori</span> y una función que deriva cada rol (relleno, texto, letra, onda, fondo suave, borde) por tema a partir de tono e intensidad. Reemplaza el uso crudo en letra y ondas y a <span class="mono">selectMostContrasting</span>.</li>
+          <li>Tres clases de vidrio, luz de sala y grano. Geist Mono para tiempos.</li>
+          <li>Quitar <span class="mono">secondary</span> y <span class="mono">accent</span>. <span class="mono">lang="es"</span>.</li></ul></div>
+        <div class="test"><b>Qué probar</b><ul><li>Vitest, como funciones puras junto a <span class="mono">color-utils</span>: la derivación de cada rol por tema, y un barrido de los 360 tonos en las tres intensidades que exija 4,5:1 para letra, texto y blanco sobre relleno, y 3:1 para ondas.</li><li>Vitest de la migración: ejemplos reales de OKLCH y hex a tono e intensidad, y bajo croma a neutra.</li><li>Revisión visual con las tres colecciones de ejemplo.</li></ul></div>
+      </li>
+      <li class="phase">
+        <div class="n"><b>Fase 2</b><span class="size l">L</span></div>
+        <div><h3 class="d">Reproductor y biblioteca</h3><ul>
+          <li>Barra superior con solo el título, dock con mezcladora (M, S y letra) y barra de progreso simple donde no hay ondas.</li>
+          <li>Mi parte, menú de la canción (descargar mezcla, tema), hoja del teléfono.</li>
+          <li>Biblioteca en lugar del menú lateral, grilla de inicio y <kbd>⌘</kbd><kbd>K</kbd>.</li>
+          <li>Se quita el copiador de tiempos.</li></ul></div>
+        <div class="test"><b>Qué probar</b><ul><li>Vitest: estado de Mi parte, iniciales del banner de inicio.</li><li>Extender <span class="mono">player.spec.ts</span>: solo y silencio por botón, salto por estrofa con <kbd>↑</kbd><kbd>↓</kbd>, cambio de canción desde la biblioteca.</li></ul></div>
+      </li>
+      <li class="phase">
+        <div class="n"><b>Fase 3</b><span class="size l">L</span></div>
+        <div><h3 class="d">Ajustes de colección</h3><ul>
+          <li>General, Colores, Canciones y Miembros, con la barra de guardado.</li>
+          <li>Funciones de servidor para cuentas, <span class="mono">app_admins</span> y RPCs con RLS.</li>
+          <li>Borrado con limpieza de R2.</li></ul></div>
+        <div class="test"><b>Qué probar</b><ul><li>Tests de RLS contra Supabase local: un editor no puede cambiar roles ni ordenar; nunca queda una colección sin admin.</li><li>E2E: crear cuenta administrada, entrar con ella, restablecer y volver a entrar.</li></ul></div>
+      </li>
+      <li class="phase">
+        <div class="n"><b>Fase 4</b><span class="size m">M</span></div>
+        <div><h3 class="d">Editor de canción</h3><ul>
+          <li>Modo edición con barra propia y estado de guardado.</li>
+          <li>Pistas con arrastre, subida múltiple y forma de onda automática. Sin campo de URL.</li></ul></div>
+        <div class="test"><b>Qué probar</b><ul><li>Vitest: título sugerido desde el nombre de archivo, orden de pistas.</li><li>E2E: crear canción subiendo tres audios de <span class="mono">tests/e2e/fixtures</span>.</li></ul></div>
+      </li>
+      <li class="phase">
+        <div class="n"><b>Fase 5</b><span class="size l">L</span></div>
+        <div><h3 class="d">Editor de letra y Sincronizar</h3><ul>
+          <li>Hoja de texto con inspector del verso y selección múltiple.</li>
+          <li>Modo Sincronizar con regiones sobre la onda y corrección por reacción visible.</li>
+          <li>JSON como opción avanzada.</li></ul></div>
+        <div class="test"><b>Qué probar</b><ul><li>Los tests de <span class="mono">useLyricsOperations</span> y <span class="mono">useCommands</span> siguen valiendo; sumar los de aplicar propiedades a varios versos.</li><li>E2E: marcar tiempos con teclado y ver el verso activo en el reproductor.</li></ul></div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Qué sale de la skill admin</h2><p>La skill no desaparece: queda para lo raro y lo masivo.</p></div>
+    <div class="skill">
+      <div class="note"><span class="tag moved">Pasa a la app</span>
+        <ul>
+          <li><span>Crear cuenta, restablecer contraseña</span><span>Miembros</span></li>
+          <li><span>Dar, cambiar y quitar roles</span><span>Miembros</span></li>
+          <li><span>Crear y eliminar colecciones</span><span>Nueva colección · Zona de peligro</span></li>
+          <li><span>Nombre, dirección, portada</span><span>General</span></li>
+          <li><span>Visibilidad</span><span>General</span></li>
+          <li><span>Editar paleta</span><span>Colores</span></li>
+          <li><span>Ordenar y eliminar canciones</span><span>Canciones</span></li>
+        </ul>
+      </div>
+      <div class="note"><span class="tag keep">Queda en la skill</span>
+        <ul>
+          <li><span>Cambiar el email de una cuenta</span><span>poco frecuente, delicado</span></li>
+          <li><span>Eliminar una cuenta de la app</span><span>afecta varias colecciones</span></li>
+          <li><span>Operaciones en lote</span><span>importar muchas personas o canciones</span></li>
+          <li><span>Limpiar audios huérfanos viejos</span><span>de borrados anteriores</span></li>
+          <li><span>Diagnóstico y SQL a medida</span><span><span class="mono">db query --linked</span></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Preguntas abiertas</h2><p>Decisiones tuyas. Cada una trae una propuesta para destrabar si no hay preferencia.</p></div>
+    <ol class="qs">
+      <li><div><b>¿Quién crea colecciones?</b><p>Solo admins de la app, o cualquier persona con cuenta.</p><p class="rec">solo admins de la app (<span class="mono">app_admins</span>).</p></div></li>
+      <li><div><b>¿Un admin de colección puede crear cuentas?</b><p>Crear cuentas nuevas afecta a toda la app, no solo a la colección.</p><p class="rec">sí, pero la cuenta nace atada a esa colección; eliminarla sigue siendo de admins de la app.</p></div></li>
+      <li><div><b>¿Un admin de colección puede restablecer contraseñas?</b><p>Una cuenta administrada puede estar en varias colecciones, con admins distintos.</p><p class="rec">sí para cuentas administradas que solo están en sus colecciones; si está en otras, solo admins de la app.</p></div></li>
+      <li><div><b>¿Se siguen creando cuentas administradas?</b><p>Son cómodas para el ensayo pero no pueden recuperar la contraseña solas.</p><p class="rec">sí, como opción por defecto, con invitación por email al lado.</p></div></li>
+      <li><div><b>¿Mi parte en el dispositivo o en la base?</b><p>En la base seguiría a la persona entre el teléfono y la compu.</p><p class="rec">dispositivo primero; base si se pide.</p></div></li>
+      <li><div><b>¿La portada reemplaza a la luz de sala?</b><p>Una portada muy cargada puede competir con la letra.</p><p class="rec">sí, desenfocada y con opacidad baja; con un interruptor en General.</p></div></li>
+      <li><div><b>¿Se mantiene el editor JSON?</b><p>Hoy es una pestaña. Con el inspector casi no hace falta.</p><p class="rec">se mantiene como opción avanzada del menú del editor.</p></div></li>
+      <li><div><b>¿Atajos numéricos para pistas?</b><p><kbd>1</kbd> a <kbd>9</kbd> silencian y <kbd>⌥</kbd> + número hace solo.</p><p class="rec">sí, en escritorio.</p></div></li>
+      <li><div><b>¿Inicio en grilla o directo a la canción?</b><p>Hoy <span class="mono">/</span> salta a la primera canción de la primera colección.</p><p class="rec">directo si hay una sola colección; grilla si hay varias.</p></div></li>
+      <li><div><b>¿Velocidad de reproducción?</b><p>Practicar un pasaje difícil más lento (por ejemplo 0,75×) sin cambiar el tono. WaveSurfer lo permite, pero hay que mantener las pistas sincronizadas.</p><p class="rec">sí, en el menú de la canción, con 0,5× a 1×. Después de las fases 1 y 2.</p></div></li>
+      <li><div><b>¿Cuánto dura "Deshacer"?</b><p>Para quitar pistas, colores o versos, en lugar de confirmar antes.</p><p class="rec">8 segundos, en un aviso.</p></div></li>
+    </ol>
+  </section>
+</div>
+</html>

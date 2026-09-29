@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Fundamentos</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+.concept { position: relative; border-radius: 28px; overflow: hidden; isolation: isolate; padding: 56px 48px; min-height: 360px; display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; box-shadow: 0 0 0 1px var(--line); background: var(--canvas); }
+.concept .amb { inset: -20%; }
+.concept .big { font: 700 clamp(40px, 7vw, 88px)/0.95 var(--ui); letter-spacing: -0.02em; margin: 0; font-variation-settings: "opsz" 96; text-wrap: balance; }
+.concept .big em { font-style: normal; color: var(--c-ink); }
+.concept p { max-width: 60ch; color: var(--muted); font-size: var(--t-lg); margin: 0; }
+.concept p.big { color: var(--ink); max-width: 15ch; font-size: clamp(40px, 6vw, 80px); position: relative; z-index: 1; }
+.concept .stagechip { position: absolute; right: 40px; top: 40px; padding: 16px 22px; border-radius: 18px; --t-lyr: 22px; }
+@media (max-width: 760px) { .concept { padding: 32px 22px; } .concept .stagechip { display: none; } }
+
+.principles { display: flex; flex-direction: column; gap: 14px; counter-reset: pr; }
+.pr { counter-increment: pr; display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 22px; }
+.pr::before { content: counter(pr); font: 700 40px/1 var(--ui); letter-spacing: -0.02em; color: var(--c-ink); font-variation-settings: "opsz" 96; align-self: start; }
+.pr header { align-self: start; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pr header p { color: var(--muted); font-size: var(--t-sm); }
+.pr .vis { min-width: 0; }
+@media (max-width: 860px) { .pr { grid-template-columns: 1fr; } .pr::before { font-size: 30px; } }
+.vis-box { position: relative; border-radius: 14px; overflow: hidden; min-height: 150px; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.vis-box .lyr { gap: 10px; --t-lyr: 17px; }
+.tiers { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.tiers > div { border-radius: 14px; padding: 12px 14px; font: 600 13px/1.2 var(--ui); display: flex; flex-direction: column; gap: 4px; min-width: 96px; }
+.tiers small { font: 500 11.5px/1.2 var(--mono); color: var(--muted); }
+.before-code { font: 500 12px/1.5 var(--mono); background: var(--sunken); color: var(--muted); padding: 10px 12px; border-radius: 10px; white-space: pre; overflow-x: auto; max-width: 100%; }
+.arrow { font-size: 22px; color: var(--faint); }
+.links3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.links3 a { text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.links3 a:hover { border-color: var(--c-line); }
+.links3 a b { font: 700 22px/1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; display: flex; align-items: center; justify-content: space-between; }
+.links3 a span { color: var(--muted); font-size: var(--t-sm); font-weight: 400; }
+@media (max-width: 760px) { .links3 { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Fundamentos</span>
+    <h1 class="d">Luz de sala</h1>
+    <p class="lede">La app ya tiene decisiones que funcionan: las tres tipografías, el color por colección, la letra coloreada por pista. Esta sección no las reemplaza; las ordena alrededor de una idea y agrega lo que falta para que todo se sienta de una sola pieza.</p>
+  </header>
+
+  <section class="concept tracks-demo">
+    <div class="amb"></div>
+    <div class="stagechip g2">
+      <div class="lyr" style="gap:8px">
+        <span class="v past" style="--tc:var(--t-ten)">vuelve al mismo corazón</span>
+        <span class="v now" style="--tc:var(--t-sop)">Vidala, vidala</span>
+      </div>
+    </div>
+    <span class="eyebrow">El concepto</span>
+    <p class="big">Ensayando es una sala de ensayo. El color de la colección es <em>la luz del escenario</em>.</p>
+    <p>La interfaz es vidrio que flota en esa luz, y la letra es lo que está en escena. Cada colección ilumina su sala con su color: cambiá la colección de ejemplo en la barra de arriba y mirá cómo cambia esta página.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Cinco principios</h2><p>Cada decisión de las páginas siguientes se puede justificar con alguno de estos cinco. Si una propuesta no encaja con ninguno, sobra.</p></div>
+    <div class="principles">
+      <article class="pr">
+        <header><h3 class="d">La letra es la protagonista</h3><p>Mientras suena, todo lo demás se retira. El verso activo es lo más grande, lo más contrastado y lo único que brilla. Los versos cantados bajan al 30 % y los controles viven en los bordes.</p></header>
+        <div class="vis"><div class="app vis-box auto"><div class="amb"></div>
+          <div class="lyr">
+            <span class="v past" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
+            <span class="cmt">Coro</span>
+            <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+            <span class="v" style="--tc:var(--t-ten)">que el viento te va a llevar</span>
+          </div>
+        </div></div>
+      </article>
+      <article class="pr">
+        <header><h3 class="d">El color es luz, no pintura</h3><p>El color de la colección tiñe el fondo, los grises y el brillo. Los rellenos plenos se reservan para una sola acción por pantalla (reproducir, guardar) y para lo seleccionado.</p></header>
+        <div class="vis"><div class="app vis-box auto" style="gap:14px;flex-direction:column"><div class="amb"></div>
+          <span class="play"><i data-ic="play"></i></span>
+          <div class="m-row"><span class="b sm soft">Anterior</span><span class="b sm tint">Seleccionado</span><span class="b sm soft">Siguiente</span></div>
+        </div></div>
+      </article>
+      <article class="pr">
+        <header><h3 class="d">Vidrio con propósito</h3><p>Tres niveles de vidrio con reglas fijas: velo para barras, panel para piezas grandes, pop para menús. Donde se escribe o se lee denso, hoja opaca.</p></header>
+        <div class="vis"><div class="app vis-box auto"><div class="amb"></div>
+          <div class="tiers">
+            <div class="g1">Velo<small>52 % · 18 px</small></div>
+            <div class="g2">Panel<small>70 % · 28 px</small></div>
+            <div class="g3">Pop<small>86 % · 14 px</small></div>
+            <div class="sheet">Hoja<small>opaca</small></div>
+          </div>
+        </div></div>
+      </article>
+      <article class="pr">
+        <header><h3 class="d">Lo interno es una herramienta</h3><p>El editor es denso y rápido con teclado, pero cada acción tiene un botón con nombre y cada atajo aparece al lado de su acción. Nada depende de saber un atajo.</p></header>
+        <div class="vis"><div class="app vis-box auto"><div class="amb"></div>
+          <div class="menu g3" style="width:280px">
+            <div class="mi"><i data-ic="insAfter"></i>Agregar verso después<span class="end"><kbd>↵</kbd></span></div>
+            <div class="mi hover"><i data-ic="clock"></i>Marcar inicio y avanzar<span class="end"><kbd>⌘</kbd><kbd>↓</kbd></span></div>
+            <div class="mi"><i data-ic="columns"></i>Convertir en columnas<span class="end"><kbd>⌘</kbd><kbd>]</kbd></span></div>
+          </div>
+        </div></div>
+      </article>
+      <article class="pr">
+        <header><h3 class="d">Nada por SQL</h3><p>Todo lo que hoy se hace con la skill <span class="mono">admin</span> (miembros, roles, visibilidad, colores, orden y borrado) tiene un lugar en la app, con permisos claros y confirmación donde hace falta.</p></header>
+        <div class="vis" style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <div class="before-code">admin.sh set-visibility coro-del-puerto unlisted</div>
+          <span class="arrow"><i data-ic="down"></i></span>
+          <div class="app auto" style="padding:14px;border-radius:14px;width:100%"><div class="amb"></div>
+            <div class="field"><span class="lbl">Visibilidad</span>
+              <span class="seg"><span><i data-ic="lock"></i>Privada</span><span class="on"><i data-ic="link"></i>Con enlace</span><span><i data-ic="globe"></i>Pública</span></span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Las tres bases</h2></div>
+    <div class="links3">
+      <a href="tipografia.html"><span class="tag keep">Se mantiene</span><b>Tipografía <i data-ic="arrowRight"></i></b><span>Bricolage, Atkinson y Geist Mono. Escala, roles y la hora en monoespaciada.</span></a>
+      <a href="paleta.html"><span class="tag refine">Ajuste</span><b>Paleta <i data-ic="arrowRight"></i></b><span>Neutros teñidos, color derivado por tema y tintas de pista que siempre se leen.</span></a>
+      <a href="materiales.html"><span class="tag new">Nuevo</span><b>Materiales <i data-ic="arrowRight"></i></b><span>Luz de sala, tres vidrios, radios, íconos y movimiento.</span></a>
+    </div>
+  </section>
+</div>
+<script>hydrateIcons();</script>
+</html>

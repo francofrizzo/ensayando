@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Editor de canción</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ---------- barra de edición (compartida con el editor de letra) ---------- */
+.editbar { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 10px; z-index: 4; }
+.editbar .who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.editbar .who span { font: 600 11px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-ink); }
+.editbar .who b { font: 700 18px/1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; white-space: nowrap; }
+.editbar .tabs { position: absolute; left: 50%; transform: translateX(-50%); }
+.status { display: inline-flex; align-items: center; gap: 7px; font: 500 12.5px/1 var(--ui); color: var(--muted); white-space: nowrap; }
+.status i.dirty { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+.status .ic { color: var(--ok); font-size: 15px; }
+.tabs .dotd { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+
+/* dock compacto mientras se edita */
+.cdock { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 72px; border-radius: var(--r-dock); display: grid; grid-template-columns: 250px auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 0 18px; z-index: 3; }
+.cdock .c { display: flex; align-items: center; gap: 8px; }
+
+/* hoja de edición */
+.edsheet { position: absolute; top: 88px; bottom: 100px; left: 50%; transform: translateX(-50%); width: 900px; border-radius: var(--r-box); overflow: hidden; display: flex; flex-direction: column; }
+.edsheet .in-body { padding: 22px 26px; display: flex; flex-direction: column; gap: 22px; }
+.edsec { display: flex; flex-direction: column; gap: 14px; }
+.edsec-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.edsec-h h4 { margin: 0; font: 700 16px/1 var(--ui); letter-spacing: -0.005em; }
+.edsec-h p { margin: 0; font: 400 12.5px/1.3 var(--ui); color: var(--faint); }
+.frow { display: grid; grid-template-columns: 1.1fr 1.4fr auto; gap: 14px; align-items: start; }
+.url { font: 400 12px/1.2 var(--mono); color: var(--faint); }
+.url b { color: var(--muted); font-weight: 500; }
+.hr { height: 1px; background: var(--line); }
+
+/* filas de pista */
+.tl { display: flex; flex-direction: column; border-radius: 14px; box-shadow: 0 0 0 1px var(--line); overflow: visible; }
+.tr { --tc: var(--c); display: grid; grid-template-columns: 18px 38px 170px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px 10px 8px; position: relative; }
+.tr + .tr { border-top: 1px solid var(--line); }
+.tr .grip { color: var(--faint); font-size: 17px; display: grid; place-items: center; cursor: grab; }
+.sw { width: 38px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: oklch(from var(--tc) var(--wav-l) c h); color: oklch(from var(--tc) 0.2 0.04 h); font: 700 10.5px/1 var(--mono); box-shadow: inset 0 0 0 1px oklch(0% 0 0 / 0.08); position: relative; }
+.sw::after { content: ""; position: absolute; right: 3px; bottom: 3px; border: 3px solid transparent; border-top-color: currentColor; transform: rotate(-45deg); opacity: 0.6; }
+.file { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: center; min-width: 0; padding: 6px 10px; border-radius: 10px; background: var(--canvas); box-shadow: inset 0 0 0 1px var(--line); height: 44px; }
+.file .wave { height: 28px; }
+.file .fn { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.file .fn b { font: 500 13px/1 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file .fn span { font: 400 12px/1 var(--ui); color: var(--faint); }
+.prog { height: 5px; border-radius: 3px; background: oklch(from var(--ink) l c h / 0.1); overflow: hidden; }
+.prog > i { display: block; height: 100%; background: var(--c); border-radius: 3px; }
+.tr.up .file { grid-template-columns: minmax(0, 1fr); }
+.tr.err .file { background: var(--danger-soft); box-shadow: inset 0 0 0 1px oklch(from var(--danger) l c h / 0.35); }
+.tr.err .fn b, .tr.err .fn span { color: var(--danger); }
+.tr.drag { background: var(--raised); box-shadow: var(--shadow-float), 0 0 0 1px var(--edge); border-radius: 14px; transform: rotate(-0.6deg); z-index: 2; }
+.tr.target .file { background: var(--c-soft); box-shadow: inset 0 0 0 1.5px var(--c-ink); }
+.drop { border-radius: 14px; border: 1.5px dashed var(--line-strong); padding: 16px; display: flex; align-items: center; gap: 14px; color: var(--muted); font: 500 13.5px/1.35 var(--ui); }
+.drop .ic { font-size: 26px; color: var(--c-ink); }
+.drop b { color: var(--ink); font-weight: 650; }
+.drop.on { border-color: var(--c-ink); background: var(--c-soft); }
+.swpop { position: absolute; z-index: 6; padding: 10px; border-radius: 14px; display: flex; flex-direction: column; gap: 8px; width: 240px; }
+.swgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.swgrid span { --tc: var(--c); aspect-ratio: 1; border-radius: 9px; background: oklch(from var(--tc) var(--wav-l) c h); display: grid; place-items: end center; padding-bottom: 3px; font: 700 9.5px/1 var(--mono); color: oklch(from var(--tc) 0.22 0.04 h); }
+.swgrid span.on { box-shadow: 0 0 0 2px var(--raised), 0 0 0 4px var(--ink); }
+.disclose { display: flex; align-items: center; gap: 8px; font: 600 13px/1 var(--ui); color: var(--muted); }
+
+/* diálogos */
+.dlg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 480px; border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 16px; z-index: 6; }
+.dlg h4 { margin: 0; font: 700 20px/1.1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; }
+.dlg p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.dlg .acts { display: flex; justify-content: flex-end; gap: 8px; }
+.dlg .files { display: flex; flex-direction: column; gap: 6px; }
+.dlg .files div { display: flex; align-items: center; gap: 10px; font: 500 13px/1 var(--mono); padding: 8px 10px; border-radius: 10px; background: var(--canvas); box-shadow: inset 0 0 0 1px var(--line); }
+.dlg .files div span { margin-left: auto; font-family: var(--ui); color: var(--faint); font-size: 12px; }
+.danger-zone { border-radius: 14px; box-shadow: inset 0 0 0 1px oklch(from var(--danger) l c h / 0.35); padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
+.danger-zone div { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.danger-zone b { font: 650 14px/1.2 var(--ui); }
+.danger-zone span { font: 400 12.5px/1.35 var(--ui); color: var(--muted); }
+
+/* teléfono */
+.p-edit { position: absolute; left: 10px; right: 10px; top: 52px; border-radius: 18px; padding: 8px 8px 8px 6px; display: flex; flex-direction: column; gap: 8px; z-index: 4; }
+.p-edit .r1 { display: flex; align-items: center; gap: 8px; }
+.p-edit .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.p-edit .who span { font: 600 10.5px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-ink); }
+.p-edit .who b { font: 700 16px/1 var(--ui); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-body { position: absolute; left: 10px; right: 10px; top: 162px; bottom: 104px; border-radius: 20px; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.p-tr { --tc: var(--c); display: grid; grid-template-columns: 16px 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.p-tr .sw { width: 34px; height: 34px; }
+.p-tr .t { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.p-tr .t b { font: 600 14px/1 var(--ui); }
+.p-tr .t span { font: 400 11.5px/1 var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-save { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 28px; padding: 12px 12px 26px; display: flex; gap: 8px; z-index: 4; }
+.p-save .b { flex: 1; }
+
+.before { display: flex; flex-direction: column; gap: 6px; }
+.before li { color: var(--muted); }
+.legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
+.legend li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: var(--t-sm); color: var(--muted); counter-increment: an; }
+.legend li::before { content: counter(an); width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--ink); font-weight: 650; display: block; }
+@media (max-width: 900px) { .legend { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas · 3 de 6</span>
+    <h1 class="d">Editor de canción</h1>
+    <p class="lede">Hoy editar es un cajón que ocupa la mitad derecha de la pantalla, con pestañas chicas y botones de tamaño mínimo que se teletransportan a su cabecera. La propuesta convierte la edición en un <b>modo</b> de la misma pantalla: una barra de edición reemplaza a la barra superior, el trabajo pasa a una hoja opaca y el reproductor queda abajo, compacto, para escuchar mientras se edita.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
+    <div class="grid-3">
+      <div class="note"><span class="tag new">Nuevo</span><b>Modo edición, no cajón</b><p>La barra de edición dice qué se edita, tiene tres pestañas (Canción, Letra, Sincronizar), el estado de guardado y los botones Descartar y Guardar en tamaño normal. Hoy son botones <span class="mono">btn-xs</span> que en el teléfono pierden el texto.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Estado de guardado explícito</b><p>Hoy un punto de color al lado de la pestaña avisa que hay cambios. Pasa a un texto: “Cambios sin guardar” con punto ámbar, o “Guardado hace un momento” con tilde. El punto en la pestaña se queda, en ámbar.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Pistas sin URL</b><p>Hoy cada pista tiene un campo de URL a la vista y el botón de subir aparte. El archivo es la pista: se ve su nombre, duración, peso y forma de onda. La URL queda en Opciones avanzadas.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Subida múltiple</b><p>Soltar varios audios crea una pista por archivo, con el nombre del archivo como título y un color libre de la colección. La forma de onda se genera sola al subir; hoy es un botón escondido en opciones avanzadas.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Orden por arrastre</b><p>Las flechas arriba y abajo se reemplazan por una manija. El teclado sigue funcionando: con la manija enfocada, <kbd>⌥</kbd><kbd>↑</kbd> y <kbd>⌥</kbd><kbd>↓</kbd>.</p></div>
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>Eliminar canción</b><p>Hoy se hace con <span class="mono">admin.sh delete-song</span>. Pasa a una zona de peligro al final de la pestaña, solo para admins, con confirmación escrita y limpieza del audio en R2.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Modo edición · pestaña Canción</h2>
+      <p>La letra desaparece del escenario y en su lugar aparece la hoja. La luz de sala sigue ahí, así que se sigue sabiendo en qué colección se está. La barra de edición es vidrio velo, como la barra del reproductor; la hoja es opaca porque tiene campos. La pestaña queda en la dirección (<span class="mono">?editar=cancion</span>, <span class="mono">letra</span> o <span class="mono">sincronizar</span>), así recargar o compartir el enlace vuelve al mismo lugar.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk" id="song-desk">
+        <div class="amb"></div>
+
+        <div class="editbar g1">
+          <span class="b icon sm soft" title="Salir de edición"><i data-ic="x"></i></span>
+          <div class="who"><span>Editando</span><b>Vidala del viento</b></div>
+          <div class="tabs"><span class="seg"><span class="on"><i data-ic="music"></i>Canción<i class="dotd"></i></span><span><i data-ic="lyrics"></i>Letra</span><span><i data-ic="clock"></i>Sincronizar</span></span></div>
+          <div class="m-grow"></div>
+          <span class="status"><i class="dirty"></i>Cambios sin guardar</span>
+          <span class="b sm soft">Descartar</span>
+          <span class="b sm fill"><i data-ic="save"></i>Guardar<kbd style="margin-left:4px;background:transparent;color:inherit;border-color:currentColor;opacity:.6">⌘S</kbd></span>
+          <span class="b icon sm"><i data-ic="dots"></i></span>
+        </div>
+
+        <div class="edsheet sheet">
+          <div class="in-body">
+            <div class="edsec">
+              <div class="frow">
+                <div class="field"><span class="lbl">Título</span><div class="in focus">Vidala del viento</div></div>
+                <div class="field"><span class="lbl">Dirección</span><div class="in mono"><span class="ph">…/coro-del-puerto/</span>vidala-del-viento<span class="suffix"><i data-ic="refresh"></i></span></div><span class="url">ensayando.com.ar/coro-del-puerto/<b>vidala-del-viento</b> · se completa desde el título</span></div>
+                <div class="field"><span class="lbl">Visibilidad</span><span class="seg"><span class="on"><i data-ic="eye"></i>Visible</span><span><i data-ic="lock"></i>Oculta</span></span><span class="help">Oculta: solo la ven editores y admins.</span></div>
+              </div>
+            </div>
+            <div class="hr"></div>
+            <div class="edsec">
+              <div class="edsec-h"><div class="stack" style="gap:4px"><h4>Pistas</h4><p>El orden de acá es el orden de la mezcladora. Arrastrá desde la manija para cambiarlo.</p></div><span class="b sm soft"><i data-ic="plus"></i>Agregar pista</span></div>
+              <div class="tl" id="tl-desk"></div>
+              <div class="drop"><i data-ic="cloudUp"></i><span><b>Soltá uno o varios audios</b> o <u>elegilos</u>. Se crea una pista por archivo, con el nombre del archivo.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swpop g3" style="left:250px;top:398px">
+          <span class="lbl">Color de la pista</span>
+          <div class="swgrid"><span style="--tc:var(--t-sop)">sop</span><span class="on" style="--tc:var(--t-alt)">alt</span><span style="--tc:var(--t-ten)">ten</span><span style="--tc:var(--t-baj)">baj</span><span style="--tc:var(--t-pno)">pno</span></div>
+          <span class="help">Los colores son los de la colección. Se cambian en Ajustes de la colección.</span>
+        </div>
+
+        <div class="cdock g2">
+          <span class="time"><b>0:27</b><small>.4</small> / 4:05</span>
+          <div class="c"><span class="b icon sm"><i data-ic="prev"></i></span><span class="play sm"><i data-ic="play"></i></span><span class="b icon sm"><i data-ic="next"></i></span></div>
+          <div class="prog" style="--p:11%;flex:1"><i></i><span class="knob"></span></div>
+          <span class="b sm muted"><i data-ic="headphones"></i>Pistas</span>
+        </div>
+
+        <span class="annot solo" data-n="1" style="left:228px;top:10px"></span>
+        <span class="annot solo" data-n="2" style="left:452px;top:10px"></span>
+        <span class="annot solo" data-n="3" style="left:870px;top:10px"></span>
+        <span class="annot solo" data-n="4" style="left:668px;top:102px"></span>
+        <span class="annot solo" data-n="5" style="left:180px;top:300px"></span>
+        <span class="annot solo" data-n="6" style="left:1060px;top:296px"></span>
+        <span class="annot solo" data-n="7" style="left:180px;top:630px"></span>
+        <span class="annot solo" data-n="8" style="left:22px;top:688px"></span>
+      </div>
+    </div></div>
+    <ol class="legend">
+      <li><span><b>Qué se edita</b>“Editando” en el color de la colección y el título de la canción. La X sale del modo; si hay cambios, pregunta antes.</span></li>
+      <li><span><b>Tres pestañas</b>Canción, Letra y Sincronizar. El punto ámbar marca la pestaña con cambios. La pestaña JSON de hoy pasa al menú.</span></li>
+      <li><span><b>Guardado</b>Estado en texto, Descartar y Guardar con su atajo. Guardar se apaga si no hay cambios o si hay un error en un campo.</span></li>
+      <li><span><b>Dirección con vista previa</b>Se genera desde el título mientras no se toque a mano. El botón vuelve a generarla. Antes estaba en opciones avanzadas.</span></li>
+      <li><span><b>Pista como archivo</b>Manija, color, nombre y el audio con su forma de onda. Sin campo de URL.</span></li>
+      <li><span><b>Acciones de la pista</b>Reemplazar audio y quitar pista. También se reemplaza soltando un archivo sobre la fila.</span></li>
+      <li><span><b>Zona para soltar</b>Uno o varios archivos. Cada uno crea una pista.</span></li>
+      <li><span><b>Reproductor compacto</b>Sigue sonando mientras se edita. Con “Pistas” se abre la mezcladora encima de la hoja.</span></li>
+    </ol>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Pistas, estado por estado</h2>
+      <p>La fila de la pista cambia según lo que pasa con su archivo. Nunca se pierde el lugar de la fila: subir, fallar o reemplazar ocurre dentro de ella.</p>
+    </div>
+    <div class="app auto" style="padding:22px;border-radius:var(--r-box)"><div class="amb"></div>
+      <div class="sheet" style="border-radius:var(--r-box);padding:18px;display:flex;flex-direction:column;gap:14px">
+        <div class="tl" id="tl-states"></div>
+        <div class="drop on"><i data-ic="cloudUp"></i><span><b>Soltá para crear 2 pistas</b> · vidala-tenor.mp3, vidala-piano.mp3</span></div>
+        <div class="disclose"><i data-ic="chevDown"></i>Opciones avanzadas</div>
+        <div class="grid-2" style="gap:14px">
+          <div class="field"><span class="lbl">URL del audio (Contralto)</span><div class="in mono" style="font-size:12px"><i data-ic="link"></i>r2://coro-del-puerto/vidala/contralto-7f3a.mp3</div><span class="help">Solo para casos especiales. Lo normal es subir el archivo.</span></div>
+          <div class="field"><span class="lbl">Forma de onda</span><div class="m-row"><span class="badge ok"><i data-ic="check"></i>Generada</span><span class="b sm soft"><i data-ic="refresh"></i>Volver a generar</span></div><span class="help">Se genera al subir. Volver a generarla sirve si el audio se cambió por fuera.</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-4">
+      <div class="note"><b>Lista</b><p>Nombre del archivo, duración y peso. La onda es la misma que se verá en la mezcladora, en la tinta de la pista.</p></div>
+      <div class="note"><b>Subiendo</b><p>Barra de progreso con porcentaje; después “Generando forma de onda”. Se puede seguir editando lo demás. Guardar espera a que termine.</p></div>
+      <div class="note"><b>Error</b><p>Dice qué pasó y deja reintentar ahí mismo. La pista no se guarda sin audio: Guardar avisa cuál falta.</p></div>
+      <div class="note"><b>Arrastrando</b><p>La fila se levanta con la sombra de los objetos flotantes. Soltar un archivo sobre una fila la marca para reemplazar su audio.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Nueva canción</h2>
+      <p>Hoy se crea desde adentro del editor de otra canción, con “Nueva canción” en la cabecera, o desde el estado vacío de la colección. Pasa a la biblioteca: “Nueva canción” abre un diálogo corto con título y audios. Al crear, la canción se abre en modo edición, en la pestaña Letra. El diálogo tiene dirección propia (<span class="mono">/coro-del-puerto/nueva</span>) para poder enlazarlo.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app auto" style="width:1280px;height:560px"><div class="amb"></div>
+        <div class="scrim"></div>
+        <div class="dlg g3">
+          <h4>Nueva canción</h4>
+          <div class="field"><span class="lbl">Título</span><div class="in focus">Las luces de la sala</div><span class="url">ensayando.com.ar/coro-del-puerto/<b>las-luces-de-la-sala</b></span></div>
+          <div class="field"><span class="lbl">Audios</span>
+            <div class="files">
+              <div><span class="dot" style="--tc:var(--t-sop)"></span>luces-soprano.mp3<span>2:48 · 2,7 MB</span></div>
+              <div><span class="dot" style="--tc:var(--t-alt)"></span>luces-contralto.mp3<span>2:48 · 2,6 MB</span></div>
+              <div><span class="dot" style="--tc:var(--t-pno)"></span>luces-piano.mp3<span>2:48 · 3,1 MB</span></div>
+            </div>
+            <span class="help">Podés agregarlos después. Cada archivo será una pista.</span>
+          </div>
+          <div class="m-row"><span class="tgl"></span><span class="sm muted">Crearla oculta</span></div>
+          <div class="acts"><span class="b soft">Cancelar</span><span class="b fill">Crear y editar letra</span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Eliminar y salir sin guardar</h2>
+      <p>Las dos acciones que pierden trabajo piden confirmación dentro de la app. Eliminar pide escribir el título, porque borra también los audios.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Zona de peligro y confirmación</b><span>solo admins</span></div>
+        <div class="app auto" style="height:430px;border-radius:var(--r-box)"><div class="amb"></div>
+          <div class="sheet" style="position:absolute;left:18px;right:18px;top:18px;border-radius:var(--r-box);padding:16px">
+            <div class="danger-zone"><div><b>Eliminar canción</b><span>Se borran la letra, las pistas y sus audios. No se puede deshacer.</span></div><span class="b sm danger soft"><i data-ic="trash"></i>Eliminar</span></div>
+          </div>
+          <div class="scrim"></div>
+          <div class="dlg g3" style="width:420px;top:58%">
+            <h4>¿Eliminar “Vidala del viento”?</h4>
+            <p>Se borran la letra, las 5 pistas y sus audios. Nadie de la colección va a poder volver a escucharla.</p>
+            <div class="field"><span class="lbl">Escribí el título para confirmar</span><div class="in focus">Vidala del vie<span style="border-left:1.5px solid var(--ink);height:16px;margin-left:-6px"></span></div></div>
+            <div class="acts"><span class="b soft">Cancelar</span><span class="b off" style="background:var(--danger);color:#fff">Eliminar canción</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cap"><b>Salir con cambios</b><span>X, Esc o cambiar de canción</span></div>
+        <div class="app auto" style="height:430px;border-radius:var(--r-box)"><div class="amb"></div>
+          <div class="scrim"></div>
+          <div class="dlg g3" style="width:400px">
+            <h4>Tenés cambios sin guardar</h4>
+            <p>Cambiaste el título y el orden de las pistas. Si salís ahora, se pierden.</p>
+            <div class="acts"><span class="b soft">Seguir editando</span><span class="b soft danger">Descartar</span><span class="b fill">Guardar y salir</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="note"><span class="tag refine">Ajuste</span><b>Guardia al salir</b><p>Hoy la advertencia solo aparece al cerrar el editor entero y usa el diálogo del navegador. Pasa a un diálogo propio que también cubre ir a otra canción desde la biblioteca, el botón atrás y cerrar la pestaña (este último sí con el aviso del navegador).</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Borrado de audio sin uso</b><p>Al quitar o reemplazar una pista, el audio viejo se borra de R2 al guardar, como hoy. Si falla, el aviso lo dice sin bloquear el guardado.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Teléfono</h2>
+      <p>Las pestañas bajan a una segunda línea de la barra y Guardar se vuelve una barra inferior de ancho completo. Las pistas se muestran sin onda y se editan en una hoja propia al tocarlas.</p>
+    </div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Pestaña Canción</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone"><div class="amb"></div>
+            <div class="p-edit g1">
+              <div class="r1"><span class="b icon sm soft"><i data-ic="x"></i></span><div class="who"><span>Editando</span><b>Vidala del viento</b></div><span class="b icon sm"><i data-ic="dots"></i></span></div>
+              <span class="seg" style="width:100%"><span class="on" style="flex:1;justify-content:center">Canción<i class="dotd"></i></span><span style="flex:1;justify-content:center">Letra</span><span style="flex:1;justify-content:center">Sincronizar</span></span>
+            </div>
+            <div class="p-body sheet">
+              <div class="field"><span class="lbl">Título</span><div class="in">Vidala del viento</div></div>
+              <div class="field"><span class="lbl">Visibilidad</span><span class="seg" style="width:100%"><span class="on" style="flex:1;justify-content:center"><i data-ic="eye"></i>Visible</span><span style="flex:1;justify-content:center"><i data-ic="lock"></i>Oculta</span></span></div>
+              <div class="stack" style="gap:0">
+                <div class="m-row" style="justify-content:space-between;padding-bottom:8px"><b style="font:700 15px/1 var(--ui)">Pistas</b><span class="b sm soft"><i data-ic="plus"></i>Agregar</span></div>
+                <div id="p-tracks"></div>
+              </div>
+            </div>
+            <div class="p-save g2"><span class="b soft lg">Descartar</span><span class="b fill lg"><i data-ic="save"></i>Guardar</span></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col grow">
+        <div class="note"><b>Qué se simplifica en el teléfono</b>
+          <ul>
+            <li>La dirección de la canción se genera sola y no se muestra; se edita desde el menú ⋯.</li>
+            <li>Tocar una pista abre una hoja con color, nombre, reemplazar audio y quitar.</li>
+            <li>Subir audios usa el selector de archivos del sistema, con selección múltiple.</li>
+            <li>El reproductor compacto se oculta mientras la barra de guardar está visible; vuelve al cerrar el teclado.</li>
+          </ul>
+        </div>
+        <div class="note"><b>Hoy, para comparar</b>
+          <ul>
+            <li>El cajón ocupa todo el ancho en el teléfono y deja ver el reproductor desenfocado detrás, sin poder usarlo.</li>
+            <li>Los botones de la cabecera pierden el texto por debajo de 768 px: Guardar es un disquete de 24 px.</li>
+            <li>El campo de URL y el de título comparten una fila de 390 px.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const T = { sop: "var(--t-sop)", alt: "var(--t-alt)", ten: "var(--t-ten)", baj: "var(--t-baj)", pno: "var(--t-pno)" };
+  const acts = `<span class="m-row" style="gap:4px"><span class="b sm soft">Reemplazar</span><span class="b sm icon muted"><i data-ic="trash"></i></span></span>`;
+  function row(t, i, o = {}) {
+    let file;
+    if (o.up) file = `<div class="file" style="grid-template-columns:1fr"><div class="fn" style="gap:7px"><b style="display:flex;justify-content:space-between">${o.fn}<span style="font-family:var(--ui);color:var(--muted)">${o.up}</span></b><div class="prog"><i style="width:${o.pct}%"></i></div></div></div>`;
+    else if (o.err) file = `<div class="file" style="grid-template-columns:1fr"><div class="fn"><b style="font-family:var(--ui);font-weight:650">No se pudo subir ${o.fn}</b><span>Se cortó la conexión a los 3,1 MB.</span></div></div>`;
+    else file = `<div class="file"><div class="wave" data-seed="${i + 3}" data-bars="40" data-progress="1" style="--tc:${T[t.key]}"></div><div class="fn"><b>${o.fn || "vidala-" + t.title.toLowerCase() + ".mp3"}</b><span>4:05 · ${(3.1 + i * 0.3).toFixed(1).replace(".", ",")} MB</span></div></div>`;
+    const right = o.err ? `<span class="m-row" style="gap:4px"><span class="b sm soft"><i data-ic="refresh"></i>Reintentar</span><span class="b sm icon muted"><i data-ic="trash"></i></span></span>` : o.up ? `<span class="b sm soft">Cancelar</span>` : acts;
+    return `<div class="tr${o.cls ? " " + o.cls : ""}" style="--tc:${T[t.key]}"><span class="grip"><i data-ic="grip"></i></span><span class="sw" style="--tc:${T[t.key]}">${t.key}</span><div class="in" style="height:36px">${t.title}</div>${file}${right}</div>`;
+  }
+  const tr = ENS.tracks;
+  document.getElementById("tl-desk").innerHTML = row(tr[0], 0) + row(tr[1], 1, { cls: "" }) + row(tr[2], 2) + row(tr[3], 3, { up: "62 %", pct: 62, fn: "vidala-bajo.wav" });
+  document.getElementById("tl-states").innerHTML =
+    row(tr[0], 0) +
+    row(tr[1], 1, { cls: "drag" }) +
+    row(tr[3], 3, { up: "Generando forma de onda", pct: 100, fn: "vidala-bajo.wav" }) +
+    row(tr[4], 4, { err: true, fn: "vidala-piano.wav", cls: "err" }) +
+    row(tr[2], 2, { cls: "target", fn: "Soltá para reemplazar el audio" });
+  document.getElementById("p-tracks").innerHTML = tr.map((t, i) =>
+    `<div class="p-tr" style="--tc:${T[t.key]}"><span style="color:var(--faint)">${ic("grip")}</span><span class="sw" style="--tc:${T[t.key]}">${t.key}</span><div class="t"><b>${t.title}</b><span>vidala-${t.title.toLowerCase()}.mp3 · 4:05</span></div><span style="color:var(--faint)">${ic("chevRight")}</span></div>`).join("");
+  ENS.hydrateWaves();
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>

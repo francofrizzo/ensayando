@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Tipografía</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+.fam { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 960px) { .fam { grid-template-columns: 1fr; } }
+.fam .note { gap: 12px; padding: 22px; }
+.fam .spec-big { font-size: 64px; line-height: 1; letter-spacing: -0.015em; color: var(--ink); margin: 6px 0 4px; }
+.fam .glyphs { font-size: 18px; color: var(--ink); line-height: 1.4; word-break: break-word; }
+.fam .role { display: flex; flex-direction: column; gap: 4px; font-size: var(--t-sm); }
+.fam .role span { color: var(--muted); }
+.f-ui { font-family: var(--ui); font-weight: 700; font-variation-settings: "opsz" 96; }
+.f-lyr { font-family: var(--lyr); font-weight: 600; }
+.f-mono { font-family: var(--mono); font-weight: 500; }
+
+.scale { width: 100%; border-collapse: collapse; }
+.scale td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+.scale td.k { width: 150px; font: 600 12.5px/1.3 var(--ui); color: var(--muted); white-space: nowrap; }
+.scale td.k small { display: block; font: 500 11.5px/1.3 var(--mono); color: var(--faint); margin-top: 3px; }
+.scale td.s { color: var(--ink); word-break: break-word; }
+.scale td.u { width: 260px; font-size: var(--t-xs); color: var(--muted); }
+@media (max-width: 760px) { .scale td.u { display: none; } .scale td.k { width: 110px; } }
+.scale .grp td { padding-top: 26px; border-bottom: 0; }
+
+.opsz { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .opsz { grid-template-columns: 1fr; } }
+.opsz .note .w { font: 700 54px/1 var(--ui); letter-spacing: -0.015em; color: var(--ink); margin: 6px 0; }
+.clock { display: flex; flex-direction: column; gap: 14px; padding: 22px; border-radius: var(--r-box); }
+.clock .old { font: 400 20px/1 var(--ui); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; display: flex; align-items: baseline; }
+.clock .old .a { color: var(--ink); opacity: .9; } .clock .old .b { color: var(--muted); font-size: 16px; } .clock .old .s { color: var(--muted); margin: 0 4px; opacity: .8; } .clock .old .c { color: var(--muted); font-size: 16px; } .clock .old .d { color: var(--faint); font-size: 12px; }
+.clock .new b { font-size: 22px; }
+.ticker { font-size: var(--t-xs); color: var(--faint); }
+
+.labels { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; padding: 22px; }
+.lyr-rules { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+@media (max-width: 860px) { .lyr-rules { grid-template-columns: 1fr; } }
+.lyr-demo { border-radius: var(--r-box); padding: 36px 20px; display: flex; align-items: center; justify-content: center; min-height: 320px; }
+.lyr-demo .annot { position: absolute; }
+.rules { display: flex; flex-direction: column; gap: 0; }
+.rules div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: var(--t-sm); }
+.rules div b { font-weight: 650; }
+.rules div span { color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Fundamentos · Tipografía</span>
+    <span class="tag keep">Se mantiene</span>
+    <h1 class="d">Tipografía</h1>
+    <p class="lede">Las tres familias de hoy se quedan. Bricolage Grotesque tiene carácter sin gritar, Atkinson Hyperlegible Next se lee de lejos con el atril a un metro, y Geist Mono ya está cargada. Lo que cambia es cómo se usan: una escala fija, el eje óptico para los títulos, un solo estilo de etiqueta y la hora en monoespaciada.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Tres familias, tres trabajos</h2></div>
+    <div class="fam">
+      <div class="note">
+        <span class="eyebrow">Interfaz y títulos</span>
+        <div class="spec-big f-ui">Bricolage</div>
+        <div class="glyphs f-ui" style="font-weight:500;font-variation-settings:'opsz' 14">Aa Bb Ññ Áé ¿? 0123456789</div>
+        <div class="role"><b>Bricolage Grotesque</b><span>Títulos a 700 con eje óptico 96 e interletrado negativo leve (−0,02 a −0,01 em). Interfaz de 500 a 650. Botones a 600.</span></div>
+      </div>
+      <div class="note">
+        <span class="eyebrow">Letra</span>
+        <div class="spec-big f-lyr" style="text-transform:uppercase;letter-spacing:.02em;font-size:50px">Vidala</div>
+        <div class="glyphs f-lyr" style="text-transform:uppercase;letter-spacing:.02em">Sopla el viento por la loma</div>
+        <div class="role"><b>Atkinson Hyperlegible Next</b><span>Solo para la letra de las canciones, siempre en mayúsculas. Formas pensadas para no confundir I, l y 1 ni O y 0.</span></div>
+      </div>
+      <div class="note">
+        <span class="eyebrow">Tiempo y código</span>
+        <div class="spec-big f-mono" style="font-size:52px;letter-spacing:-0.02em">0:27.4</div>
+        <div class="glyphs f-mono" style="font-size:15px">12.40 – 15.80 · ⌘ ⇧ E · "start_time"</div>
+        <div class="role"><b>Geist Mono</b><span>Reloj del reproductor, marcas de tiempo, atajos y JSON. Hoy se carga y se usa en 13 lugares, casi todos del editor.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Escala</h2><p>Todos los tamaños de la app salen de esta tabla. La columna del medio está dibujada con los tokens de <span class="mono">ds.css</span>, así que es lo que se implementa.</p></div>
+    <div class="scroll-x">
+    <table class="scale">
+      <tr class="grp"><td colspan="3"><span class="eyebrow">Display · Bricolage 700, opsz 96</span></td></tr>
+      <tr><td class="k">Hero<small>64 · −0,02 em</small></td><td class="s" style="font:700 var(--t-hero)/1 var(--ui);letter-spacing:-0.02em;font-variation-settings:'opsz' 96">Coro del Puerto</td><td class="u">Inicio con varias colecciones, ingreso.</td></tr>
+      <tr><td class="k">D1<small>44 · −0,015 em</small></td><td class="s" style="font:700 var(--t-d1)/1.02 var(--ui);letter-spacing:-0.015em;font-variation-settings:'opsz' 96">Vidala del viento</td><td class="u">Título de la biblioteca y de ajustes.</td></tr>
+      <tr><td class="k">D2<small>30 · −0,0125 em</small></td><td class="s" style="font:700 var(--t-d2)/1.05 var(--ui);letter-spacing:-0.0125em;font-variation-settings:'opsz' 96">Miembros de la colección</td><td class="u">Títulos de sección, estados vacíos.</td></tr>
+      <tr><td class="k">D3<small>22 · −0,01 em</small></td><td class="s" style="font:700 var(--t-d3)/1.1 var(--ui);letter-spacing:-0.01em;font-variation-settings:'opsz' 96">Vidala del viento</td><td class="u">Canción en la barra del reproductor (21 px).</td></tr>
+      <tr class="grp"><td colspan="3"><span class="eyebrow">Interfaz · Bricolage 400 a 650</span></td></tr>
+      <tr><td class="k">LG<small>18 / 1,5</small></td><td class="s" style="font:400 var(--t-lg)/1.5 var(--ui)">Esta colección todavía no tiene canciones.</td><td class="u">Texto de presentación, vacíos.</td></tr>
+      <tr><td class="k">MD<small>15 / 1,5</small></td><td class="s" style="font:500 var(--t-md)/1.5 var(--ui)">Canción del puerto · Río abajo · Nana para después</td><td class="u">Texto base, filas de la biblioteca, menús.</td></tr>
+      <tr><td class="k">SM<small>13,5 / 1,45</small></td><td class="s" style="font:600 var(--t-sm)/1.45 var(--ui)">Soprano · Contralto · Tenor · Bajo</td><td class="u">Botones chicos, nombres de pista, ayuda.</td></tr>
+      <tr><td class="k">XS<small>12 / 1,4</small></td><td class="s" style="font:500 var(--t-xs)/1.4 var(--ui);color:var(--muted)">7 canciones · Editora · hace 2 días</td><td class="u">Datos secundarios.</td></tr>
+      <tr><td class="k">2XS<small>11 · +0,1 em</small></td><td class="s"><span class="eyebrow">Otras colecciones</span></td><td class="u">Etiquetas en mayúsculas. Único estilo en toda la app.</td></tr>
+      <tr class="grp"><td colspan="3"><span class="eyebrow">Letra · Atkinson, mayúsculas, +0,02 em</span></td></tr>
+      <tr><td class="k">Escritorio<small>24 · activo ×1,14</small></td><td class="s"><span class="lyr" style="text-align:left;gap:0"><span class="v" style="--tc:var(--t-sop)">Sopla el viento por la loma</span></span></td><td class="u">Hoy 20 px (text-xl). Sube a 24.</td></tr>
+      <tr><td class="k">Teléfono<small>19</small></td><td class="s"><span class="lyr" style="text-align:left;gap:0;--t-lyr:var(--t-lyr-m)"><span class="v" style="--tc:var(--t-ten)">cada nota que se asoma</span></span></td><td class="u">Tres o más columnas bajan a 0,86.</td></tr>
+      <tr class="grp"><td colspan="3"><span class="eyebrow">Mono · Geist Mono 500</span></td></tr>
+      <tr><td class="k">Reloj<small>15 + 13</small></td><td class="s"><span class="time"><b>0:27</b><small>.4</small> / 4:05</span></td><td class="u">Reproductor. Décimas en tamaño menor.</td></tr>
+      <tr><td class="k">Tiempos<small>12</small></td><td class="s" style="font:500 12px/1 var(--mono);color:var(--muted)">12.40 → 15.80</td><td class="u">Marcas de tiempo del editor.</td></tr>
+      <tr><td class="k">Atajo<small>10,5</small></td><td class="s"><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>E</kbd></td><td class="u">Menús, tooltips, hoja de ayuda.</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">El eje óptico en los títulos</h2><p>Bricolage trae un eje de tamaño óptico (12 a 96) que hoy se deja en automático. Fijarlo en 96 para los títulos los vuelve más compactos y con más contraste de trazo, sin cambiar de familia. El texto corrido queda en automático.</p></div>
+    <div class="opsz">
+      <div class="note"><span class="eyebrow">Hoy · opsz automático, 600</span><div class="w" style="font-weight:600;font-variation-settings:'opsz' 14;letter-spacing:-0.005em">Vidala del viento</div><p>Así se ve el título en la barra del reproductor: correcto, pero igual al resto de la interfaz.</p></div>
+      <div class="note"><span class="eyebrow">Propuesta · opsz 96, 700, −0,0125 em</span><div class="w" style="font-variation-settings:'opsz' 96;letter-spacing:-0.0175em">Vidala del viento</div><p>Mismo tamaño, más presencia. Se usa solo en títulos: canción, colección, secciones.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">La hora en monoespaciada</h2><p>Hoy el reloj usa Bricolage con cifras tabulares, en cinco piezas con opacidades distintas. Pasa a Geist Mono: los dígitos no bailan mientras corre el tiempo y el reloj se lee como un instrumento.</p></div>
+    <div class="compare">
+      <div><div class="cap"><b>Hoy</b><span>Bricolage, tabular-nums</span></div>
+        <div class="app clock auto"><div class="amb"></div>
+          <div class="old" id="old-clock"><span class="a">0:27</span><span class="b">.40</span><span class="s">/</span><span class="c">4:05</span><span class="d">.12</span></div>
+          <span class="ticker">Se animan las décimas para ver el ancho de los dígitos.</span>
+        </div></div>
+      <div><div class="cap"><b>Propuesta</b><span>Geist Mono</span></div>
+        <div class="app clock auto"><div class="amb"></div>
+          <div class="new time" id="new-clock"><b>0:27</b><small>.4</small> / 4:05</div>
+          <span class="ticker">Décimas, no centésimas: alcanzan para ensayar y se leen mejor.</span>
+        </div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Etiquetas</h2><p>Hoy hay al menos cuatro estilos de texto en mayúsculas (sidebar a 16 px, tarjetas del editor, comentarios de la letra a 14 px, etiquetas del toolbar a 10 px). Queda uno solo: 11 px, 600, +0,1 em, en el color tenue.</p></div>
+    <div class="app labels auto" style="border-radius:var(--r-box)"><div class="amb"></div>
+      <span class="eyebrow-m">Otras colecciones</span>
+      <span class="eyebrow-m">Pistas de audio</span>
+      <span class="cmt">Coro</span>
+      <span class="eyebrow-m">Corrección por reacción</span>
+      <span class="help">Los comentarios de la letra usan la misma etiqueta con +0,16 em.</span>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Reglas de la letra</h2></div>
+    <div class="lyr-rules">
+      <div class="app lyr-demo auto"><div class="amb"></div>
+        <div class="lyr" style="gap:22px">
+          <div class="stz"><span class="v past" style="--tc:var(--t-baj)">vuelve al mismo corazón</span></div>
+          <div class="stz"><span class="cmt">Coro</span>
+            <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+            <span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span>
+            <div class="cols"><div><span class="v" style="--tc:var(--t-sop)">Ay, vidala</span></div><div><span class="v" style="--tc:var(--t-baj)">(uh, uh)</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="rules">
+        <div><b>Caja</b><span>Mayúsculas siempre, +0,02 em. Se mantiene.</span></div>
+        <div><b>Peso</b><span>500 en reposo; 700 el verso activo (hoy 600).</span></div>
+        <div><b>Escala activa</b><span>×1,14 con la curva de la app en 420 ms (hoy ×1,15 en 500 ms).</span></div>
+        <div><b>Columnas</b><span>0,86 del tamaño base; con cuatro o más, 0,75. Separación de 40 px.</span></div>
+        <div><b>Comentario</b><span>Etiqueta Bricolage 11 px, +0,16 em, tenue. Hoy es Atkinson a 14 px al 40 %.</span></div>
+        <div><b>Cantado</b><span>Color de texto al 30 %, sin degradé.</span></div>
+        <div><b>Largo de línea</b><span>Equilibrado con <span class="mono">text-wrap: balance</span> para que un verso largo no deje una palabra sola.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Lo que no cambia</h2></div>
+    <div class="grid-3">
+      <div class="note"><b>Las familias y su carga</b><p>Mismo enlace de Google Fonts. Se agrega el eje de ancho (<span class="mono">wdth</span>) de Bricolage solo si se decide usarlo en títulos largos del teléfono; hoy no hace falta.</p></div>
+      <div class="note"><b>Letra en mayúsculas</b><p>Probado en ensayo y funciona de lejos. No se propone caja mixta.</p></div>
+      <div class="note"><b>Idioma</b><p>Toda la interfaz sigue en castellano. Sí se corrige <span class="mono">&lt;html lang="en"&gt;</span> a <span class="mono">es</span>, que afecta la partición de palabras y los lectores de pantalla.</p></div>
+    </div>
+  </section>
+</div>
+<script>
+hydrateIcons();
+(function () {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) return;
+  let t = 27.4;
+  const o = document.querySelector("#old-clock"), n = document.querySelector("#new-clock");
+  setInterval(() => {
+    t += 0.07;
+    const m = Math.floor(t / 60), s = Math.floor(t % 60), cs = Math.floor((t % 1) * 100), ds = Math.floor((t % 1) * 10);
+    const mm = `${m}:${String(s).padStart(2, "0")}`;
+    o.querySelector(".a").textContent = mm; o.querySelector(".b").textContent = "." + String(cs).padStart(2, "0");
+    n.innerHTML = `<b>${mm}</b><small>.${ds}</small> / 4:05`;
+  }, 70);
+})();
+</script>
+</html>

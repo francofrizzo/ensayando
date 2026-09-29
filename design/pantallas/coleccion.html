@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Ajustes de colección</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ---------- estructura de ajustes ---------- */
+.s-top { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 10px; z-index: 3; }
+.s-top .t { display: flex; flex-direction: column; gap: 3px; }
+.s-top .t b { font: 700 18px/1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; }
+.s-top .t span { font: 500 12px/1 var(--ui); color: var(--muted); }
+.s-nav { position: absolute; left: 14px; top: 88px; bottom: 14px; width: 232px; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 2px; z-index: 2; }
+.s-nav .mi { padding: 10px 12px; }
+.s-nav .foot { margin-top: auto; padding: 10px 12px; font: 500 12px/1.4 var(--ui); color: var(--faint); }
+.s-main { position: absolute; left: 262px; right: 14px; top: 88px; bottom: 14px; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+.s-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 6px 4px 2px; }
+.s-head h3 { margin: 0; font: 700 28px/1 var(--ui); letter-spacing: -0.0125em; font-variation-settings: "opsz" 96; }
+.s-head p { margin: 6px 0 0; font: 400 13.5px/1.4 var(--ui); color: var(--muted); max-width: 60ch; }
+.card { border-radius: var(--r-box); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.card h4 { margin: 0; font: 650 15px/1.2 var(--ui); }
+.card .sub { font: 400 13px/1.4 var(--ui); color: var(--muted); margin-top: -10px; }
+.f2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.warn-line { display: flex; gap: 8px; align-items: flex-start; font: 500 12.5px/1.4 var(--ui); color: var(--warn); background: var(--warn-soft); padding: 9px 11px; border-radius: 10px; }
+.warn-line .ic { font-size: 16px; margin-top: 1px; }
+.radios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.radio { border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: inset 0 0 0 1px var(--line-strong); background: var(--raised); }
+.radio .top { display: flex; align-items: center; gap: 8px; font: 650 14px/1 var(--ui); }
+.radio .top .ic { font-size: 18px; color: var(--muted); }
+.radio .top .dotr { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.radio p { margin: 0; font: 400 12.5px/1.4 var(--ui); color: var(--muted); }
+.radio.on { box-shadow: inset 0 0 0 1.5px var(--c-ink), 0 0 0 4px oklch(from var(--c) l c h / 0.14); }
+.radio.on .top .ic { color: var(--c-ink); }
+.radio.on .dotr { box-shadow: inset 0 0 0 5px var(--c); }
+.drop { border-radius: 12px; border: 1.5px dashed var(--line-strong); padding: 14px; display: flex; align-items: center; gap: 10px; font: 500 13px/1.4 var(--ui); color: var(--muted); }
+.drop .ic { font-size: 20px; color: var(--c-ink); }
+.savebar { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 16px; }
+.savebar .msg { font: 600 13.5px/1 var(--ui); display: flex; align-items: center; gap: 8px; }
+.savebar .msg i.dotc { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+
+/* colores */
+.pal { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 14px; min-height: 0; flex: 1; }
+.pal-list { border-radius: var(--r-box); padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.pal-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 11px; }
+.pal-row .sw { width: 30px; height: 30px; border-radius: 9px; box-shadow: inset 0 0 0 1px oklch(0% 0 0 / 0.12); }
+.pal-row b { font: 650 13.5px/1.1 var(--ui); display: block; }
+.pal-row span.k { font: 500 11.5px/1 var(--mono); color: var(--faint); }
+.pal-row .end { font: 500 12px/1 var(--ui); color: var(--muted); }
+.pal-row.on { background: var(--c-soft); }
+.pal-row.main { margin-bottom: 4px; }
+.pal-edit { border-radius: var(--r-box); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.huebar { position: relative; height: 16px; border-radius: 8px; box-shadow: inset 0 0 0 1px oklch(0% 0 0 / 0.08);
+  background: linear-gradient(90deg, oklch(.6 .15 0), oklch(.6 .15 60), oklch(.6 .15 120), oklch(.6 .15 180), oklch(.6 .15 240), oklch(.6 .15 300), oklch(.6 .15 360)); }
+.huebar .thumb { position: absolute; top: 50%; left: var(--x); width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--sw); box-shadow: 0 0 0 3px #fff, 0 2px 8px oklch(0% 0 0 / 0.35); }
+.huebar .tick { position: absolute; top: -7px; left: var(--x); width: 2px; height: 30px; margin-left: -1px; border-radius: 1px; background: var(--ink); opacity: .35; }
+.huebar .tick span { position: absolute; top: 34px; left: 50%; transform: translateX(-50%); font: 600 10.5px/1 var(--ui); color: var(--muted); white-space: nowrap; }
+.huebar .tick.near { background: var(--warn); opacity: 1; }
+.huebar .tick.near span { color: var(--warn); }
+.hue-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 14px; align-items: center; padding-bottom: 18px; }
+.hue-row .num { height: 32px; font-size: 13px; padding: 0 10px; }
+.pal-row .hv { font: 500 11.5px/1 var(--mono); color: var(--muted); text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.pal-row .hv small { font: 500 11px/1 var(--ui); color: var(--faint); }
+.pal-row .sw.neutral { background: repeating-linear-gradient(135deg, var(--sunken) 0 5px, var(--line) 5px 10px) !important; }
+.previews { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.prev { border-radius: 12px; padding: 14px 12px; position: relative; overflow: hidden; isolation: isolate; background: var(--canvas); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 0 1px var(--line); }
+.prev .lyr { gap: 6px; --t-lyr: 14.5px; }
+.prev .wave { height: 22px; }
+.prev .cap2 { font: 600 10.5px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+
+/* canciones */
+.songs { border-radius: var(--r-box); padding: 6px; display: flex; flex-direction: column; }
+.srow { display: grid; grid-template-columns: 18px 26px minmax(0, 1fr) 150px 70px 60px 30px; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; font: 500 14px/1.2 var(--ui); }
+.srow + .srow { box-shadow: 0 -1px 0 var(--line); }
+.srow .grip { color: var(--faint); font-size: 18px; }
+.srow .n { font: 500 12.5px/1 var(--mono); color: var(--faint); text-align: right; }
+.srow .ttl { font-weight: 600; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.srow .ttl span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srow .info { display: flex; gap: 6px; }
+.srow .dur { font: 500 12.5px/1 var(--mono); color: var(--muted); }
+.srow.drag { background: var(--raised); box-shadow: 0 0 0 1.5px var(--c-ink), var(--shadow-float); transform: translateX(8px) rotate(-0.4deg); position: relative; z-index: 2; }
+.srow.ghost { background: repeating-linear-gradient(135deg, var(--c-soft) 0 8px, transparent 8px 16px); box-shadow: inset 0 0 0 1.5px dashed var(--c-line); height: 46px; }
+.srow.hid .ttl { color: var(--muted); }
+
+/* miembros */
+.mtable { border-radius: var(--r-box); overflow: hidden; }
+.mrow { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 150px 130px 36px; gap: 12px; align-items: center; padding: 12px 16px; font: 500 13.5px/1.25 var(--ui); }
+.mrow + .mrow { box-shadow: 0 -1px 0 var(--line); }
+.mrow.head { font: 600 11px/1 var(--ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); padding-block: 12px; background: var(--sunken); }
+.mrow .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mrow .who b { font-weight: 650; display: block; }
+.mrow .who small { font: 500 12px/1.2 var(--mono); color: var(--muted); }
+.mrow .last { font-size: 12.5px; color: var(--muted); }
+.sel { height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px var(--line-strong); background: var(--raised); display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 11px; font: 600 13px/1 var(--ui); justify-content: space-between; }
+.sel .ic { font-size: 15px; color: var(--faint); }
+
+/* diálogos */
+.dlg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 16px; z-index: 10; }
+.dlg h4 { margin: 0; font: 700 21px/1.1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; }
+.dlg .desc { margin: -8px 0 0; font: 400 13.5px/1.45 var(--ui); color: var(--muted); }
+.dlg .acts { display: flex; justify-content: flex-end; gap: 8px; }
+.result { border-radius: 12px; padding: 10px 10px 10px 14px; display: flex; align-items: center; gap: 10px; background: var(--sunken); }
+.result .pw { font: 600 18px/1 var(--mono); letter-spacing: 0.04em; }
+.opt { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line-strong); }
+.opt .ic { font-size: 20px; color: var(--muted); margin: 2px auto 0; }
+.opt b { font: 650 14px/1.2 var(--ui); display: block; }
+.opt span { font: 400 12.5px/1.4 var(--ui); color: var(--muted); }
+.opt.on { box-shadow: inset 0 0 0 1.5px var(--c-ink); background: var(--c-soft); }
+.opt.on .ic { color: var(--c-ink); }
+
+/* teléfono */
+.ph-top { position: absolute; left: 10px; right: 10px; top: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; gap: 8px; padding: 0 6px; z-index: 3; }
+.ph-top b { font: 700 17px/1 var(--ui); letter-spacing: -0.01em; flex: 1; font-variation-settings: "opsz" 96; }
+.ph-tabs { position: absolute; left: 10px; right: 10px; top: 114px; display: flex; gap: 6px; overflow: hidden; }
+.ph-body { position: absolute; left: 10px; right: 10px; top: 162px; bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+.pm { border-radius: 16px; padding: 4px 14px; }
+.pmr { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 0; }
+.pmr + .pmr { box-shadow: 0 -1px 0 var(--line); }
+.pmr b { font: 650 14.5px/1.2 var(--ui); display: block; }
+.pmr small { font: 500 12px/1.3 var(--ui); color: var(--muted); }
+.sheet-ph { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 28px 28px 0 0; padding: 10px 18px 32px; display: flex; flex-direction: column; gap: 12px; z-index: 10; }
+
+.legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
+.legend li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: var(--t-sm); color: var(--muted); counter-increment: an; }
+.legend li::before { content: counter(an); width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--ink); font-weight: 650; display: block; }
+@media (max-width: 900px) { .legend { grid-template-columns: 1fr; } }
+.perm { width: 100%; }
+.perm td:not(:first-child), .perm th:not(:first-child) { text-align: center; }
+.yes { color: var(--ok); font-weight: 700; } .no { color: var(--faint); }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas · 5 de 6</span>
+    <h1 class="d">Ajustes de colección</h1>
+    <p class="lede">Una pantalla nueva en <span class="mono">/:colección/ajustes/general</span> (y <span class="mono">/colores</span>, <span class="mono">/canciones</span>, <span class="mono">/miembros</span>), solo para admins de la colección. Junta todo lo que hoy se hace con la skill <span class="mono">admin</span> y SQL contra la base: nombre, dirección, visibilidad, portada, colores, orden y borrado de canciones, y quién tiene acceso. La barra y el menú de secciones son vidrio sobre la luz de la colección; los formularios van en hoja opaca, porque ahí se escribe.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
+    <div class="grid-3">
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>General</b><p>Nombre, dirección, visibilidad y portada. Hoy son <span class="mono">UPDATE public.collections</span> a mano y <span class="mono">admin.sh set-visibility</span>.</p></div>
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>Colores</b><p>El editor de paleta de la skill (<span class="mono">edit-palette</span> y <span class="mono">apply-palette</span>) pasa a la app, simplificado a tono e intensidad, con vista previa en claro y oscuro y aviso cuando dos pistas quedan con tonos muy cercanos.</p></div>
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>Canciones</b><p>Ordenar arrastrando (hoy, un <span class="mono">UPDATE … SET "order"</span> por canción), ocultar y eliminar con confirmación escrita.</p></div>
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>Miembros</b><p>Agregar personas, cambiar su rol, restablecer contraseñas de cuentas administradas y quitar acceso. Hoy es <span class="mono">grant</span>, <span class="mono">reset-password</span> y <span class="mono">revoke</span> por terminal.</p></div>
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>Crear y eliminar colecciones</b><p>Crear queda para quien administra la app (un permiso nuevo, ver <a href="../plan/index.html">Plan</a>). Eliminar, en la zona de peligro de cada colección.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Un solo lugar, un solo permiso</b><p>Se llega desde la biblioteca o el menú de la canción. Solo lo ven los admins de la colección; editores y lectores no ven la entrada.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">General</h2>
+      <p>La primera sección. Los cambios se juntan y se guardan con una barra que aparece abajo cuando hay algo sin guardar, igual en todas las secciones.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit"><div class="app desk" id="m-general"></div></div></div>
+    <ol class="legend">
+      <li><span><b>Secciones en vidrio</b>Menú fijo a la izquierda. La zona de peligro va aparte, en rojo, al final.</span></li>
+      <li><span><b>Dirección con aviso</b>Cambiar la dirección rompe los enlaces viejos. Se avisa antes de guardar, no después.</span></li>
+      <li><span><b>Visibilidad en tarjetas</b>Tres opciones con lo que significa cada una, en lugar de las palabras de la base.</span></li>
+      <li><span><b>Portada</b>Se sube arrastrando. Se usa en la biblioteca y como luz de sala del reproductor.</span></li>
+      <li><span><b>Barra de guardado</b>Aparece solo con cambios. Dice cuántos son y permite descartarlos.</span></li>
+    </ol>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Colores</h2>
+      <p>El editor de paleta que hoy abre la skill en el navegador, dentro de la app y mucho más simple: con el modelo de <a href="../fundamentos/paleta.html">tonos</a>, de cada color se elige solo el tono y la intensidad. La claridad la pone el sistema, así que no hay forma de elegir un color que no se lea. Lo que queda por cuidar es que las pistas se distingan entre sí.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit"><div class="app desk" id="m-colors"></div></div></div>
+    <div class="grid-3">
+      <div class="note"><b>Clave, nombre, tono y uso</b><p>Cada color de pista muestra su clave (<span class="mono">sop</span>), un nombre legible, su tono e intensidad, y cuántas pistas y versos lo usan. Renombrar una clave actualiza pistas y letras en la misma operación; quitar un color en uso pide elegir un reemplazo.</p></div>
+      <div class="note"><b>Aviso de tonos cercanos</b><p>El contraste ya no puede fallar, porque la claridad es fija. El aviso nuevo es otro: si dos pistas quedan a menos de 25° de tono, "Tenor y Bajo están a 12° de tono: cuesta distinguirlos". La barra de tono marca dónde están las demás pistas para elegir un lugar libre. Una pista de referencia o de clic puede ser neutra.</p></div>
+      <div class="note"><b>Diff antes de guardar</b><p>Como hoy la skill muestra el cambio antes de aplicarlo, Guardar abre un resumen: "3 cambios: Bajo a 207°, Piano renombrado, Clic nuevo (neutra)".</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Canciones</h2>
+      <p>El orden de la colección es el orden de la biblioteca y de anterior y siguiente. Se ordena arrastrando; la visibilidad se cambia acá sin entrar al editor.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit"><div class="app desk" id="m-songs"></div></div></div>
+    <div class="grid-2">
+      <div class="note"><b>Eliminar con confirmación escrita</b><p>Se escribe el nombre de la canción para habilitar el botón. Se borran la canción, sus pistas y su letra, y también sus audios del almacenamiento. Hoy la skill borra las filas pero deja los archivos.</p></div>
+      <div class="note"><b>Oculta, no borrada</b><p>Ocultar deja la canción solo para editores y admins, con un candado en la biblioteca. Es lo mismo que el interruptor Visible del editor de canción.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Miembros</h2>
+      <p>Quién entra y con qué rol. Si un admin de colección puede crear cuentas y restablecer contraseñas, o solo quien administra la app, queda como pregunta abierta en el <a href="../plan/index.html">Plan</a>; los mocks muestran la versión amplia. Hay dos tipos de cuenta: <b>administrada</b> (solo usuario, sin mail propio; por dentro, <span class="mono">usuario@ensayando.com.ar</span>) y <b>con email</b>. La diferencia importa para restablecer la contraseña, así que se muestra.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit"><div class="app desk" id="m-members"></div></div></div>
+    <div class="scroll-x">
+      <table class="spec perm">
+        <thead><tr><th>Puede…</th><th>Admin</th><th>Editor</th><th>Lector</th></tr></thead>
+        <tbody>
+          <tr><td>Escuchar y ver la letra</td><td class="yes">Sí</td><td class="yes">Sí</td><td class="yes">Sí</td></tr>
+          <tr><td>Ver canciones ocultas</td><td class="yes">Sí</td><td class="yes">Sí</td><td class="no">No</td></tr>
+          <tr><td>Editar canciones, pistas y letras</td><td class="yes">Sí</td><td class="yes">Sí</td><td class="no">No</td></tr>
+          <tr><td>Ordenar y eliminar canciones</td><td class="yes">Sí</td><td class="no">No</td><td class="no">No</td></tr>
+          <tr><td>Cambiar nombre, visibilidad, portada y colores</td><td class="yes">Sí</td><td class="no">No</td><td class="no">No</td></tr>
+          <tr><td>Agregar personas, cambiar roles y restablecer contraseñas</td><td class="yes">Sí</td><td class="no">No</td><td class="no">No</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Agregar persona y restablecer contraseña</h2>
+      <p>Tres caminos para sumar a alguien: buscar una cuenta que ya existe, crear una cuenta administrada o invitar por email. Restablecer depende del tipo de cuenta: a una administrada se le genera una contraseña nueva que se ve una sola vez; a una con email se le manda el enlace.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Agregar persona</b><span>diálogo en vidrio pop</span></div>
+        <div class="frame" data-w="640"><div class="fit"><div class="app auto" style="width:640px;height:600px" id="m-add"></div></div></div>
+      </div>
+      <div>
+        <div class="cap"><b>Contraseña nueva</b><span>se muestra una sola vez</span></div>
+        <div class="frame" data-w="640"><div class="fit"><div class="app auto" style="width:640px;height:600px" id="m-reset"></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Teléfono</h2>
+      <p>Las secciones pasan a fichas deslizables arriba. Miembros es la que más se usa desde el teléfono (sumar a alguien en el ensayo), así que es la que se muestra.</p>
+    </div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Miembros</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit"><div class="app phone" id="p-members"></div></div></div>
+      </div>
+      <div class="col phone">
+        <div class="cap"><b>Acciones de una persona</b><span>hoja inferior</span></div>
+        <div class="frame" data-w="390"><div class="fit"><div class="app phone" id="p-actions"></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Zona de peligro y colecciones nuevas</h2>
+      <p>Eliminar una colección se confirma escribiendo su dirección. Crear una colección es un permiso de quien administra la app, no de cada colección: aparece como "Nueva colección" al pie de la biblioteca y abre <span class="mono">/nueva-coleccion</span>.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Eliminar colección</b><span>zona de peligro</span></div>
+        <div class="frame" data-w="640"><div class="fit"><div class="app auto" style="width:640px;height:520px" id="m-danger"></div></div></div>
+      </div>
+      <div>
+        <div class="cap"><b>Nueva colección</b><span>solo admins de la app</span></div>
+        <div class="frame" data-w="640"><div class="fit"><div class="app auto" style="width:640px;height:520px" id="m-newcol"></div></div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const T = { sop: "var(--t-sop)", alt: "var(--t-alt)", ten: "var(--t-ten)", baj: "var(--t-baj)", pno: "var(--t-pno)" };
+  const SECTIONS = [["general", "settings", "General"], ["colors", "palette", "Colores"], ["songs", "playlist", "Canciones"], ["members", "users", "Miembros"]];
+
+  function shell(active, main, extra) {
+    return `<div class="amb"></div>
+      <div class="s-top g1">
+        <span class="b sm soft"><i data-ic="arrowLeft"></i>Volver a la canción</span>
+        <div class="t" style="margin-left:6px"><b>Ajustes</b><span>Coro del Puerto · 2026</span></div>
+        <div class="m-grow"></div>
+        <span class="badge c"><i data-ic="crown"></i>Sos admin</span>
+        <span class="avatar">FF</span>
+      </div>
+      <nav class="s-nav g2">
+        ${SECTIONS.map(([id, icn, lbl]) => `<div class="mi${id === active ? " on" : ""}"><i data-ic="${icn}"></i>${lbl}${id === "members" ? '<span class="end">4</span>' : ""}${id === "songs" ? '<span class="end">7</span>' : ""}</div>`).join("")}
+        <div class="sep"></div>
+        <div class="mi danger${active === "danger" ? " on" : ""}"><i data-ic="alert"></i>Zona de peligro</div>
+        <div class="foot">Solo los admins de la colección ven esta pantalla.</div>
+      </nav>
+      <div class="s-main">${main}</div>${extra || ""}`;
+  }
+
+  // ---------- General ----------
+  document.getElementById("m-general").innerHTML = shell("general", `
+    <div class="s-head"><div><h3>General</h3><p>Cómo se llama la colección, dónde vive y quién la puede ver.</p></div></div>
+    <div class="card sheet">
+      <div class="f2">
+        <div class="field"><span class="lbl">Nombre</span><div class="in">Coro del Puerto · 2026</div></div>
+        <div class="field"><span class="lbl">Dirección</span><div class="in focus mono"><span class="ph">ensayando.com.ar/</span>coro-puerto-2026</div></div>
+      </div>
+      <div class="warn-line"><i data-ic="alert"></i><span>Cambiaste la dirección. Los enlaces a <span class="mono">/coro-del-puerto</span> que ya compartiste van a dejar de funcionar.</span></div>
+    </div>
+    <div class="card sheet">
+      <h4>Visibilidad</h4>
+      <div class="radios">
+        <div class="radio on"><div class="top"><i data-ic="lock"></i>Privada<span class="dotr"></span></div><p>Solo la ven los miembros. Para entrar hay que tener cuenta y estar en la lista.</p></div>
+        <div class="radio"><div class="top"><i data-ic="link"></i>No listada<span class="dotr"></span></div><p>La ve cualquiera que tenga el enlace, sin cuenta. No aparece en la biblioteca de otras personas.</p></div>
+        <div class="radio"><div class="top"><i data-ic="globe"></i>Pública<span class="dotr"></span></div><p>La ve cualquiera y aparece en la biblioteca de todas las personas.</p></div>
+      </div>
+    </div>
+    <div class="card sheet">
+      <div class="m-col" style="gap:12px"><h4>Portada</h4><p class="help" style="margin:0">Opcional. Cuadrada, al menos 1000 × 1000 px. Si la cargás, se ve en la biblioteca y, desenfocada, como luz de fondo del reproductor. Sin portada no hay reemplazo ni espacio reservado.</p>
+        <div class="drop"><i data-ic="photo"></i><span>Esta colección no tiene portada. Arrastrá una imagen o <b style="color:var(--c-ink)">elegí un archivo</b>. JPG, PNG o WebP.</span></div>
+      </div>
+    </div>
+    <div class="savebar g3"><span class="msg"><i class="dotc"></i>2 cambios sin guardar</span><div class="m-grow"></div><span class="b sm">Descartar</span><span class="b sm fill"><i data-ic="check"></i>Guardar</span></div>
+  `, `<span class="annot solo" data-n="1" style="left:30px;top:100px"></span>
+      <span class="annot solo" data-n="2" style="left:1222px;top:258px"></span>
+      <span class="annot solo" data-n="3" style="left:370px;top:336px"></span>
+      <span class="annot solo" data-n="4" style="left:340px;top:506px"></span>
+      <span class="annot solo" data-n="5" style="left:600px;top:738px"></span>`);
+
+  // ---------- Colores ----------
+  const hc = (h, k = 0.15) => `oklch(0.6 ${k} ${h})`;
+  const pal = [["sop", "Soprano", 350, "normal", "1 pista · 38 versos"], ["alt", "Contralto", 70, "normal", "1 pista · 31 versos"], ["ten", "Tenor", 195, "normal", "1 pista · 27 versos"], ["baj", "Bajo", 207, "normal", "1 pista · 30 versos"], ["pno", "Piano", 130, "normal", "1 pista · sin versos"], ["clic", "Clic", null, "neutra", "1 pista · sin versos"]];
+  const lyrPrev = `<div class="lyr"><span class="v" style="--tc:var(--t-ten)">cada nota que se asoma</span><span class="v now" style="--tc:var(--t-baj)">vuelve al mismo corazón</span><span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span></div>
+    <div class="wave" data-seed="4" data-bars="80" data-progress=".5" style="--tc:var(--t-ten)"></div><div class="wave" data-seed="7" data-bars="80" data-progress=".5" style="--tc:var(--t-baj)"></div>`;
+  const ticks = pal.filter((p) => p[2] !== null && p[0] !== "baj").map(([k, n, h]) => `<span class="tick${Math.abs(h - 207) < 25 ? " near" : ""}" style="--x:${(h / 360) * 100}%"><span>${n}</span></span>`).join("");
+  document.getElementById("m-colors").innerHTML = shell("colors", `
+    <div class="s-head"><div><h3>Colores</h3><p>El color principal tiñe la sala y los botones. Cada pista tiene su tono, que colorea sus versos y su onda.</p></div><span class="b sm soft"><i data-ic="plus"></i>Agregar color</span></div>
+    <div class="pal">
+      <div class="pal-list sheet">
+        <div class="pal-row main"><span class="sw" style="background:var(--c)"></span><div><b>Color principal</b><span class="k">colección</span></div><span class="hv">${getComputedStyle(document.documentElement).getPropertyValue("--h").trim()}°<small>normal</small></span></div>
+        <div class="sep"></div>
+        ${pal.map(([k, n, h, it, u], i) => `<div class="pal-row${k === "baj" ? " on" : ""}"><span class="sw${h === null ? " neutral" : ""}" style="background:${h === null ? "none" : hc(h)}"></span><div><b>${n}${k === "baj" ? ` <span class="badge warn" style="margin-left:4px">${ic("alert")}12° de Tenor</span>` : ""}</b><span class="k">${k} · ${u}</span></div><span class="hv">${h === null ? "—" : h + "°"}<small>${it}</small></span></div>`).join("")}
+      </div>
+      <div class="pal-edit sheet">
+        <div class="m-row"><span class="sw" style="background:${hc(207)};width:40px;height:40px;border-radius:11px"></span>
+          <div class="field m-grow"><span class="lbl">Nombre</span><div class="in">Bajo</div></div>
+          <div class="field" style="width:120px"><span class="lbl">Clave</span><div class="in mono">baj</div></div>
+          <span class="b icon sm danger" style="margin-top:20px"><i data-ic="trash"></i></span>
+        </div>
+        <div class="field"><span class="lbl">Tono</span>
+          <div class="hue-row"><div class="huebar">${ticks}<span class="thumb" style="--x:${(207 / 360) * 100}%;--sw:${hc(207)}"></span></div><div class="in mono num">207°</div></div>
+        </div>
+        <div class="m-row" style="justify-content:space-between;flex-wrap:wrap">
+          <div class="field"><span class="lbl">Intensidad</span><span class="seg"><span>Suave</span><span class="on">Normal</span><span>Intensa</span></span></div>
+          <label class="m-row" style="gap:8px;font:600 13px/1 var(--ui);color:var(--muted);margin-top:18px"><span class="tgl"></span>Neutra (sin color)</label>
+        </div>
+        <div class="warn-line"><i data-ic="alert"></i><span>Tenor y Bajo están a 12° de tono: cuesta distinguirlos. <b>Probá 250°</b> (el lugar libre más cercano) o pasá una de las dos a intensidad suave.</span></div>
+        <div class="previews">
+          <div class="prev theme-light" style="--t-baj:${hc(207)}"><span class="cap2">Claro</span>${lyrPrev}</div>
+          <div class="prev theme-dark" style="--t-baj:${hc(207)}"><span class="cap2">Oscuro</span>${lyrPrev}</div>
+        </div>
+      </div>
+    </div>
+    <div class="savebar g3"><span class="msg"><i class="dotc"></i>3 cambios: Bajo a 207°, Piano renombrado, Clic nuevo (neutra)</span><div class="m-grow"></div><span class="b sm">Descartar</span><span class="b sm fill"><i data-ic="check"></i>Revisar y guardar</span></div>
+  `);
+
+  // ---------- Canciones ----------
+  const S = ENS.songs;
+  const rows = [
+    `<div class="srow"><i data-ic="grip" class="grip"></i><span class="n">1</span><span class="ttl"><span>${S[0].title}</span></span><span class="info"><span class="badge">5 pistas</span><span class="badge ok"><i data-ic="lyrics"></i>Letra</span></span><span class="dur">${S[0].dur}</span><span class="tgl on"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+    `<div class="srow ghost"></div>`,
+    `<div class="srow drag"><i data-ic="grip" class="grip"></i><span class="n">2</span><span class="ttl"><span>${S[2].title}</span></span><span class="info"><span class="badge">5 pistas</span><span class="badge ok"><i data-ic="lyrics"></i>Letra</span></span><span class="dur">${S[2].dur}</span><span class="tgl on"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+    `<div class="srow"><i data-ic="grip" class="grip"></i><span class="n">3</span><span class="ttl"><span>${S[1].title}</span></span><span class="info"><span class="badge">5 pistas</span><span class="badge ok"><i data-ic="lyrics"></i>Letra</span></span><span class="dur">${S[1].dur}</span><span class="tgl on"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+    `<div class="srow"><i data-ic="grip" class="grip"></i><span class="n">4</span><span class="ttl"><span>${S[3].title}</span></span><span class="info"><span class="badge">4 pistas</span><span class="badge warn">Sin letra</span></span><span class="dur">${S[3].dur}</span><span class="tgl on"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+    `<div class="srow"><i data-ic="grip" class="grip"></i><span class="n">5</span><span class="ttl"><span>${S[4].title}</span></span><span class="info"><span class="badge">5 pistas</span><span class="badge ok"><i data-ic="lyrics"></i>Letra</span></span><span class="dur">${S[4].dur}</span><span class="tgl on"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+    `<div class="srow"><i data-ic="grip" class="grip"></i><span class="n">6</span><span class="ttl"><span>${S[5].title}</span></span><span class="info"><span class="badge">3 pistas</span><span class="badge ok"><i data-ic="lyrics"></i>Letra</span></span><span class="dur">${S[5].dur}</span><span class="tgl on"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+    `<div class="srow hid"><i data-ic="grip" class="grip"></i><span class="n">7</span><span class="ttl"><i data-ic="lock" style="color:var(--c-ink)"></i><span>${S[6].title}</span></span><span class="info"><span class="badge">2 pistas</span><span class="badge ok"><i data-ic="lyrics"></i>Letra</span></span><span class="dur">${S[6].dur}</span><span class="tgl"></span><span class="b icon sm muted"><i data-ic="dots"></i></span></div>`,
+  ];
+  document.getElementById("m-songs").innerHTML = shell("songs", `
+    <div class="s-head"><div><h3>Canciones</h3><p>Arrastrá para cambiar el orden. El interruptor oculta la canción a los lectores.</p></div><span class="b sm soft"><i data-ic="plus"></i>Nueva canción</span></div>
+    <div class="songs sheet">${rows.join("")}</div>
+  `, `<div class="menu g3 abs" style="right:40px;top:520px;width:250px;z-index:6">
+        <div class="mi"><i data-ic="pencil"></i>Editar canción</div>
+        <div class="mi"><i data-ic="copy"></i>Copiar enlace</div>
+        <div class="sep"></div>
+        <div class="mi danger hover"><i data-ic="trash"></i>Eliminar canción…</div>
+      </div>`);
+
+  // ---------- Miembros ----------
+  const M = ENS.members;
+  const roleLbl = { admin: "Admin", editor: "Editor", viewer: "Lector" };
+  document.getElementById("m-members").innerHTML = shell("members", `
+    <div class="s-head"><div><h3>Miembros</h3><p>Quién puede entrar a esta colección y qué puede hacer.</p></div><span class="b sm fill"><i data-ic="userPlus"></i>Agregar persona</span></div>
+    <div class="in" style="max-width:360px"><i data-ic="search"></i><span class="ph">Buscar por nombre, usuario o email</span></div>
+    <div class="mtable sheet">
+      <div class="mrow head"><span>Persona</span><span>Cuenta</span><span>Rol</span><span>Último ingreso</span><span></span></div>
+      ${M.map((m, i) => `<div class="mrow">
+        <span class="who"><span class="avatar">${m.name.slice(0, 2).toUpperCase()}</span><span><b>${m.name}${i === 0 ? ' <span class="badge" style="margin-left:4px">Vos</span>' : ""}</b><small>${m.user}</small></span></span>
+        <span>${m.managed ? '<span class="badge"><i data-ic="key"></i>Administrada</span>' : '<span class="badge"><i data-ic="mail"></i>Con email</span>'}</span>
+        <span class="sel" style="width:130px${i === 0 ? ";opacity:.5" : ""}">${roleLbl[m.role]}<i data-ic="chevDown"></i></span>
+        <span class="last">${m.last}</span>
+        <span class="b icon sm muted"><i data-ic="dots"></i></span>
+      </div>`).join("")}
+    </div>
+    <p class="help" style="margin:0 4px">No podés cambiar tu propio rol ni quitarte acceso si sos el único admin.</p>
+  `, `<div class="menu g3 abs" style="right:40px;top:350px;width:270px;z-index:6">
+        <div class="mh">lucia · Administrada</div>
+        <div class="mi hover"><i data-ic="key"></i>Generar contraseña nueva</div>
+        <div class="mi"><i data-ic="copy"></i>Copiar usuario</div>
+        <div class="sep"></div>
+        <div class="mi danger"><i data-ic="logout"></i>Quitar acceso a la colección</div>
+      </div>`);
+
+  // ---------- Diálogos ----------
+  const bgRoom = (inner) => `<div class="amb"></div><div class="scrim"></div>${inner}`;
+  document.getElementById("m-add").innerHTML = bgRoom(`
+    <div class="dlg g3" style="width:560px">
+      <h4>Agregar persona</h4>
+      <p class="desc">Sumala a Coro del Puerto · 2026.</p>
+      <div class="field"><span class="lbl">Buscar una cuenta existente</span><div class="in focus"><i data-ic="search"></i>mart<span class="suffix">Sin resultados</span></div></div>
+      <div class="lbl" style="margin-top:2px">O crear una cuenta nueva</div>
+      <div class="opt on"><i data-ic="key"></i><div><b>Cuenta administrada</b><span>Solo usuario y contraseña. Vos le pasás los datos. Para restablecerla, lo hacés desde acá.</span></div></div>
+      <div class="f2">
+        <div class="field"><span class="lbl">Usuario</span><div class="in">martin.b</div></div>
+        <div class="field"><span class="lbl">Contraseña</span><div class="in mono">puerto-lluvia-47<span class="suffix"><i data-ic="refresh"></i></span></div></div>
+      </div>
+      <div class="opt"><i data-ic="mail"></i><div><b>Invitar por email</b><span>Recibe un enlace para elegir su contraseña. Puede restablecerla sola.</span></div></div>
+      <div class="field"><span class="lbl">Rol</span><span class="seg"><span>Admin</span><span>Editor</span><span class="on">Lector</span></span></div>
+      <div class="acts"><span class="b">Cancelar</span><span class="b fill"><i data-ic="userPlus"></i>Crear y agregar</span></div>
+    </div>`);
+  document.getElementById("m-reset").innerHTML = bgRoom(`
+    <div class="dlg g3" style="width:520px">
+      <h4>Contraseña nueva para lucia</h4>
+      <p class="desc">La anterior dejó de funcionar. Copiala y pasásela: cuando cierres este cuadro no se vuelve a mostrar.</p>
+      <div class="result"><span class="pw">vidala-norte-82</span><div class="m-grow"></div><span class="b sm fill"><i data-ic="copy"></i>Copiar</span></div>
+      <div class="field"><span class="lbl">Mensaje listo para mandar</span><div class="in" style="height:auto;padding:12px;line-height:1.45;align-items:flex-start;font-weight:400">Entrá a ensayando.com.ar con el usuario <b>&nbsp;lucia&nbsp;</b> y la contraseña <b>&nbsp;vidala-norte-82</b>.</div></div>
+      <div class="acts"><span class="b soft"><i data-ic="copy"></i>Copiar mensaje</span><span class="b fill">Listo</span></div>
+    </div>
+    <div class="toast g3 abs" style="left:50%;transform:translateX(-50%);bottom:24px"><i data-ic="mail" style="color:var(--c-ink)"></i>Para cuentas con email: "Le mandamos un enlace a sofia@ejemplo.com"</div>`);
+  document.getElementById("m-danger").innerHTML = bgRoom(`
+    <div class="dlg sheet" style="width:540px;border-radius:20px;box-shadow:0 0 0 1px var(--line),var(--shadow-float)">
+      <span class="badge danger" style="align-self:flex-start"><i data-ic="alert"></i>No se puede deshacer</span>
+      <h4>Eliminar Coro del Puerto · 2026</h4>
+      <p class="desc">Se eliminan 7 canciones con sus pistas, letras y audios, y el acceso de 4 personas. Las cuentas de esas personas no se borran.</p>
+      <div class="field"><span class="lbl">Para confirmar, escribí <span class="mono" style="color:var(--ink)">coro-puerto-2026</span></span><div class="in focus mono">coro-puerto-2026</div></div>
+      <div class="acts"><span class="b">Cancelar</span><span class="b" style="background:var(--danger);color:#fff"><i data-ic="trash"></i>Eliminar colección</span></div>
+    </div>`);
+  document.getElementById("m-newcol").innerHTML = bgRoom(`
+    <div class="dlg g3" style="width:540px">
+      <h4>Nueva colección</h4>
+      <p class="desc">Vas a quedar como admin. Después podés sumar personas y cargar canciones.</p>
+      <div class="field"><span class="lbl">Nombre</span><div class="in focus">Taller de musicales 2027</div></div>
+      <div class="field"><span class="lbl">Dirección</span><div class="in mono"><span class="ph">ensayando.com.ar/</span>taller-de-musicales-2027</div><span class="help">Se arma sola desde el nombre. Podés cambiarla.</span></div>
+      <div class="field"><span class="lbl">Color principal</span><div class="m-row" style="gap:8px">
+        ${["oklch(55% .21 300)", "oklch(70% .17 48)", "oklch(72% .17 150)", "oklch(62% .2 250)", "oklch(62% .22 15)", "oklch(78% .15 95)"].map((c, i) => `<span class="swatch" style="background:${c};width:34px;height:34px;border-radius:50%;${i === 1 ? "box-shadow:0 0 0 2px var(--surface),0 0 0 4px " + c : ""}"></span>`).join("")}
+        <span class="b sm soft"><i data-ic="palette"></i>Otro</span></div></div>
+      <div class="field"><span class="lbl">Visibilidad</span><span class="seg"><span class="on"><i data-ic="lock"></i>Privada</span><span><i data-ic="link"></i>No listada</span><span><i data-ic="globe"></i>Pública</span></span></div>
+      <div class="acts"><span class="b">Cancelar</span><span class="b fill"><i data-ic="plus"></i>Crear colección</span></div>
+    </div>`);
+
+  // ---------- Teléfono ----------
+  const phoneShell = (inner) => `<div class="amb"></div>
+    <div class="ph-top g1"><span class="b icon sm"><i data-ic="arrowLeft"></i></span><b>Ajustes</b></div>
+    <div class="ph-tabs"><span class="seg"><span>General</span><span>Colores</span><span>Canciones</span><span class="on">Miembros</span></span></div>
+    <div class="ph-body">${inner}</div>`;
+  const pmList = `<div class="m-row"><div class="in m-grow"><i data-ic="search"></i><span class="ph">Buscar</span></div><span class="b icon fill"><i data-ic="userPlus"></i></span></div>
+    <div class="pm sheet">${M.map((m) => `<div class="pmr"><span class="avatar">${m.name.slice(0, 2).toUpperCase()}</span><span><b>${m.name}</b><small>${roleLbl[m.role]} · ${m.managed ? "Administrada" : "Con email"} · ${m.last}</small></span><span class="b icon sm muted"><i data-ic="dotsV"></i></span></div>`).join("")}</div>`;
+  document.getElementById("p-members").innerHTML = phoneShell(pmList);
+  document.getElementById("p-actions").innerHTML = phoneShell(pmList) + `<div class="scrim" style="z-index:9"></div>
+    <div class="sheet-ph g3">
+      <span class="grab" style="width:38px;height:5px;border-radius:3px;background:oklch(from var(--ink) l c h / .2);align-self:center"></span>
+      <div class="m-row"><span class="avatar" style="width:40px;height:40px">LU</span><div><b style="font:650 16px/1.2 var(--ui)">lucia</b><div class="m-sub">Cuenta administrada · entró hace 2 días</div></div></div>
+      <div class="field"><span class="lbl">Rol</span><span class="seg" style="width:100%"><span style="flex:1;justify-content:center">Admin</span><span class="on" style="flex:1;justify-content:center">Editor</span><span style="flex:1;justify-content:center">Lector</span></span></div>
+      <div class="menu" style="padding:0;min-width:0">
+        <div class="mi"><i data-ic="key"></i>Generar contraseña nueva</div>
+        <div class="mi"><i data-ic="copy"></i>Copiar usuario</div>
+        <div class="sep"></div>
+        <div class="mi danger"><i data-ic="logout"></i>Quitar acceso</div>
+      </div>
+    </div>`;
+
+  ENS.hydrateWaves();
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>

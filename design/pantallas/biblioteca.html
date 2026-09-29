@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Biblioteca</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ---------- reproductor de fondo (simplificado) ---------- */
+.topbar { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 10px; z-index: 1; }
+.colbtn { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; border-radius: 14px; }
+.colbtn .t { display: flex; flex-direction: column; gap: 3px; }
+.colbtn .t b { font: 650 14px/1 var(--ui); display: flex; align-items: center; gap: 4px; }
+.colbtn .t span { font: 500 12px/1 var(--ui); color: var(--muted); }
+.songtitle { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.songtitle b { font: 700 21px/1 var(--ui); letter-spacing: -0.0125em; font-variation-settings: "opsz" 96; }
+.songtitle span { font: 500 12px/1 var(--ui); color: var(--muted); }
+.stage { position: absolute; left: 0; right: 0; top: 110px; display: flex; justify-content: center; }
+.dock { position: absolute; left: 14px; right: 14px; bottom: 14px; border-radius: var(--r-dock); padding: 12px 18px; z-index: 1; display: flex; flex-direction: column; gap: 6px; }
+.transport { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 52px; }
+.transport .c { display: flex; align-items: center; gap: 10px; }
+
+/* ---------- panel de biblioteca ---------- */
+.lib { position: absolute; left: 12px; top: 12px; bottom: 12px; width: 384px; border-radius: 22px; z-index: 5; display: flex; flex-direction: column; overflow: hidden; }
+.lib-head { padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 14px; }
+.lib-head .top { display: flex; gap: 14px; align-items: flex-start; }
+.lib-head h3 { font: 700 24px/1.02 var(--ui); letter-spacing: -0.015em; margin: 2px 0 8px; font-variation-settings: "opsz" 96; text-wrap: balance; }
+.lib-head .badges { display: flex; gap: 5px; flex-wrap: wrap; }
+.lib-head .acts { margin-left: auto; display: flex; gap: 2px; }
+.songs { flex: 1; overflow: hidden; padding: 4px 10px; display: flex; flex-direction: column; gap: 1px; }
+.song { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px; font: 550 14.5px/1.2 var(--ui); }
+.song .n { font: 500 12px/1 var(--mono); color: var(--faint); text-align: right; font-variant-numeric: tabular-nums; }
+.song .ttl { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.song .ttl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song .ttl .ic { font-size: 14px; color: var(--faint); }
+.song .dur { font: 500 12px/1 var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+.song.on { background: var(--c-soft); color: var(--c-ink); font-weight: 650; }
+.song.on .n, .song.on .dur { color: var(--c-ink); }
+.song.hidden .ttl span { color: var(--muted); }
+.song.hover { background: oklch(from var(--ink) l c h / 0.05); }
+.lib-sec { font: 600 11px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); padding: 16px 20px 8px; }
+.others { padding: 0 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+.other { display: flex; align-items: center; gap: 11px; padding: 7px 10px; border-radius: 11px; font: 550 14px/1.2 var(--ui); }
+.other .ic { color: var(--faint); font-size: 14px; }
+.other small { margin-left: auto; font: 500 12px/1 var(--ui); color: var(--faint); }
+.lib-foot { border-top: 1px solid var(--edge); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.lib-foot .who { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.lib-foot .who b { font: 650 13.5px/1 var(--ui); }
+.lib-foot .who span { font: 500 12px/1 var(--ui); color: var(--faint); }
+.search { margin: 0 18px 8px; }
+
+/* ---------- teléfono ---------- */
+.p-lib { position: absolute; left: 6px; right: 6px; top: 50px; bottom: 6px; border-radius: 34px; z-index: 5; display: flex; flex-direction: column; overflow: hidden; }
+.p-lib .grab { width: 38px; height: 5px; border-radius: 3px; background: oklch(from var(--ink) l c h / 0.2); align-self: center; margin-top: 8px; flex: none; }
+.p-lib .lib-head { padding: 12px 18px 12px; }
+.p-lib .lib-head h3 { font-size: 22px; }
+.p-lib .song { padding: 11px 10px; font-size: 15.5px; }
+
+/* ---------- inicio ---------- */
+.home { position: absolute; inset: 0; overflow: hidden; }
+.home-bar { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 14px 0 12px; }
+.home-bar img { width: 34px; height: 34px; border-radius: 9px; }
+.home-bar b { font: 700 18px/1 var(--ui); letter-spacing: -0.01em; }
+.home-body { position: absolute; left: 0; right: 0; top: 108px; padding: 0 64px; display: flex; flex-direction: column; gap: 26px; }
+.home-body h2 { font: 700 44px/1 var(--ui); letter-spacing: -0.0175em; margin: 0; font-variation-settings: "opsz" 96; }
+.cgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.ccard { border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+.ccard .art { width: 100%; aspect-ratio: 16 / 7; font-size: 48px; border-radius: 13px; }
+.ccard .body { padding: 0 6px 6px; display: flex; flex-direction: column; gap: 8px; }
+.ccard .body b { font: 700 20px/1.05 var(--ui); letter-spacing: -0.0125em; font-variation-settings: "opsz" 96; }
+.ccard .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ccard .last { font: 500 12.5px/1.3 var(--ui); color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.p-home .home-body { top: 122px; padding: 0 16px; gap: 18px; }
+.p-home .home-body h2 { font-size: 34px; }
+.p-home .cgrid { grid-template-columns: 1fr; gap: 12px; }
+.p-home .ccard { padding: 10px; gap: 10px; border-radius: 18px; }
+.p-home .ccard .art { aspect-ratio: auto; height: 64px; font-size: 26px; }
+.p-home .ccard .body { padding: 0; gap: 7px; }
+.p-home .ccard .body b { font-size: 17px; }
+
+/* ---------- paleta de comandos ---------- */
+.cmdk { position: absolute; left: 50%; top: 120px; transform: translateX(-50%); width: 620px; border-radius: 20px; z-index: 6; overflow: hidden; }
+.cmdk .q { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--edge); font: 500 18px/1 var(--ui); }
+.cmdk .q .ic { font-size: 20px; color: var(--faint); }
+.cmdk .q .caret { width: 2px; height: 22px; background: var(--c-ink); margin-left: -10px; }
+.cmdk .res { padding: 6px 8px 8px; display: flex; flex-direction: column; gap: 1px; }
+.cmdk .mi { padding: 9px 10px; }
+.cmdk .mi mark { background: none; color: var(--c-ink); font-weight: 700; }
+.cmdk .foot { display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid var(--edge); font: 500 12px/1 var(--ui); color: var(--faint); }
+.cmdk .foot span { display: flex; gap: 5px; align-items: center; }
+
+.legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
+.legend li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: var(--t-sm); color: var(--muted); counter-increment: an; }
+.legend li::before { content: counter(an); width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--ink); font-weight: 650; display: block; }
+@media (max-width: 900px) { .legend { grid-template-columns: 1fr; } }
+.brandlight { --c: var(--brand); --h: 314; --a2: oklch(80% 0.16 95); --a3: oklch(60% 0.18 280); }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas · 2 de 6</span>
+    <h1 class="d">Biblioteca</h1>
+    <p class="lede">Hoy las canciones viven en un menú lateral que se abre con un botón de color pleno: una lista de títulos, otra de colecciones y, al pie, el usuario. La biblioteca ocupa ese mismo lugar, pero se vuelve la puerta de entrada a la colección: nombre y estado, cantidad de canciones, duración, qué está sonando, qué está oculto, búsqueda y, para quien administra, el acceso a los ajustes.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
+    <div class="grid-3">
+      <div class="note"><span class="tag refine">Ajuste</span><b>Del menú a la biblioteca</b><p>Se abre desde el nombre de la colección en la barra superior, no desde un botón de menú de color pleno. Muestra la colección con su estado (y su portada, solo si tiene una), y cada canción con número, duración y si tiene letra.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Búsqueda y paleta de comandos</b><p>Un campo arriba de la lista filtra las canciones. <kbd>⌘</kbd><kbd>K</kbd> abre una búsqueda global que encuentra canciones de cualquier colección y acciones como Descargar mezcla o Cambiar tema.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Inicio con colecciones</b><p>Con dos o más colecciones, <span class="mono">/</span> muestra una grilla de colecciones, cada una con su banner. Con una sola, se entra directo a ella, como hoy.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Íconos de visibilidad</b><p>Mundo para pública, cadena para no listada y candado para privada, al lado del nombre. Hoy el candado no aparece; se agrega para que la visibilidad siempre se lea igual.</p></div>
+      <div class="note"><span class="tag moved">Sale del SQL</span><b>Crear y ordenar canciones</b><p>"Nueva canción" deja de estar escondida adentro del editor de otra canción: vive al pie de la lista. Ordenar y eliminar se hacen desde Ajustes de colección, al que se llega con el engranaje.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Canciones ocultas</b><p>Solo las ven editores y admins, con candado y la etiqueta Oculta. Hoy el candado va en el color de la colección y se confunde con la canción actual.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Escritorio</h2>
+      <p>La biblioteca flota a la izquierda sobre el reproductor, que queda atenuado detrás. Se cierra con <kbd>Esc</kbd>, tocando afuera o eligiendo una canción. La música sigue sonando mientras está abierta.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk" id="lib-desk">
+        <div class="amb"></div>
+        <div class="topbar g1">
+          <div class="colbtn"><span class="b icon soft"><i data-ic="playlist"></i></span><div class="t"><b>Coro del Puerto · 2026</b><span>7 canciones</span></div></div>
+          <div class="songtitle"><b>Vidala del viento</b></div>
+        </div>
+        <div class="stage" style="height:320px">
+          <div class="lyr fade-y" style="height:320px;justify-content:center">
+            <div class="stz"><span class="cmt">Coro</span>
+              <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+              <span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span>
+            </div>
+          </div>
+        </div>
+        <div class="dock g2">
+          <div class="transport">
+            <div><span class="time"><b>0:27</b><small>.4</small> / 4:05</span></div>
+            <div class="c"><span class="b icon"><i data-ic="prev"></i></span><span class="play"><i data-ic="pause"></i></span><span class="b icon"><i data-ic="next"></i></span></div>
+            <div></div>
+          </div>
+        </div>
+        <div class="scrim"></div>
+
+        <aside class="lib g2">
+          <div class="lib-head">
+            <div class="top">
+              <div style="min-width:0;flex:1">
+                <h3>Coro del Puerto · 2026</h3>
+                <div class="badges"><span class="badge"><i data-ic="lock"></i>Privada</span><span class="badge c"><i data-ic="crown"></i>Admin</span></div>
+              </div>
+              <div class="acts"><span class="b icon sm"><i data-ic="settings"></i></span><span class="b icon sm"><i data-ic="x"></i></span></div>
+            </div>
+            <div class="m-sub">7 canciones · 25 min</div>
+          </div>
+          <div class="in search"><i data-ic="search"></i><span class="ph">Buscar en la colección</span><span class="suffix"><kbd>/</kbd></span></div>
+          <div class="songs" id="d-songs"></div>
+          <div style="padding:2px 18px 4px"><span class="b sm tint" style="width:100%"><i data-ic="plus"></i>Nueva canción</span></div>
+          <div class="lib-sec">Otras colecciones</div>
+          <div class="others" id="d-others"></div>
+          <div class="lib-foot">
+            <span class="avatar">FF</span>
+            <div class="who"><b>Franco</b><span>franco@ejemplo.com</span></div>
+            <span class="b icon sm muted"><i data-ic="half"></i></span>
+            <span class="b icon sm muted"><i data-ic="logout"></i></span>
+          </div>
+        </aside>
+
+        <span class="annot solo" data-n="1" style="left:262px;top:30px"></span>
+        <span class="annot solo" data-n="2" style="left:344px;top:60px"></span>
+        <span class="annot solo" data-n="3" style="left:398px;top:166px"></span>
+        <span class="annot solo" data-n="4" style="left:398px;top:246px"></span>
+        <span class="annot solo" data-n="5" style="left:398px;top:420px"></span>
+        <span class="annot solo" data-n="6" style="left:398px;top:556px"></span>
+        <span class="annot solo" data-n="7" style="left:398px;top:730px"></span>
+      </div>
+    </div></div>
+    <ol class="legend">
+      <li><span><b>Nombre y estado</b>El nombre de la colección con su visibilidad y tu rol. Si la colección tiene portada, aparece arriba del nombre; sin portada no hay reemplazo ni espacio reservado.</span></li>
+      <li><span><b>Ajustes y cerrar</b>El engranaje lleva a Ajustes de colección y solo aparece para admins de la colección.</span></li>
+      <li><span><b>Búsqueda</b>Filtra por título mientras se escribe. <kbd>/</kbd> enfoca el campo con la biblioteca abierta.</span></li>
+      <li><span><b>Canción actual</b>Relleno suave del color de la colección y el ícono de "sonando" en lugar del número.</span></li>
+      <li><span><b>Oculta y sin letra</b>La canción oculta lleva candado y etiqueta. El ícono de letra, tenue, marca las canciones que todavía no tienen letra, para que no sorprenda llegar a una pantalla vacía.</span></li>
+      <li><span><b>Nueva canción</b>Solo para editores y admins. Abre el editor de canción en modo alta, en la misma colección.</span></li>
+      <li><span><b>Cuenta</b>Nombre, usuario o email, tema y cerrar sesión. Sin sesión, un botón "Ingresar".</span></li>
+    </ol>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Teléfono</h2>
+      <p>La biblioteca sube como una hoja casi de pantalla completa, con los mismos bloques en el mismo orden. La lista usa filas más altas para el dedo. A la derecha, la misma hoja vista por alguien con rol de lectura: sin engranaje, sin Nueva canción y sin canciones ocultas.</p>
+    </div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Admin de la colección</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone">
+            <div class="amb"></div>
+            <div class="scrim"></div>
+            <div class="p-lib g2" id="p-lib-admin"></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col phone">
+        <div class="cap"><b>Lectura</b><span>viewer</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone">
+            <div class="amb"></div>
+            <div class="scrim"></div>
+            <div class="p-lib g2" id="p-lib-viewer"></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Inicio</h2>
+      <p>Aparece solo con dos o más colecciones. Todavía no hay colección elegida, así que la sala se ilumina con el violeta Ensayando. Cada tarjeta lleva arriba un banner generado con las iniciales y el color de la colección (si hay portada, se usa la portada) y muestra nombre, cantidad de canciones, rol y visibilidad, y la última canción que abriste en ese dispositivo para retomar.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk brandlight" id="home-desk">
+        <div class="amb"></div>
+        <div class="home">
+          <div class="home-bar g1">
+            <img src="../shared/logo.png" alt=""><b>Ensayando</b>
+            <div class="m-grow"></div>
+            <span class="b icon sm"><i data-ic="search"></i></span>
+            <span class="avatar">FF</span>
+          </div>
+          <div class="home-body">
+            <div class="cgrid" id="d-cards"></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Inicio en teléfono</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone brandlight p-home">
+            <div class="amb"></div>
+            <div class="home">
+              <div class="home-bar g1" style="top:52px;left:10px;right:10px">
+                <img src="../shared/logo.png" alt=""><b>Ensayando</b>
+                <div class="m-grow"></div>
+                <span class="avatar">FF</span>
+              </div>
+              <div class="home-body">
+                    <div class="cgrid" id="p-cards"></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col grow">
+        <div class="note"><span class="tag keep">Se mantiene</span><b>Una sola colección: directo</b><p>Si la persona tiene una sola colección visible, <span class="mono">/</span> redirige a ella y la barra no muestra un camino de vuelta al inicio. Es el caso más común hoy.</p></div>
+        <div class="note"><span class="tag new">Nuevo</span><b>Orden de las tarjetas</b><p>Primero la última colección abierta en el dispositivo, después el resto por nombre. Las públicas a las que no pertenecés no aparecen acá: se llega a ellas por link.</p></div>
+        <div class="note"><span class="tag refine">Ajuste</span><b>Colecciones no listadas</b><p>Si entrás por link a una colección no listada, aparece en "Otras colecciones" de la biblioteca mientras dure la visita, con el ícono de cadena. No se agrega a tu inicio.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Paleta de comandos</h2>
+      <p>Con <kbd>⌘</kbd><kbd>K</kbd> (o el botón de la lupa en la barra) se abre una búsqueda sobre el reproductor. Encuentra canciones de todas tus colecciones, colecciones y acciones de la pantalla actual. Es vidrio pop: más opaco que el dock para que la lista se lea sobre la letra.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk" id="cmdk-desk">
+        <div class="amb"></div>
+        <div class="topbar g1">
+          <div class="colbtn"><span class="b icon soft"><i data-ic="playlist"></i></span><div class="t"><b>Coro del Puerto · 2026</b><span>7 canciones</span></div></div>
+          <div class="songtitle"><b>Canción del puerto</b></div>
+        </div>
+        <div class="stage" style="height:320px">
+          <div class="lyr fade-y" style="height:320px;justify-content:center">
+            <div class="stz">
+              <span class="v" style="--tc:var(--t-ten)">Sopla el viento por la loma</span>
+              <span class="v now" style="--tc:var(--t-sop)">y se lleva mi canción</span>
+            </div>
+          </div>
+        </div>
+        <div class="dock g2">
+          <div class="transport">
+            <div><span class="time"><b>1:02</b><small>.8</small> / 3:12</span></div>
+            <div class="c"><span class="b icon"><i data-ic="prev"></i></span><span class="play"><i data-ic="play"></i></span><span class="b icon"><i data-ic="next"></i></span></div>
+            <div></div>
+          </div>
+        </div>
+        <div class="scrim"></div>
+        <div class="cmdk g3">
+          <div class="q"><i data-ic="search"></i>vid<span class="caret"></span></div>
+          <div class="res">
+            <div class="mh">Canciones</div>
+            <div class="mi on"><i data-ic="music"></i><span><mark>Vid</mark>ala del viento</span><span class="end">Coro del Puerto</span></div>
+            <div class="mi"><i data-ic="music"></i><span>La <mark>vid</mark>a en borrador</span><span class="end">Taller de musicales</span></div>
+            <div class="mh">Colecciones</div>
+            <div class="mi"><i data-ic="playlist"></i><span>Ensamble <mark>v</mark>ocal abierto</span><span class="end"><i data-ic="globe"></i></span></div>
+            <div class="mh">Acciones</div>
+            <div class="mi"><i data-ic="pencil"></i>Editar canción<span class="end"><kbd>E</kbd></span></div>
+            <div class="mi"><i data-ic="download"></i>Descargar mezcla<span class="end"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd></span></div>
+            <div class="mi"><i data-ic="settings"></i>Ajustes de la colección</div>
+            <div class="mi"><i data-ic="half"></i>Cambiar tema<span class="end">Sistema</span></div>
+          </div>
+          <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> moverse</span><span><kbd>↵</kbd> abrir</span><span><kbd>Esc</kbd> cerrar</span></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="grid-3">
+      <div class="note"><b>Qué busca</b><p>Títulos de canciones y colecciones, sin tildes ni mayúsculas. Las acciones dependen de la pantalla y del rol: una persona con rol de lectura no ve Editar canción.</p></div>
+      <div class="note"><b>Enter abre, la música sigue</b><p>Elegir una canción de la misma colección cambia de canción sin cortar la luz de sala. Elegir otra colección cambia también el color, con una transición de 420 ms.</p></div>
+      <div class="note"><b>En teléfono</b><p>No hay atajo: la lupa de la barra abre la misma búsqueda como hoja completa, con el teclado arriba.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const OTHER = [
+    { t: "Taller de musicales", i: "TM", c: "oklch(0.5 0.15 45)", a2: "oklch(62% 0.2 20)", vis: "link", n: 12 },
+    { t: "Ensamble vocal abierto", i: "EV", c: "oklch(0.5 0.15 150)", a2: "oklch(65% 0.13 200)", vis: "globe", n: 5 },
+  ];
+  function songRows(opts) {
+    return ENS.songs.filter((s) => opts.editor || !s.hidden).map((s) => {
+      const cls = s.current ? "song on" : s.hidden ? "song hidden" : s.n === 5 && opts.hover ? "song hover" : "song";
+      const num = s.current ? `<span class="n" style="display:flex;justify-content:flex-end"><span class="eq"><i></i><i></i><i></i></span></span>` : `<span class="n">${s.n}</span>`;
+      const extra = s.hidden ? ` <i data-ic="lock"></i><span class="badge" style="flex:none">Oculta</span>` : !s.lyrics ? ` <i data-ic="lyrics" title="Sin letra" style="opacity:.55"></i>` : "";
+      return `<div class="${cls}">${num}<span class="ttl"><span>${s.title}</span>${extra}</span><span class="dur">${s.dur}</span></div>`;
+    }).join("");
+  }
+  function others() {
+    return OTHER.map((o) => `<div class="other"><span>${o.t}</span><i data-ic="${o.vis}"></i><small>${o.n}</small></div>`).join("");
+  }
+  document.getElementById("d-songs").innerHTML = songRows({ editor: true, hover: true });
+  document.getElementById("d-others").innerHTML = others();
+
+  function phoneLib(editor) {
+    return `<span class="grab"></span>
+      <div class="lib-head">
+        <div class="top">
+          <div style="min-width:0;flex:1">
+            <h3>Coro del Puerto · 2026</h3>
+            <div class="badges"><span class="badge">${ic("lock")}Privada</span><span class="badge c">${editor ? ic("crown") + "Admin" : ic("eye") + "Lectura"}</span></div>
+          </div>
+          ${editor ? `<div class="acts"><span class="b icon sm">${ic("settings")}</span></div>` : ""}
+        </div>
+      </div>
+      <div class="in search" style="margin:0 16px 6px">${ic("search")}<span class="ph">Buscar en la colección</span></div>
+      <div class="songs">${songRows({ editor })}</div>
+      ${editor ? `<div style="padding:4px 16px 2px"><span class="b sm tint" style="width:100%">${ic("plus")}Nueva canción</span></div>` : ""}
+      <div class="lib-sec" style="padding-top:12px">Otras colecciones</div>
+      <div class="others">${others()}</div>
+      <div class="lib-foot" style="padding-bottom:20px">
+        <span class="avatar">${editor ? "FF" : "MB"}</span>
+        <div class="who"><b>${editor ? "Franco" : "martin.b"}</b><span>${editor ? "franco@ejemplo.com" : "Cuenta administrada"}</span></div>
+        <span class="b icon sm muted">${ic("half")}</span>
+        <span class="b icon sm muted">${ic("logout")}</span>
+      </div>`;
+  }
+  document.getElementById("p-lib-admin").innerHTML = phoneLib(true);
+  document.getElementById("p-lib-viewer").innerHTML = phoneLib(false);
+
+  const CARDS = [
+    { t: "Coro del Puerto · 2026", i: "CP", c: "oklch(0.5 0.15 300)", a2: "oklch(62% 0.22 350)", n: 7, role: ["crown", "Admin"], vis: ["lock", "Privada"], last: "Vidala del viento" },
+    { t: "Taller de musicales", i: "TM", c: "oklch(0.5 0.15 45)", a2: "oklch(62% 0.2 20)", n: 12, role: ["pencil", "Editor"], vis: ["link", "No listada"], last: "La vida en borrador" },
+    { t: "Ensamble vocal abierto", i: "EV", c: "oklch(0.5 0.15 150)", a2: "oklch(65% 0.13 200)", n: 5, role: ["eye", "Lectura"], vis: ["globe", "Pública"], last: null },
+  ];
+  function cards(phone) {
+    return CARDS.map((k) => `<div class="ccard g2"><span class="art" data-initials="${k.i}" style="--c:${k.c};--a2:${k.a2}"></span>
+      <div class="body"><b>${k.t}</b>
+        <div class="meta"><span class="badge">${ic(k.vis[0])}${k.vis[1]}</span><span class="badge">${ic(k.role[0])}${k.role[1]}</span>${phone ? "" : `<span class="badge">${k.n} canciones</span>`}</div>
+        ${k.last ? `<span class="last">${ic("history")}Seguir con ${k.last}</span>` : phone ? "" : `<span class="last">${ic("music")}Todavía no la abriste</span>`}
+      </div></div>`).join("");
+  }
+  document.getElementById("d-cards").innerHTML = cards(false);
+  document.getElementById("p-cards").innerHTML = cards(true);
+
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>
