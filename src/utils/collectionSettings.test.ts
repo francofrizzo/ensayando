@@ -9,8 +9,10 @@ import {
   colorUsage,
   confirmationMatches,
   describeColorChange,
+  competingHues,
   hueConflicts,
   hueDistance,
+  intensitiesClash,
   initials,
   lastSignInLabel,
   nearestFreeHue,
@@ -52,6 +54,31 @@ describe("hues", () => {
       { key: "clic", name: "Clic", spec: { neutral: true } }
     ]);
     expect(conflicts).toEqual([{ a: "ten", b: "baj", distance: 12 }]);
+  });
+
+  it("ignores close hues whose intensities are far apart", () => {
+    const pair = (a: "suave" | "media" | "intensa", b: "suave" | "media" | "intensa") =>
+      hueConflicts([
+        { key: "v1", name: "Voz 1", spec: { hue: 20, intensity: a } },
+        { key: "orf", name: "Orfeo", spec: { hue: 33, intensity: b } }
+      ]);
+    expect(pair("intensa", "suave")).toEqual([]);
+    expect(pair("suave", "intensa")).toEqual([]);
+    expect(pair("intensa", "media")).toHaveLength(1);
+    expect(pair("suave", "suave")).toHaveLength(1);
+  });
+
+  it("only same or neighboring intensities compete for a hue", () => {
+    expect(intensitiesClash("suave", "intensa")).toBe(false);
+    expect(intensitiesClash("media", "intensa")).toBe(true);
+    expect(
+      competingHues("intensa", [
+        { hue: 10, intensity: "suave" },
+        { hue: 20, intensity: "media" },
+        { hue: 30, intensity: "intensa" },
+        { neutral: true }
+      ])
+    ).toEqual([20, 30]);
   });
 
   it("finds the closest free hue", () => {

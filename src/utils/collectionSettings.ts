@@ -42,7 +42,29 @@ export type PaletteEntry = { key: string; name: string; spec: ColorSpec };
 
 export type HueConflict = { a: string; b: string; distance: number };
 
-/** Pairs of colored (non-neutral) tracks that are too close in hue. */
+const INTENSITY_STEP: Record<Intensity, number> = { suave: 0, media: 1, intensa: 2 };
+
+/**
+ * Whether two intensities can be confused at close hues: the same level or
+ * neighbors (suave–media, media–intensa). Suave next to intensa reads clearly
+ * different even at the same hue.
+ */
+export function intensitiesClash(a: Intensity, b: Intensity): boolean {
+  return Math.abs(INTENSITY_STEP[a] - INTENSITY_STEP[b]) <= 1;
+}
+
+/** Hues of the other colors that compete with a color of this intensity. */
+export function competingHues(intensity: Intensity, others: ColorSpec[]): number[] {
+  return others
+    .filter((o): o is { hue: number; intensity: Intensity } => !isNeutral(o))
+    .filter((o) => intensitiesClash(intensity, o.intensity))
+    .map((o) => o.hue);
+}
+
+/**
+ * Pairs of colored (non-neutral) tracks that are hard to tell apart: close in hue
+ * and with the same or neighboring intensity.
+ */
 export function hueConflicts(entries: PaletteEntry[]): HueConflict[] {
   const colored = entries.filter((e) => !isNeutral(e.spec)) as (PaletteEntry & {
     spec: { hue: number; intensity: Intensity };
@@ -50,8 +72,9 @@ export function hueConflicts(entries: PaletteEntry[]): HueConflict[] {
   const conflicts: HueConflict[] = [];
   for (let i = 0; i < colored.length; i++) {
     for (let j = i + 1; j < colored.length; j++) {
-      const distance = hueDistance(colored[i]!.spec.hue, colored[j]!.spec.hue);
-      if (distance < MIN_HUE_DISTANCE) {
+      const [a, b] = [colored[i]!.spec, colored[j]!.spec];
+      const distance = hueDistance(a.hue, b.hue);
+      if (distance < MIN_HUE_DISTANCE && intensitiesClash(a.intensity, b.intensity)) {
         conflicts.push({ a: colored[i]!.key, b: colored[j]!.key, distance });
       }
     }
