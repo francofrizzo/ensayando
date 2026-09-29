@@ -29,7 +29,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { useSongIndexStore } from "@/stores/songIndex";
 import { useUIStore } from "@/stores/ui";
-import { dispatchPlayerCommand, onPlayback } from "@/utils/appEvents";
+import { onPlayback } from "@/utils/appEvents";
 import {
   filterSongs,
   formatDuration,
@@ -132,18 +132,10 @@ const openSettings = () => {
   void router.push(`/${currentCollection.value.slug}/ajustes/general`);
 };
 
-// Until the new song flow lands, "Nueva canción" opens today's editor in create mode.
 const createSong = () => {
+  if (!currentCollection.value) return;
   close();
-  if (route.name === "song") {
-    uiStore.setEditMode(true);
-    dispatchPlayerCommand("new-song");
-  } else if (currentCollection.value) {
-    void router.push({
-      name: "collection",
-      params: { collectionSlug: currentCollection.value.slug }
-    });
-  }
+  void router.push({ name: "new-song", params: { collectionSlug: currentCollection.value.slug } });
 };
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: typeof IconThemeSystem }[] = [

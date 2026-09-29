@@ -75,10 +75,7 @@ const actions = computed<RunnableAction[]>(() => {
       label: "Editar canción",
       hint: "E",
       icon: IconEdit,
-      run: () => {
-        uiStore.setEditMode(true);
-        dispatchPlayerCommand("edit-song");
-      }
+      run: () => dispatchPlayerCommand("edit-song")
     });
   }
   if (onSong) {

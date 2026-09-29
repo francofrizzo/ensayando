@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { toast } from "vue-sonner";
 
-import { IconHelp, IconDiscard, IconSave } from "@/components/ui/icons";
+import { IconHelp } from "@/components/ui/icons";
 
 import LyricsTimestamps from "@/components/editor/LyricsTimestamps.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useEditorSession } from "@/composables/useEditorSession";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { usePlayerState } from "@/composables/useCurrentTime";
@@ -21,24 +21,11 @@ const store = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();
 const { currentTime, seekTo } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
-const { saveLyrics } = store;
+const session = useEditorSession();
 
-const isSaveDisabled = computed(() => {
-  return (
-    !store.canEditCurrentCollection || !store.localLyrics.isDirty || store.localLyrics.isSaving
-  );
-});
-
+// The lyrics' own "save" command (⌘S) goes through the edit bar, which saves everything.
 const handleSaveClick = () => {
-  try {
-    saveLyrics();
-  } catch (error) {
-    toast.error(`Error al guardar letras: ${error}`);
-  }
-};
-
-const handleDiscardChanges = () => {
-  store.discardLyricsChanges();
+  void session.save();
 };
 
 const lyricsToDisplay = computed(() => {
@@ -469,35 +456,13 @@ defineExpose({
 
     <SafeTeleport to="[data-song-editor-actions]">
       <button
-        class="btn btn-xs btn-ghost"
-        title="Keyboard shortcuts (Shift + ?)"
+        class="btn btn-sm btn-circle btn-ghost"
+        aria-label="Atajos de la letra"
+        title="Atajos de la letra (F1)"
         @click="showHelp = !showHelp"
       >
-        <IconHelp class="size-3.5" />
-        <span class="hidden md:block">Ayuda</span>
+        <IconHelp class="size-[18px]" />
       </button>
-
-      <div class="flex items-center gap-0.5">
-        <button class="btn btn-xs btn-primary" :disabled="isSaveDisabled" @click="handleSaveClick">
-          <template v-if="store.localLyrics.isSaving">
-            <span class="loading loading-spinner loading-xs" />
-            <span>Guardando...</span>
-          </template>
-
-          <template v-else>
-            <IconSave class="size-3.5" />
-            <span class="hidden md:block">Guardar cambios</span>
-          </template>
-        </button>
-        <button
-          v-if="store.localLyrics.isDirty"
-          class="btn btn-xs btn-ghost"
-          title="Descartar cambios"
-          @click="handleDiscardChanges"
-        >
-          <IconDiscard class="size-3.5" />
-        </button>
-      </div>
     </SafeTeleport>
 
     <KeyboardHelpModal
