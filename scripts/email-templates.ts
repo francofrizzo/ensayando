@@ -88,7 +88,8 @@ const layout = (email: Email) => `<!doctype html>
           <td style="padding:0 4px 20px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="font-family:${FONT};font-size:19px;font-weight:700;letter-spacing:-0.2px;color:${C.ink};">Ensayando</td>
+                <td style="vertical-align:middle;"><img src="{{ .SiteURL }}/pwa-192x192.png" width="36" height="36" alt="" style="display:block;border:0;border-radius:9px;"></td>
+                <td style="vertical-align:middle;padding-left:10px;font-family:${FONT};font-size:19px;font-weight:700;letter-spacing:-0.2px;color:${C.text};">Ensayando</td>
               </tr>
             </table>
           </td>
