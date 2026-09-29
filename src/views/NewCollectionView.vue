@@ -12,6 +12,7 @@ import { useTheme } from "@/composables/useTheme";
 import { AdminError, createCollection, fetchIsAppAdmin } from "@/data/admin";
 import type { Collection, CollectionVisibility } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
+import { collectionSlugError } from "@/utils/collectionSlug";
 import { deriveColor } from "@/utils/palette";
 import { generateSlugFromTitle } from "@/utils/songUtils";
 
@@ -49,7 +50,7 @@ const previewCollection = computed(
 );
 
 const slugError = computed(() =>
-  slug.value && !/^[a-z0-9-]+$/.test(slug.value) ? "Solo letras minúsculas, números y guiones." : ""
+  slug.value ? collectionSlugError(slug.value) : ""
 );
 const canCreate = computed(() => title.value.trim() && slug.value && !slugError.value && !busy.value);
 

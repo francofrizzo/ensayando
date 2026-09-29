@@ -7,6 +7,7 @@ import SettingsSection from "@/components/settings/SettingsSection.vue";
 import { IconGlobe, IconImage, IconLink, IconLock, IconTrash, IconWarning } from "@/components/ui/icons";
 import { useRoomLightArtwork } from "@/composables/useRoomLightArtwork";
 import { AdminError, updateCollection } from "@/data/admin";
+import { collectionSlugError } from "@/utils/collectionSlug";
 import { artworkPlaybackUrl, deleteArtworkFile, uploadArtworkFile } from "@/data/storage";
 import type { CollectionVisibility, CollectionWithRole } from "@/data/types";
 import { changedFields, changesLabel } from "@/utils/collectionSettings";
@@ -28,13 +29,7 @@ const changes = computed(() => changedFields(saved.value, draft.value));
 const saving = ref(false);
 const error = ref("");
 
-const slugError = computed(() => {
-  if (!draft.value.slug) return "La dirección no puede quedar vacía.";
-  if (!/^[a-z0-9-]+$/.test(draft.value.slug)) {
-    return "Solo letras minúsculas, números y guiones.";
-  }
-  return "";
-});
+const slugError = computed(() => collectionSlugError(draft.value.slug));
 const titleError = computed(() => (draft.value.title.trim() ? "" : "El nombre es obligatorio."));
 
 const VISIBILITY: {

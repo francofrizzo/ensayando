@@ -24,7 +24,8 @@ const ADMIN_ERRORS: Record<string, string> = {
   INVALID_ROLE: "Ese rol no existe.",
   INVALID_ORDER: "El orden tiene que incluir cada canción de la colección una sola vez.",
   INVALID_PALETTE: "Los colores no son válidos. Revisá que cada reemplazo exista.",
-  KEY_IN_USE: "Hay pistas que usan un color que quitaste. Elegí con qué reemplazarlo."
+  KEY_IN_USE: "Hay pistas que usan un color que quitaste. Elegí con qué reemplazarlo.",
+  KEY_IN_USE_BY_LYRICS: "Hay versos que usan un color que quitaste. Elegí con qué reemplazarlo."
 };
 
 export class AdminError extends Error {}
@@ -33,7 +34,11 @@ export function adminErrorMessage(error: { message?: string; code?: string } | n
   if (!error) return "";
   if (error.message && ADMIN_ERRORS[error.message]) return ADMIN_ERRORS[error.message]!;
   if (error.code === "23505") return "Esa dirección ya está en uso.";
-  if (error.code === "23514" && error.message?.includes("songs_slug_not_reserved")) {
+  if (
+    error.code === "23514" &&
+    (error.message?.includes("songs_slug_not_reserved") ||
+      error.message?.includes("collections_slug_not_reserved"))
+  ) {
     return "Esa dirección está reservada. Probá con otra.";
   }
   if (error.code === "42501") return ADMIN_ERRORS.FORBIDDEN!;

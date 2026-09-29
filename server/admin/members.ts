@@ -122,7 +122,9 @@ export async function createManagedAccount(
     email: `${input.username}@${MANAGED_EMAIL_DOMAIN}`,
     password,
     email_confirm: true,
-    user_metadata: { username: input.username }
+    user_metadata: { username: input.username },
+    // The username shown to admins lives in app metadata: people can't rewrite it.
+    app_metadata: { username: input.username }
   });
   if (error || !data.user) {
     if (error && isExistingAccountError(error)) {
