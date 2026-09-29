@@ -78,6 +78,27 @@ describe("marking", () => {
     expect(next[0]![0]).toMatchObject({ end_time: 14 });
   });
 
+  it("moves a previous end that was tied to the old start when re-marking", () => {
+    const source = lyrics();
+    const once = markStart(source, buildSyncUnits(source), 1, 15.9);
+    // Later: no gap after verse 1
+    const later = markStart(once, buildSyncUnits(once), 1, 16.5);
+    expect(later[0]![0]).toMatchObject({ end_time: 16.5 });
+    expect(later[0]![1]).toMatchObject({ start_time: 16.5 });
+    // Earlier: no overlap
+    const earlier = markStart(once, buildSyncUnits(once), 1, 15.2);
+    expect(earlier[0]![0]).toMatchObject({ end_time: 15.2 });
+  });
+
+  it("doesn't end the previous stanza's last verse at the next stanza's start", () => {
+    const source = lyrics();
+    const withSecond = markStart(source, buildSyncUnits(source), 1, 15.9);
+    const next = markStart(withSecond, buildSyncUnits(withSecond), 2, 27);
+    expect(next[0]![1]).toMatchObject({ start_time: 15.9 });
+    expect(next[0]![1]).not.toHaveProperty("end_time");
+    expect(next[1]![0]).toMatchObject({ start_time: 27 });
+  });
+
   it("marks every verse of a multicolumn row together", () => {
     const source = lyrics();
     const next = markStart(source, buildSyncUnits(source), 3, 33.4);
@@ -131,8 +152,8 @@ describe("regions and states", () => {
   it("counts times that are new or changed since saving", () => {
     const saved = lyrics();
     let current = markStart(saved, buildSyncUnits(saved), 1, 15.9); // start + previous end
-    current = markStart(current, buildSyncUnits(current), 2, 27); // start + previous end
-    expect(countNewTimes(saved, current)).toBe(4);
+    current = markStart(current, buildSyncUnits(current), 2, 27); // start only: new stanza
+    expect(countNewTimes(saved, current)).toBe(3);
     expect(countNewTimes(saved, saved)).toBe(0);
   });
 });
