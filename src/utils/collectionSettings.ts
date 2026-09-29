@@ -213,3 +213,32 @@ export function shareMessage(origin: string, username: string, password: string)
   const host = origin.replace(/^https?:\/\//, "");
   return `Entrá a ${host} con el usuario ${username} y la contraseña ${password}.`;
 }
+
+// ---------- hue slider labels ----------
+
+/**
+ * Rows for the track labels under the hue slider, so close hues don't print on
+ * top of each other. Labels are centered on their mark; each goes to the first
+ * row where it doesn't overlap the previous label. Widths are estimated from the
+ * text length (the labels are short, one font size).
+ */
+export function hueLabelRows(
+  marks: readonly { hue: number; label: string }[],
+  widthPx: number,
+  charPx = 6.4,
+  gapPx = 8
+): number[] {
+  const order = marks
+    .map((mark, index) => ({ index, center: (mark.hue / 359) * widthPx, half: (mark.label.length * charPx) / 2 }))
+    .sort((a, b) => a.center - b.center);
+  const rowEnds: number[] = [];
+  const rows = new Array<number>(marks.length).fill(0);
+  for (const item of order) {
+    const start = item.center - item.half;
+    let row = rowEnds.findIndex((end) => start >= end + gapPx);
+    if (row === -1) row = rowEnds.length;
+    rowEnds[row] = item.center + item.half;
+    rows[item.index] = row;
+  }
+  return rows;
+}

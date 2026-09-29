@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import { useTheme } from "@/composables/useTheme";
+import { hueLabelRows } from "@/utils/collectionSettings";
 import { deriveColor, type Intensity } from "@/utils/palette";
 
 // Hue picker: a range over the color circle painted with the real fill colors, with
@@ -32,6 +33,21 @@ const thumbColor = computed(() =>
 );
 
 const percent = (hue: number) => `${(hue / 359) * 100}%`;
+
+// Labels of close hues go to separate rows (widths depend on the slider's size).
+const labelsEl = ref<HTMLElement | null>(null);
+const width = ref(0);
+let observer: ResizeObserver | null = null;
+onMounted(() => {
+  if (!labelsEl.value || typeof ResizeObserver === "undefined") return;
+  observer = new ResizeObserver(([entry]) => (width.value = entry?.contentRect.width ?? 0));
+  observer.observe(labelsEl.value);
+});
+onBeforeUnmount(() => observer?.disconnect());
+
+const LABEL_ROW_PX = 15;
+const labelRows = computed(() => hueLabelRows(props.marks ?? [], width.value || 600));
+const rowCount = computed(() => Math.max(1, ...labelRows.value.map((row) => row + 1)));
 </script>
 
 <template>
@@ -62,13 +78,18 @@ const percent = (hue: number) => `${(hue / 359) * 100}%`;
         @input="emit('update:modelValue', Number(($event.target as HTMLInputElement).value))"
       />
     </div>
-    <div v-if="props.marks?.length" class="relative h-4 text-[11px]">
+    <div
+      v-if="props.marks?.length"
+      ref="labelsEl"
+      class="relative text-[11px] leading-none"
+      :style="{ height: `${rowCount * LABEL_ROW_PX}px` }"
+    >
       <span
-        v-for="mark in props.marks"
+        v-for="(mark, index) in props.marks"
         :key="mark.label"
         class="absolute -translate-x-1/2 whitespace-nowrap"
         :class="mark.warn ? 'text-warning font-semibold' : 'text-base-content/50'"
-        :style="{ left: percent(mark.hue) }"
+        :style="{ left: percent(mark.hue), top: `${(labelRows[index] ?? 0) * LABEL_ROW_PX}px` }"
         >{{ mark.label }}</span
       >
     </div>

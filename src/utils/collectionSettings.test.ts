@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricStanza, Song } from "@/data/types";
 
 import {
+  hueLabelRows,
   changedFields,
   changesLabel,
   colorKeyFromName,
@@ -184,5 +185,36 @@ describe("describeColorChange", () => {
     expect(describeColorChange("Piano", { neutral: true }, { hue: 130, intensity: "suave" })).toBe(
       "Piano: 130°, suave"
     );
+  });
+});
+
+describe("hueLabelRows", () => {
+  it("keeps labels far apart on one row", () => {
+    expect(hueLabelRows([{ hue: 20, label: "Voz 1" }, { hue: 200, label: "Voz 2" }], 600)).toEqual([0, 0]);
+  });
+
+  it("moves a label that would overlap to the next row", () => {
+    const rows = hueLabelRows(
+      [
+        { hue: 350, label: "Voz 1" },
+        { hue: 337, label: "Orfeo" },
+        { hue: 120, label: "Bajo" }
+      ],
+      600
+    );
+    expect(rows[2]).toBe(0);
+    expect(new Set([rows[0], rows[1]]).size).toBe(2);
+  });
+
+  it("reuses the first row once there's room again", () => {
+    const rows = hueLabelRows(
+      [
+        { hue: 10, label: "Soprano" },
+        { hue: 16, label: "Contralto" },
+        { hue: 180, label: "Tenor" }
+      ],
+      600
+    );
+    expect(rows).toEqual([0, 1, 0]);
   });
 });
