@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import VerseGlow from "@/components/lyrics/VerseGlow.vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
-import { useTheme } from "@/composables/useTheme";
 import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 import {
   addStatusToLyrics,
@@ -25,7 +23,6 @@ const emit = defineEmits<{
 }>();
 
 const { getVerseStyles } = useLyricsColoring();
-const { resolvedTheme } = useTheme();
 
 const allLyricsWithStatus = computed(() => addStatusToLyrics(props.lyrics, props.currentTime));
 
@@ -35,8 +32,6 @@ const lyricsWithStatus = computed(() =>
 
 const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value));
 
-// The active verse emits its color (VerseGlow), only in dark: on a light stage a glow
-// reads as blur.
 const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) =>
   getVerseStyles(verse, props.collection, verse.status, "stage");
 
@@ -91,16 +86,10 @@ watch(
               class="text-base-content/45 text-center font-sans text-[11px] leading-none font-semibold tracking-[0.16em] uppercase"
               >{{ verse.comment }}</span
             >
-            <!-- The verse grows as a whole, so its glow grows with it -->
             <div
-              class="relative transition-[scale] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+              class="transition-[scale] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
               :class="{ 'scale-[1.14]': verse.status === 'active' }"
             >
-              <VerseGlow
-                :show="resolvedTheme === 'dark' && verse.status === 'active'"
-                :text="verse.text"
-                :color="verseStyles(verse).color"
-              />
               <span
                 :ref="
                   (el: any) => {
@@ -112,7 +101,7 @@ watch(
                 :data-active="verse.status === 'active' || undefined"
                 :style="verseStyles(verse)"
                 :class="verse.status === 'active' ? 'font-bold' : 'font-medium'"
-                class="relative block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                class="block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
                 >{{ verse.text }}</span
               >
             </div>

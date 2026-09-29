@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
-import VerseGlow from "@/components/lyrics/VerseGlow.vue";
 import { IconWarning } from "@/components/ui/icons";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
-import { useTheme } from "@/composables/useTheme";
 import type { CollectionWithRole, LyricStanza } from "@/data/types";
 import { addStatusToLyrics, type LyricVerseWithStatus } from "@/utils/lyricsViewerUtils";
 import { type SyncUnit, unitState } from "@/utils/syncMarking";
@@ -31,7 +29,6 @@ const emit = defineEmits<{
 }>();
 
 const { getVerseStyles } = useLyricsColoring();
-const { resolvedTheme } = useTheme();
 
 const unitIndexById = computed(() => new Map(props.units.map((unit, index) => [unit.id, index])));
 
@@ -60,7 +57,6 @@ const stanzas = computed<Line[][]>(() =>
   )
 );
 
-// The sounding verse glows in dark (VerseGlow), like on the player's stage.
 const verseStyles = (verse: LyricVerseWithStatus) =>
   getVerseStyles(verse, props.collection, verse.status, "stage");
 
@@ -139,14 +135,9 @@ watch(activeKey, (key) => {
                   class="text-base-content/45 font-sans text-[11px] leading-none font-semibold tracking-[0.16em] uppercase"
                   >{{ shown.verse.comment }}</span
                 >
-                <span class="relative block max-w-full">
-                  <VerseGlow
-                    :show="resolvedTheme === 'dark' && shown.verse.status === 'active'"
-                    :text="shown.verse.text"
-                    :color="verseStyles(shown.verse).color"
-                  />
+                <span class="block max-w-full">
                   <span
-                      class="relative block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    class="block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
                     :class="[
                       shown.verse.status === 'active' ? 'font-bold' : 'font-medium',
                       shown.verse.start_time === undefined && shown.index !== cursor && 'opacity-40'
