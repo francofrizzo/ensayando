@@ -2,7 +2,9 @@
 import { computed } from "vue";
 
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
+import { useRoomLightArtwork } from "@/composables/useRoomLightArtwork";
 import type { Collection } from "@/data/types";
+import { artworkPlaybackUrl } from "@/data/storage";
 import { deriveColor } from "@/utils/palette";
 
 // "Luz de sala": soft glows of the collection hue and its first two track hues
@@ -14,6 +16,13 @@ const props = defineProps<{
 }>();
 
 const { palette, resolvedTheme } = useCollectionPalette(computed(() => props.collection ?? null));
+
+// With the collection's toggle on and a cover uploaded, the blurred cover replaces the glows.
+const { useArtwork } = useRoomLightArtwork(computed(() => props.collection?.id));
+const artworkUrl = computed(() =>
+  useArtwork.value && props.collection ? artworkPlaybackUrl(props.collection) : ""
+);
+const artworkOpacity = computed(() => (resolvedTheme.value === "dark" ? 0.35 : 0.25));
 
 // Subtle on purpose: 16 % in light, 24 % in dark.
 const alpha = computed(() => (resolvedTheme.value === "dark" ? 0.24 : 0.16));
@@ -38,7 +47,17 @@ const GRAIN =
 
 <template>
   <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+    <img
+      v-if="artworkUrl"
+      data-testid="room-light-artwork"
+      :src="artworkUrl"
+      alt=""
+      class="absolute -inset-[10%] size-[120%] max-w-none object-cover blur-[80px] saturate-[1.6]"
+      :class="{ 'room-light-drift': props.playing }"
+      :style="{ opacity: artworkOpacity }"
+    />
     <div
+      v-else
       data-testid="room-light"
       class="absolute -inset-[10%] transition-[background] duration-700"
       :class="{ 'room-light-drift': props.playing }"
