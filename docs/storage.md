@@ -45,9 +45,9 @@ R2_SECRET_ACCESS_KEY
 ```
 
 The API also reads `SUPABASE_URL`/`SUPABASE_ANON_KEY`, falling back to the existing
-`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` values. Migration scripts additionally require
-`SUPABASE_SERVICE_ROLE_KEY` and `BLOB_READ_WRITE_TOKEN`; `SUPABASE_STORAGE_BUCKET` defaults to
-`audio-files`.
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` values. `/api/members` requires
+`SUPABASE_SERVICE_ROLE_KEY` (see [Permissions](permissions.md)). Migration scripts additionally
+require `BLOB_READ_WRITE_TOKEN`; `SUPABASE_STORAGE_BUCKET` defaults to `audio-files`.
 
 Use one Cloudflare Object Read & Write token per bucket. Never reuse Ticket Say credentials or
 commit credentials to the repository.
