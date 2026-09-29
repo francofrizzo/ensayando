@@ -141,8 +141,18 @@ export async function inviteMember(
   input: { collectionId: number; email: string; role: string }
 ): Promise<InvitedMember> {
   await requireCollectionAdmin(deps.user, input.collectionId);
+  // The invite email names the collection (supabase/templates/invite.html); without
+  // it the email still reads fine, so a failed lookup doesn't block the invitation.
+  const { data: collection } = await deps.service
+    .from("collections")
+    .select("name")
+    .eq("id", input.collectionId)
+    .maybeSingle();
   const { data, error } = await deps.service.auth.admin.inviteUserByEmail(input.email, {
-    data: { username: input.email },
+    data: {
+      username: input.email,
+      ...(collection?.name ? { collection_name: collection.name } : {})
+    },
     redirectTo: deps.redirectTo
   });
   if (error || !data.user) {

@@ -4,6 +4,7 @@
     "api/**/*.ts",
     "server/**/*.ts",
     "scripts/**/*.ts",
+    "src/utils/palette.ts",
     "vite.config.*",
     "vitest.config.*",
     "cypress.config.*",

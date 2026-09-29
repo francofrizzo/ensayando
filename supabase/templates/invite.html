@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<title>Te invitaron a Ensayando</title>
+</head>
+<body style="margin:0;padding:0;background:#f8f5f9;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Elegí una contraseña para entrar y empezar a ensayar.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f8f5f9" style="background:#f8f5f9;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+        <tr>
+          <td style="padding:0 4px 20px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:19px;font-weight:700;letter-spacing:-0.2px;color:#77009e;">Ensayando</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td bgcolor="#fefcfe" style="background:#fefcfe;border:1px solid #d7a9ee;border-radius:16px;padding:32px 28px 20px;">
+            <h1 style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:24px;line-height:1.25;font-weight:700;letter-spacing:-0.3px;color:#1b161d;">Te invitaron a Ensayando</h1>
+            <p style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:16px;line-height:1.55;color:#1b161d;">{{ if .Data.collection_name }}Te sumaron a <strong>{{ .Data.collection_name }}</strong> en Ensayando{{ else }}Te sumaron a una colección en Ensayando{{ end }}: ahí están las pistas y las letras de las canciones para ensayar.</p>
+            <p style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:16px;line-height:1.55;color:#1b161d;">Para entrar, elegí una contraseña. Después vas a iniciar sesión con este email.</p>
+            
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+  <tr>
+    <td align="center" bgcolor="#77009e" style="border-radius:10px;">
+      <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:14px 26px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:16px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;border-radius:10px;">Elegir contraseña</a>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 10px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;color:#605b63;">Si el botón no funciona, copiá este link en el navegador:</p>
+<p style="margin:0 0 20px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px;line-height:1.5;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#77009e;">{{ .ConfirmationURL }}</a></p>
+            <p style="margin:0 0 10px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;color:#605b63;">El link sirve una sola vez y vence pronto. Si ya no funciona, pedile a quien te invitó que te mande otro.</p>
+            <p style="margin:0 0 10px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;color:#605b63;">Si no esperabas esta invitación, podés ignorar este email.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 4px 0;">
+            <p style="margin:0 0 10px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;color:#605b63;">Ensayando · <a href="{{ .SiteURL }}" style="color:#605b63;">app.ensayando.com.ar</a></p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

@@ -43,3 +43,6 @@ test-results/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Local preview of the auth email templates (pnpm emails:build --preview)
+supabase/templates/preview.html

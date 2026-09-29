@@ -26,6 +26,7 @@ function serviceClient(overrides: {
   updateUserById?: Result;
   resetPasswordForEmail?: Result;
   insert?: Result;
+  collection?: Result;
 }) {
   const insert = vi.fn(async () => ({ error: null, ...overrides.insert }));
   const admin = {
@@ -36,7 +37,12 @@ function serviceClient(overrides: {
     deleteUser: vi.fn(async () => ({ error: null }))
   };
   const client = {
-    from: vi.fn(() => ({ insert })),
+    from: vi.fn(() => ({
+      insert,
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: null, error: null, ...overrides.collection }) })
+      })
+    })),
     auth: {
       admin,
       resetPasswordForEmail: vi.fn(async () => ({ error: null, ...overrides.resetPasswordForEmail }))
@@ -121,7 +127,10 @@ describe("createManagedAccount", () => {
 
 describe("inviteMember", () => {
   it("invites with the reset-password redirect and binds the account", async () => {
-    const service = serviceClient({ inviteUserByEmail: { data: { user: { id: "u-3" } } } });
+    const service = serviceClient({
+      inviteUserByEmail: { data: { user: { id: "u-3" } } },
+      collection: { data: { name: "Coro del Sur" } }
+    });
     const result = await inviteMember(
       {
         user: userClient({ is_collection_admin: { data: true } }),
@@ -132,8 +141,23 @@ describe("inviteMember", () => {
     );
     expect(result).toEqual({ userId: "u-3", email: "sofia@example.com" });
     expect(service.admin.inviteUserByEmail).toHaveBeenCalledWith("sofia@example.com", {
-      data: { username: "sofia@example.com" },
+      data: { username: "sofia@example.com", collection_name: "Coro del Sur" },
       redirectTo: "https://ensayando.example/reset-password"
+    });
+  });
+
+  it("still invites when the collection name can't be read", async () => {
+    const service = serviceClient({
+      inviteUserByEmail: { data: { user: { id: "u-3" } } },
+      collection: { data: null, error: { message: "boom" } }
+    });
+    await inviteMember(
+      { user: userClient({ is_collection_admin: { data: true } }), service: service.client },
+      { collectionId: 7, email: "sofia@example.com", role: "viewer" }
+    );
+    expect(service.admin.inviteUserByEmail).toHaveBeenCalledWith("sofia@example.com", {
+      data: { username: "sofia@example.com" },
+      redirectTo: undefined
     });
   });
 });
