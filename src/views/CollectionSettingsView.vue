@@ -8,7 +8,6 @@ import SettingsGeneral from "@/components/settings/SettingsGeneral.vue";
 import SettingsMembers from "@/components/settings/SettingsMembers.vue";
 import SettingsSongs from "@/components/settings/SettingsSongs.vue";
 import {
-  IconAppAdmin,
   IconBack,
   IconLibrary,
   IconLock,
@@ -183,9 +182,6 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
           }}</span>
         </div>
         <div class="flex-1" />
-        <span class="badge badge-soft badge-primary hidden gap-1 sm:inline-flex">
-          <IconAppAdmin class="size-3.5" /> Sos admin
-        </span>
         <span
           class="bg-primary/15 text-primary grid size-8 place-items-center rounded-full text-xs font-bold"
           >{{ userInitials }}</span
