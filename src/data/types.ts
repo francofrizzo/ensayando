@@ -26,6 +26,9 @@ export type CollectionRole = "admin" | "editor" | "viewer";
 
 export type CollectionWithRole = Collection & {
   user_role: CollectionRole;
+  // True when the person has a row in user_collections; public or linked
+  // collections they only visit are listed too, but aren't theirs.
+  is_member?: boolean;
 };
 
 export type Song = {

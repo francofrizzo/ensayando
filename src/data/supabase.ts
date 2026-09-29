@@ -88,7 +88,8 @@ export const fetchCollections = async (): Promise<
     }
     const mapped: CollectionWithRole[] = (publicResponse.data || []).map((collection) => ({
       ...collection,
-      user_role: "viewer" as const
+      user_role: "viewer" as const,
+      is_member: false
     }));
     mapped.sort((a, b) => b.id - a.id);
     return {
@@ -117,14 +118,22 @@ export const fetchCollections = async (): Promise<
     const collection: Collection | null =
       (row as unknown as { role: string; collections: Collection | null }).collections ?? null;
     if (!collection) continue;
-    collectionsMap.set(collection.id, { ...collection, user_role: row.role } as CollectionWithRole);
+    collectionsMap.set(collection.id, {
+      ...collection,
+      user_role: row.role,
+      is_member: true
+    } as CollectionWithRole);
   }
 
   // Merge public collections (only add if user doesn't already have them)
   if (!publicResponse.error && publicResponse.data) {
     for (const collection of publicResponse.data) {
       if (!collectionsMap.has(collection.id)) {
-        collectionsMap.set(collection.id, { ...collection, user_role: "viewer" as const });
+        collectionsMap.set(collection.id, {
+          ...collection,
+          user_role: "viewer" as const,
+          is_member: false
+        });
       }
     }
   }
@@ -139,6 +148,17 @@ export const fetchCollections = async (): Promise<
     status: 200,
     statusText: "OK"
   } as PostgrestSingleResponse<CollectionWithRole[]>;
+};
+
+// Light index of every song the person can read (RLS decides), for global search.
+export type SongIndexEntry = Pick<Song, "id" | "title" | "slug" | "collection_id" | "visible">;
+
+export const fetchSongIndex = async (): Promise<PostgrestSingleResponse<SongIndexEntry[]>> => {
+  return await supabase
+    .from("songs")
+    .select("id, title, slug, collection_id, visible")
+    .order("order", { ascending: true, nullsFirst: false })
+    .order("id", { ascending: true });
 };
 
 export const fetchSongsByCollectionId = async (
