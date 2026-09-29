@@ -1,16 +1,13 @@
 import { computed } from "vue";
 
-import { useRouteParams } from "@/composables/useRouteParams";
 import { useCollectionsStore } from "@/stores/collections";
 
 export function useCurrentSong() {
-  const { songSlug } = useRouteParams();
   const collectionsStore = useCollectionsStore();
 
-  const currentSong = computed(() => {
-    if (!songSlug.value) return null;
-    return collectionsStore.songs.find((s) => s.slug === songSlug.value) || null;
-  });
+  // The store's lookup: it also resolves a song renamed in this session under its old
+  // address, so the player doesn't remount while the route catches up.
+  const currentSong = computed(() => collectionsStore.currentSong);
 
   const currentSongIndex = computed(() => {
     if (!currentSong.value) return -1;
