@@ -8,6 +8,7 @@ import SaveBar from "@/components/settings/SaveBar.vue";
 import SegmentedControl from "@/components/settings/SegmentedControl.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import { IconPlus, IconTrash, IconWarning } from "@/components/ui/icons";
+import { useSettingsSection } from "@/composables/useSettingsGuard";
 import { useTheme } from "@/composables/useTheme";
 import { AdminError, updateCollectionPalette } from "@/data/admin";
 import type { CollectionWithRole, Song } from "@/data/types";
@@ -278,6 +279,14 @@ function discard() {
   error.value = "";
   selected.value = "main";
 }
+
+useSettingsSection({
+  label: "los colores",
+  isDirty: () => changeList.value.length > 0,
+  save,
+  discard,
+  canSave: () => !blocked.value && !saving.value
+});
 
 const INTENSITIES: { value: Intensity; label: string }[] = [
   { value: "suave", label: "Suave" },

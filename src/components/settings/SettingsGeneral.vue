@@ -7,6 +7,7 @@ import SettingsSection from "@/components/settings/SettingsSection.vue";
 import { IconGlobe, IconImage, IconLink, IconLock, IconTrash, IconWarning } from "@/components/ui/icons";
 import { useRoomLightArtwork } from "@/composables/useRoomLightArtwork";
 import { AdminError, updateCollection } from "@/data/admin";
+import { useSettingsSection } from "@/composables/useSettingsGuard";
 import { collectionSlugError } from "@/utils/collectionSlug";
 import { artworkPlaybackUrl, deleteArtworkFile, uploadArtworkFile } from "@/data/storage";
 import type { CollectionVisibility, CollectionWithRole } from "@/data/types";
@@ -85,6 +86,14 @@ function discard() {
   draft.value = { ...saved.value };
   error.value = "";
 }
+
+useSettingsSection({
+  label: "los datos de la colección",
+  isDirty: () => changes.value.length > 0,
+  save,
+  discard,
+  canSave: () => !slugError.value && !titleError.value && !saving.value
+});
 
 // ---------- portada ----------
 
