@@ -131,6 +131,8 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - Verificar que Supabase pueda mandar emails (invitaciones y recuperación de contraseña).
 - Cargar los primeros admins de la app.
 - Aplicar las migraciones y revisar los colores convertidos en las colecciones reales.
+- Biblioteca: las canciones no llevan número. El indicador de "sonando" va a la derecha, junto a la duración.
+- Letra: el brillo del verso activo aparece y se apaga con la misma transición del verso.
 
 ## Estructura
 

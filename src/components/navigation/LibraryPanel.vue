@@ -86,7 +86,6 @@ const allSongs = computed(() =>
     : []
 );
 const filteredSongs = computed(() => filterSongs(allSongs.value, query.value));
-const songNumber = (song: Song) => allSongs.value.indexOf(song) + 1;
 const summary = computed(() => {
   const count = songCountLabel(allSongs.value.length);
   const total = totalDuration(allSongs.value);
@@ -252,7 +251,7 @@ const signIn = () => {
               <li v-for="song in filteredSongs" :key="song.id">
                 <RouterLink
                   :to="songRoute(currentCollection, song)"
-                  class="grid grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[11px] px-2.5 py-2.5 text-[15px] font-medium sm:py-[9px] sm:text-[14.5px]"
+                  class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 rounded-[11px] px-3 py-2.5 text-[15px] font-medium sm:py-[9px] sm:text-[14.5px]"
                   :class="currentSong?.id === song.id ? 'font-semibold' : 'hover:bg-base-content/5'"
                   :style="
                     currentSong?.id === song.id
@@ -261,13 +260,6 @@ const signIn = () => {
                   "
                   :aria-current="currentSong?.id === song.id ? 'page' : undefined"
                 >
-                  <span
-                    class="flex justify-end font-mono text-xs tabular-nums"
-                    :class="currentSong?.id === song.id ? '' : 'text-base-content/45'"
-                  >
-                    <PlayingBars v-if="currentSong?.id === song.id" :playing="playing" />
-                    <template v-else>{{ songNumber(song) }}</template>
-                  </span>
                   <span class="flex min-w-0 items-center gap-[7px]">
                     <IconLock
                       v-if="!song.visible"
@@ -290,9 +282,10 @@ const signIn = () => {
                     />
                   </span>
                   <span
-                    class="font-mono text-xs tabular-nums"
+                    class="flex items-center gap-2 font-mono text-xs tabular-nums"
                     :class="currentSong?.id === song.id ? '' : 'text-base-content/45'"
                   >
+                    <PlayingBars v-if="currentSong?.id === song.id" :playing="playing" />
                     <template v-if="songDuration(song) !== null">{{
                       formatDuration(songDuration(song)!)
                     }}</template>
