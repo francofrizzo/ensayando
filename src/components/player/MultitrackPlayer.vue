@@ -1048,7 +1048,7 @@ const initializeAudioContext = async () => {
          (v-show: the track players inside must stay mounted to keep playing). -->
     <div
       v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar') && (sortedTracks.length > 0 || uiStore.editMode)"
-      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-2"
+      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
       data-testid="player-dock"
     >
       <button

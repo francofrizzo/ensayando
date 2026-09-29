@@ -24,7 +24,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
 </script>
 
 <template>
-  <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+  <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
     <div class="flex min-w-0 items-center">
       <span
         v-if="props.isReady"
@@ -42,27 +42,20 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </span>
     </div>
 
-    <div
-      class="flex items-center gap-1.5 sm:gap-2.5 md:gap-5"
-      :class="
-        props.compact
-          ? ''
-          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%-0.125rem)]'
-      "
-    >
+    <div class="flex items-center gap-1.5 sm:gap-2.5">
       <button
-        class="btn btn-circle"
-        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:size-9 md:border-0'"
+        class="btn btn-circle btn-ghost"
+        :class="props.compact ? 'btn-sm' : 'btn-md'"
         :disabled="!props.prevSong"
         aria-label="Canción anterior"
         @click="emit('skip-prev')"
       >
-        <IconSkipPrev class="size-[18px] md:size-4" />
+        <IconSkipPrev class="size-[18px]" />
       </button>
       <button
         class="btn btn-circle btn-primary play-glow border-0"
         :class="[
-          props.compact ? 'size-11' : 'size-14 md:size-16',
+          props.compact ? 'size-11' : 'size-14',
           !props.isReady && 'cursor-default'
         ]"
         aria-label="Play/Pause"
@@ -73,24 +66,24 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
           <IconPause
             v-if="props.isPlaying"
             key="pause"
-            :class="props.compact ? 'size-5' : 'size-6 md:size-7'"
+            :class="props.compact ? 'size-5' : 'size-6'"
           />
           <IconPlay
             v-else
             key="play"
             class="translate-x-[1px]"
-            :class="props.compact ? 'size-5' : 'size-6 md:size-7'"
+            :class="props.compact ? 'size-5' : 'size-6'"
           />
         </Transition>
       </button>
       <button
-        class="btn btn-circle"
-        :class="props.compact ? 'btn-sm btn-ghost' : 'btn-md btn-ghost md:glass-3 md:size-9 md:border-0'"
+        class="btn btn-circle btn-ghost"
+        :class="props.compact ? 'btn-sm' : 'btn-md'"
         :disabled="!props.nextSong"
         aria-label="Canción siguiente"
         @click="emit('skip-next')"
       >
-        <IconSkipNext class="size-[18px] md:size-4" />
+        <IconSkipNext class="size-[18px]" />
       </button>
     </div>
 
