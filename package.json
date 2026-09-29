@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:storage": "R2_CONTRACT_TEST=1 vitest run tests/storage/r2.contract.test.ts",
+    "test:db": "SUPABASE_DB_TEST=1 vitest run tests/db",
     "storage:migrate": "tsx scripts/migrate-storage-to-r2.ts",
     "storage:smoke": "tsx scripts/smoke-r2.ts",
     "test:e2e": "playwright test",
