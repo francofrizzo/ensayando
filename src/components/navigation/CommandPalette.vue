@@ -6,6 +6,7 @@ import {
   IconHome,
   IconLibrary,
   IconMusic,
+  IconPlus,
   IconSearch,
   IconSettings,
   IconThemeDark,
@@ -21,6 +22,7 @@ import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useDialogFocus } from "@/composables/useDialogFocus";
 import { useTheme } from "@/composables/useTheme";
+import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { useSongIndexStore } from "@/stores/songIndex";
 import { useUIStore } from "@/stores/ui";
@@ -34,6 +36,7 @@ import {
 
 const uiStore = useUIStore();
 const collectionsStore = useCollectionsStore();
+const authStore = useAuthStore();
 const songIndex = useSongIndexStore();
 const router = useRouter();
 const route = useRoute();
@@ -94,6 +97,14 @@ const actions = computed<RunnableAction[]>(() => {
       label: "Ajustes de la colección",
       icon: IconSettings,
       run: () => void router.push(`/${slug}/ajustes/general`)
+    });
+  }
+  if (authStore.isAppAdmin) {
+    list.push({
+      id: "new-collection",
+      label: "Nueva colección",
+      icon: IconPlus,
+      run: () => void router.push({ name: "new-collection" })
     });
   }
   list.push(

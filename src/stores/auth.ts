@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+import { fetchIsAppAdmin } from "@/data/admin";
 import * as supabase from "@/data/supabase";
 import { useCollectionsStore } from "@/stores/collections";
 import { useSongIndexStore } from "@/stores/songIndex";
@@ -29,6 +30,8 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
   const lastUserId = ref<string | null>(null);
+  // Whether the person is in app_admins (can create collections). Fetched once per sign-in.
+  const isAppAdmin = ref(false);
 
   const isAuthenticated = computed(() => {
     return user.value !== null;
@@ -45,6 +48,12 @@ export const useAuthStore = defineStore("auth", () => {
       collectionsStore.reset();
       useSongIndexStore().reset();
       lastUserId.value = newUserId;
+      isAppAdmin.value = false;
+      if (newUserId) {
+        void fetchIsAppAdmin().then((value) => {
+          if (lastUserId.value === newUserId) isAppAdmin.value = value;
+        });
+      }
     }
   };
 
@@ -111,6 +120,7 @@ export const useAuthStore = defineStore("auth", () => {
     username,
     isLoading,
     isAuthenticated,
+    isAppAdmin,
     initAuth,
     signIn,
     signUp,

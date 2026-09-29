@@ -121,6 +121,11 @@ const songCount = (collection: CollectionWithRole) =>
 
 // ---------- actions ----------
 
+const newCollection = () => {
+  close();
+  void router.push({ name: "new-collection" });
+};
+
 const openSettings = () => {
   if (!currentCollection.value) return;
   close();
@@ -235,11 +240,15 @@ const signIn = () => {
                 </button>
               </div>
             </div>
-            <label v-if="allSongs.length > 0" class="input input-sm w-full rounded-full">
+            <label
+              v-if="allSongs.length > 0"
+              class="input input-sm focus-within:shadow-[inset_0_0_0_1.5px_var(--collection-ink),0_0_0_4px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] w-full rounded-full focus-within:outline-none"
+            >
               <IconSearch class="size-4 opacity-50" />
               <input
                 v-model="query"
                 type="search"
+                class="outline-none"
                 placeholder="Buscar en la colección"
                 aria-label="Buscar canción"
               />
@@ -317,7 +326,7 @@ const signIn = () => {
               </button>
             </div>
 
-            <template v-if="otherCollections.length > 0">
+            <template v-if="otherCollections.length > 0 || authStore.isAppAdmin">
               <h3
                 class="text-base-content/45 px-5 pt-4 pb-2 text-[11px] font-semibold tracking-[0.1em] uppercase"
               >
@@ -344,6 +353,16 @@ const signIn = () => {
                   </RouterLink>
                 </li>
               </ul>
+              <div v-if="authStore.isAppAdmin" class="px-2.5 pb-2">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm w-full justify-start gap-2.5 rounded-[11px] font-medium"
+                  data-testid="library-new-collection"
+                  @click="newCollection"
+                >
+                  <IconPlus class="size-4" /> Nueva colección
+                </button>
+              </div>
             </template>
           </div>
         </template>
@@ -385,6 +404,16 @@ const signIn = () => {
                 </RouterLink>
               </li>
             </ul>
+            <div v-if="authStore.isAppAdmin" class="px-2.5 pb-2">
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm w-full justify-start gap-2.5 rounded-[11px] font-medium"
+                data-testid="library-new-collection"
+                @click="newCollection"
+              >
+                <IconPlus class="size-4" /> Nueva colección
+              </button>
+            </div>
             <p
               v-if="collectionsStore.collections.length === 0"
               class="text-base-content/60 px-5 py-2 text-sm"

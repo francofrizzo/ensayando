@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconGlobe, IconLink, IconLock, IconSearch } from "@/components/ui/icons";
+import { IconGlobe, IconLink, IconLock, IconPlus, IconSearch } from "@/components/ui/icons";
 import { computed, onMounted, ref } from "vue";
 
 import ErrorMessage from "@/components/ui/ErrorMessage.vue";
@@ -152,6 +152,15 @@ const initials = computed(() => (authStore.username ?? "").slice(0, 2).toUpperCa
             </span>
           </div>
         </div>
+      </RouterLink>
+      <RouterLink
+        v-if="authStore.isAppAdmin"
+        :to="{ name: 'new-collection' }"
+        class="border-base-content/25 text-base-content/70 hover:border-base-content/45 hover:bg-base-content/5 flex min-h-24 flex-col items-center justify-center gap-2 rounded-[18px] border-2 border-dashed p-4 font-semibold transition-colors sm:rounded-[20px]"
+        data-testid="new-collection-card"
+      >
+        <IconPlus class="size-6" aria-hidden="true" />
+        Nueva colección
       </RouterLink>
     </main>
   </div>
