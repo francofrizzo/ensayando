@@ -141,10 +141,7 @@ const hasLyrics = (song: Song) => (song.lyrics?.length ?? 0) > 0;
 </script>
 
 <template>
-  <SettingsSection
-    title="Canciones"
-    description="Arrastrá para cambiar el orden. El interruptor oculta la canción a los lectores."
-  >
+  <SettingsSection title="Canciones" description="Arrastrá para ordenar.">
     <template #actions>
       <RouterLink :to="`/${props.collection.slug}/nueva`" class="btn btn-soft btn-sm">
         <IconPlus class="size-4" /> Nueva canción
@@ -168,7 +165,7 @@ const hasLyrics = (song: Song) => (song.lyrics?.length ?? 0) > 0;
         :key="song.id"
         class="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors"
         :class="{
-          'bg-primary/10 outline-primary outline-2': overIndex === index && dragIndex !== index,
+          'bg-collection-soft outline-collection-ink outline-2': overIndex === index && dragIndex !== index,
           'opacity-40': dragIndex === index
         }"
         draggable="true"

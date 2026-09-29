@@ -151,7 +151,7 @@ const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((va
             class="flex w-full items-center gap-3 rounded-lg border p-2.5 text-left"
             :class="
               picked?.user_id === account.user_id
-                ? 'border-primary bg-primary/10'
+                ? 'border-collection-ink bg-collection-soft'
                 : 'border-base-content/10 hover:bg-base-content/5'
             "
             :disabled="isMember(account)"
@@ -171,7 +171,7 @@ const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((va
       <span class="text-base-content/70 text-sm font-semibold">O crear una cuenta nueva</span>
       <button
         class="rounded-box flex items-start gap-3 border p-3 text-left"
-        :class="mode === 'managed' ? 'border-primary bg-primary/10' : 'border-base-content/10'"
+        :class="mode === 'managed' ? 'border-collection-ink bg-collection-soft' : 'border-base-content/10'"
         @click="mode = 'managed'"
       >
         <IconKey class="mt-0.5 size-4" />
@@ -198,7 +198,7 @@ const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((va
       </label>
       <button
         class="rounded-box flex items-start gap-3 border p-3 text-left"
-        :class="mode === 'email' ? 'border-primary bg-primary/10' : 'border-base-content/10'"
+        :class="mode === 'email' ? 'border-collection-ink bg-collection-soft' : 'border-base-content/10'"
         @click="mode = 'email'"
       >
         <IconMail class="mt-0.5 size-4" />

@@ -42,21 +42,19 @@ const VISIBILITY: {
   {
     value: "private",
     label: "Privada",
-    description:
-      "Solo la ven los miembros. Para entrar hay que tener cuenta y estar en la lista.",
+    description: "Solo miembros.",
     icon: IconLock
   },
   {
     value: "unlisted",
     label: "No listada",
-    description:
-      "La ve cualquiera que tenga el enlace, sin cuenta. No aparece en la biblioteca de otras personas.",
+    description: "Cualquiera con el enlace.",
     icon: IconLink
   },
   {
     value: "public",
     label: "Pública",
-    description: "La ve cualquiera y aparece en la biblioteca de todas las personas.",
+    description: "Cualquiera; aparece en la biblioteca.",
     icon: IconGlobe
   }
 ];
@@ -156,10 +154,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
 </script>
 
 <template>
-  <SettingsSection
-    title="General"
-    description="Cómo se llama la colección, dónde vive y quién la puede ver."
-  >
+  <SettingsSection title="General">
     <div class="bg-base-100 rounded-box border-base-content/10 grid gap-4 border p-5 md:grid-cols-2">
       <label class="flex flex-col gap-1.5">
         <span class="text-base-content/70 text-sm font-semibold">Nombre</span>
@@ -194,9 +189,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
       >
         <IconWarning class="size-4" />
         <span class="text-sm">
-          Cambiaste la dirección. Los enlaces a
-          <span class="font-mono">/{{ saved.slug }}</span> que ya compartiste van a dejar de
-          funcionar.
+          Los enlaces a <span class="font-mono">/{{ saved.slug }}</span> dejan de funcionar.
         </span>
       </div>
     </div>
@@ -210,7 +203,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
           class="rounded-box flex cursor-pointer flex-col gap-1.5 border p-3.5 transition-colors"
           :class="
             draft.visibility === option.value
-              ? 'border-primary bg-primary/10'
+              ? 'border-collection-ink bg-collection-soft'
               : 'border-base-content/10 hover:border-base-content/25'
           "
         >
@@ -232,11 +225,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
 
     <div class="bg-base-100 rounded-box border-base-content/10 flex flex-col gap-3 border p-5">
       <h2 class="font-semibold">Portada</h2>
-      <p class="text-base-content/60 max-w-2xl text-sm">
-        Opcional. Cuadrada, al menos 1000 × 1000 px. Si la cargás, se ve en el banner de inicio, en la
-        pantalla de bloqueo del teléfono y, desenfocada, como luz de fondo del reproductor. Sin portada
-        no hay reemplazo ni espacio reservado.
-      </p>
+      <p class="text-base-content/60 text-sm">Cuadrada, mínimo 1000 × 1000 px.</p>
       <div class="flex flex-wrap items-center gap-4">
         <img
           v-if="artworkUrl"
@@ -246,7 +235,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
         />
         <div
           class="rounded-box flex min-h-20 flex-1 items-center gap-3 border border-dashed p-4 text-sm"
-          :class="dragging ? 'border-primary bg-primary/10' : 'border-base-content/20'"
+          :class="dragging ? 'border-collection-ink bg-collection-soft' : 'border-base-content/20'"
           @dragover.prevent="dragging = true"
           @dragleave.prevent="dragging = false"
           @drop.prevent="onDrop"
@@ -256,8 +245,8 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
           <span class="text-base-content/70">
             <template v-if="uploading">Subiendo…</template>
             <template v-else>
-              {{ artworkUrl ? "Arrastrá otra imagen o" : "Esta colección no tiene portada. Arrastrá una imagen o" }}
-              <button type="button" class="link link-primary font-semibold" @click="fileInput?.click()">
+              {{ artworkUrl ? "Arrastrá otra imagen o" : "Arrastrá una imagen o" }}
+              <button type="button" class="link text-collection-ink font-semibold" @click="fileInput?.click()">
                 elegí un archivo</button
               >. JPG, PNG o WebP.
             </template>
@@ -277,7 +266,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
       <label class="flex items-center justify-between gap-3 text-sm">
         <span>
           Usar la portada como luz de sala
-          <span class="text-base-content/50 block text-xs">Se guarda en este dispositivo.</span>
+          <span class="text-base-content/50 block text-xs">Solo en este dispositivo.</span>
         </span>
         <input
           v-model="useArtwork"

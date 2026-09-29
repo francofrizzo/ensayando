@@ -119,7 +119,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
 </script>
 
 <template>
-  <SettingsSection title="Miembros" description="Quién puede entrar a esta colección y qué puede hacer.">
+  <SettingsSection title="Miembros">
     <template #actions>
       <button class="btn btn-primary btn-sm" data-testid="add-member" @click="adding = true">
         <IconUserPlus class="size-4" /> Agregar persona
@@ -152,7 +152,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
             <td>
               <div class="flex items-center gap-3">
                 <span
-                  class="bg-primary/15 text-primary grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold"
+                  class="bg-collection-soft text-collection-ink grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold"
                   >{{ initials(m.username) }}</span
                 >
                 <div class="flex min-w-0 flex-col">
@@ -228,7 +228,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
         @click="sheet = m"
       >
         <span
-          class="bg-primary/15 text-primary grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold"
+          class="bg-collection-soft text-collection-ink grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold"
           >{{ initials(m.username) }}</span
         >
         <span class="flex min-w-0 flex-1 flex-col">
@@ -243,7 +243,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
     </ul>
 
     <p class="text-base-content/50 px-1 text-xs">
-      No podés cambiar tu propio rol ni quitarte acceso si sos el único admin.
+      Si sos el único admin, no podés cambiar tu rol ni irte.
     </p>
 
     <!-- phone sheet -->
@@ -251,7 +251,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
       <div v-if="sheet" class="modal-box glass-3 flex flex-col gap-3">
         <div class="flex items-center gap-3">
           <span
-            class="bg-primary/15 text-primary grid size-10 place-items-center rounded-full text-sm font-bold"
+            class="bg-collection-soft text-collection-ink grid size-10 place-items-center rounded-full text-sm font-bold"
             >{{ initials(sheet.username) }}</span
           >
           <div class="flex flex-col">

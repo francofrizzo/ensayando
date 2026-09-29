@@ -160,8 +160,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
       <IconLock class="size-16 opacity-40" />
       <h1 class="font-display text-2xl font-bold">No podés ver estos ajustes</h1>
       <p class="text-base-content/60 max-w-sm">
-        Solo los admins de la colección pueden cambiar su nombre, sus colores, sus canciones y
-        quién tiene acceso.
+        Solo los admins de la colección.
       </p>
       <button class="btn btn-primary" @click="goBack">Volver</button>
     </div>
@@ -183,7 +182,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
         </div>
         <div class="flex-1" />
         <span
-          class="bg-primary/15 text-primary grid size-8 place-items-center rounded-full text-xs font-bold"
+          class="bg-collection-soft text-collection-ink grid size-8 place-items-center rounded-full text-xs font-bold"
           >{{ userInitials }}</span
         >
       </header>
@@ -226,7 +225,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold"
             :class="
               section === item.id
-                ? 'bg-primary/15 text-primary'
+                ? 'bg-collection-soft text-collection-ink'
                 : 'hover:bg-base-content/5 text-base-content/80'
             "
           >
@@ -246,9 +245,6 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             <IconWarning class="size-4.5" /> Zona de peligro
           </RouterLink>
           <div class="flex-1" />
-          <p class="text-base-content/50 px-3 py-2 text-xs">
-            Solo los admins de la colección ven esta pantalla.
-          </p>
         </nav>
 
         <main class="min-w-0 flex-1 overflow-y-auto" data-testid="settings-main">

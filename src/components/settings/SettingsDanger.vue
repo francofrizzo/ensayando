@@ -55,7 +55,7 @@ async function confirm() {
 </script>
 
 <template>
-  <SettingsSection title="Zona de peligro" description="Lo que se hace acá no se puede deshacer.">
+  <SettingsSection title="Zona de peligro" description="No se puede deshacer.">
     <div
       class="bg-base-100 rounded-box border-error/40 flex flex-wrap items-center gap-4 border p-5"
     >
