@@ -39,12 +39,23 @@ const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value
 
 // The active verse emits its color, only in dark (on a light stage a glow reads as blur).
 // drop-shadow instead of text-shadow: the text is a gradient clipped to the glyphs.
+// Verses near the playhead keep the same drop-shadow and only its strength changes,
+// so the glow fades in and out with the verse's transition instead of popping. The
+// rest carry no filter at all: a filter on every line is costly while scrolling.
+const GLOW_WINDOW = 1.5; // seconds before a verse starts and after it ends
 const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) => {
   const styles: Record<string, string | undefined> = {
     ...getVerseStyles(verse, props.collection, verse.status)
   };
-  if (verse.status === "active" && resolvedTheme.value === "dark" && styles.color) {
-    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${styles.color} 55%, transparent))`;
+  if (resolvedTheme.value !== "dark") return styles;
+
+  const glows = verse.status === "active";
+  const t = props.currentTime;
+  const nearStart = verse.start_time !== undefined && Math.abs(verse.start_time - t) < GLOW_WINDOW;
+  const nearEnd = verse.end_time !== undefined && Math.abs(t - verse.end_time) < GLOW_WINDOW;
+  if (glows || nearStart || nearEnd) {
+    const glowColor = styles.color ?? "currentColor";
+    styles.filter = `drop-shadow(0 0 16px color-mix(in oklch, ${glowColor} ${glows ? 55 : 0}%, transparent))`;
   }
   return styles;
 };
