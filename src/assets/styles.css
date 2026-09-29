@@ -17,8 +17,8 @@
    "Luz de sala" tokens (design/shared/ds.css, design/README.md).
 
    Neutrals are tinted with the collection hue at very low chroma, and the
-   primary is the collection's fill: lightness 0.50, which always takes white
-   text. Chroma depends on hue and lightness (a share of the most sRGB can show),
+   primary is the collection's fill (lightness 0.42–0.50 by hue), which always
+   takes white text. Chroma depends on hue and lightness (a share of the most sRGB can show),
    so useCollectionTheme computes the final colors in JS (utils/palette.ts) and
    sets --collection-hue, --collection-fill, --collection-ink-{light,dark} and
    --collection-soft-{light,dark} on <html>. The defaults below are the brand
@@ -35,11 +35,11 @@
    ------------------------------------------------------------------ */
 :root {
   --collection-hue: 314;
-  --collection-fill: oklch(0.5 0.19 314);
-  --collection-ink-light: oklch(0.47 0.19 314);
-  --collection-ink-dark: oklch(0.8 0.1384 314);
+  --collection-fill: oklch(0.429 0.18 314);
+  --collection-ink-light: oklch(0.429 0.18 314);
+  --collection-ink-dark: oklch(0.629 0.17 314);
   --collection-soft-light: oklch(0.93 0.0481 314);
-  --collection-soft-dark: oklch(0.3 0.0855 314);
+  --collection-soft-dark: oklch(0.3 0.081 314);
 }
 
 @plugin "daisyui/theme" {

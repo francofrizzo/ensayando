@@ -1,4 +1,4 @@
-import { displayable, oklch, wcagContrast } from "culori";
+import { differenceEuclidean, displayable, oklch, wcagContrast } from "culori";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,6 +9,9 @@ import {
   deriveColor,
   INTENSITY_RULES,
   maxChroma,
+  ROLE_RULES,
+  roleLightness,
+  type ColorRole,
   type ColorSpec,
   type Intensity,
   resolveCollectionPalette,
@@ -20,33 +23,59 @@ import {
 import legacyColors from "@/__fixtures__/legacy-colors.json";
 
 const THEMES: Theme[] = ["light", "dark"];
+const deltaEOK = differenceEuclidean("oklab");
+
+/** Track colors of the production collection before the redesign (dark mode). */
+const PREVIOUS_APP_COLORS = [
+  { name: "Pista", hex: "#6363f0" },
+  { name: "Solistas", hex: "#f5c518" },
+  { name: "Voz 1", hex: "#e54a98" },
+  { name: "Voz 2", hex: "#f07818" },
+  { name: "Voz 3", hex: "#8ecb28" },
+  { name: "Voz 4", hex: "#3db3d8" }
+];
 const INTENSITIES: Intensity[] = ["suave", "normal", "intensa"];
 
 describe("deriveColor", () => {
-  it("uses fixed lightness per role and theme", () => {
-    const spec: ColorSpec = { hue: 300, intensity: "normal" };
-    expect(deriveColor(spec, "fill", "light")).toMatch(/^oklch\(0\.5 /);
-    expect(deriveColor(spec, "lyric", "light")).toMatch(/^oklch\(0\.48 /);
-    expect(deriveColor(spec, "lyric", "dark")).toMatch(/^oklch\(0\.76 /);
-    expect(deriveColor(spec, "wave", "light")).toMatch(/^oklch\(0\.59 /);
-    expect(deriveColor(spec, "wave", "dark")).toMatch(/^oklch\(0\.7 /);
-    expect(deriveColor(spec, "ink", "light")).toMatch(/^oklch\(0\.47 /);
+  it("follows each hue's cusp within the role's contrast-safe range", () => {
+    const L = (hue: number, role: ColorRole, theme: Theme) =>
+      Number(deriveColor({ hue, intensity: "normal" }, role, theme).split(" ")[0]!.slice(6));
+    // yellows sit high, blues low
+    expect(L(95, "lyric", "dark")).toBeGreaterThan(L(265, "lyric", "dark") + 0.1);
+    for (let hue = 0; hue < 360; hue += 5) {
+      for (const theme of THEMES) {
+        for (const role of ["fill", "ink", "lyric", "wave", "soft", "line"] as ColorRole[]) {
+          const rule = ROLE_RULES[theme][role];
+          const l = L(hue, role, theme);
+          expect(l).toBeGreaterThanOrEqual(rule.min - 1e-3);
+          expect(l).toBeLessThanOrEqual(rule.max + 1e-3);
+        }
+      }
+    }
+    // light-theme text stays dark enough to read on white (yellows turn ochre)
+    expect(L(95, "lyric", "light")).toBeLessThanOrEqual(0.48);
   });
 
-  it("keeps the hue and gives each intensity a share of the hue's maximum chroma", () => {
-    const chroma = (hue: number, intensity: Intensity) =>
-      Number(deriveColor({ hue, intensity }, "fill", "light").split(" ")[1]);
-    // Cyan can show little chroma at L 0.5, so every intensity stays within its maximum.
-    expect(chroma(195, "suave")).toBeCloseTo(0.5 * maxChroma(0.5, 195), 3);
-    expect(chroma(195, "normal")).toBeCloseTo(0.95 * maxChroma(0.5, 195), 3);
-    expect(chroma(195, "intensa")).toBeCloseTo(maxChroma(0.5, 195), 3);
-    expect(deriveColor({ hue: 195, intensity: "normal" }, "fill", "light")).toMatch(/ 195\)$/);
+  it("gives each intensity a share of the hue's maximum chroma at the role's lightness", () => {
+    for (const [hue, intensity] of [
+      [195, "suave"],
+      [195, "normal"],
+      [195, "intensa"],
+      [60, "normal"]
+    ] as [number, Intensity][]) {
+      const l = roleLightness("lyric", "dark", hue);
+      const { share, cap } = INTENSITY_RULES[intensity];
+      const c = Number(deriveColor({ hue, intensity }, "lyric", "dark").split(" ")[1]);
+      expect(c).toBeCloseTo(Math.min(cap, share * maxChroma(l, hue)), 3);
+    }
   });
 
   it("gives reds more chroma than the old fixed 0.15", () => {
     for (const hue of [0, 15, 25, 30, 345]) {
-      const c = Number(deriveColor({ hue, intensity: "normal" }, "fill", "light").split(" ")[1]);
-      expect(c).toBeGreaterThan(0.17);
+      for (const role of ["fill", "lyric"] as ColorRole[]) {
+        const c = Number(deriveColor({ hue, intensity: "normal" }, role, "light").split(" ")[1]);
+        expect(c).toBeGreaterThan(0.16);
+      }
     }
   });
 
@@ -69,6 +98,24 @@ describe("deriveColor", () => {
     }
   });
 
+  it("matches the colors the app used before, for intensa in dark", () => {
+    // Track colors of the production collection before the redesign (hex, dark
+    // mode). Lightness follows the hue's cusp, so these land close; yellow and
+    // lime are the hardest pair (adjacent hues that wanted opposite shifts).
+    const report: string[] = [];
+    let total = 0;
+    for (const { name, hex } of PREVIOUS_APP_COLORS) {
+      const hue = oklch(hex)!.h!;
+      for (const role of ["lyric", "wave"] as ColorRole[]) {
+        const d = deltaEOK(deriveColor({ hue, intensity: "intensa" }, role, "dark"), hex) * 100;
+        total += d;
+        report.push(`${name} ${role} ΔE ${d.toFixed(1)}`);
+        expect(d, report.join(" · ")).toBeLessThan(5.5);
+      }
+    }
+    expect(total / (PREVIOUS_APP_COLORS.length * 2)).toBeLessThan(3.2);
+  });
+
   it("caps collection ink chroma in dark", () => {
     const color = deriveColor({ hue: 300, intensity: "intensa" }, "ink", "dark");
     const chroma = Number(color.split(" ")[1]);
@@ -76,7 +123,7 @@ describe("deriveColor", () => {
   });
 
   it("paints neutral specs without chroma", () => {
-    expect(deriveColor({ neutral: true }, "lyric", "dark")).toBe("oklch(0.76 0 0)");
+    expect(deriveColor({ neutral: true }, "lyric", "dark")).toBe("oklch(0.73 0 0)");
   });
 
   it("appends alpha when given", () => {
@@ -191,13 +238,14 @@ describe("collectionThemeVars", () => {
       "--collection-soft-light": deriveColor(spec, "soft", "light"),
       "--collection-soft-dark": deriveColor(spec, "soft", "dark")
     });
-    expect(collectionThemeVars({ neutral: true })["--collection-fill"]).toBe("oklch(0.5 0 0)");
+    expect(collectionThemeVars({ neutral: true })["--collection-fill"]).toBe("oklch(0.46 0 0)");
   });
 
   it("matches the brand defaults in styles.css", () => {
     expect(collectionThemeVars(BRAND_SPEC)).toMatchObject({
-      "--collection-fill": "oklch(0.5 0.19 314)",
-      "--collection-ink-dark": "oklch(0.8 0.1384 314)"
+      "--collection-fill": "oklch(0.429 0.18 314)",
+      "--collection-ink-dark": "oklch(0.629 0.17 314)",
+      "--collection-soft-dark": "oklch(0.3 0.081 314)"
     });
   });
 });

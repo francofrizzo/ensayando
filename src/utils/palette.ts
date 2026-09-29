@@ -1,13 +1,17 @@
 // Hue-based color model ("Luz de sala", design/fundamentos/paleta.html).
 //
 // Collections and tracks only store a hue (0–359) and an intensity. Every
-// color the UI paints is derived here: lightness is fixed per role and theme,
-// and chroma is a share of the most that hue can show in sRGB at that
-// lightness (capped per intensity). Reds and magentas can carry far more chroma
-// than cyans or yellows, so a fixed chroma left them dull; a relative one gives
-// every hue the same "fullness". Fixed lightness keeps every hue legible in both
-// themes (see palette.test.ts for the contrast sweep).
-//
+// color the UI paints is derived here, per role (fill, lyric ink, wave…) and
+// theme:
+//   - Lightness follows the hue: each hue shows the most color near its gamut
+//     cusp (yellows high, blues low), so L tracks the cusp, clamped to a range
+//     that keeps the role legible in that theme. Light-theme text stays dark
+//     (yellows turn ochre there: that's physics).
+//   - Chroma is a share of the most that hue can show in sRGB at that lightness,
+//     capped per intensity. A fixed chroma left reds and magentas dull next to
+//     cyans, which were already clipped.
+// See palette.test.ts for the contrast sweep and the fit against the colors the
+// app used before the redesign.
 // Kept free of "@/" imports so scripts/ can use it too.
 import { clampChroma, displayable } from "culori";
 
@@ -22,8 +26,8 @@ export type Theme = "light" | "dark";
  */
 export const INTENSITY_RULES: Record<Intensity, { share: number; cap: number }> = {
   suave: { share: 0.5, cap: 0.1 },
-  normal: { share: 0.95, cap: 0.19 },
-  intensa: { share: 1, cap: 0.25 }
+  normal: { share: 0.95, cap: 0.18 },
+  intensa: { share: 1, cap: 0.2 }
 };
 
 const maxChromaCache = new Map<string, number>();
@@ -45,31 +49,87 @@ export const maxChroma = (l: number, h: number): number => {
   return lo;
 };
 
+const cuspCache = new Map<number, number>();
+
+/** Lightness at which a hue reaches its largest sRGB chroma (its gamut cusp). */
+export const cuspLightness = (h: number): number => {
+  const hue = ((Math.round(h) % 360) + 360) % 360;
+  const cached = cuspCache.get(hue);
+  if (cached !== undefined) return cached;
+  let best = 0.5;
+  let bestC = -1;
+  for (let l = 0.3; l <= 0.99; l += 0.01) {
+    const c = maxChroma(Number(l.toFixed(2)), hue);
+    if (c > bestC) {
+      bestC = c;
+      best = l;
+    }
+  }
+  // refine around the coarse maximum
+  for (let l = best - 0.01; l <= best + 0.01; l += 0.002) {
+    const c = maxChroma(Number(l.toFixed(3)), hue);
+    if (c > bestC) {
+      bestC = c;
+      best = l;
+    }
+  }
+  const result = Number(best.toFixed(3));
+  cuspCache.set(hue, result);
+  return result;
+};
+
+/**
+ * Natural lightness for a hue: follows its cusp, fitted to the colors the app
+ * used before the redesign (so "intensa" in dark matches them closely).
+ */
+export const HUE_LIGHTNESS = { base: 0.23, slope: 0.65 };
+export const naturalLightness = (h: number) =>
+  HUE_LIGHTNESS.base + HUE_LIGHTNESS.slope * cuspLightness(h);
+
 /** Hue used when there is no collection (login, home, errors): "violeta Ensayando". */
 export const BRAND_SPEC: ColorSpec = { hue: 314, intensity: "normal" };
 
-// `chromaL` is the lightness the base chroma is measured at. Tinted backgrounds
-// and borders take a fraction of the fill's chroma rather than their own maximum.
-type RoleRule = { l: number; chromaL?: number; chroma: (c: number) => number };
+// Lightness = clamp(naturalLightness(hue) + offset, min, max). A role with
+// min === max has a fixed lightness (backgrounds, borders). The bounds are the
+// contrast-safe range for the role in that theme (see the sweep in the tests).
+// Tinted backgrounds and borders take a fraction of the fill's chroma rather
+// than their own maximum (`fromFill`).
+type RoleRule = {
+  offset: number;
+  min: number;
+  max: number;
+  fromFill?: boolean;
+  chroma: (c: number) => number;
+};
 
 // Values mirror design/shared/ds.css and design/shared/mock.css.
 export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
   light: {
-    fill: { l: 0.5, chroma: (c) => c },
-    ink: { l: 0.47, chroma: (c) => Math.min(c, 0.4) },
-    lyric: { l: 0.48, chroma: (c) => c },
-    wave: { l: 0.59, chroma: (c) => c },
-    soft: { l: 0.93, chromaL: 0.5, chroma: (c) => c * 0.3 },
-    line: { l: 0.8, chromaL: 0.5, chroma: (c) => c * 0.5 }
+    fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
+    ink: { offset: -0.2, min: 0.4, max: 0.47, chroma: (c) => Math.min(c, 0.4) },
+    lyric: { offset: -0.2, min: 0.4, max: 0.48, chroma: (c) => c },
+    wave: { offset: -0.1, min: 0.5, max: 0.59, chroma: (c) => c },
+    soft: { offset: 0, min: 0.93, max: 0.93, fromFill: true, chroma: (c) => c * 0.3 },
+    line: { offset: 0, min: 0.8, max: 0.8, fromFill: true, chroma: (c) => c * 0.5 }
   },
   dark: {
-    fill: { l: 0.5, chroma: (c) => c },
-    ink: { l: 0.8, chroma: (c) => Math.min(c, 0.17) },
-    lyric: { l: 0.76, chroma: (c) => c },
-    wave: { l: 0.7, chroma: (c) => c },
-    soft: { l: 0.3, chromaL: 0.5, chroma: (c) => c * 0.45 },
-    line: { l: 0.45, chromaL: 0.5, chroma: (c) => c * 0.6 }
+    fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
+    ink: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => Math.min(c, 0.17) },
+    lyric: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
+    wave: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
+    soft: { offset: 0, min: 0.3, max: 0.3, fromFill: true, chroma: (c) => c * 0.45 },
+    line: { offset: 0, min: 0.45, max: 0.45, fromFill: true, chroma: (c) => c * 0.6 }
   }
+};
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+/** Lightness of a role for a hue in a theme; `null` (neutral) takes the middle of the range. */
+export const roleLightness = (role: ColorRole, theme: Theme, hue: number | null) => {
+  const rule = ROLE_RULES[theme][role];
+  if (rule.min === rule.max) return rule.min;
+  if (hue === null) return Number(((rule.min + rule.max) / 2).toFixed(3));
+  return Number(clamp(naturalLightness(hue) + rule.offset, rule.min, rule.max).toFixed(3));
 };
 
 /** Theme canvas (page background), tinted with the collection hue. */
@@ -101,14 +161,20 @@ export const deriveColor = (
   alpha?: number
 ): string => {
   const rule = ROLE_RULES[theme][role];
+  const hue = specHue(spec);
+  const lightHue = isNeutral(spec) ? null : hue;
+  const l = roleLightness(role, theme, lightHue);
+  const chromaL = rule.fromFill ? roleLightness("fill", theme, lightHue) : l;
   const color = clampChroma(
-    { mode: "oklch", l: rule.l, c: rule.chroma(specChroma(spec, rule.chromaL ?? rule.l)), h: specHue(spec) },
+    { mode: "oklch", l, c: rule.chroma(specChroma(spec, chromaL)), h: hue },
     "oklch"
   );
-  const l = round(color.l, 4);
+  const outL = round(color.l, 4);
   const c = round(color.c ?? 0, 4);
-  const h = round(color.h ?? 0, 2);
-  return alpha === undefined ? `oklch(${l} ${c} ${h})` : `oklch(${l} ${c} ${h} / ${alpha})`;
+  const h = round(color.h ?? hue, 2);
+  return alpha === undefined
+    ? `oklch(${outL} ${c} ${h})`
+    : `oklch(${outL} ${c} ${h} / ${alpha})`;
 };
 
 // ---------- legacy values ----------
