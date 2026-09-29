@@ -381,7 +381,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               type="number"
               min="0"
               max="359"
-              class="input input-sm no-spinner w-20 font-mono"
+              class="input input-sm no-spinner w-20 font-mono field-focus"
               aria-label="Tono en grados"
               :disabled="!songsLoaded"
               @change="onMainHueInput"
@@ -409,7 +409,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               <span class="text-base-content/70 text-sm font-semibold">Clave</span>
               <input
                 v-model.trim="selectedRow.key"
-                class="input input-sm font-mono"
+                class="input input-sm font-mono field-focus"
                 :class="{ 'input-error': keyErrors[selectedRow.uid] }"
                 autocapitalize="none"
                 spellcheck="false"
@@ -452,7 +452,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               type="number"
               min="0"
               max="359"
-              class="input input-sm no-spinner w-20 font-mono"
+              class="input input-sm no-spinner w-20 font-mono field-focus"
               aria-label="Tono en grados"
               :disabled="isNeutral(selectedRow.spec)"
               @change="onRowHueInput(selectedRow, $event)"
@@ -510,7 +510,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
         Quitaste <span class="font-mono">{{ r.originalKey }}</span>, que usan
         {{ usageLabel(usage[r.originalKey]) }}. ¿Con qué color los reemplazamos?
       </span>
-      <select v-model="r.replacement" class="select select-sm w-40">
+      <select v-model="r.replacement" class="select select-sm w-40 field-focus">
         <option v-for="row in rows" :key="row.uid" :value="row.key">{{ labelFor(row) }} ({{ row.key }})</option>
       </select>
     </div>

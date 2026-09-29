@@ -671,7 +671,7 @@ defineExpose({ isDirty, enterCreateMode });
             :value="formData.title"
             type="text"
             placeholder="Título de la canción"
-            class="input font-display w-full text-lg font-bold"
+            class="input font-display w-full text-lg font-bold field-focus"
             :class="{ 'input-error': errors.title }"
             data-testid="song-title-input"
             @input="onTitleInput(($event.target as HTMLInputElement).value)"
@@ -693,7 +693,7 @@ defineExpose({ isDirty, enterCreateMode });
               </button>
             </span>
             <span
-              class="input flex w-full items-center gap-0 font-mono text-[13px]"
+              class="input flex w-full items-center gap-0 font-mono text-[13px] field-focus"
               :class="{ 'input-error': errors.slug }"
             >
               <span class="text-base-content/45 hidden shrink-0 sm:inline"

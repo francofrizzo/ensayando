@@ -165,7 +165,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
         <span class="text-base-content/70 text-sm font-semibold">Nombre</span>
         <input
           v-model="draft.title"
-          class="input w-full"
+          class="input w-full field-focus"
           :class="{ 'input-error': titleError }"
           data-testid="collection-title"
         />
@@ -182,7 +182,7 @@ const host = typeof window !== "undefined" ? window.location.host : "ensayando.c
             Generar desde el nombre
           </button>
         </span>
-        <span class="input w-full font-mono" :class="{ 'input-error': slugError }">
+        <span class="input w-full font-mono field-focus" :class="{ 'input-error': slugError }">
           <span class="text-base-content/40 text-sm">{{ host }}/</span>
           <input v-model="draft.slug" class="grow" autocapitalize="none" spellcheck="false" />
         </span>

@@ -59,7 +59,7 @@ async function confirm() {
     <div
       class="bg-base-100 rounded-box border-error/40 flex flex-wrap items-center gap-4 border p-5"
     >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex min-w-60 flex-1 flex-col gap-1">
         <span class="font-semibold">Eliminar la colección</span>
         <span class="text-base-content/60 text-sm">{{ description }}</span>
       </div>

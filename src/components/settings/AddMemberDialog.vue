@@ -128,7 +128,7 @@ const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((va
 
       <label class="flex flex-col gap-1.5">
         <span class="text-base-content/70 text-sm font-semibold">Buscar una cuenta existente</span>
-        <span class="input w-full" :class="{ 'input-primary': mode === 'existing' }">
+        <span class="input w-full field-focus" :class="{ 'input-primary': mode === 'existing' }">
           <IconSearch class="size-4 opacity-60" />
           <input
             v-model="query"
@@ -186,7 +186,7 @@ const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((va
         <span class="text-base-content/70 text-sm font-semibold">Usuario</span>
         <input
           v-model="username"
-          class="input w-full font-mono"
+          class="input w-full font-mono field-focus"
           placeholder="martin.b"
           autocapitalize="none"
           spellcheck="false"
@@ -214,7 +214,7 @@ const ROLE_OPTIONS = (["admin", "editor", "viewer"] as CollectionRole[]).map((va
         <input
           v-model="email"
           type="email"
-          class="input w-full"
+          class="input w-full field-focus"
           placeholder="sofia@ejemplo.com"
           autocapitalize="none"
         />

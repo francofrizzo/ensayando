@@ -219,7 +219,7 @@ const pickColor = (key: string) => {
         type="text"
         placeholder="Nombre de la pista"
         aria-label="Nombre de la pista"
-        class="input input-sm min-w-0 flex-1 font-semibold"
+        class="input input-sm min-w-0 flex-1 font-semibold field-focus"
         :class="{ 'input-error': props.titleError }"
         data-testid="track-title"
         @input="emit('title', ($event.target as HTMLInputElement).value)"
@@ -347,7 +347,7 @@ const pickColor = (key: string) => {
           :value="props.track.audio_file_url"
           type="url"
           placeholder="https://…"
-          class="input input-sm w-full font-mono text-xs"
+          class="input input-sm w-full font-mono text-xs field-focus"
           @change="emit('url', ($event.target as HTMLInputElement).value)"
         />
         <span class="text-base-content/50 text-xs">

@@ -247,7 +247,7 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
         <h4 class="text-[12.5px] font-semibold">Comentario</h4>
         <input
           type="text"
-          class="input input-sm w-full rounded-[10px]"
+          class="input input-sm w-full rounded-[10px] field-focus"
           :value="commentDraft"
           :placeholder="summary.comment.mixed ? 'Varios comentarios distintos' : 'Coro, Solo soprano…'"
           data-testid="inspector-comment"
@@ -275,7 +275,7 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
                 </button>
                 <input
                   v-model="timeDrafts[which]"
-                  class="input input-sm join-item w-full min-w-0 text-center font-mono tabular-nums"
+                  class="input input-sm join-item w-full min-w-0 text-center font-mono tabular-nums field-focus"
                   placeholder="sin tiempo"
                   :data-testid="`inspector-${which}`"
                   @keydown.stop

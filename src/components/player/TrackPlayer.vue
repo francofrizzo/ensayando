@@ -101,6 +101,13 @@ const load = () => {
   waveSurfer.value?.load(url)?.catch(() => emit("error"));
 };
 
+// WaveSurfer 7 emits a stray timeupdate(0) right after pause() (its media position
+// is still right), which sent the player clock back to 0:00. Read the position
+// instead of trusting the event value.
+const onTimeUpdate = (time: number) => {
+  emit("time-update", waveSurfer.value?.getCurrentTime() ?? time);
+};
+
 defineExpose({
   waveSurfer,
   seekTo,
@@ -312,7 +319,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
           "
           @interaction="(time: number) => emit('seek', time)"
           @ready="(duration: number) => emit('ready', duration)"
-          @timeupdate="(time: number) => emit('time-update', time)"
+          @timeupdate="onTimeUpdate"
           @finish="emit('finish')"
         />
       </div>

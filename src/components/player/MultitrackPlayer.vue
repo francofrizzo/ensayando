@@ -24,7 +24,10 @@ import {
   IconChevronUp,
   IconEdit,
   IconLyrics,
-  IconMixer
+  IconMixer,
+  IconSkipNext,
+  IconSkipPrev,
+  IconUpload
 } from "@/components/ui/icons";
 import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
@@ -958,23 +961,77 @@ const initializeAudioContext = async () => {
         style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
       />
       <h2
-        class="text-base-content/80 text-2xl font-semibold"
+        class="text-base-content/80 font-display text-2xl font-bold"
         style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms"
       >
-        Letra faltante
+        {{ canEdit ? "Esta canción no tiene letra" : "Todavía no hay letra" }}
       </h2>
       <p
-        class="text-base-content/40"
+        class="text-base-content/50 max-w-sm text-center"
         style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms"
       >
-        La letra de esta canción todavía no está disponible.
+        {{
+          canEdit
+            ? "Escribila o pegala; después la sincronizás con las pistas."
+            : sortedTracks.length > 0
+              ? "Podés escuchar las pistas igual. La letra aparece acá cuando alguien la cargue."
+              : "La letra aparece acá cuando alguien la cargue."
+        }}
       </p>
+      <button
+        v-if="canEdit"
+        class="btn btn-primary rounded-full"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
+        data-testid="write-lyrics"
+        @click="uiStore.openEditor('letra')"
+      >
+        <IconEdit class="size-4" />
+        Escribir la letra
+      </button>
+    </div>
+
+    <!-- A song without audio has nothing to play: say so instead of a spinning play button -->
+    <div
+      v-if="sortedTracks.length === 0 && !uiStore.editMode"
+      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-wrap items-center gap-3 rounded-[22px] px-4 py-3 md:mx-3.5 md:mb-3.5 md:px-[18px]"
+      data-testid="player-no-tracks"
+    >
+      <button
+        class="btn btn-circle btn-ghost btn-sm"
+        :disabled="!prevSong"
+        aria-label="Canción anterior"
+        @click="goToSong(prevSong)"
+      >
+        <IconSkipPrev class="size-[18px]" />
+      </button>
+      <div class="flex min-w-0 flex-1 flex-col">
+        <span class="text-sm font-semibold">Esta canción todavía no tiene pistas</span>
+        <span class="text-base-content/60 text-xs">
+          {{ canEdit ? "Subí los audios desde el editor para poder escucharla." : "Cuando alguien suba los audios, se van a poder escuchar acá." }}
+        </span>
+      </div>
+      <button
+        v-if="canEdit"
+        class="btn btn-sm btn-primary rounded-full"
+        @click="uiStore.openEditor('cancion')"
+      >
+        <IconUpload class="size-4" />
+        Agregar pistas
+      </button>
+      <button
+        class="btn btn-circle btn-ghost btn-sm"
+        :disabled="!nextSong"
+        aria-label="Canción siguiente"
+        @click="goToSong(nextSong)"
+      >
+        <IconSkipNext class="size-[18px]" />
+      </button>
     </div>
 
     <!-- Dock (desktop) / sheet (phone). Sincronizar brings its own transport, so it hides
          (v-show: the track players inside must stay mounted to keep playing). -->
     <div
-      v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar')"
+      v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar') && (sortedTracks.length > 0 || uiStore.editMode)"
       class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
       data-testid="player-dock"
     >

@@ -93,5 +93,6 @@ export {
   IconFocus2 as IconFollowPlayback,
   IconPresentation as IconPreview,
   IconArrowRight as IconGoTo,
-  IconMinus as IconMinus
+  IconMinus as IconMinus,
+  IconClipboardText as IconPasteText
 } from "@tabler/icons-vue";

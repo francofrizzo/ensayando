@@ -60,7 +60,10 @@ test("pause stops time", async ({ page }) => {
   await expect.poll(async () => getCurrentTimeText(page), { timeout: 10000 }).not.toBe("0:00");
 
   await playPauseButton(page).click();
+  // Pausing keeps the position (WaveSurfer emits a stray timeupdate(0) on pause)
+  await page.waitForTimeout(300);
   const timeAfterPause = await getCurrentTimeText(page);
+  expect(timeAfterPause).not.toBe("0:00");
 
   // Poll to confirm time stays frozen
   await expect
