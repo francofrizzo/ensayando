@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Paleta</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+.sw-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.sw { display: flex; flex-direction: column; gap: 6px; width: 104px; font-size: var(--t-xs); }
+.sw i { display: block; height: 56px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--edge); }
+.sw b { font-weight: 650; font-size: 12.5px; }
+.sw span { color: var(--faint); font: 500 10.5px/1.3 var(--mono); word-break: break-all; }
+.sw.x i { position: relative; }
+.sw.x i::after { content: ""; position: absolute; inset: 0; border-radius: 12px; background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px)); }
+.logo-note { display: flex; gap: 16px; align-items: center; }
+.logo-note img { width: 64px; height: 64px; }
+
+.ramps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 960px) { .ramps { grid-template-columns: 1fr; } }
+.ramp { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ramp .pair { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-box); overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.ramp .pair > div { background: var(--canvas); padding: 12px; display: flex; flex-direction: column; gap: 5px; }
+.ramp .chip-n { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--mono); color: var(--muted); }
+.ramp .chip-n i { width: 34px; height: 20px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--edge); flex: none; }
+
+.derive { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 960px) { .derive { grid-template-columns: 1fr; } }
+.derive .pair { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-box); overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.derive .pair > div { background: var(--canvas); padding: 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.derive .ink { color: var(--c-ink); font: 650 14px/1 var(--ui); display: flex; gap: 6px; align-items: center; }
+.derive .soft { background: var(--c-soft); color: var(--c-ink); font: 600 12px/1 var(--ui); padding: 6px 10px; border-radius: 999px; }
+.derive .line { box-shadow: inset 0 0 0 1.5px var(--c-line); border-radius: 10px; padding: 7px 10px; font: 500 12px/1 var(--ui); color: var(--muted); }
+.derive .num { font: 500 10.5px/1.3 var(--mono); color: var(--faint); }
+
+.inks { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--t-sm); }
+.inks th { text-align: left; font: 600 var(--t-2xs)/1.2 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; }
+.inks td { padding: 0; }
+.inks td.n { padding: 8px 10px; font-weight: 650; white-space: nowrap; }
+.inks .cell { padding: 12px 12px; display: flex; flex-direction: column; gap: 4px; }
+.inks .cell .t { font: 600 16px/1.1 var(--lyr); text-transform: uppercase; letter-spacing: .02em; }
+.inks .cell .cr { font: 500 11px/1 var(--mono); display: flex; gap: 6px; align-items: center; }
+.inks .theme-light .cell, .inks .theme-dark .cell { background: var(--canvas); }
+.pass { color: var(--ok); } .large { color: var(--warn); } .fail { color: var(--danger); }
+.cr .pill { padding: 2px 6px; border-radius: 999px; font: 600 10px/1 var(--ui); }
+.cr .pill.pass { background: var(--ok-soft); } .cr .pill.large { background: var(--warn-soft); } .cr .pill.fail { background: var(--danger-soft); }
+
+.tool { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .tool { grid-template-columns: 1fr; } }
+.tool .ctrls { display: flex; flex-direction: column; gap: 14px; padding: 18px; }
+.tool label { display: flex; flex-direction: column; gap: 6px; font: 600 12.5px/1 var(--ui); color: var(--muted); }
+.tool label span { display: flex; justify-content: space-between; }
+.tool label output { font: 500 12px/1 var(--mono); color: var(--ink); }
+.tool input[type=range] { width: 100%; accent-color: var(--c); }
+.tool .out { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-box); overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.tool .out > div { background: var(--canvas); padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.tool .rowx { display: flex; flex-direction: column; gap: 4px; }
+.tool .rowx .t { font: 600 20px/1.15 var(--lyr); text-transform: uppercase; letter-spacing: .02em; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.presets button { width: 26px; height: 26px; border-radius: 8px; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px var(--edge); }
+
+.states { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-box); overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.states > div { background: var(--canvas); padding: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.brand-demo { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-box); overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.brand-demo > div { position: relative; overflow: hidden; isolation: isolate; background: var(--canvas); padding: 22px; display: flex; flex-direction: column; gap: 10px; align-items: center; min-height: 190px; justify-content: center; }
+.brand-demo .card { padding: 16px; border-radius: 16px; width: 100%; max-width: 220px; display: flex; flex-direction: column; gap: 8px; }
+.store { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; }
+@media (max-width: 900px) { .store { grid-template-columns: 1fr; } }
+.store pre { margin: 0; font: 500 12.5px/1.55 var(--mono); background: var(--sunken); border-radius: 12px; padding: 14px; overflow-x: auto; color: var(--ink); }
+.roles { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--t-sm); }
+.roles th { text-align: left; font: 600 var(--t-2xs)/1.2 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); }
+.roles td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.roles td.k { font-weight: 650; }
+.roles .v { display: flex; align-items: center; gap: 8px; font: 500 12px/1 var(--mono); }
+.roles .v i { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--edge); flex: none; }
+.wheel-wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: center; }
+@media (max-width: 800px) { .wheel-wrap { grid-template-columns: 1fr; } }
+.wheel { width: 100%; max-width: 300px; aspect-ratio: 1; }
+.wheel text { font: 600 11px var(--ui); fill: var(--ink); }
+.wheel .sub { font: 500 10px var(--mono); fill: var(--faint); }
+.intens { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-box); overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.intens > div { background: var(--canvas); padding: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.intens .col { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 0; }
+.intens .t { font: 600 17px/1.1 var(--lyr); text-transform: uppercase; letter-spacing: .02em; }
+.intens .chipx { font: 600 12px/1 var(--ui); padding: 6px 10px; border-radius: 999px; }
+.intens .wv { height: 26px; width: 100%; }
+.sweep { display: flex; flex-direction: column; gap: 4px; }
+.sweep .bar { display: flex; height: 34px; border-radius: 10px; overflow: hidden; align-items: stretch; }
+.sweep .bar i { flex: 1; }
+.sweep .lbl2 { display: flex; justify-content: space-between; font: 500 10.5px/1 var(--mono); color: var(--faint); }
+.mins { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.mins th { text-align: left; font: 600 var(--t-2xs)/1.2 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); }
+.mins td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.mins td:first-child { font-weight: 650; }
+.mins .cr { display: inline-flex; }
+.segx { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--sunken); }
+.segx button { font: 600 12.5px/1 var(--ui); color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 7px 11px; cursor: pointer; }
+.segx button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: var(--shadow-1); }
+.hue-range { width: 100%; -webkit-appearance: none; appearance: none; height: 14px; border-radius: 999px; outline-offset: 4px;
+  background: linear-gradient(90deg, oklch(.6 .15 0), oklch(.6 .15 60), oklch(.6 .15 120), oklch(.6 .15 180), oklch(.6 .15 240), oklch(.6 .15 300), oklch(.6 .15 360)); }
+.hue-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .2), 0 2px 6px rgb(0 0 0 / .3); cursor: pointer; }
+.hue-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 1px rgb(0 0 0 / .2), 0 2px 6px rgb(0 0 0 / .3); }
+.tool .out .fillb { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; color: #fff; font: 600 13.5px/1 var(--ui); align-self: flex-start; }
+.chk-row { display: flex; align-items: center; gap: 8px; font: 600 12.5px/1 var(--ui); color: var(--muted); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Fundamentos · Paleta</span>
+    <span class="tag refine">Ajuste</span>
+    <h1 class="d">Paleta</h1>
+    <p class="lede">El color por colección es la mejor decisión de la app y se mantiene, pero cambia qué se guarda. Hoy cada colección y cada pista guardan un color completo, y la app lo usa tal cual. La propuesta guarda solo un <b style="color:var(--ink)">tono</b> y una <b style="color:var(--ink)">intensidad</b>. La claridad la decide el sistema según el tono, dentro de un rango seguro por rol (relleno, letra, onda) y tema. Así todas las colecciones quedan igual de cuidadas, las pistas armonizan entre sí y el contraste sale por construcción.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Hoy</h2><p>El tema de DaisyUI en <span class="mono">styles.css</span>: grises zinc (tono 286), un violeta primario que cada colección pisa, y dos colores que la app no usa en ningún componente.</p></div>
+    <div class="stack" style="gap:16px">
+      <div class="sw-row" id="today-light"></div>
+      <div class="sw-row" id="today-dark"></div>
+    </div>
+    <div class="grid-3">
+      <div class="note"><span class="tag drop">Se quita</span><b>Secondary y accent</b><p>El amarillo (<span class="mono">oklch(.93 .18 105)</span>) y el turquesa (<span class="mono">oklch(77% .15 182)</span>) no aparecen en ningún <span class="mono">.vue</span>. Se sacan del tema para que nadie los use por accidente.</p></div>
+      <div class="note"><div class="logo-note"><img src="../shared/logo.png" alt="Logo de Ensayando"><div><b>El amarillo es del logo</b><p>El micrófono con notas violeta y amarilla explica el primario y el secundario. El amarillo queda en el logo; en la interfaz no suma.</p></div></div></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>El oscuro es gris medio</b><p>El fondo oscuro está en 27 % de claridad. Sobre eso, el vidrio y la luz de color casi no se distinguen. Baja a 15,5 %.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="tag new">Nuevo</span><h2 class="d">Qué se guarda y qué se calcula</h2><p>En la base quedan dos datos por colección y dos por pista. Una pista también puede ser <b style="color:var(--ink)">neutra</b>: sin color, para una pista de clic, de mezcla o de referencia. Todo lo demás se calcula por rol y por tema. La claridad depende del tono: cada tono muestra más color cerca de su cúspide (los amarillos arriba, los azules abajo), así que la claridad la sigue, dentro de un rango seguro por rol y tema. El croma sale de la intensidad, también relativo al tono: cada tono tiene un máximo distinto en una pantalla sRGB (un rojo llega a 0,20 a media claridad; un cian, a 0,08), y la intensidad es una parte de ese máximo.</p></div>
+    <div class="store">
+      <div class="note">
+        <b>Lo que se guarda</b>
+<pre>colección
+  tono        300
+  intensidad  "media"
+
+track_colors
+  sop  { tono: 350, intensidad: "media" }
+  alt  { tono: 70 }
+  ten  { tono: 195 }
+  baj  { tono: 275, intensidad: "intensa" }
+  clic { neutra: true }</pre>
+        <p>Intensidad: <b style="color:var(--ink)">suave</b> (40 % del máximo del tono, con tope 0,08), <b style="color:var(--ink)">media</b> (68 %, tope 0,14, por defecto) o <b style="color:var(--ink)">intensa</b> (100 %, tope 0,20, calibrada con los colores de la app de hoy). El tope evita que violetas y fucsias, que admiten mucho croma, se vuelvan fluo. Neutra es croma 0.</p>
+      </div>
+      <div class="note">
+        <b>Lo que se calcula, por rol y tema</b>
+        <div class="scroll-x"><table class="roles" id="roles"></table></div>
+        <p class="xs">Valores leídos en vivo de <span class="mono">ds.css</span>. Muestra con el tono de la colección de ejemplo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Rueda de tonos</h2><p>Las tres colecciones de ejemplo (puntos de afuera; con borde, la elegida arriba) y las cinco pistas del coro (adentro), en el círculo de tono. Lo que más distingue dos pistas es la distancia en grados: por eso el editor avisa cuando dos quedan a menos de 25°.</p></div>
+    <div class="wheel-wrap">
+      <svg class="wheel" id="wheel" viewBox="0 0 300 300" role="img" aria-label="Rueda de tonos con colecciones y pistas"></svg>
+      <div class="stack" id="wheel-notes"></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Neutros teñidos</h2><p>Los grises toman el tono de la colección con croma muy bajo: 0,003 en las superficies, hasta 0,02 en el texto secundario. No se nota como color, se nota como clima. Las tres colecciones de ejemplo, lado a lado:</p></div>
+    <div class="ramps" id="ramps"></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">El color de la colección</h2><p>El relleno (botones, reproducir, lo seleccionado) tiene la misma claridad en los dos temas: entre 0,42 y 0,50 según el tono (<span id="fl-l">0,50</span> como máximo), con el croma de la intensidad para ese tono, con texto blanco siempre: con la claridad fija ya no hace falta elegir entre blanco y negro por contraste como hace hoy <span class="mono">selectMostContrasting</span>. Para texto e íconos se usa <span class="mono">--c-ink</span>; para fondos, <span class="mono">--c-soft</span>; para bordes, <span class="mono">--c-line</span>.</p></div>
+    <div class="derive" id="derive"></div>
+    <p class="sm muted">Los números son contraste WCAG calculados en esta página a partir de los valores OKLCH, contra el fondo de la sala de cada tema.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Intensidad</h2><p>El mismo tono en las tres intensidades. Suave sirve para colecciones tranquilas o portadas pastel; intensa, para cuando el color es parte de la identidad. La claridad no cambia entre intensidades: cambia qué parte del color posible de ese tono se usa.</p></div>
+    <div class="intens"><div class="theme-light" id="int-l"></div><div class="theme-dark" id="int-d"></div></div>
+    <div class="note"><b>Los colores de la app de hoy</b><p>La colección en producción usa seis colores que funcionan bien en oscuro: <span class="mono">#6363f0</span>, <span class="mono">#f5c518</span>, <span class="mono">#e54a98</span>, <span class="mono">#f07818</span>, <span class="mono">#8ecb28</span> y <span class="mono">#3db3d8</span>. Cada uno está cerca de la cúspide de su tono, con claridades de 0,58 a 0,84. Con intensidad <b style="color:var(--ink)">intensa</b> en oscuro, la onda y la letra calculadas quedan a una diferencia ΔE OK de 3,0 en promedio: casi idénticas en índigo, rosa y naranja (0,8 a 2,2), y cerca de 5 en amarillo y lima, dos tonos vecinos que pedirían correcciones opuestas. Un test de la app fija esos números. Con la claridad fija de antes, la diferencia promedio era 9,3.</p></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Pistas: hoy y con tonos</h2><p>Hoy la letra usa el color crudo de la pista en los dos temas. Un ámbar o un lima que brillan sobre negro desaparecen sobre blanco, y un índigo que se lee sobre blanco se apaga sobre negro. Con tonos, cada pista conserva su tono y toma la claridad de la letra de cada tema.</p></div>
+    <div class="scroll-x">
+      <table class="inks" id="inks"></table>
+    </div>
+    <div class="grid-2">
+      <div class="note"><b>Qué dice el cálculo</b><p id="ink-summary">…</p></div>
+      <div class="note"><b>Ondas y puntos</b><p>Usan su propia claridad (<span class="mono">--wav-l</span>). La parte ya sonada va a pleno y la que falta al 30 %. Hoy se aclara u oscurece el color crudo un 30 a 40 % con <span class="mono">lighten</span> y <span class="mono">darken</span>, sin garantía de nada.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Todos los tonos</h2><p>La prueba que importa: los 360 tonos, en cada intensidad, contra el fondo de cada tema. Las franjas muestran la tinta de letra de cada tono; la tabla, el peor caso de cada rol.</p></div>
+    <div class="grid-2">
+      <div class="sweep theme-light" style="background:var(--canvas);padding:14px;border-radius:var(--r-box);box-shadow:0 0 0 1px var(--line)"><span class="eyebrow">Claro · letra · media</span><div class="bar" id="sw-l"></div><div class="lbl2"><span>0°</span><span>90°</span><span>180°</span><span>270°</span><span>359°</span></div></div>
+      <div class="sweep theme-dark" style="background:var(--canvas);padding:14px;border-radius:var(--r-box);box-shadow:0 0 0 1px var(--line)"><span class="eyebrow">Oscuro · letra · media</span><div class="bar" id="sw-d"></div><div class="lbl2"><span>0°</span><span>90°</span><span>180°</span><span>270°</span><span>359°</span></div></div>
+    </div>
+    <div class="scroll-x"><table class="mins" id="mins"></table></div>
+    <div class="note" id="sweep-note"><b>Resultado</b><p>…</p></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Probá un tono</h2><p>Lo mismo que va a hacer el editor de colores de los ajustes de la colección: un tono, una intensidad y, para pistas, la opción de neutra.</p></div>
+    <div class="tool">
+      <div class="note ctrls">
+        <label for="tH"><span>Tono <output id="oH"></output></span><input id="tH" class="hue-range" type="range" min="0" max="359" step="1" value="195"></label>
+        <div class="field"><span class="lbl">Intensidad</span><div class="segx" id="tI"><button type="button" data-i="suave" aria-pressed="false">Suave</button><button type="button" data-i="media" aria-pressed="true">Media</button><button type="button" data-i="intensa" aria-pressed="false">Intensa</button></div></div>
+        <label class="chk-row" for="tN" style="flex-direction:row"><input id="tN" type="checkbox"> Pista neutra (sin color)</label>
+        <div class="field"><span class="lbl">Pistas de ejemplo</span><div class="presets" id="presets"></div></div>
+      </div>
+      <div class="out" id="tool-out">
+        <div class="theme-light" id="tool-l"></div>
+        <div class="theme-dark" id="tool-d"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Límites y migración</h2></div>
+    <div class="grid-2">
+      <div class="note"><span class="tag refine">Límite</span><b>Entran unos 8 a 10 colores</b><p>Dos pistas se distinguen sobre todo por tono. A partir de unos 25° de distancia se separan bien; por debajo, el editor avisa. Para coros grandes, alcanza combinando tono con intensidad (una voz suave y otra intensa del mismo tono) o dejando neutras las pistas de referencia.</p></div>
+      <div class="note"><span class="tag refine">Límite</span><b>Amarillos que tiran a ocre</b><p>En claro, el texto tiene que ser oscuro (claridad 0,48 como máximo), y un amarillo oscuro es ocre: es el precio de que se lea sobre blanco. En oscuro la claridad sigue al tono y el amarillo vuelve a ser amarillo, como en la app de hoy.</p></div>
+      <div class="note"><span class="tag refine">Límite</span><b>Croma relativo</b><p id="gamut-note">…</p></div>
+      <div class="note"><span class="tag moved">Migración</span><b>De colores a tonos</b><p>La misma migración de SQL que agrega <span class="mono">hue</span> e <span class="mono">intensity</span> convierte los datos: lee <span class="mono">main_color</span> y cada valor de <span class="mono">track_colors</span>, sea <span class="mono">oklch(…)</span> o hex, guarda su tono y calcula la intensidad con croma relativo: qué parte del máximo que ese tono admite a esa misma claridad usa el color (72 % o más, intensa; 45 % o más, media; si no, suave; croma menor a 0,04, neutra). Los colores elegidos a toda saturación, como los de la app de hoy, quedan en intensa aunque su croma absoluto sea bajo (un cian saturado ronda 0,11). Después borra <span class="mono">main_color</span>; los valores de <span class="mono">track_colors</span> se reemplazan en el lugar. Todo cambia junto en un solo despliegue: no hay columnas viejas ni clientes viejos que cuidar. La lógica se repite en TypeScript, con los mismos ejemplos en los tests.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Estados, versos cantados y color de marca</h2></div>
+    <div class="grid-2">
+      <div class="stack">
+        <div class="cap"><b>Estados</b><span>separados del color de la colección</span></div>
+        <div class="states">
+          <div class="theme-light"><span class="badge ok"><i data-ic="check"></i>Guardado</span><span class="badge warn"><i data-ic="alert"></i>Sin guardar</span><span class="badge danger"><i data-ic="x"></i>No se pudo subir</span><span class="badge" style="background:var(--info-soft);color:var(--info)"><i data-ic="info"></i>Cuenta administrada</span></div>
+          <div class="theme-dark"><span class="badge ok"><i data-ic="check"></i>Guardado</span><span class="badge warn"><i data-ic="alert"></i>Sin guardar</span><span class="badge danger"><i data-ic="x"></i>No se pudo subir</span><span class="badge" style="background:var(--info-soft);color:var(--info)"><i data-ic="info"></i>Cuenta administrada</span></div>
+        </div>
+        <p class="sm muted">Verde, ámbar, rojo y azul, con fondo suave en cada tema. El rojo de error no se usa como color de pista por defecto en las paletas nuevas, para no confundir una voz con un error.</p>
+      </div>
+      <div class="stack">
+        <div class="cap"><b>Versos cantados</b><span>texto al 30 %</span></div>
+        <div class="states">
+          <div class="theme-light" style="justify-content:center"><div class="lyr" style="--t-lyr:17px;gap:8px"><span class="v past" style="--tc:var(--t-sop)">Sopla el viento por la loma</span><span class="v now" style="--tc:var(--t-alt)">y se lleva mi canción</span></div></div>
+          <div class="theme-dark" style="justify-content:center"><div class="lyr" style="--t-lyr:17px;gap:8px"><span class="v past" style="--tc:var(--t-sop)">Sopla el viento por la loma</span><span class="v now" style="--tc:var(--t-alt)">y se lleva mi canción</span></div></div>
+        </div>
+        <p class="sm muted">Hoy van en <span class="mono">zinc-400</span>, un gris fijo que no cambia con el tema ni con la colección. Pasa al color de texto al 30 %: más tenue en claro, más cálido o frío según la sala.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="cap"><b>Violeta Ensayando</b><span>cuando no hay colección</span></div>
+      <div class="brand-demo">
+        <div class="theme-light" style="--c:oklch(50% 0.2 314);--h:314;--on-c:#fff;--a2:oklch(80% 0.16 95);--a3:oklch(50% 0.2 314)"><div class="amb"></div><div class="card g2"><b style="font:700 18px/1 var(--ui);letter-spacing:-0.01em">Ensayando</b><span class="in"><i data-ic="user"></i><span class="ph">Usuario o email</span></span><span class="b fill sm">Ingresar</span></div></div>
+        <div class="theme-dark" style="--c:oklch(50% 0.2 314);--h:314;--on-c:#fff;--a2:oklch(80% 0.16 95);--a3:oklch(50% 0.2 314)"><div class="amb"></div><div class="card g2"><b style="font:700 18px/1 var(--ui);letter-spacing:-0.01em">Ensayando</b><span class="in"><i data-ic="user"></i><span class="ph">Usuario o email</span></span><span class="b fill sm">Ingresar</span></div></div>
+      </div>
+      <p class="sm muted">El primario de hoy, <span class="mono">oklch(50% .2 314)</span>, queda como color de marca para el ingreso, el inicio y los errores sin colección. El amarillo del logo aparece solo como una de las luces de fondo del ingreso.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+// ---------- OKLCH → sRGB y contraste WCAG ----------
+function parseOklch(s) {
+  const m = String(s).match(/oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/);
+  if (!m) return null;
+  return [m[2] ? +m[1] / 100 : +m[1], +m[3], +m[4]];
+}
+function linRGB([L, C, H]) {
+  const h = (H * Math.PI) / 180, a = C * Math.cos(h), b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b, m_ = L - 0.1055613458 * a - 0.0638541728 * b, s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const l = l_ ** 3, m = m_ ** 3, s = s_ ** 3;
+  return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s].map((v) => Math.min(1, Math.max(0, v)));
+}
+const lum = (c) => { const [r, g, b] = linRGB(c); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const css = ([L, C, H]) => `oklch(${(L * 100).toFixed(1)}% ${C.toFixed(3)} ${Math.round(H)})`;
+function grade(x) {
+  const v = x.toFixed(2).replace(".", ",");
+  if (x >= 4.5) return `<span class="cr pass">${v}<span class="pill pass">AA</span></span>`;
+  if (x >= 3) return `<span class="cr large">${v}<span class="pill large">AA grande</span></span>`;
+  return `<span class="cr fail">${v}<span class="pill fail">no alcanza</span></span>`;
+}
+
+// ---------- hoy ----------
+const TODAY = {
+  light: [["base-100", "oklch(98% 0 0)"], ["base-200", "oklch(100% 0 0)"], ["base-300", "oklch(95% 0 0)"], ["content", "oklch(21% 0.006 285.885)"], ["primary", "oklch(43% 0.1803 314.25)"], ["secondary", "oklch(93% 0.1823 105.04)", 1], ["accent", "oklch(77% 0.152 181.912)", 1], ["neutral", "oklch(14% 0.005 285.823)"]],
+  dark: [["base-100", "oklch(27% 0.006 286.033)"], ["base-200", "oklch(21% 0.006 285.885)"], ["base-300", "oklch(14% 0.005 285.823)"], ["content", "oklch(98% 0 0)"], ["primary", "oklch(50% 0.1969 314.36)"], ["secondary", "oklch(93% 0.1823 105.04)", 1], ["accent", "oklch(77% 0.152 181.912)", 1], ["neutral", "oklch(14% 0.005 285.823)"]],
+};
+for (const [k, list] of Object.entries(TODAY)) {
+  document.getElementById("today-" + k).innerHTML = `<div class="sw" style="width:70px;justify-content:center"><b>${k === "light" ? "Claro" : "Oscuro"}</b></div>` +
+    list.map(([n, v, x]) => `<div class="sw${x ? " x" : ""}"><i style="background:${v}"></i><b>${n}</b><span>${v.replace("oklch", "")}</span></div>`).join("");
+}
+
+// ---------- tokens leídos en vivo ----------
+// Intensidad = parte del croma máximo que ese tono admite en sRGB a esa claridad, con tope.
+// Mismo modelo que src/utils/palette.ts (INTENSITY_RULES).
+const INT = { suave: { share: 0.4, cap: 0.08 }, media: { share: 0.68, cap: 0.14 }, intensa: { share: 1, cap: 0.2 } };
+const f2 = (x) => x.toFixed(2).replace(".", ",");
+function tok(cls, name) {
+  const d = document.createElement("div"); d.className = cls; d.style.display = "none"; document.body.append(d);
+  const v = parseFloat(getComputedStyle(d).getPropertyValue(name)); d.remove(); return v;
+}
+function readTokens(cls) {
+  return { fill: tok(cls, "--fill-l"), ci: tok(cls, "--ci-l"), cic: tok(cls, "--ci-c"), lyr: tok(cls, "--lyr-l"), wav: tok(cls, "--wav-l"),
+    csl: tok(cls, "--cs-l"), csk: tok(cls, "--cs-k"), cll: tok(cls, "--cl-l"), clk: tok(cls, "--cl-k"), amb: tok(cls, "--amb-o") };
+}
+const TK = { light: { ...readTokens("theme-light"), name: "light" }, dark: { ...readTokens("theme-dark"), name: "dark" } };
+const BG = { light: (h) => [0.974, 0.006, h], dark: (h) => [0.155, 0.012, h] };
+const WHITE = [1, 0, 0];
+const COLS = window.DS_COLLECTIONS;
+const curH = () => (COLS[document.documentElement.dataset.collection] || COLS.coro).h;
+const HUES = { sop: 350, alt: 70, ten: 195, baj: 275, pno: 130 };
+const trackCss = (h, i = "media") => css(P("dark", "wav", i, h));
+function gradeG(x) { // gráficos (ondas): WCAG pide 3:1 para elementos no textuales
+  const v = f2(x);
+  return x >= 3 ? `<span class="cr pass">${v}<span class="pill pass">≥ 3</span></span>` : `<span class="cr fail">${v}<span class="pill fail">no alcanza</span></span>`;
+}
+function inGamut([L, C, H]) {
+  const h = (H * Math.PI) / 180, a = C * Math.cos(h), b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b, m_ = L - 0.1055613458 * a - 0.0638541728 * b, s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const l = l_ ** 3, m = m_ ** 3, s = s_ ** 3;
+  return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s].every((v) => v > -0.002 && v < 1.002);
+}
+const _maxC = new Map();
+function maxC(L, h) {
+  const key = L + "|" + Math.round(h);
+  if (_maxC.has(key)) return _maxC.get(key);
+  let lo = 0, hi = 0.4;
+  for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (inGamut([L, m, h])) lo = m; else hi = m; }
+  _maxC.set(key, lo); return lo;
+}
+const ck = (i, L, h) => (i === "neutra" ? 0 : Math.min(INT[i].cap, INT[i].share * maxC(L, h)));
+// Claridad según el tono: sigue la "cúspide" de cada tono (la claridad donde admite más croma),
+// dentro de un rango seguro por rol y tema. Mismo modelo que src/utils/palette.ts.
+const _cusp = new Map();
+function cuspL(h) {
+  const hue = ((Math.round(h) % 360) + 360) % 360;
+  if (_cusp.has(hue)) return _cusp.get(hue);
+  let best = 0.5, bc = -1;
+  for (let l = 0.3; l <= 0.99; l += 0.01) { const c = maxC(+l.toFixed(2), hue); if (c > bc) { bc = c; best = l; } }
+  for (let l = best - 0.01; l <= best + 0.01; l += 0.002) { const c = maxC(+l.toFixed(3), hue); if (c > bc) { bc = c; best = l; } }
+  _cusp.set(hue, +best.toFixed(3)); return _cusp.get(hue);
+}
+const HUE_L = { base: 0.23, slope: 0.65 };
+// [desplazamiento, mínimo, máximo] por rol y tema; mínimo = máximo es claridad fija.
+const ROLE_L = {
+  light: { fill: [-0.2, 0.42, 0.5], ci: [-0.2, 0.4, 0.47], lyr: [-0.2, 0.4, 0.48], wav: [-0.1, 0.5, 0.59], csl: [0, 0.93, 0.93], cll: [0, 0.8, 0.8] },
+  dark: { fill: [-0.2, 0.42, 0.5], ci: [0, 0.76, 0.86], lyr: [0, 0.6, 0.86], wav: [0, 0.6, 0.86], csl: [0, 0.3, 0.3], cll: [0, 0.45, 0.45] },
+};
+function roleL(theme, role, h) {
+  const [o, mn, mx] = ROLE_L[theme][role];
+  if (mn === mx) return mn;
+  if (h === null) return +((mn + mx) / 2).toFixed(3);
+  return +Math.min(mx, Math.max(mn, HUE_L.base + HUE_L.slope * cuspL(h) + o)).toFixed(3);
+}
+// Color [L, C, H] de un rol: la claridad sale del tono; el croma, de la intensidad a esa claridad.
+function P(theme, role, i, h) {
+  const neutral = i === "neutra";
+  const l = roleL(theme, role, neutral ? null : h);
+  const base = role === "csl" || role === "cll" ? ck(i, roleL(theme, "fill", neutral ? null : h), h) : ck(i, l, h);
+  const k = role === "csl" ? base * (theme === "light" ? 0.3 : 0.45) : role === "cll" ? base * (theme === "light" ? 0.5 : 0.6) : role === "ci" ? Math.min(base, theme === "light" ? 0.4 : 0.17) : base;
+  return [l, k, h];
+}
+function sweepMin(L, k, bgFn) { let m = 99, mh = 0; for (let h = 0; h < 360; h++) { const c = contrast([L, k, h], bgFn(h)); if (c < m) { m = c; mh = h; } } return [m, mh]; }
+
+// ---------- qué se calcula ----------
+function renderRoles() {
+  const h = curH(), i = "media", L = TK.light, D = TK.dark;
+  const sw = (c) => `<span class="v"><i style="background:${css(c)}"></i>${(c[0] * 100).toFixed(0)} %</span>`;
+  const swA = (c, a) => `<span class="v"><i style="background:${css(c).replace(")", ` / ${a})`)}"></i>${(a * 100).toFixed(0)} % opaco</span>`;
+  const rows = [
+    ["Relleno", "botones, reproducir, lo seleccionado", P(L.name, "fill", i, h), P(D.name, "fill", i, h)],
+    ["Texto de la colección", "íconos y enlaces sobre la sala", P(L.name, "ci", i, h), P(D.name, "ci", i, h)],
+    ["Letra de pista", "tinta de los versos", P(L.name, "lyr", i, h), P(D.name, "lyr", i, h)],
+    ["Onda y punto", "ondas, puntos, barra de progreso", P(L.name, "wav", i, h), P(D.name, "wav", i, h)],
+    ["Fondo suave", "Mi parte, pestaña activa", P(L.name, "csl", i, h), P(D.name, "csl", i, h)],
+    ["Borde", "lo seleccionado sin relleno", P(L.name, "cll", i, h), P(D.name, "cll", i, h)],
+  ];
+  document.getElementById("roles").innerHTML = `<tr><th>Rol</th><th>Claro</th><th>Oscuro</th></tr>` +
+    rows.map(([n, d, l, dk]) => `<tr><td class="k">${n}<span class="xs faint" style="display:block;font-weight:500">${d}</span></td><td>${sw(l)}</td><td>${sw(dk)}</td></tr>`).join("") +
+    `<tr><td class="k">Luz de sala<span class="xs faint" style="display:block;font-weight:500">las manchas del fondo</span></td><td>${swA(P(L.name, "fill", i, h), L.amb)}</td><td>${swA(P(D.name, "fill", i, h), D.amb)}</td></tr>`;
+}
+
+// ---------- rueda ----------
+function renderWheel() {
+  const cx = 150, cy = 150, R1 = 108, R2 = 124;
+  const pt = (h, r) => { const a = ((h - 90) * Math.PI) / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+  let g = "";
+  for (let h = 0; h < 360; h += 4) {
+    const [x1, y1] = pt(h, R1), [x2, y2] = pt(h, R2), [x3, y3] = pt(h + 4.4, R2), [x4, y4] = pt(h + 4.4, R1);
+    g += `<path d="M${x1} ${y1}L${x2} ${y2}A${R2} ${R2} 0 0 1 ${x3} ${y3}L${x4} ${y4}A${R1} ${R1} 0 0 0 ${x1} ${y1}Z" fill="${css(P("dark", "wav", "media", h + 2))}"/>`;
+  }
+  const cur = document.documentElement.dataset.collection;
+  Object.entries(COLS).forEach(([id, c]) => {
+    const [x, y] = pt(c.h, 138), [lx, ly] = pt(c.h, 138);
+    g += `<circle cx="${x}" cy="${y}" r="${id === cur ? 8 : 6}" fill="${css(P("light", "fill", "media", c.h))}" stroke="${id === cur ? "var(--ink)" : "var(--canvas)"}" stroke-width="2.5"/>`;
+  });
+  ENS.tracks.forEach((t) => {
+    const [x, y] = pt(t.hue, 88), [lx, ly] = pt(t.hue, 62);
+    g += `<line x1="${pt(t.hue, R1 - 2)[0]}" y1="${pt(t.hue, R1 - 2)[1]}" x2="${x}" y2="${y}" stroke="var(--line-strong)" stroke-width="1"/>`;
+    g += `<circle cx="${x}" cy="${y}" r="6" fill="${css(P("dark", "wav", "media", t.hue))}" stroke="var(--canvas)" stroke-width="2"/>`;
+    g += `<text x="${lx}" y="${ly + 4}" text-anchor="middle">${t.title}</text>`;
+  });
+  document.getElementById("wheel").innerHTML = g;
+  const hs = ENS.tracks.map((t) => [t.title, t.hue]);
+  let best = [999];
+  for (let i = 0; i < hs.length; i++) for (let j = i + 1; j < hs.length; j++) { const d = Math.min(Math.abs(hs[i][1] - hs[j][1]), 360 - Math.abs(hs[i][1] - hs[j][1])); if (d < best[0]) best = [d, hs[i][0], hs[j][0]]; }
+  document.getElementById("wheel-notes").innerHTML = `
+    <div class="note"><b>Las pistas del coro</b><p>${ENS.tracks.map((t) => `${t.title} ${t.hue}°`).join(" · ")}. El par más cercano es ${best[1]} y ${best[2]}, a ${best[0]}°: bien separados.</p></div>
+    <div class="note"><b>Cuándo avisa el editor</b><p>Si el Bajo pasara de 275° a 207°, quedaría a 12° del Tenor. En los ajustes aparece "Tenor y Bajo están a 12° de tono: cuesta distinguirlos", con la sugerencia de moverlo o cambiarle la intensidad.</p></div>
+    <div class="note"><b>Colecciones</b><p>${Object.values(COLS).map((c) => `${c.label} ${c.h}°`).join(" · ")}. La colección no compite con sus pistas: tiñe la sala y los botones, y las pistas pintan la letra.</p></div>`;
+}
+
+// ---------- neutros ----------
+const NEUTRALS = ["canvas", "surface", "sunken", "line", "line-strong", "faint", "muted", "ink"];
+document.getElementById("ramps").innerHTML = Object.values(COLS).map((col) => `
+  <div class="ramp">
+    <div class="cap"><b>${col.label}</b><span class="mono">tono ${col.h}</span></div>
+    <div class="pair">
+      ${["theme-light", "theme-dark"].map((t) => `<div class="${t}" style="--h:${col.h};--k:${P("light", "fill", "media", col.h)[1].toFixed(3)};--c:${css(P("light", "fill", "media", col.h))}">
+        ${NEUTRALS.map((n) => `<span class="chip-n"><i style="background:var(--${n})"></i>${n}</span>`).join("")}
+      </div>`).join("")}
+    </div>
+  </div>`).join("");
+
+// ---------- color de la colección ----------
+function deriveHTML(col) {
+  const h = col.h, i = "media", L = TK.light, D = TK.dark;
+  const k = P("light", "fill", i, h)[1];
+  const fill = [L.fill, k, h], fillD = P(D.name, "fill", i, h);
+  const inkL = P(L.name, "ci", i, h), inkD = P(D.name, "ci", i, h);
+  return `<div class="stack">
+    <div class="cap"><b>${col.label}</b><span class="mono">tono ${h} · media · croma ${f2(k)}</span></div>
+    <div class="pair">
+      <div class="theme-light" style="--h:${h};--k:${k.toFixed(3)};--c:${css(fill)};--on-c:#fff">
+        <span class="b sm fill">Guardar</span><span class="num">texto blanco · ${f2(contrast(fill, WHITE))}:1</span>
+        <span class="ink">${ic("pencil")} Editar</span><span class="num">--c-ink · ${f2(contrast(inkL, BG.light(h)))}:1</span>
+        <span class="soft">Mi parte</span>
+        <span class="line">Pista seleccionada</span>
+      </div>
+      <div class="theme-dark" style="--h:${h};--k:${k.toFixed(3)};--c:${css(fillD)};--on-c:#fff">
+        <span class="b sm fill">Guardar</span><span class="num">texto blanco · ${f2(contrast(fillD, WHITE))}:1</span>
+        <span class="ink">${ic("pencil")} Editar</span><span class="num">--c-ink · ${f2(contrast(inkD, BG.dark(h)))}:1</span>
+        <span class="soft">Mi parte</span>
+        <span class="line">Pista seleccionada</span>
+      </div>
+    </div>
+  </div>`;
+}
+document.getElementById("derive").innerHTML = Object.values(COLS).map(deriveHTML).join("");
+document.getElementById("fl-l").textContent = f2(TK.light.fill);
+
+// ---------- intensidad ----------
+function renderIntens() {
+  const h = curH();
+  for (const [theme, id] of [["light", "int-l"], ["dark", "int-d"]]) {
+    const T = TK[theme];
+    document.getElementById(id).innerHTML = Object.entries(INT).map(([name, r]) => `
+      <div class="col">
+        <span class="eyebrow">${name} · ${Math.round(r.share * 100)} % · ${f2(P(T.name, "fill", name, h)[1])}</span>
+        <span class="fillb" style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;color:#fff;font:600 12.5px/1 var(--ui);background:${css(P(T.name, "fill", name, h))}">Guardar</span>
+        <span class="t" style="color:${css(P(T.name, "lyr", name, h))}">Vidala</span>
+        <div class="wave wv" style="--tc:${trackCss(h, name)}">${ENS.waveSVG(5, 40, 0.5)}</div>
+        <span class="chipx" style="background:${css(P(T.name, "csl", name, h))};color:${css(P(T.name, "ci", name, h))}">Mi parte</span>
+      </div>`).join("");
+  }
+}
+
+// ---------- pistas: hoy vs tonos ----------
+const H0 = 300;
+const TODAY_TRACKS = { sop: "oklch(62% 0.22 350)", alt: "oklch(80% 0.16 75)", ten: "oklch(72% 0.13 190)", baj: "oklch(52% 0.2 275)", pno: "oklch(84% 0.19 128)" };
+const rows = ENS.tracks.map((t) => {
+  const raw = parseOklch(TODAY_TRACKS[t.key]);
+  const nl = P(TK.light.name, "lyr", "media", t.hue), nd = P(TK.dark.name, "lyr", "media", t.hue);
+  return { t, raw, nl, nd, rawL: contrast(raw, BG.light(H0)), inkL: contrast(nl, BG.light(H0)), rawD: contrast(raw, BG.dark(H0)), inkD: contrast(nd, BG.dark(H0)) };
+});
+const cell = (theme, color, cr, label) => `<td class="${theme}" style="--h:${H0}"><div class="cell"><span class="t" style="color:${color}">Vidala</span>${grade(cr)}<span class="xs faint">${label}</span></div></td>`;
+document.getElementById("inks").innerHTML = `<tr><th>Pista</th><th>Claro · hoy</th><th>Claro · con tono</th><th>Oscuro · hoy</th><th>Oscuro · con tono</th></tr>` +
+  rows.map((r) => `<tr><td class="n"><span class="row" style="gap:8px"><span class="swatch" style="background:${trackCss(r.t.hue)};width:18px;height:18px;border-radius:5px"></span>${r.t.title}</span><span class="mono xs faint" style="display:block;margin-top:4px">tono ${r.t.hue}</span></td>
+    ${cell("theme-light", TODAY_TRACKS[r.t.key], r.rawL, "color guardado hoy")}${cell("theme-light", css(r.nl), r.inkL, css(r.nl).replace("oklch", ""))}
+    ${cell("theme-dark", TODAY_TRACKS[r.t.key], r.rawD, "color guardado hoy")}${cell("theme-dark", css(r.nd), r.inkD, css(r.nd).replace("oklch", ""))}</tr>`).join("");
+const f = (x) => x.toFixed(1).replace(".", ",");
+const rawFails = rows.filter((r) => r.rawL < 3).map((r) => `${r.t.title.toLowerCase()} ${f(r.rawL)}`);
+const minNew = Math.min(...rows.flatMap((r) => [r.inkL, r.inkD]));
+const rangeL = [Math.min(...rows.map((r) => r.inkL)), Math.max(...rows.map((r) => r.inkL))];
+document.getElementById("ink-summary").innerHTML = `Hoy, en claro, ${rawFails.length} pistas no llegan ni a 3:1: ${rawFails.join(", ")}. Con tonos, en claro todas quedan entre ${f2(rangeL[0])} y ${f2(rangeL[1])}:1, parejas entre sí; el peor caso de los dos temas es ${f2(minNew)}:1. En oscuro, el bajo pasa de ${f2(rows[3].rawD)} a ${f2(rows[3].inkD)}.`;
+
+// ---------- todos los tonos ----------
+function renderSweep() {
+  const bar = (T, bg) => Array.from({ length: 360 }, (_, h) => `<i style="background:${css(P(T.name, "lyr", "media", h))}"></i>`).join("");
+  document.getElementById("sw-l").innerHTML = bar(TK.light);
+  document.getElementById("sw-d").innerHTML = bar(TK.dark);
+  const ROLES = [
+    ["Letra de pista", "lyr", (T, i, h) => P(T.name, "lyr", i, h), "bg", 4.5],
+    ["Texto de la colección", "ci", (T, i, h) => P(T.name, "ci", i, h), "bg", 4.5],
+    ["Texto blanco sobre relleno", "fill", (T, i, h) => P(T.name, "fill", i, h), "white", 4.5],
+    ["Onda y punto", "wav", (T, i, h) => P(T.name, "wav", i, h), "bg", 3],
+  ];
+  const fails = [];
+  let html = `<tr><th>Rol</th><th>Tema</th><th>Suave</th><th>Media</th><th>Intensa</th></tr>`;
+  for (const [name, key, fn, against, target] of ROLES) for (const theme of ["light", "dark"]) {
+    const T = TK[theme];
+    html += `<tr><td>${name}</td><td>${theme === "light" ? "Claro" : "Oscuro"}</td>` + Object.keys(INT).map((iname) => {
+      let m = 99, mh = 0;
+      for (let h = 0; h < 360; h++) { const c = contrast(fn(T, iname, h), against === "white" ? WHITE : BG[theme](h)); if (c < m) { m = c; mh = h; } }
+      if (m < target) fails.push({ name, key, theme, iname, m, mh, target });
+      return `<td>${target === 3 ? gradeG(m) : grade(m)} <span class="xs faint">peor: ${mh}°</span></td>`;
+    }).join("") + `</tr>`;
+  }
+  document.getElementById("mins").innerHTML = html;
+  // propuesta de ajuste: bajar la claridad hasta que pase el peor caso (intensa)
+  const fix = {};
+  for (const fl of fails) {
+    const T = TK[fl.theme]; if (fix[fl.key + fl.theme]) continue;
+    let L = fl.key === "ci" ? T.ci : T[fl.key];
+    const test = (L) => { let m = 99; for (let h = 0; h < 360; h++) { const c = fl.key === "fill" ? contrast([L, ck("intensa", L, h), h], WHITE) : contrast([L, fl.key === "ci" ? Math.min(ck("intensa", L, h), T.cic) : ck("intensa", L, h), h], BG[fl.theme](h)); m = Math.min(m, c); } return m; };
+    while (test(L) < fl.target && L > 0.3) L = +(L - 0.01).toFixed(2);
+    fix[fl.key + fl.theme] = { name: fl.name, theme: fl.theme, key: fl.key, from: fl.key === "ci" ? T.ci : T[fl.key], to: L, min: test(L) };
+  }
+  const tokName = { lyr: "--lyr-l", fill: "--fill-l", wav: "--wav-l", ci: "--ci-l" };
+  const byRole = {};
+  fails.forEach((x) => { (byRole[x.name] = byRole[x.name] || []).push(x); });
+  const failTxt = Object.entries(byRole).map(([name, xs]) => {
+    const themes = [...new Set(xs.map((x) => x.theme === "light" ? "claro" : "oscuro"))].join(" y ");
+    const ints = [...new Set(xs.map((x) => x.iname))].join(" e ");
+    const worst = xs.reduce((a, b) => (a.m < b.m ? a : b));
+    return `${name.toLowerCase()} (${themes}; intensidad ${ints}; peor ${f2(worst.m)}:1 en ${worst.mh}°)`;
+  });
+  const fillNote = byRole["Texto blanco sobre relleno"] ? " El relleno tiene la misma claridad en los dos temas, así que su ajuste vale para ambos." : "";
+  document.querySelector("#sweep-note p").innerHTML = fails.length
+    ? `Con los valores actuales, la mayoría pasa, pero no todo: ${failTxt.join("; ")}. Los peores casos caen siempre en los turquesas y cianes (entre 175° y 195°), que a igual claridad son los más luminosos. El arreglo es bajar un poco la claridad de esos roles: ${Object.values(fix).filter((x, i, arr) => arr.findIndex((y) => y.key === x.key) === i).map((x) => `<span class="mono">${tokName[x.key]}</span> ${x.key === "fill" ? "" : "en claro "}de ${f2(x.from)} a ${f2(x.to)} (peor caso ${f2(x.min)}:1)`).join(", ")}. Con eso, los 360 tonos pasan en las tres intensidades y en los dos temas.${fillNote} La letra y el texto en oscuro ya pasan con margen.`
+    : `Con los valores actuales, los 360 tonos pasan en las tres intensidades y en los dos temas: la letra y el texto de la colección superan 4,5:1, el blanco sobre el relleno también, y las ondas superan 3:1.`;
+  document.querySelector("#sweep-note b").textContent = fails.length ? "Resultado: casi todo pasa, con un ajuste" : "Resultado: todo pasa";
+  let lo = [9, 0], hi = [0, 0];
+  for (let h = 0; h < 360; h++) { const m = maxC(0.48, h); if (m < lo[0]) lo = [m, h]; if (m > hi[0]) hi = [m, h]; }
+  const redOld = 0.15 / maxC(0.5, 25), cyanOld = Math.min(1, 0.15 / maxC(0.5, 195));
+  document.getElementById("gamut-note").innerHTML = `A claridad 0,48, el croma máximo que admite sRGB va de ${f2(lo[0])} (a ${lo[1]}°) a ${f2(hi[0])} (a ${hi[1]}°). Con un croma fijo de 0,15, un rojo quedaba en el ${Math.round(redOld * 100)} % de lo que puede mostrar y un cian en el ${Math.round(cyanOld * 100)} %, recortado: los rojos se veían apagados al lado de los cianes. Con la intensidad como parte del máximo, y la claridad cerca de la cúspide de cada tono, cada tono usa la misma proporción de su color posible y ninguno se recorta.`;
+}
+
+// ---------- herramienta ----------
+const tH = document.getElementById("tH"), tI = document.getElementById("tI"), tN = document.getElementById("tN");
+let toolI = "media";
+document.getElementById("presets").innerHTML = ENS.tracks.map((t) => `<button type="button" style="background:${trackCss(t.hue)}" data-h="${t.hue}" aria-label="${t.title}, tono ${t.hue}"></button>`).join("");
+function renderTool() {
+  const h = +tH.value, iname = tN.checked ? "neutra" : toolI;
+  document.getElementById("oH").textContent = tN.checked ? "neutra" : h + "°";
+  tH.disabled = tN.checked;
+  const near = tN.checked ? [] : ENS.tracks.map((t) => [t.title, Math.min(Math.abs(t.hue - h), 360 - Math.abs(t.hue - h))]).filter(([, d]) => d > 0 && d < 25);
+  const side = (theme) => {
+    const T = TK[theme], bg = BG[theme](H0);
+    const fill = P(T.name, "fill", iname, h), ink = P(T.name, "lyr", iname, h);
+    return `<span class="eyebrow">${theme === "light" ? "Claro" : "Oscuro"}</span>
+      <div class="rowx"><span class="fillb" style="background:${css(fill)}">${ic("play")} Relleno</span>${grade(contrast(fill, WHITE))}<span class="xs faint">texto blanco sobre ${css(fill).replace("oklch", "")}</span></div>
+      <div class="rowx"><span class="t" style="color:${css(ink)}">Sopla el viento</span>${grade(contrast(ink, bg))}<span class="xs faint">letra · ${css(ink).replace("oklch", "")}</span></div>
+      <div class="wave" style="--tc:${tN.checked ? "oklch(0.6 0 0)" : trackCss(h, iname)};height:32px">${ENS.waveSVG(7, 70, 0.45)}</div>
+      <span class="chipx" style="align-self:flex-start;font:600 12px/1 var(--ui);padding:6px 10px;border-radius:999px;background:${css(P(T.name, "csl", iname, h))};color:${css(P(T.name, "ci", iname, h))}">Mi parte</span>
+      ${near.length ? `<span class="badge warn">${ic("alert")} A ${near[0][1]}° de ${near[0][0]}: cuesta distinguirlos</span>` : ""}`;
+  };
+  document.getElementById("tool-l").innerHTML = side("light");
+  document.getElementById("tool-d").innerHTML = side("dark");
+  document.getElementById("tool-l").style.setProperty("--h", H0);
+  document.getElementById("tool-d").style.setProperty("--h", H0);
+}
+tH.addEventListener("input", renderTool);
+tN.addEventListener("change", renderTool);
+tI.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  toolI = b.dataset.i; tI.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); renderTool();
+});
+document.getElementById("presets").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; tH.value = b.dataset.h; tN.checked = false; renderTool();
+});
+
+function renderAll() { renderRoles(); renderWheel(); renderIntens(); }
+renderAll(); renderSweep(); renderTool();
+document.addEventListener("ds:collection", renderAll);
+hydrateIcons();
+</script>
+</html>

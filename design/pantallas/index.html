@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Mapa de pantallas</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ---------- tarjetas de pantalla ---------- */
+.screens { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 960px) { .screens { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .screens { grid-template-columns: 1fr; } }
+.scard { display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 10px 10px 16px; transition: border-color var(--d-fast) var(--ease); min-width: 0; }
+.wrap a.scard { color: var(--ink); font-weight: 400; }
+.scard:hover { border-color: var(--c-line); }
+.scard .body { display: flex; flex-direction: column; gap: 6px; padding: 0 6px; }
+.scard .body b { font: 700 19px/1.1 var(--ui); letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.scard .body p { font-size: var(--t-sm); color: var(--muted); }
+.scard .chips { margin-top: 2px; }
+
+/* miniaturas: bocetos de cada pantalla con los mismos materiales */
+.app.thumb { position: relative; height: 170px; border-radius: 12px; }
+.thumb .bar { position: absolute; left: 8px; right: 8px; top: 8px; height: 20px; border-radius: 8px; }
+.thumb .dk { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 10px; }
+.thumb .ln { height: 6px; border-radius: 3px; background: oklch(from var(--ink) l c h / 0.14); }
+.thumb .ln.c { background: oklch(from var(--tc, var(--c)) var(--wav-l) c h); }
+.thumb .pl { position: absolute; left: 50%; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: var(--c); }
+.thumb .col { position: absolute; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.thumb .panel { position: absolute; border-radius: 10px; }
+.thumb .sheetx { position: absolute; border-radius: 8px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.thumb .w { position: absolute; display: flex; gap: 2px; align-items: center; }
+.thumb .w i { width: 2px; border-radius: 1px; background: oklch(from var(--tc, var(--c)) var(--wav-l) c h / 0.7); }
+
+/* ---------- tablas ---------- */
+.spec td .mono, .spec td code { font-family: var(--mono); font-size: 12.5px; }
+.spec td .old { color: var(--faint); text-decoration: line-through; }
+.perm td, .perm th { text-align: center; }
+.perm td:first-child, .perm th:first-child { text-align: left; }
+.perm td { white-space: nowrap; }
+.perm td:first-child { white-space: normal; min-width: 220px; }
+.yes { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); font-size: 14px; }
+.yes.new { background: var(--c-soft); color: var(--c-ink); }
+.yes.sql { background: var(--warn-soft); color: var(--warn); }
+.no { color: var(--faint); }
+.q { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--info-soft); color: var(--info); font: 700 12px/1 var(--ui); }
+.key { display: flex; gap: 18px; flex-wrap: wrap; font-size: var(--t-sm); color: var(--muted); }
+.key span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---------- diagrama ---------- */
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); padding: 12px; }
+.flow svg { display: block; width: 100%; min-width: 860px; height: auto; font-family: var(--ui); }
+.flow .node rect { fill: var(--raised); stroke: var(--line-strong); stroke-width: 1; }
+.flow .node.main rect { fill: var(--c-soft); stroke: var(--c-line); }
+.flow .node.new rect { stroke: var(--c-ink); stroke-dasharray: 4 3; }
+.flow .node text { fill: var(--ink); font-size: 14px; font-weight: 650; }
+.flow .node text.s { fill: var(--muted); font-size: 11.5px; font-weight: 500; }
+.flow .edge { fill: none; stroke: var(--faint); stroke-width: 1.5; }
+.flow .edge.cmd { stroke: var(--c-ink); stroke-dasharray: 2 4; }
+.flow .lab { fill: var(--muted); font-size: 11px; font-weight: 600; }
+.flow marker path { fill: var(--faint); }
+.flow .grp { fill: none; stroke: var(--line); stroke-dasharray: 3 4; }
+.flow .grpl { fill: var(--faint); font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas</span>
+    <h1 class="d">Mapa de pantallas</h1>
+    <p class="lede">Hoy la app tiene cuatro lugares: ingreso, reproductor, editor (un cajón sobre el reproductor) y los errores. Todo lo demás se hace por SQL. La propuesta suma dos: la biblioteca, que reemplaza al menú lateral, y los ajustes de colección, que absorben la skill <span class="mono">admin</span>. El reproductor sigue siendo la pantalla a la que se llega casi siempre.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Las pantallas</h2><p>En orden de uso. Cada tarjeta lleva a su página, con mocks de escritorio y teléfono.</p></div>
+    <div class="screens">
+      <a class="scard" href="reproductor.html">
+        <div class="app auto thumb"><div class="amb"></div>
+          <div class="bar g1"></div>
+          <div class="col" style="left:0;right:0;top:44px"><span class="ln" style="width:90px"></span><span class="ln c" style="width:120px;--tc:var(--t-sop);height:8px"></span><span class="ln c" style="width:104px;--tc:var(--t-ten)"></span></div>
+          <div class="dk g2" style="height:54px"><span class="pl" style="top:8px"></span><div class="w" style="left:10px;right:10px;bottom:8px;height:14px" data-w></div></div>
+        </div>
+        <div class="body"><b>Reproductor</b><p>Letra al centro, barra de vidrio arriba, dock con transporte y mezcladora; las ondas son la línea de tiempo.</p><div class="chips"><span class="tag refine">Ajuste</span><span class="tag new">Mi parte</span></div></div>
+      </a>
+      <a class="scard" href="biblioteca.html">
+        <div class="app auto thumb"><div class="amb"></div>
+          <div class="bar g1" style="left:120px"></div>
+          <div class="panel g2" style="left:8px;top:8px;bottom:8px;width:104px;padding:10px;display:flex;flex-direction:column;gap:7px">
+                        <span class="ln" style="width:70px"></span><span class="ln c" style="width:78px"></span><span class="ln" style="width:60px"></span><span class="ln" style="width:72px"></span><span class="ln" style="width:52px"></span>
+          </div>
+          <div class="col" style="left:120px;right:0;top:66px"><span class="ln c" style="width:90px;--tc:var(--t-sop)"></span><span class="ln" style="width:70px"></span></div>
+        </div>
+        <div class="body"><b>Biblioteca</b><p>Canciones de la colección, búsqueda, otras colecciones y cuenta. Inicio con colecciones y <kbd>⌘</kbd><kbd>K</kbd>.</p><div class="chips"><span class="tag refine">Reemplaza el menú</span></div></div>
+      </a>
+      <a class="scard" href="editor-cancion.html">
+        <div class="app auto thumb"><div class="amb"></div>
+          <div class="bar g1"></div>
+          <div class="sheetx" style="left:8px;right:8px;top:36px;bottom:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+            <span class="ln" style="width:50%"></span>
+            <span style="display:flex;gap:6px;align-items:center"><span class="ln c" style="width:10px;--tc:var(--t-sop)"></span><span class="ln" style="flex:1"></span></span>
+            <span style="display:flex;gap:6px;align-items:center"><span class="ln c" style="width:10px;--tc:var(--t-alt)"></span><span class="ln" style="flex:1"></span></span>
+            <span style="display:flex;gap:6px;align-items:center"><span class="ln c" style="width:10px;--tc:var(--t-ten)"></span><span class="ln" style="flex:1"></span></span>
+          </div>
+        </div>
+        <div class="body"><b>Editor de canción</b><p>Título, dirección, visibilidad y pistas de audio con subida múltiple y orden por arrastre.</p><div class="chips"><span class="tag refine">Ajuste</span><span class="tag moved">Eliminar canción</span></div></div>
+      </a>
+      <a class="scard" href="editor-letra.html">
+        <div class="app auto thumb"><div class="amb"></div>
+          <div class="bar g1"></div>
+          <div class="sheetx" style="left:8px;right:92px;top:36px;bottom:8px;padding:10px;display:flex;flex-direction:column;gap:7px">
+            <span class="ln c" style="width:70%;--tc:var(--t-sop)"></span><span class="ln c" style="width:60%;--tc:var(--t-alt)"></span><span class="ln c" style="width:74%;--tc:var(--t-ten)"></span><span class="ln c" style="width:56%;--tc:var(--t-baj)"></span>
+          </div>
+          <div class="sheetx" style="right:8px;width:78px;top:36px;bottom:8px;padding:8px;display:flex;flex-direction:column;gap:6px"><span class="ln" style="width:50%"></span><span class="ln" style="width:80%"></span><span class="ln" style="width:65%"></span></div>
+        </div>
+        <div class="body"><b>Editor de letra</b><p>Hoja de texto con inspector del verso y un modo aparte para sincronizar sobre la onda.</p><div class="chips"><span class="tag refine">Ajuste</span><span class="tag new">Sincronizar</span></div></div>
+      </a>
+      <a class="scard" href="coleccion.html">
+        <div class="app auto thumb"><div class="amb"></div>
+          <div class="sheetx" style="left:8px;top:8px;bottom:8px;width:70px;padding:10px;display:flex;flex-direction:column;gap:8px"><span class="ln c" style="width:44px"></span><span class="ln" style="width:40px"></span><span class="ln" style="width:48px"></span><span class="ln" style="width:36px"></span></div>
+          <div class="sheetx" style="left:86px;right:8px;top:8px;bottom:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+            <span class="ln" style="width:40%"></span>
+            <span style="display:flex;gap:6px"><span class="swatch" style="width:16px;height:16px;border-radius:5px;background:var(--c)"></span><span class="swatch" style="width:16px;height:16px;border-radius:5px;background:var(--t-sop)"></span><span class="swatch" style="width:16px;height:16px;border-radius:5px;background:var(--t-alt)"></span><span class="swatch" style="width:16px;height:16px;border-radius:5px;background:var(--t-ten)"></span></span>
+            <span class="ln" style="width:80%"></span><span class="ln" style="width:70%"></span>
+          </div>
+        </div>
+        <div class="body"><b>Ajustes de colección</b><p>General, colores, canciones y miembros. Todo lo que hoy se hace con la skill <span class="mono">admin</span>.</p><div class="chips"><span class="tag moved">Sale del SQL</span></div></div>
+      </a>
+      <a class="scard" href="ingreso-estados.html">
+        <div class="app auto thumb" style="--c:var(--brand);--h:314"><div class="amb"></div>
+          <div class="panel g2" style="left:50%;top:22px;width:130px;margin-left:-65px;bottom:22px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center">
+            <img src="../shared/logo.png" alt="" style="width:22px;height:22px">
+            <span class="ln" style="width:100%;height:14px;border-radius:5px"></span><span class="ln" style="width:100%;height:14px;border-radius:5px"></span>
+            <span class="ln c" style="width:100%;height:14px;border-radius:7px"></span>
+          </div>
+        </div>
+        <div class="body"><b>Ingreso y estados</b><p>Ingreso, restablecer contraseña, cargas, vacíos, errores y avisos.</p><div class="chips"><span class="tag refine">Ajuste</span></div></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Cómo se conectan</h2><p>El reproductor es el centro. La biblioteca y la paleta de comandos llevan a cualquier canción; el modo edición y los ajustes se abren desde el reproductor o la biblioteca y vuelven al mismo lugar. Con borde punteado, lo que no existe hoy.</p></div>
+    <div class="flow scroll-x">
+      <svg viewBox="0 0 1180 400" role="img" aria-label="Diagrama de navegación entre pantallas">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>
+
+        <rect class="grp" x="840" y="18" width="326" height="176" rx="14"/>
+        <text class="grpl" x="856" y="40">MODO EDICIÓN</text>
+        <rect class="grp" x="840" y="212" width="326" height="176" rx="14"/>
+        <text class="grpl" x="856" y="234">AJUSTES DE COLECCIÓN</text>
+
+        <path class="edge" d="M168 200H232" marker-end="url(#ar)"/>
+        <text class="lab" x="160" y="168">2+ colecciones</text>
+        <path class="edge" d="M110 226C110 320 380 320 450 236" marker-end="url(#ar)"/>
+        <text class="lab" x="190" y="318">una sola colección: directo</text>
+        <path class="edge" d="M372 200H440" marker-end="url(#ar)"/>
+        <path class="edge" d="M620 186C660 120 690 104 720 104" marker-end="url(#ar)"/>
+        <path class="edge" d="M720 112C690 112 676 140 636 188" marker-end="url(#ar)"/>
+        <path class="edge" d="M620 214C660 290 690 300 720 300" marker-end="url(#ar)"/>
+        <path class="edge" d="M790 88C810 70 830 70 856 70" marker-end="url(#ar)"/>
+        <path class="edge" d="M800 318C820 300 836 300 856 290" marker-end="url(#ar)"/>
+        <path class="edge" d="M626 200C700 200 780 160 856 140" marker-end="url(#ar)"/>
+        <text class="lab" x="686" y="176">Editar · E</text>
+        <path class="edge cmd" d="M530 56V172" marker-end="url(#ar)"/>
+
+        <g class="node"><rect x="20" y="176" width="148" height="50" rx="12"/><text x="36" y="198">Ingreso</text><text class="s" x="36" y="215">/login · reset</text></g>
+        <g class="node new"><rect x="232" y="176" width="140" height="50" rx="12"/><text x="248" y="198">Inicio</text><text class="s" x="248" y="215">grilla de colecciones</text></g>
+        <g class="node main"><rect x="440" y="172" width="186" height="58" rx="14"/><text x="458" y="197">Reproductor</text><text class="s" x="458" y="215">/:colección/:canción</text></g>
+        <g class="node new"><rect x="430" y="16" width="200" height="40" rx="12"/><text x="458" y="41">Paleta de comandos ⌘K</text></g>
+        <g class="node"><rect x="720" y="80" width="130" height="48" rx="12"/><text x="736" y="101">Biblioteca</text><text class="s" x="736" y="117">reemplaza el menú</text></g>
+        <g class="node new"><rect x="720" y="276" width="104" height="48" rx="12"/><text x="736" y="297">Ajustes</text><text class="s" x="736" y="313">solo admins</text></g>
+
+        <g class="node"><rect x="856" y="54" width="92" height="34" rx="10"/><text x="870" y="76">Canción</text></g>
+        <g class="node"><rect x="958" y="54" width="80" height="34" rx="10"/><text x="972" y="76">Letra</text></g>
+        <g class="node new"><rect x="1048" y="54" width="106" height="34" rx="10"/><text x="1060" y="76">Sincronizar</text></g>
+        <g class="node"><rect x="856" y="120" width="140" height="34" rx="10"/><text x="870" y="142">Nueva canción</text></g>
+        <g class="node drop"><rect x="1006" y="120" width="148" height="34" rx="10" style="stroke-dasharray:2 3;opacity:.7"/><text x="1020" y="142" style="fill:var(--muted)">JSON · avanzado</text></g>
+
+        <g class="node new"><rect x="856" y="252" width="92" height="34" rx="10"/><text x="870" y="274">General</text></g>
+        <g class="node new"><rect x="958" y="252" width="92" height="34" rx="10"/><text x="972" y="274">Colores</text></g>
+        <g class="node new"><rect x="856" y="302" width="104" height="34" rx="10"/><text x="870" y="324">Canciones</text></g>
+        <g class="node new"><rect x="970" y="302" width="100" height="34" rx="10"/><text x="984" y="324">Miembros</text></g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Rutas</h2><p>Las rutas de hoy se mantienen para no romper links compartidos. El modo edición pasa a la dirección, así se puede recargar o compartir sin perder la pestaña.</p></div>
+    <div class="scroll-x">
+      <table class="spec">
+        <thead><tr><th>Ruta</th><th>Hoy</th><th>Propuesta</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><code>/</code></td><td>Redirige a la primera colección.</td><td>Sigue pidiendo sesión. Con dos o más colecciones de las que la persona es miembro, Inicio con la grilla; con una, redirige como hoy. Las públicas de las que no es miembro no cuentan para esa regla ni aparecen en la grilla: siguen en "Otras colecciones" de la biblioteca, como hoy.</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td><code>/:colección</code></td><td>Redirige a la primera canción.</td><td>Igual. Si la colección no tiene canciones, vacío con "Crear canción" para editores.</td><td><span class="tag keep">Se mantiene</span></td></tr>
+          <tr><td><code>/:colección/:canción</code></td><td>Reproductor.</td><td>Reproductor.</td><td><span class="tag keep">Se mantiene</span></td></tr>
+          <tr><td><code>…/:canción?editar=cancion</code><br><code>?editar=letra</code> · <code>?editar=sincronizar</code></td><td>Cajón del editor, sin dirección propia.</td><td>Modo edición en la pestaña indicada. Sin permiso de edición, se ignora el parámetro.</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td><code>/:colección/nueva</code></td><td>Modo alta dentro del editor de otra canción.</td><td>Editor de canción vacío. Al guardar, redirige a la canción creada.</td><td><span class="tag refine">Ajuste</span></td></tr>
+          <tr><td><code>/:colección/ajustes/general</code><br><code>…/colores</code> · <code>…/canciones</code> · <code>…/miembros</code></td><td>No existe: skill <span class="mono">admin</span>.</td><td>Ajustes de colección, solo para admins de la colección.</td><td><span class="tag moved">Sale del SQL</span></td></tr>
+          <tr><td><code>/nueva-coleccion</code></td><td>No existe: SQL.</td><td>Alta de colección, solo para admins de la app. Al crear, lleva a sus ajustes.</td><td><span class="tag moved">Sale del SQL</span></td></tr>
+          <tr><td><code>/login</code> · <code>/reset-password</code></td><td>Ingreso y nueva contraseña.</td><td>Igual, con la luz violeta y el vidrio nuevos.</td><td><span class="tag refine">Ajuste</span></td></tr>
+          <tr><td><code>/404</code></td><td>Página no encontrada.</td><td>Igual, con la biblioteca a mano para volver.</td><td><span class="tag keep">Se mantiene</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sm muted">Una dirección de colección que choque con <code class="mono">nueva-coleccion</code>, <code class="mono">login</code> o <code class="mono">404</code> se rechaza al crearla o renombrarla. Lo mismo para canciones que se llamen <code class="mono">nueva</code>, <code class="mono">ajustes</code> o <code class="mono">editar</code>: se valida en el formulario y en la base, y las que ya existan se renombran en la migración.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Quién puede qué</h2><p>Los roles de colección siguen siendo tres (<span class="mono">viewer</span>, <span class="mono">editor</span>, <span class="mono">admin</span>). Se suma un rol de la app para lo que hoy es exclusivamente SQL: crear colecciones y cuentas.</p></div>
+    <div class="key">
+      <span><span class="yes">✓</span>Ya se puede en la app</span>
+      <span><span class="yes new">✓</span>Nuevo en la app</span>
+      <span><span class="yes sql">✓</span>Hoy solo por SQL, pasa a la app</span>
+      <span><span class="q">?</span>A decidir (ver Plan)</span>
+    </div>
+    <div class="scroll-x">
+      <table class="spec perm">
+        <thead><tr><th>Acción</th><th>Público</th><th>Lector</th><th>Editor</th><th>Admin de colección</th><th>Admin de la app</th></tr></thead>
+        <tbody id="perm"></tbody>
+      </table>
+    </div>
+    <div class="grid-3">
+      <div class="note"><b>Público</b><p>Cualquiera con el link de una colección pública o no listada, sin sesión. Solo escucha. Mi parte funciona porque vive en el dispositivo.</p></div>
+      <div class="note"><b>Admin de colección</b><p>Maneja todo lo de su colección, incluidos los miembros. Puede sumar personas que ya tienen cuenta; crear cuentas nuevas queda a decidir.</p></div>
+      <div class="note"><b>Admin de la app</b><p>Una lista corta de personas (hoy, quien corre la skill). Crea colecciones y cuentas. No ve todas las colecciones automáticamente: al crear una queda como su admin, igual que cualquier otro miembro. Así las políticas de acceso no cambian.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // miniaturas: onda chica en el dock del reproductor
+  document.querySelectorAll(".thumb .w[data-w]").forEach((el) => {
+    el.innerHTML = ENS.peaks(4, 70).map((p) => `<i style="height:${Math.max(2, p * 14)}px"></i>`).join("");
+  });
+
+  // matriz de permisos: h = hoy, n = nuevo, s = sale del SQL, q = a decidir, - = no
+  const ROWS = [
+    ["Escuchar y seguir la letra", "h h h h h"],
+    ["Mi parte", "n n n n n"],
+    ["Descargar mezcla", "h h h h h"],
+    ["Elegir tema claro u oscuro", "n n n n n"],
+    ["Editar canción y letra", "- - h h h"],
+    ["Sincronizar la letra", "- - n n n"],
+    ["Crear canción", "- - h h h"],
+    ["Ocultar o mostrar canción", "- - h h h"],
+    ["Ordenar canciones", "- - - s s"],
+    ["Eliminar canciones", "- - - s s"],
+    ["Colores y portada", "- - - s s"],
+    ["Nombre, dirección y visibilidad", "- - - s s"],
+    ["Sumar y quitar miembros, cambiar roles", "- - - s s"],
+    ["Restablecer contraseña de una cuenta administrada", "- - - q s"],
+    ["Crear cuentas", "- - - q s"],
+    ["Eliminar la colección", "- - - s s"],
+    ["Crear colecciones", "- - - - s"],
+  ];
+  const CELL = { h: '<span class="yes">✓</span>', n: '<span class="yes new">✓</span>', s: '<span class="yes sql">✓</span>', q: '<span class="q">?</span>', "-": '<span class="no">·</span>' };
+  document.getElementById("perm").innerHTML = ROWS.map(([a, v]) => `<tr><td>${a}</td>${v.split(" ").map((x) => `<td>${CELL[x]}</td>`).join("")}</tr>`).join("");
+  hydrateIcons();
+})();
+</script>
+</html>

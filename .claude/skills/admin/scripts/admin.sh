@@ -16,58 +16,34 @@ require_yes() {
   echo "error: refusing destructive op without --yes" >&2; exit 2
 }
 
-require_role() {
-  case "$1" in admin|editor|viewer) ;; *)
-    echo "error: role must be admin|editor|viewer (got: $1)" >&2; exit 2 ;;
-  esac
-}
-
-require_visibility() {
-  case "$1" in private|unlisted|public) ;; *)
-    echo "error: visibility must be private|unlisted|public (got: $1)" >&2; exit 2 ;;
-  esac
-}
-
 need_args() { # need_args <got> <min> <usage>
   [ "$1" -ge "$2" ] || { echo "usage: admin.sh $3" >&2; exit 2; }
 }
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 usage: admin.sh <subcommand> [args...]
+
+Only what the app can't do. Members, roles, managed accounts, password resets,
+collections (create, rename, address, visibility, cover, colors, delete) and songs
+(order, visibility, delete) are in the app: Ajustes de colección.
 
 environment:
   preflight                              verify cwd + supabase CLI + linked project
 
-users:
+accounts:
   find-user <input>                      lookup by email, username, or bare handle
-  create-user <email> <password> <handle>
-                                         full CTE: users + identities + empty tokens
-  reset-password <email> <new-password>  set via crypt+gen_salt
-  delete-user <email> --yes              cascades to user_collections
+  list-user-collections <email>          every collection an account belongs to
+  delete-user <email> --yes              removes the account from the whole app
 
-collection access:
-  grant-access <email> <slug> <role>     role: admin|editor|viewer
-  change-role <email> <slug> <role>
-  revoke-access <email> <slug>
-  list-members <slug>
-  list-user-collections <email>
+app admins (can create collections):
+  list-app-admins
+  grant-app-admin <email>
+  revoke-app-admin <email>
 
-collections:
-  set-visibility <slug> <private|unlisted|public>
-                                         private=members only; unlisted=link-only (hidden
-                                         from sidebar); public=listed for everyone
-  delete-collection <slug> --yes         cascades to songs/tracks; no storage cleanup
-  edit-palette <slug>                    open browser oklch editor; prints new palette JSON on save
-  apply-palette <slug> <json>            UPDATE main_color + track_colors (payload from edit-palette)
-
-songs:
-  list-songs <collection-slug>           inspect current ordering
-  delete-song <collection-slug> <song-slug> --yes
-
-See ../SKILL.md for non-extracted flows (create/rename/recolor collection,
-change user email, reorder songs, update artwork URL).
-EOF
+See ../SKILL.md for the rest (change an account's email, bulk operations,
+orphaned files, diagnostics).
+USAGE
 }
 
 # --- subcommands ---------------------------------------------------------
@@ -100,92 +76,11 @@ WHERE email = '$i'
    OR raw_user_meta_data->>'username' = '$i';"
 }
 
-cmd_create_user() {
-  need_args $# 3 "create-user <email> <password> <handle>"
-  local e p h
-  e=$(sqlq "$1"); p=$(sqlq "$2"); h=$(sqlq "$3")
-  run_sql "WITH new_user AS (
-  INSERT INTO auth.users (
-    id, instance_id, aud, role, email,
-    encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data,
-    confirmation_token, recovery_token,
-    email_change, email_change_token_new, email_change_token_current,
-    reauthentication_token, phone_change, phone_change_token,
-    created_at, updated_at
-  ) VALUES (
-    gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    '$e', crypt('$p', gen_salt('bf')), now(),
-    '{\"provider\":\"email\",\"providers\":[\"email\"]}'::jsonb,
-    jsonb_build_object('username', '$h'),
-    '', '', '', '', '', '', '', '',
-    now(), now()
-  )
-  RETURNING id, email
-)
-INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-SELECT id::text, id, jsonb_build_object('sub', id::text, 'email', email, 'email_verified', true, 'phone_verified', false), 'email', now(), now(), now()
-FROM new_user
-RETURNING user_id;"
-}
-
-cmd_reset_password() {
-  need_args $# 2 "reset-password <email> <new-password>"
-  local e p; e=$(sqlq "$1"); p=$(sqlq "$2")
-  run_sql "UPDATE auth.users
-SET encrypted_password = crypt('$p', gen_salt('bf'))
-WHERE email = '$e'
-RETURNING id, email;"
-}
-
 cmd_delete_user() {
   need_args $# 1 "delete-user <email> --yes"
   require_yes "$@"
   local e; e=$(sqlq "$1")
   run_sql "DELETE FROM auth.users WHERE email = '$e' RETURNING id, email;"
-}
-
-cmd_grant_access() {
-  need_args $# 3 "grant-access <email> <slug> <role>"
-  require_role "$3"
-  local e s r; e=$(sqlq "$1"); s=$(sqlq "$2"); r=$(sqlq "$3")
-  run_sql "INSERT INTO public.user_collections (user_id, collection_id, role)
-VALUES (
-  (SELECT id FROM auth.users WHERE email = '$e'),
-  (SELECT id FROM public.collections WHERE slug = '$s'),
-  '$r'
-)
-RETURNING id, user_id, collection_id, role;"
-}
-
-cmd_change_role() {
-  need_args $# 3 "change-role <email> <slug> <role>"
-  require_role "$3"
-  local e s r; e=$(sqlq "$1"); s=$(sqlq "$2"); r=$(sqlq "$3")
-  run_sql "UPDATE public.user_collections
-SET role = '$r'
-WHERE user_id = (SELECT id FROM auth.users WHERE email = '$e')
-  AND collection_id = (SELECT id FROM public.collections WHERE slug = '$s')
-RETURNING id, role;"
-}
-
-cmd_revoke_access() {
-  need_args $# 2 "revoke-access <email> <slug>"
-  local e s; e=$(sqlq "$1"); s=$(sqlq "$2")
-  run_sql "DELETE FROM public.user_collections
-WHERE user_id = (SELECT id FROM auth.users WHERE email = '$e')
-  AND collection_id = (SELECT id FROM public.collections WHERE slug = '$s')
-RETURNING id;"
-}
-
-cmd_list_members() {
-  need_args $# 1 "list-members <slug>"
-  local s; s=$(sqlq "$1")
-  run_sql "SELECT u.email, uc.role
-FROM public.user_collections uc
-JOIN auth.users u ON u.id = uc.user_id
-WHERE uc.collection_id = (SELECT id FROM public.collections WHERE slug = '$s')
-ORDER BY uc.role, u.email;"
 }
 
 cmd_list_user_collections() {
@@ -198,69 +93,28 @@ WHERE uc.user_id = (SELECT id FROM auth.users WHERE email = '$e')
 ORDER BY c.title;"
 }
 
-cmd_set_visibility() {
-  need_args $# 2 "set-visibility <slug> <private|unlisted|public>"
-  require_visibility "$2"
-  local s v; s=$(sqlq "$1"); v=$(sqlq "$2")
-  run_sql "UPDATE public.collections SET visibility = '$v'
-WHERE slug = '$s'
-RETURNING id, slug, visibility;"
+cmd_list_app_admins() {
+  run_sql "SELECT u.email, a.created_at
+FROM public.app_admins a
+JOIN auth.users u ON u.id = a.user_id
+ORDER BY u.email;"
 }
 
-cmd_delete_collection() {
-  need_args $# 1 "delete-collection <slug> --yes"
-  require_yes "$@"
-  local s; s=$(sqlq "$1")
-  run_sql "DELETE FROM public.collections WHERE slug = '$s' RETURNING id, slug;"
+cmd_grant_app_admin() {
+  need_args $# 1 "grant-app-admin <email>"
+  local e; e=$(sqlq "$1")
+  run_sql "INSERT INTO public.app_admins (user_id)
+SELECT id FROM auth.users WHERE email = '$e'
+ON CONFLICT (user_id) DO NOTHING
+RETURNING user_id;"
 }
 
-cmd_edit_palette() {
-  need_args $# 1 "edit-palette <slug>"
-  node "$(dirname "$0")/palette-editor.mjs" "$1"
-}
-
-cmd_apply_palette() {
-  need_args $# 2 "apply-palette <slug> <json>"
-  local s j main tracks
-  s=$(sqlq "$1")
-  j="$2"
-  # Validate + extract fields with node to avoid shell-quoting the JSON.
-  main=$(node -e '
-    const p = JSON.parse(process.argv[1]);
-    if (typeof p.main_color !== "string") { process.stderr.write("missing main_color\n"); process.exit(2); }
-    if (!p.track_colors || typeof p.track_colors !== "object") { process.stderr.write("missing track_colors\n"); process.exit(2); }
-    process.stdout.write(p.main_color);
-  ' "$j")
-  tracks=$(node -e '
-    const p = JSON.parse(process.argv[1]);
-    process.stdout.write(JSON.stringify(p.track_colors));
-  ' "$j")
-  local main_q tracks_q
-  main_q=$(sqlq "$main")
-  tracks_q=$(sqlq "$tracks")
-  run_sql "UPDATE public.collections
-SET main_color = '$main_q',
-    track_colors = '$tracks_q'::jsonb
-WHERE slug = '$s'
-RETURNING id, slug, main_color, track_colors;"
-}
-
-cmd_list_songs() {
-  need_args $# 1 "list-songs <collection-slug>"
-  local s; s=$(sqlq "$1")
-  run_sql "SELECT slug, title, \"order\" FROM public.songs
-WHERE collection_id = (SELECT id FROM public.collections WHERE slug = '$s')
-ORDER BY \"order\" NULLS LAST, id;"
-}
-
-cmd_delete_song() {
-  need_args $# 2 "delete-song <collection-slug> <song-slug> --yes"
-  require_yes "$@"
-  local c s; c=$(sqlq "$1"); s=$(sqlq "$2")
-  run_sql "DELETE FROM public.songs
-WHERE collection_id = (SELECT id FROM public.collections WHERE slug = '$c')
-  AND slug = '$s'
-RETURNING id, slug;"
+cmd_revoke_app_admin() {
+  need_args $# 1 "revoke-app-admin <email>"
+  local e; e=$(sqlq "$1")
+  run_sql "DELETE FROM public.app_admins
+WHERE user_id = (SELECT id FROM auth.users WHERE email = '$e')
+RETURNING user_id;"
 }
 
 # --- dispatch ------------------------------------------------------------
@@ -269,20 +123,11 @@ sub="${1-}"; shift || true
 case "$sub" in
   preflight)              cmd_preflight "$@" ;;
   find-user)              cmd_find_user "$@" ;;
-  create-user)            cmd_create_user "$@" ;;
-  reset-password)         cmd_reset_password "$@" ;;
   delete-user)            cmd_delete_user "$@" ;;
-  grant-access)           cmd_grant_access "$@" ;;
-  change-role)            cmd_change_role "$@" ;;
-  revoke-access)          cmd_revoke_access "$@" ;;
-  list-members)           cmd_list_members "$@" ;;
   list-user-collections)  cmd_list_user_collections "$@" ;;
-  set-visibility)         cmd_set_visibility "$@" ;;
-  delete-collection)      cmd_delete_collection "$@" ;;
-  edit-palette)           cmd_edit_palette "$@" ;;
-  apply-palette)          cmd_apply_palette "$@" ;;
-  list-songs)             cmd_list_songs "$@" ;;
-  delete-song)            cmd_delete_song "$@" ;;
+  list-app-admins)        cmd_list_app_admins "$@" ;;
+  grant-app-admin)        cmd_grant_app_admin "$@" ;;
+  revoke-app-admin)       cmd_revoke_app_admin "$@" ;;
   ""|-h|--help|help)      usage ;;
   *) echo "error: unknown subcommand: $sub" >&2; usage >&2; exit 2 ;;
 esac

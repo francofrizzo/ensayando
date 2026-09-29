@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import SongEditor from "@/components/editor/SongEditor.vue";
 import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
@@ -14,9 +13,7 @@ const route = useRoute();
 const collectionsStore = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();
 const { replaceToSong } = useNavigation();
-const { themeVariables } = useCollectionTheme(currentCollection);
-
-const showEditor = ref(false);
+useCollectionTheme(currentCollection);
 
 const isLoading = computed(() => collectionsStore.isLoading);
 
@@ -60,7 +57,7 @@ watch(
 </script>
 
 <template>
-  <div :style="themeVariables">
+  <div>
     <LoadingScreen v-if="isLoading" />
 
     <ErrorMessage
@@ -72,19 +69,17 @@ watch(
       }"
     />
 
-    <div
-      v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading && showEditor"
-      class="h-screen"
-    >
-      <SongEditor @toggle-edit="showEditor = false" />
-    </div>
-
     <ErrorMessage
       v-else-if="collectionsStore.songs.length === 0 && !collectionsStore.isLoading"
       type="no-songs"
     >
       <template v-if="collectionsStore.canEditCurrentCollection" #actions>
-        <button class="btn btn-primary" @click="showEditor = true">Crear canción</button>
+        <RouterLink
+          class="btn btn-primary rounded-full"
+          :to="{ name: 'new-song', params: { collectionSlug: currentCollection.slug } }"
+        >
+          Crear canción
+        </RouterLink>
       </template>
     </ErrorMessage>
 

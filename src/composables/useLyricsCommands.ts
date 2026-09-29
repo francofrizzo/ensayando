@@ -10,8 +10,6 @@ export type LyricsCommandActions = {
   deleteLine: () => void;
   handleSmartBackspace: () => boolean;
   duplicateLineWithInheritance: () => void;
-  toggleCopyPropertiesToMode: () => void;
-  exitCopyPropertiesToMode: () => void;
   convertToColumns: () => void;
   insertColumn: (before?: boolean) => void;
   insertStanza: () => void;
@@ -35,8 +33,7 @@ export function useLyricsCommands(
   currentFocus: () => FocusPosition | null,
   isColumnContext: (position: FocusPosition) => boolean,
   actions: LyricsCommandActions,
-  onSave?: () => void,
-  isCopyModeActive?: () => boolean
+  onSave?: () => void
 ) {
   const showHelp = ref(false);
   const commandRegistry = useCommands();
@@ -169,28 +166,6 @@ export function useLyricsCommands(
         modifiers: { ctrl: true }
       }
     },
-    {
-      id: "copy-properties",
-      description: "Copiar colores y pistas de audio a otros versos",
-      category: "Operaciones de versos",
-      execute: () => actions.toggleCopyPropertiesToMode(),
-      canExecute: () => canPerformActions.value,
-      keybinding: {
-        key: "k",
-        modifiers: { ctrl: true }
-      }
-    },
-    {
-      id: "exit-copy-mode",
-      description: "Salir del modo copiar propiedades",
-      category: "Operaciones de versos",
-      execute: () => actions.exitCopyPropertiesToMode(),
-      canExecute: () => canPerformActions.value && (isCopyModeActive ? isCopyModeActive() : false),
-      keybinding: {
-        key: "Escape"
-      }
-    },
-
     {
       id: "convert-to-columns",
       description: "Convertir en un verso con múltiples columnas",

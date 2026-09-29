@@ -10,7 +10,12 @@ vi.mock("@/lib/supabaseClient", () => ({
   }
 }));
 
-import { deleteAudioFile, resolveAudioTrackUrls, uploadAudioFile } from "@/data/storage";
+import {
+  deleteAudioFile,
+  resolveAudioTrackUrls,
+  uploadArtworkFile,
+  uploadAudioFile
+} from "@/data/storage";
 import type { AudioTrack } from "@/data/types";
 
 const response = (body: unknown, status = 200) =>
@@ -25,6 +30,30 @@ beforeEach(() => {
 });
 
 describe("R2 browser storage adapter", () => {
+  it("uploads collection artwork as the artwork file type", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        response({ key: "artwork/7/a.png", url: "https://signed.example/up", headers: {} })
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(response({ url: "https://signed.example/read", size: 3 }));
+    const file = new File(["img"], "portada.png", { type: "image/png" });
+
+    await uploadArtworkFile(file, 7);
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+      action: "sign-upload",
+      fileType: "artwork",
+      contentType: "image/png",
+      collectionId: 7
+    });
+    expect(JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))).toMatchObject({
+      action: "complete-upload",
+      fileType: "artwork"
+    });
+  });
+
   it("uploads directly to a signed URL and completes the upload through the API", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconProhibited, IconSave } from "@/components/ui/icons";
+import { IconProhibited } from "@/components/ui/icons";
 import {
   Mode,
   createAjvValidator,
@@ -9,15 +9,25 @@ import {
   type OnChangeStatus
 } from "vanilla-jsoneditor";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { toast } from "vue-sonner";
 
 import JsonEditor from "@/components/editor/JsonEditor.vue";
-import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
+import { useCurrentCollection } from "@/composables/useCurrentCollection";
+import { useEditorTab } from "@/composables/useEditorSession";
 import lyricSchema from "@/data/lyric-schema.json";
 import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
-const { saveLyrics, updateLocalLyrics } = store;
+const { updateLocalLyrics } = store;
+const { currentCollection } = useCurrentCollection();
+const { trackColor } = useCollectionPalette(currentCollection);
+
+// audio_track_ids uses these numbers, and they no longer show in the mixer.
+const trackLegend = computed(() =>
+  [...(store.currentSong?.audio_tracks ?? [])]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((track) => ({ id: track.id, title: track.title, ink: trackColor(track.color_key, "lyric") }))
+);
 
 const hasValidationErrors = ref(false);
 const editorRef = ref<{ get: () => Content; set: (content: Content) => void } | null>(null);
@@ -29,15 +39,6 @@ let validationTimeout: ReturnType<typeof setTimeout> | null = null;
 const initialContent = {
   text: JSON.stringify(store.localLyrics.value, null, 2)
 };
-
-const isSaveDisabled = computed(() => {
-  return (
-    !store.canEditCurrentCollection ||
-    !store.localLyrics.isDirty ||
-    store.localLyrics.isSaving ||
-    hasValidationErrors.value
-  );
-});
 
 watch(
   () => store.currentSong,
@@ -52,26 +53,6 @@ watch(
   },
   { immediate: false }
 );
-
-const handleSaveClick = () => {
-  if (hasValidationErrors.value) {
-    toast.error("Cannot save: Please fix validation errors first");
-    return;
-  }
-
-  try {
-    if (editorRef.value) {
-      const currentContent = editorRef.value.get();
-      if (isTextContent(currentContent) && currentContent.text) {
-        const parsedLyrics = JSON.parse(currentContent.text);
-        updateLocalLyrics(parsedLyrics);
-      }
-    }
-    saveLyrics();
-  } catch (error) {
-    toast.error(`Error al guardar letras: ${error}`);
-  }
-};
 
 const handleEditorChange = (
   content: Content,
@@ -112,6 +93,17 @@ onBeforeUnmount(() => {
   }
 });
 
+// Lyrics changes are saved by the edit bar; invalid JSON blocks it.
+// isDirty mirrors the lyrics so "Descartar" also resets the editor text (after the store).
+useEditorTab("letra", {
+  isDirty: () => store.localLyrics.isDirty,
+  save: async () => {},
+  discard: () => {
+    editorRef.value?.set({ text: JSON.stringify(store.localLyrics.value, null, 2) });
+  },
+  canSave: () => !hasValidationErrors.value
+});
+
 // Expose hasUnsavedChanges to parent component
 defineExpose({
   hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
@@ -120,6 +112,20 @@ defineExpose({
 
 <template>
   <div class="flex h-full flex-col">
+    <div
+      v-if="trackLegend.length"
+      class="border-base-content/8 flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-2 text-[12.5px]"
+      data-testid="json-track-legend"
+    >
+      <span class="text-base-content/50 text-[11px] font-semibold tracking-[0.1em] uppercase">
+        Pistas
+      </span>
+      <span v-for="track in trackLegend" :key="track.id" class="flex items-center gap-1.5">
+        <span class="size-2 rounded-full" :style="{ background: track.ink }" />
+        <span class="font-mono font-semibold">#{{ track.id }}</span>
+        <span class="text-base-content/70">{{ track.title }}</span>
+      </span>
+    </div>
     <JsonEditor
       ref="editorRef"
       :content="initialContent"
@@ -131,28 +137,13 @@ defineExpose({
       class="json-editor min-h-0 flex-1"
     />
 
-    <SafeTeleport to="[data-song-editor-actions]">
-      <button
-        class="btn btn-xs btn-primary"
-        :disabled="isSaveDisabled"
-        :class="{ 'btn-error': hasValidationErrors }"
-        @click="handleSaveClick"
-      >
-        <template v-if="store.localLyrics.isSaving">
-          <span class="loading loading-spinner loading-xs" />
-          <span>Guardando...</span>
-        </template>
-
-        <template v-else-if="hasValidationErrors">
-          <IconProhibited class="size-3.5" />
-          <span class="hidden md:block">Hay errores</span>
-        </template>
-
-        <template v-else>
-          <IconSave class="size-3.5" />
-          <span class="hidden md:block">Guardar cambios</span>
-        </template>
-      </button>
-    </SafeTeleport>
+    <div
+      v-if="hasValidationErrors"
+      class="bg-error/10 text-error flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
+      role="status"
+    >
+      <IconProhibited class="size-4" />
+      El JSON tiene errores. Corregilos para poder guardar.
+    </div>
   </div>
 </template>

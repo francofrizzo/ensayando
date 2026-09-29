@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Luz de sala</title>
+<link rel="stylesheet" href="shared/ds.css">
+<link rel="stylesheet" href="shared/mock.css">
+<script src="shared/nav.js"></script>
+<script src="shared/icons.js"></script>
+<script src="shared/sample.js"></script>
+<style>
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 48px; align-items: center; }
+.hero h1 { font-size: 76px; }
+.hero h1 em { font-style: normal; color: var(--c-ink); }
+.hero .lede { margin-top: 18px; }
+.app.stagebox { position: relative; height: 420px; border-radius: 26px; display: flex; flex-direction: column; justify-content: center; }
+.stagebox .lyr { gap: 22px; --t-lyr: 26px; }
+.stagebox .mini-dock { position: absolute; left: 14px; right: 14px; bottom: 14px; border-radius: 20px; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
+.breathe .amb { animation: breathe 9s var(--ease) infinite alternate; }
+@keyframes breathe { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.08) translate(-2%, 2%); } }
+@media (max-width: 960px) { .hero { grid-template-columns: 1fr; } .hero h1 { font-size: 54px; } }
+
+.how { display: flex; gap: 10px 22px; flex-wrap: wrap; font-size: var(--t-sm); color: var(--muted); align-items: center; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px; display: grid; grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
+.step .k { display: flex; flex-direction: column; gap: 6px; }
+.step .k b { font: 700 28px/1 var(--ui); letter-spacing: -0.0125em; font-variation-settings: "opsz" 96; }
+.step header { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.step header p { color: var(--muted); font-size: var(--t-sm); }
+.links { display: flex; gap: 6px 16px; flex-wrap: wrap; font-size: var(--t-sm); }
+.visual { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 960px) { .step { grid-template-columns: 1fr; gap: 16px; } }
+
+.specimen { display: flex; flex-direction: column; gap: 6px; }
+.specimen .t1 { font: 700 34px/1 var(--ui); letter-spacing: -0.015em; font-variation-settings: "opsz" 96; }
+.specimen .t2 { font: 600 20px/1.1 var(--lyr); text-transform: uppercase; letter-spacing: 0.02em; color: oklch(from var(--t-alt) var(--lyr-l) c h); }
+.specimen .t3 { font: 500 14px/1 var(--mono); color: var(--muted); }
+.swrow { display: flex; gap: 6px; }
+.swrow i { flex: 1; height: 40px; border-radius: 10px; border: 1px solid var(--edge); }
+.app.glassdemo { position: relative; height: 120px; border-radius: 16px; overflow: hidden; }
+.glassdemo .p { position: absolute; border-radius: 14px; display: grid; place-items: center; font: 600 12.5px/1 var(--ui); }
+.screens { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; margin: 0; padding: 0; list-style: none; font-size: var(--t-sm); }
+.screens li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.screens li a { color: var(--ink); text-decoration: none; font-weight: 600; }
+.screens li a:hover { color: var(--c-ink); }
+@media (max-width: 560px) { .screens { grid-template-columns: 1fr; } }
+.qs { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-sm); color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <span class="eyebrow">Propuesta de diseño · septiembre 2026</span>
+      <h1 class="d" style="margin-top:14px">Luz <em>de sala</em></h1>
+      <p class="lede">Ensayando es una sala de ensayo. El color de cada colección es la luz del escenario, la interfaz es vidrio que flota en esa luz y la letra es lo que está en escena. Esta propuesta mantiene la tipografía y lo que ya funciona, afina la paleta, le da a la app un acabado de vidrio consistente, rediseña el reproductor y las pantallas de edición, y trae a la app todo lo que hoy se hace por SQL.</p>
+    </div>
+    <div class="app auto stagebox breathe" aria-label="Reproductor de ejemplo">
+      <div class="amb"></div>
+      <div class="lyr">
+        <div class="stz">
+          <span class="v past" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
+        </div>
+        <div class="stz">
+          <span class="cmt">Coro</span>
+          <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+          <span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span>
+        </div>
+      </div>
+      <div class="mini-dock g2">
+        <span class="play sm"><i data-ic="pause"></i></span>
+        <span class="time"><b>0:27</b> / 4:05</span>
+        <div class="prog" style="--p:18%;flex:1"><i></i><span class="knob"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="note">
+    <b>Cómo revisar</b>
+    <p>Arriba a la derecha cambiás el tema y la <b style="color:var(--ink)">colección de ejemplo</b>: todos los mocks se repintan con su color. Cada decisión lleva una etiqueta:</p>
+    <span class="chips"><span class="tag keep">Se mantiene</span><span class="tag refine">Ajuste</span><span class="tag new">Nuevo</span><span class="tag moved">Sale del SQL</span><span class="tag drop">Se quita</span></span>
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <div class="k"><span class="eyebrow">Punto de partida</span><b>Hoy</b></div>
+      <header>
+        <p>La app actual redibujada pantalla por pantalla, los flujos, quién ve qué, lo que se hace por fuera con la skill de administración y 14 hallazgos que la propuesta resuelve.</p>
+        <div class="links"><a href="inventario/index.html">Ver inventario y hallazgos</a></div>
+      </header>
+      <div class="visual"><div class="chips"><span class="chip">6 rutas</span><span class="chip">1 cajón de edición con 3 pestañas</span><span class="chip">Usuarios, roles y colecciones por SQL</span><span class="chip">14 hallazgos</span></div></div>
+    </li>
+
+    <li class="step">
+      <div class="k"><span class="eyebrow">Sistema</span><b>Fundamentos</b></div>
+      <header>
+        <p><b style="color:var(--ink)">Tipografía:</b> se mantienen Bricolage, Atkinson y Geist Mono, con una escala fija y Geist Mono para todo lo que es tiempo. <b style="color:var(--ink)">Paleta:</b> neutros teñidos por la colección, un oscuro más profundo y tintas de pista que siempre se leen. <b style="color:var(--ink)">Materiales:</b> luz de sala, tres vidrios y hoja opaca donde se escribe.</p>
+        <div class="links"><a href="fundamentos/index.html">Concepto</a><a href="fundamentos/tipografia.html">Tipografía</a><a href="fundamentos/paleta.html">Paleta</a><a href="fundamentos/materiales.html">Materiales y movimiento</a></div>
+      </header>
+      <div class="visual">
+        <div class="specimen tracks-demo">
+          <span class="t1">Vidala del viento</span>
+          <span class="t2">y se lleva mi canción</span>
+          <span class="t3">0:27.4 / 4:05</span>
+        </div>
+        <div class="swrow tracks-demo" aria-label="Color de colección y tintas de pista">
+          <i style="background:var(--c)"></i><i style="background:var(--c-soft)"></i>
+          <i style="background:oklch(from var(--t-sop) var(--lyr-l) c h)"></i>
+          <i style="background:oklch(from var(--t-alt) var(--lyr-l) c h)"></i>
+          <i style="background:oklch(from var(--t-ten) var(--lyr-l) c h)"></i>
+          <i style="background:oklch(from var(--t-baj) var(--lyr-l) c h)"></i>
+          <i style="background:oklch(from var(--t-pno) var(--lyr-l) c h)"></i>
+        </div>
+        <div class="app auto glassdemo"><div class="amb"></div>
+          <div class="p g1" style="left:12px;right:12px;top:12px;height:34px">Velo</div>
+          <div class="p g2" style="left:12px;width:46%;bottom:12px;height:56px">Panel</div>
+          <div class="p g3" style="right:12px;width:40%;bottom:12px;height:56px">Pop</div>
+        </div>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="k"><span class="eyebrow">Diseño</span><b>Pantallas</b></div>
+      <header>
+        <p>El reproductor gana un dock de vidrio, con las ondas como línea de tiempo y controles visibles. El menú lateral pasa a ser una biblioteca con búsqueda. Editar deja de ser un cajón a media pantalla: es un modo con tres pestañas, un inspector del verso y un modo para sincronizar tiempos. Y aparece una pantalla nueva, Ajustes de colección.</p>
+        <div class="links"><a href="pantallas/index.html">Mapa y permisos</a><a href="pantallas/reproductor.html">Empezar por el reproductor</a></div>
+      </header>
+      <div class="visual">
+        <ul class="screens">
+          <li><a href="pantallas/reproductor.html">Reproductor</a><span class="tag refine">Ajuste</span></li>
+          <li><a href="pantallas/biblioteca.html">Biblioteca</a><span class="tag new">Nuevo</span></li>
+          <li><a href="pantallas/editor-cancion.html">Editor de canción</a><span class="tag refine">Ajuste</span></li>
+          <li><a href="pantallas/editor-letra.html">Editor de letra</a><span class="tag new">Nuevo</span></li>
+          <li><a href="pantallas/coleccion.html">Ajustes de colección</a><span class="tag moved">Sale del SQL</span></li>
+          <li><a href="pantallas/ingreso-estados.html">Ingreso y estados</a><span class="tag refine">Ajuste</span></li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="k"><span class="eyebrow">Cierre</span><b>Plan</b></div>
+      <header>
+        <p>Qué pide a la base y a los permisos (administración de la app, funciones de servidor para cuentas, orden y borrado de canciones), en qué orden conviene implementarlo y las preguntas que necesito que decidas.</p>
+        <div class="links"><a href="plan/index.html">Ver plan y preguntas</a></div>
+      </header>
+      <div class="visual">
+        <ol class="qs">
+          <li>Tokens y materiales: bajo riesgo, cambia toda la app.</li>
+          <li>Reproductor, biblioteca y búsqueda.</li>
+          <li>Ajustes de colección y miembros.</li>
+          <li>Editor de canción.</li>
+          <li>Editor de letra y Sincronizar.</li>
+        </ol>
+      </div>
+    </li>
+  </ol>
+</div>
+
+</html>

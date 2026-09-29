@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Editor de letra</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ---------- barra de edición (misma que en el editor de canción) ---------- */
+.editbar { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 10px; z-index: 4; }
+.editbar .who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.editbar .who span { font: 600 11px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-ink); }
+.editbar .who b { font: 700 18px/1 var(--ui); letter-spacing: -0.01em; font-variation-settings: "opsz" 96; white-space: nowrap; }
+.editbar .tabs { position: absolute; left: 50%; transform: translateX(-50%); }
+.status { display: inline-flex; align-items: center; gap: 7px; font: 500 12.5px/1 var(--ui); color: var(--muted); white-space: nowrap; }
+.status i.dirty { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+.status .ic { color: var(--ok); font-size: 15px; }
+.dotd { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+.cdock { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 72px; border-radius: var(--r-dock); display: grid; grid-template-columns: 250px auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 0 18px; z-index: 3; }
+.cdock .c { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- documento ---------- */
+.doc { position: absolute; top: 88px; bottom: 100px; left: 14px; width: 890px; border-radius: var(--r-box); overflow: hidden; display: flex; flex-direction: column; }
+.tbar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.tbar .grp { display: flex; align-items: center; gap: 2px; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--line); }
+.tbar .grp:last-of-type { border-right: 0; }
+.tbar .b.sm { color: var(--ink); }
+.dbody { padding: 14px 0 20px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+.stanza { display: flex; flex-direction: column; padding: 4px 0 8px; position: relative; }
+.stanza + .stanza { border-top: 1px dashed var(--line-strong); padding-top: 12px; }
+.sth { display: flex; align-items: center; gap: 8px; padding: 0 20px 6px 54px; }
+.vr { display: grid; grid-template-columns: 18px 30px minmax(0, 1fr) 130px; align-items: center; gap: 8px; padding: 5px 20px 5px 14px; position: relative; min-height: 38px; }
+.vr .grip { color: var(--faint); font-size: 15px; opacity: 0; }
+.vr.sel, .vr.hov { background: oklch(from var(--c) l c h / 0.1); }
+.vr.sel::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; border-radius: 0 3px 3px 0; background: var(--c-ink); }
+.vr.sel .grip, .vr.hov .grip { opacity: 1; }
+.keys-c { display: flex; gap: 3px; flex-wrap: wrap; }
+.keys-c i { --tc: var(--c); width: 9px; height: 9px; border-radius: 50%; background: oklch(from var(--tc) var(--wav-l) c h); }
+.vt { font-family: var(--lyr); text-transform: uppercase; letter-spacing: 0.02em; font-size: 17px; font-weight: 500; line-height: 1.2; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vt .v { font-size: 17px; text-align: left; }
+.vt .cmt-ed { font: 600 10.5px/1 var(--ui); letter-spacing: 0.14em; color: var(--faint); display: inline-flex; align-items: center; gap: 5px; }
+.vt .cmt-ed .ic { font-size: 12px; }
+.caret { display: inline-block; width: 1.5px; height: 18px; background: var(--ink); vertical-align: -3px; margin-left: 1px; }
+.tm { font: 400 11.5px/1 var(--mono); color: var(--faint); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tm.none { font-family: var(--ui); font-style: italic; }
+.colsr { display: grid; grid-template-columns: 1fr 1fr; }
+.colsr > div + div { border-left: 1px dashed var(--line-strong); }
+.colsr .vr { grid-template-columns: 30px minmax(0, 1fr) 100px; padding-left: 12px; padding-right: 20px; }
+.colwrap { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; padding-left: 14px; }
+
+/* ---------- inspector ---------- */
+.insp { position: absolute; top: 88px; bottom: 100px; right: 14px; width: 346px; border-radius: var(--r-box); overflow: hidden; display: flex; flex-direction: column; }
+.insp-h { padding: 14px 16px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+.insp-h div { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.insp-h b { font: 700 16px/1 var(--ui); letter-spacing: -0.005em; }
+.insp-h span { font: 500 12px/1 var(--ui); color: var(--muted); }
+.insp-b { padding: 14px 16px; display: flex; flex-direction: column; gap: 16px; }
+.isec { display: flex; flex-direction: column; gap: 8px; }
+.isec > .lbl { display: flex; justify-content: space-between; align-items: center; }
+.cchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.cchips span { --tc: var(--c); height: 28px; padding: 0 10px 0 7px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--mono); color: var(--muted); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.cchips span::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: oklch(from var(--tc) var(--wav-l) c h); }
+.cchips span.on { color: var(--ink); box-shadow: inset 0 0 0 1.5px oklch(from var(--tc) var(--lyr-l) c h); background: oklch(from var(--tc) l c h / 0.14); }
+.cchips span.some { color: var(--ink); box-shadow: inset 0 0 0 1.5px oklch(from var(--tc) var(--lyr-l) c h / 0.6); border: 0; background: repeating-linear-gradient(135deg, oklch(from var(--tc) l c h / 0.14) 0 4px, transparent 4px 8px); }
+.plist { display: flex; flex-direction: column; gap: 2px; }
+.plist div { --tc: var(--c); display: flex; align-items: center; gap: 9px; padding: 5px 4px; font: 500 13.5px/1 var(--ui); }
+.plist .chk.on { background: oklch(from var(--tc) var(--lyr-l) c h); }
+.plist .chk.mix { background: oklch(from var(--tc) var(--lyr-l) c h / 0.5); color: var(--on-c); }
+.times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.nudge { display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px; align-items: center; height: 36px; border-radius: var(--r-field); box-shadow: inset 0 0 0 1px var(--line-strong); background: var(--raised); }
+.nudge span { display: grid; place-items: center; color: var(--muted); font: 600 14px/1 var(--ui); }
+.nudge b { text-align: center; font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.insp-f { margin-top: auto; padding: 10px 12px; border-top: 1px solid var(--line); display: flex; gap: 6px; }
+
+/* ---------- sincronizar ---------- */
+.sync-stage { position: absolute; top: 88px; left: 14px; right: 360px; height: 330px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.sync-stage .lyr { gap: 16px; }
+.slabel { font: 600 10.5px/1 var(--ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); display: flex; gap: 8px; align-items: center; }
+.vlist { position: absolute; top: 88px; right: 14px; width: 332px; height: 318px; border-radius: var(--r-box); overflow: hidden; display: flex; flex-direction: column; }
+.vlist .row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 14px; font: 500 12.5px/1.2 var(--lyr); text-transform: uppercase; letter-spacing: 0.02em; border-bottom: 1px solid var(--line); }
+.vlist .row .dot { width: 8px; height: 8px; }
+.vlist .row.cur { background: oklch(from var(--c) l c h / 0.1); }
+.vlist .row span:nth-child(2) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tline { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 340px; border-radius: var(--r-dock); padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 10px; }
+.tctl { display: flex; align-items: center; gap: 12px; }
+.stamp { height: 46px; padding: 0 18px; border-radius: 999px; background: var(--c); color: var(--on-c); display: inline-flex; align-items: center; gap: 10px; font: 650 15px/1 var(--ui); box-shadow: 0 10px 26px -10px oklch(from var(--c) l c h / 0.8); }
+.stamp kbd { background: oklch(100% 0 0 / 0.2) !important; color: inherit !important; border-color: oklch(100% 0 0 / 0.35) !important; }
+.lanes { position: relative; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.ruler { position: relative; height: 18px; border-bottom: 1px solid var(--line); }
+.ruler i { position: absolute; bottom: 0; width: 1px; height: 5px; background: var(--line-strong); }
+.ruler i.maj { height: 9px; }
+.ruler span { position: absolute; top: 0; font: 500 10.5px/1 var(--mono); color: var(--faint); transform: translateX(-50%); }
+.regions { position: relative; height: 54px; }
+.rg { --tc: var(--c); position: absolute; top: 4px; bottom: 4px; border-radius: 9px; background: oklch(from var(--tc) var(--wav-l) c h / 0.22); box-shadow: inset 0 0 0 1px oklch(from var(--tc) var(--wav-l) c h / 0.6); padding: 6px 8px; font: 600 11px/1.15 var(--lyr); text-transform: uppercase; color: oklch(from var(--tc) var(--lyr-l) c h); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rg.sel { box-shadow: inset 0 0 0 2px oklch(from var(--tc) var(--lyr-l) c h); background: oklch(from var(--tc) var(--wav-l) c h / 0.34); }
+.rg.sel::before, .rg.sel::after { content: ""; position: absolute; top: 50%; width: 5px; height: 22px; margin-top: -11px; border-radius: 3px; background: oklch(from var(--tc) var(--lyr-l) c h); }
+.rg.sel::before { left: -3px; } .rg.sel::after { right: -3px; }
+.rg.open { border-top-right-radius: 0; border-bottom-right-radius: 0; -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent); mask-image: linear-gradient(90deg, #000 70%, transparent); }
+.lanes .wave { height: 26px; }
+.ph2 { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); z-index: 2; border-radius: 1px; }
+.ph2::before { content: ""; position: absolute; top: -2px; left: -5px; border: 6px solid transparent; border-top-color: var(--ink); }
+.stepper { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: 999px; background: oklch(from var(--ink) l c h / 0.06); font: 500 12.5px/1 var(--ui); color: var(--muted); }
+.stepper b { font: 600 13px/1 var(--mono); color: var(--ink); }
+
+/* ---------- ayuda ---------- */
+.help-dlg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 900px; max-height: 700px; border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 16px; z-index: 5; }
+.kgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 22px; }
+.kgrp { display: flex; flex-direction: column; gap: 0; }
+.kgrp .mh { padding: 0 0 6px; }
+.kgrp div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font: 500 12.5px/1.25 var(--ui); }
+.kgrp div span:last-child { display: flex; gap: 3px; flex: none; }
+.kgrp mark { background: oklch(from var(--c) l c h / 0.22); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* ---------- teléfono ---------- */
+.p-edit { position: absolute; left: 10px; right: 10px; top: 52px; border-radius: 18px; padding: 8px 8px 8px 6px; display: flex; flex-direction: column; gap: 8px; z-index: 4; }
+.p-edit .r1 { display: flex; align-items: center; gap: 8px; }
+.p-edit .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.p-edit .who span { font: 600 10.5px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-ink); }
+.p-edit .who b { font: 700 16px/1 var(--ui); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-doc { position: absolute; left: 10px; right: 10px; top: 162px; bottom: 10px; border-radius: 20px; overflow: hidden; padding: 10px 0; }
+.p-doc .vr { grid-template-columns: 26px minmax(0, 1fr); padding: 7px 14px; }
+.p-doc .vt .v { font-size: 15px; }
+.p-sheet2 { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 28px; padding: 10px 16px 28px; display: flex; flex-direction: column; gap: 14px; z-index: 5; }
+.grab { width: 38px; height: 5px; border-radius: 3px; background: oklch(from var(--ink) l c h / 0.2); align-self: center; }
+.bigtap { height: 150px; border-radius: 26px; background: var(--c); color: var(--on-c); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font: 700 20px/1 var(--ui); box-shadow: 0 0 0 8px oklch(from var(--c) l c h / 0.14), 0 18px 40px -12px oklch(from var(--c) l c h / 0.8); }
+.bigtap span { font: 500 13px/1 var(--ui); opacity: 0.8; }
+
+.legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
+.legend li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: var(--t-sm); color: var(--muted); counter-increment: an; }
+.legend li::before { content: counter(an); width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--ink); font-weight: 650; display: block; }
+@media (max-width: 900px) { .legend { grid-template-columns: 1fr; } }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: st; }
+.steps .note { counter-increment: st; }
+.steps .note > b::before { content: counter(st) ". "; color: var(--c-ink); }
+@media (max-width: 900px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas · 4 de 6</span>
+    <h1 class="d">Editor de letra</h1>
+    <p class="lede">El editor de hoy es potente: más de 30 comandos con atajo, columnas, estrofas, colores y tiempos por verso. El problema es que casi todo vive en una barra de 20 íconos de 12 px sin texto, en un modo especial para copiar propiedades y en una hoja de ayuda. La propuesta separa dos trabajos distintos: <b>escribir y estructurar</b> la letra (pestaña Letra) y <b>ponerle tiempos</b> (pestaña Sincronizar), y saca las propiedades del verso a un inspector que siempre está a la vista.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
+    <div class="grid-3">
+      <div class="note"><span class="tag new">Nuevo</span><b>Inspector del verso</b><p>Colores, pistas, comentario y tiempos del verso seleccionado, en un panel a la derecha con etiquetas y valores. Hoy son dos selectores desplegables y un botón de comentario dentro de la barra.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Selección múltiple en lugar de “copiar propiedades”</b><p>Hoy <kbd>⌘</kbd><kbd>K</kbd> entra a un modo donde cada clic copia colores y pistas a otro verso, y se sale con <kbd>Esc</kbd>. Con <kbd>⇧</kbd>+clic se seleccionan varios versos y el inspector los edita juntos. Ese modo se quita y pierde su atajo: <kbd>⌘</kbd><kbd>K</kbd> abre la búsqueda global, también en el editor.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Barra corta y con palabras</b><p>Deshacer y Rehacer como íconos; el resto agrupado en dos menús con texto y atajo: Insertar y Estructura. Mostrar tiempos pasa a un interruptor con nombre.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Pestaña Sincronizar</b><p>Marcar tiempos tiene su propio modo: verso actual grande, la onda con cada verso como región que se arrastra, el botón Marcar y la corrección por reacción a la vista. Hoy es un rango escondido en un desplegable de 10 px.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Casi todos los atajos</b><p>Los comandos de hoy conservan su tecla, salvo copiar propiedades (se reemplaza por la selección múltiple; <kbd>⌘</kbd><kbd>K</kbd> pasa a ser la búsqueda global). La hoja de ayuda se agrupa en seis bloques y se puede buscar.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Ver la letra mientras suena</b><p>Hoy, en escritorio, el editor se abre al lado del reproductor y se ve el verso activo en tiempo real. En la hoja de Letra, el verso que está sonando se resalta; con <b>Seguir reproducción</b> la hoja lo acompaña sola. <b>Vista previa</b> (<kbd>P</kbd>) vuelve al escenario con los cambios sin guardar, sin salir del modo edición.</p></div>
+      <div class="note"><span class="tag moved">Pasa al menú</span><b>JSON</b><p>La pestaña “Letra (JSON)” pasa a ⋯ &gt; Editar como JSON (avanzado). Sigue disponible y con la misma validación contra el esquema.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Pestaña Letra</h2>
+      <p>La letra se edita como un documento: cada verso en su tinta y en mayúsculas, igual que en el reproductor, para ver el resultado mientras se escribe. El verso seleccionado es el del cursor; el inspector muestra sus propiedades.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk" id="lyr-desk">
+        <div class="amb"></div>
+        <div class="editbar g1">
+          <span class="b icon sm soft"><i data-ic="x"></i></span>
+          <div class="who"><span>Editando</span><b>Vidala del viento</b></div>
+          <div class="tabs"><span class="seg"><span><i data-ic="music"></i>Canción</span><span class="on"><i data-ic="lyrics"></i>Letra<i class="dotd"></i></span><span><i data-ic="clock"></i>Sincronizar</span></span></div>
+          <div class="m-grow"></div>
+          <span class="status"><i class="dirty"></i>Cambios sin guardar</span>
+          <span class="b sm soft">Descartar</span>
+          <span class="b sm fill"><i data-ic="save"></i>Guardar</span>
+          <span class="b icon sm"><i data-ic="dots"></i></span>
+        </div>
+
+        <div class="doc sheet">
+          <div class="tbar">
+            <div class="grp"><span class="b sm icon"><i data-ic="undo"></i></span><span class="b sm icon"><i data-ic="redo"></i></span></div>
+            <div class="grp"><span class="b sm"><i data-ic="plus"></i>Insertar<i data-ic="chevDown"></i></span><span class="b sm"><i data-ic="columns"></i>Estructura<i data-ic="chevDown"></i></span></div>
+            <div class="grp"><span class="m-row" style="gap:8px;padding:0 8px;font:600 13px/1 var(--ui)"><span class="tgl on"></span>Tiempos</span><span class="m-row" style="gap:8px;padding:0 8px;font:600 13px/1 var(--ui);white-space:nowrap"><span class="tgl"></span>Seguir</span><span class="b sm soft" title="Vista previa"><i data-ic="eye"></i>Vista previa</span></div>
+            <div class="m-grow"></div>
+            <span class="b sm muted"><i data-ic="keyboard"></i>Atajos<kbd>F1</kbd></span>
+          </div>
+          <div class="dbody" id="doc-body"></div>
+        </div>
+
+        <div class="insp sheet" id="insp-one"></div>
+
+        <div class="cdock g2">
+          <span class="time"><b>0:27</b><small>.0</small> / 4:05</span>
+          <div class="c"><span class="b icon sm"><i data-ic="prev"></i></span><span class="play sm"><i data-ic="play"></i></span><span class="b icon sm"><i data-ic="next"></i></span></div>
+          <div class="prog" style="--p:11%;flex:1"><i></i><span class="knob"></span></div>
+          <span class="b sm muted"><i data-ic="headphones"></i>Pistas</span>
+        </div>
+
+        <span class="annot solo" data-n="1" style="left:236px;top:76px"></span>
+        <span class="annot solo" data-n="2" style="left:376px;top:76px"></span>
+        <span class="annot solo" data-n="3" style="left:4px;top:330px"></span>
+        <span class="annot solo" data-n="4" style="left:770px;top:330px"></span>
+        <span class="annot solo" data-n="5" style="left:1206px;top:94px"></span>
+        <span class="annot solo" data-n="6" style="left:1206px;top:480px"></span>
+      </div>
+    </div></div>
+    <ol class="legend">
+      <li><span><b>Insertar</b>Verso antes o después, verso fuera de columnas, estrofa nueva y duplicar. Cada ítem con su atajo.</span></li>
+      <li><span><b>Estructura</b>Convertir a columnas, columna a izquierda o derecha, dividir y unir estrofas, mover verso.</span></li>
+      <li><span><b>Margen del verso</b>Manija para arrastrar y los colores del verso como puntos. Se ve de un vistazo qué pista canta cada línea.</span></li>
+      <li><span><b>Tiempos a la derecha</b>En Geist Mono y apagados. “sin tiempo” en cursiva cuando falta. Se editan en el inspector o en Sincronizar.</span></li>
+      <li><span><b>Inspector</b>Colores, pistas y comentario del verso, con sus valores escritos. Sin menús desplegables.</span></li>
+      <li><span><b>Tiempos del verso</b>Inicio y fin con ajuste de 0,1 s, “Usar tiempo actual” e “Ir al verso” con sus atajos de siempre.</span></li>
+    </ol>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Varios versos a la vez</h2>
+      <p><kbd>⇧</kbd>+clic extiende la selección; <kbd>⌘</kbd>+clic suma versos sueltos. El inspector muestra lo que tienen en común y marca con rayas lo que solo tienen algunos. Un toque en un color lo aplica o lo quita en todos. Reemplaza al modo “copiar propiedades”, que obligaba a recordar qué se estaba copiando.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app auto" style="width:1280px;height:560px"><div class="amb"></div>
+        <div class="doc sheet" style="top:14px;bottom:14px"><div class="dbody" id="doc-multi"></div></div>
+        <div class="insp sheet" style="top:14px;bottom:14px" id="insp-multi"></div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Los dos menús de la barra</h2>
+      <p>Cada comando de la barra de hoy está en uno de los dos menús, con nombre completo y atajo. Lo que depende del contexto (columnas) se muestra deshabilitado con el motivo, en lugar de desaparecer.</p>
+    </div>
+    <div class="app auto" style="height:430px;border-radius:var(--r-box);padding:18px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap"><div class="amb"></div>
+      <div class="menu g3" style="width:350px">
+        <div class="mh">Insertar</div>
+        <div class="mi"><i data-ic="insAfter"></i>Verso después<span class="end"><kbd>↵</kbd></span></div>
+        <div class="mi"><i data-ic="insBefore"></i>Verso antes<span class="end"><kbd>⌥</kbd><kbd>↵</kbd></span></div>
+        <div class="mi"><i data-ic="insAfter"></i>Verso fuera de columnas<span class="end"><kbd>⇧</kbd><kbd>↵</kbd></span></div>
+        <div class="mi hover"><i data-ic="addStanza"></i>Estrofa nueva<span class="end"><kbd>⌘</kbd><kbd>↵</kbd></span></div>
+        <div class="mi"><i data-ic="copy"></i>Duplicar verso<span class="end"><kbd>⌘</kbd><kbd>D</kbd></span></div>
+        <div class="mi"><i data-ic="comment"></i>Comentario<span class="end">en el inspector</span></div>
+      </div>
+      <div class="menu g3" style="width:370px">
+        <div class="mh">Estructura</div>
+        <div class="mi"><i data-ic="columns"></i>Convertir en columnas<span class="end"><kbd>⌘</kbd><kbd>]</kbd></span></div>
+        <div class="mi" style="opacity:.45"><i data-ic="colLeft"></i>Columna a la izquierda<span class="end">solo en columnas</span></div>
+        <div class="mi" style="opacity:.45"><i data-ic="colRight"></i>Columna a la derecha<span class="end">solo en columnas</span></div>
+        <div class="sep"></div>
+        <div class="mi"><i data-ic="split"></i>Dividir estrofa acá<span class="end"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>↵</kbd></span></div>
+        <div class="mi"><i data-ic="fold"></i>Unir con la anterior<span class="end"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>⌫</kbd></span></div>
+        <div class="sep"></div>
+        <div class="mi"><i data-ic="up"></i>Mover verso arriba<span class="end"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>↑</kbd></span></div>
+        <div class="mi"><i data-ic="down"></i>Mover verso abajo<span class="end"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>↓</kbd></span></div>
+        <div class="mi danger"><i data-ic="trash"></i>Eliminar verso<span class="end"><kbd>⌘</kbd><kbd>⌫</kbd></span></div>
+      </div>
+      <div class="note" style="flex:1;min-width:220px;align-self:stretch">
+        <b>Dónde quedó cada botón de hoy</b>
+        <ul>
+          <li>Deshacer, Rehacer: íconos en la barra.</li>
+          <li>Verso antes/después, duplicar: Insertar.</li>
+          <li>Columnas: Estructura.</li>
+          <li>Colores, pistas, comentario: inspector.</li>
+          <li>Copiar propiedades: selección múltiple. Pierde <kbd>⌘</kbd><kbd>K</kbd>, que pasa a la búsqueda global.</li>
+          <li>Mostrar tiempos: interruptor "Tiempos". Al lado, "Seguir" (seguir reproducción) y Vista previa.</li>
+          <li>Marcar inicio, fin, limpiar, corrección: Sincronizar y el inspector.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Pestaña Sincronizar</h2>
+      <p>Para marcar tiempos hay que escuchar, no leer código. Arriba, el verso que se está por marcar en grande y el siguiente; a la derecha, la lista de versos con su estado. Abajo, la onda de la canción con cada verso como una región que se arrastra desde sus bordes. La canción suena; cada <kbd>↓</kbd> marca el inicio del verso actual y pasa al siguiente.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk" id="sync-desk">
+        <div class="amb"></div>
+        <div class="editbar g1">
+          <span class="b icon sm soft"><i data-ic="x"></i></span>
+          <div class="who"><span>Editando</span><b>Vidala del viento</b></div>
+          <div class="tabs"><span class="seg"><span><i data-ic="music"></i>Canción</span><span><i data-ic="lyrics"></i>Letra</span><span class="on"><i data-ic="clock"></i>Sincronizar<i class="dotd"></i></span></span></div>
+          <div class="m-grow"></div>
+          <span class="status"><i class="dirty"></i>6 tiempos nuevos</span>
+          <span class="b sm soft">Descartar</span>
+          <span class="b sm fill"><i data-ic="save"></i>Guardar</span>
+          <span class="b icon sm"><i data-ic="dots"></i></span>
+        </div>
+
+        <div class="sync-stage">
+          <div class="lyr">
+            <div class="stz"><span class="v past" style="--tc:var(--t-alt);--tc2:var(--t-sop)">Vidala, vidala</span></div>
+            <div class="stz">
+              <span class="slabel"><span class="badge c">Marcando</span>Coro · empezó en 0:29,50</span>
+              <span class="v multi now" style="--tc:var(--t-ten);--tc2:var(--t-baj);font-size:34px">que el viento te va a llevar</span>
+            </div>
+            <div class="stz"><span class="slabel">Sigue · <kbd>↓</kbd> al empezar</span>
+              <div class="cols" style="gap:48px"><div><span class="v" style="--tc:var(--t-sop)">Ay, vidala</span></div><div><span class="v" style="--tc:var(--t-baj)">(uh, uh)</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vlist sheet" id="vlist"></div>
+
+        <div class="tline g2">
+          <div class="tctl">
+            <span class="play sm"><i data-ic="pause"></i></span>
+            <span class="time"><b>0:30</b><small>.2</small> / 4:05</span>
+            <span class="stamp"><i data-ic="flag"></i>Marcar inicio y avanzar<kbd>↓</kbd></span>
+            <span class="b soft sm">Marcar fin<kbd>⌘.</kbd></span>
+            <span class="b soft sm"><i data-ic="refresh"></i>Volver 3 s</span>
+            <div class="m-grow"></div>
+            <span class="stepper">Corrección por reacción <span class="b sm icon" style="height:26px;width:26px">−</span><b>−0,20 s</b><span class="b sm icon" style="height:26px;width:26px">+</span></span>
+            <span class="seg"><span>Toda</span><span class="on">30 s</span><span>10 s</span></span>
+          </div>
+          <div class="lanes" id="lanes"></div>
+        </div>
+
+        <span class="annot solo" data-n="1" style="left:120px;top:236px"></span>
+        <span class="annot solo" data-n="2" style="left:1206px;top:94px"></span>
+        <span class="annot solo" data-n="3" style="left:310px;top:424px"></span>
+        <span class="annot solo" data-n="4" style="left:820px;top:424px"></span>
+        <span class="annot solo" data-n="5" style="left:26px;top:540px"></span>
+        <span class="annot solo" data-n="6" style="left:26px;top:600px"></span>
+      </div>
+    </div></div>
+    <ol class="legend">
+      <li><span><b>Verso a marcar</b>El que suena ahora, en grande, con el anterior y el siguiente. Los versos en columnas se marcan juntos: comportamiento nuevo, con su test (hoy cada columna se marca aparte).</span></li>
+      <li><span><b>Lista de versos</b>Con su inicio o “sin tiempo”. Clic en un verso lo elige como punto de partida y salta a su tiempo (<kbd>⌘</kbd><kbd>G</kbd>).</span></li>
+      <li><span><b>Marcar</b>El botón más grande de la pantalla. En Sincronizar no hay cursor de texto, así que <kbd>↓</kbd> solo alcanza: marca el inicio, resta la corrección y avanza. En Letra sigue siendo <kbd>⌘</kbd><kbd>↓</kbd>. Mientras se edita, los atajos del reproductor para saltar de estrofa (<kbd>↑</kbd><kbd>↓</kbd>) se desactivan. <kbd>⌘</kbd><kbd>,</kbd> y <kbd>⌘</kbd><kbd>.</kbd> siguen marcando inicio o fin sin avanzar.</span></li>
+      <li><span><b>Corrección por reacción</b>La de hoy, a la vista y en décimas. Se resta a cada marca. <span class="tag new" style="margin:2px 0">Nuevo</span> Se recuerda en el dispositivo (hoy se pierde al recargar).</span></li>
+      <li><span><b>Regiones</b>Cada verso marcado es una región en la tinta de su pista. Se arrastran los bordes; con uno seleccionado, <kbd>←</kbd> <kbd>→</kbd> lo mueven 0,1 s.</span></li>
+      <li><span><b>Ondas por pista</b>Las mismas de la mezcladora, finas. Ayudan a ver dónde entra cada voz.</span></li>
+    </ol>
+    <div class="steps">
+      <div class="note"><b>Elegí desde dónde</b><p>Clic en un verso de la lista. La canción se ubica dos segundos antes de su tiempo, o donde terminó el anterior si todavía no tiene.</p></div>
+      <div class="note"><b>Reproducí</b><p><kbd>Espacio</kbd>. Si hace falta, bajá la velocidad… o apagá pistas en la mezcladora para escuchar solo la voz que entra.</p></div>
+      <div class="note"><b>Tocá <kbd>↓</kbd> al empezar cada verso</b><p>Se marca el inicio y se pasa al siguiente. <span class="tag new" style="margin:2px 0">Nuevo</span> Si el verso anterior no tenía fin, se completa con este inicio.</p></div>
+      <div class="note"><b>Ajustá y guardá</b><p>Arrastrá los bordes que quedaron corridos, escuchá la región con doble clic y guardá con <kbd>⌘</kbd><kbd>S</kbd>.</p></div>
+    </div>
+    <div class="note"><span class="tag refine">Aclaración</span><b>Velocidad de reproducción</b><p>Bajar la velocidad al marcar ayudaría mucho, pero hoy el reproductor no la tiene y WaveSurfer con WebAudio la resuelve cambiando el tono. Queda como pregunta abierta en el plan, no como parte de esta propuesta.</p></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Atajos</h2>
+      <p>La hoja de ayuda de hoy lista los comandos por categoría en un modal. Se mantiene el contenido, se agrupa en seis bloques con nombres de tarea y se agrega búsqueda: escribir “tiempo” filtra los siete comandos de marcas. Se abre con <kbd>F1</kbd> o <kbd>?</kbd> y desde el botón Atajos de la barra.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app auto" style="width:1280px;height:680px"><div class="amb"></div>
+        <div class="scrim"></div>
+        <div class="help-dlg g3">
+          <div class="m-row"><b style="font:700 20px/1 var(--ui);letter-spacing:-0.01em">Atajos del editor de letra</b><div class="m-grow"></div><span class="b icon sm soft"><i data-ic="x"></i></span></div>
+          <div class="in"><i data-ic="search"></i><span class="ph">Buscar un comando o una tecla</span><span class="suffix"><kbd>/</kbd></span></div>
+          <div class="kgrid" id="kgrid"></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">JSON y texto plano</h2>
+      <p>El JSON sigue siendo útil para cambios masivos o para pegar una letra armada afuera, pero no es la forma de trabajar. Pasa al menú de edición, junto con dos entradas nuevas para el caso más común: arrancar una letra desde texto.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Menú ⋯ en modo edición</b></div>
+        <div class="app auto" style="height:300px;border-radius:var(--r-box);display:flex;justify-content:flex-end;padding:16px"><div class="amb"></div>
+          <div class="menu g3" style="width:320px">
+            <div class="mi"><i data-ic="file"></i>Pegar letra desde texto<span class="end"><span class="badge c">Nuevo</span></span></div>
+            <div class="mi"><i data-ic="copy"></i>Copiar letra como texto<span class="end"><span class="badge c">Nuevo</span></span></div>
+            <div class="sep"></div>
+            <div class="mi"><i data-ic="braces"></i>Editar como JSON<span class="end">avanzado</span></div>
+            <div class="mi"><i data-ic="clock"></i>Limpiar todos los tiempos</div>
+            <div class="sep"></div>
+            <div class="mi"><i data-ic="keyboard"></i>Atajos<span class="end"><kbd>F1</kbd></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="note"><span class="tag new">Nuevo</span><b>Pegar letra desde texto</b><p>Cada línea es un verso y cada línea en blanco separa estrofas. Una línea entre corchetes, como <span class="mono">[Coro]</span>, se vuelve el comentario del verso siguiente. Es la manera más rápida de empezar una canción nueva; hoy se hace verso por verso o escribiendo JSON.</p></div>
+        <div class="note"><span class="tag moved">Pasa al menú</span><b>Editar como JSON</b><p>Abre el editor JSON de hoy en una hoja completa, con la validación del esquema de <span class="mono">lyric-schema.json</span>. Al volver, los cambios se integran al historial de Deshacer. Arriba muestra la referencia de pistas (<span class="mono">#12 Soprano</span>, <span class="mono">#13 Contralto</span>…), porque <span class="mono">audio_track_ids</span> usa esos números y el número ya no aparece en la mezcladora.</p></div>
+        <div class="note"><span class="tag drop">Se quita</span><b>Copiador de tiempos del reproductor</b><p><kbd>⌘</kbd><kbd>,</kbd> y <kbd>⌘</kbd><kbd>.</kbd> fuera del editor copiaban un fragmento de JSON al portapapeles. Adentro del editor esas teclas ya marcan el tiempo directamente.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Teléfono</h2>
+      <p>En el teléfono no se diseña la edición fina de estructura, pero sí dos cosas que se hacen seguido en el ensayo: corregir un verso y marcar tiempos escuchando con auriculares. El inspector se vuelve una hoja inferior; Sincronizar se vuelve un botón enorme.</p>
+    </div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Letra con un verso elegido</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone"><div class="amb"></div>
+            <div class="p-edit g1">
+              <div class="r1"><span class="b icon sm soft"><i data-ic="x"></i></span><div class="who"><span>Editando</span><b>Vidala del viento</b></div><span class="b icon sm"><i data-ic="dots"></i></span></div>
+              <span class="seg" style="width:100%"><span style="flex:1;justify-content:center">Canción</span><span class="on" style="flex:1;justify-content:center">Letra</span><span style="flex:1;justify-content:center">Sincronizar</span></span>
+            </div>
+            <div class="p-doc sheet" id="p-doc"></div>
+            <div class="p-sheet2 sheet" style="box-shadow:var(--shadow-float),0 0 0 1px var(--line)">
+              <span class="grab"></span>
+              <div class="m-row"><b style="font:700 16px/1 var(--ui)">Verso</b><span class="m-sub">Estrofa 2 · verso 1</span><div class="m-grow"></div><span class="b sm icon soft"><i data-ic="dots"></i></span></div>
+              <div class="isec"><span class="lbl">Colores</span><div class="cchips"><span class="on" style="--tc:var(--t-sop)">sop</span><span class="on" style="--tc:var(--t-alt)">alt</span><span style="--tc:var(--t-ten)">ten</span><span style="--tc:var(--t-baj)">baj</span><span style="--tc:var(--t-pno)">pno</span></div></div>
+              <div class="times"><div class="field"><span class="lbl">Inicio</span><div class="nudge"><span>−</span><b>0:27,00</b><span>+</span></div></div><div class="field"><span class="lbl">Fin</span><div class="nudge"><span>−</span><b>0:29,40</b><span>+</span></div></div></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col phone">
+        <div class="cap"><b>Sincronizar</b><span>tocar al empezar cada verso</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone"><div class="amb"></div>
+            <div class="p-edit g1">
+              <div class="r1"><span class="b icon sm soft"><i data-ic="x"></i></span><div class="who"><span>Editando</span><b>Vidala del viento</b></div><span class="b icon sm"><i data-ic="dots"></i></span></div>
+              <span class="seg" style="width:100%"><span style="flex:1;justify-content:center">Canción</span><span style="flex:1;justify-content:center">Letra</span><span class="on" style="flex:1;justify-content:center">Sincronizar</span></span>
+            </div>
+            <div style="position:absolute;left:0;right:0;top:180px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 20px;--t-lyr:20px">
+              <div class="lyr" style="gap:14px">
+                <span class="v past" style="--tc:var(--t-alt)">Vidala, vidala</span>
+                <span class="slabel" style="justify-content:center"><span class="badge c">Marcando</span></span>
+                <span class="v multi now" style="--tc:var(--t-ten);--tc2:var(--t-baj);font-size:24px">que el viento te va a llevar</span>
+                <span class="slabel" style="justify-content:center">Sigue</span>
+                <span class="v" style="--tc:var(--t-sop)">Ay, vidala · (uh, uh)</span>
+              </div>
+            </div>
+            <div class="p-sheet2 g2">
+              <div class="m-row" style="justify-content:space-between"><span class="time"><b>0:30</b> / 4:05</span><span class="stepper" style="font-size:12px">Reacción <b>−0,20 s</b></span></div>
+              <div class="wave" data-seed="4" data-bars="70" data-progress=".12" style="--tc:var(--c);height:34px"></div>
+              <div class="bigtap"><i data-ic="flag" style="font-size:28px"></i>Marcar<span>inicio de “Ay, vidala”</span></div>
+              <div class="m-row" style="justify-content:space-between"><span class="b soft"><i data-ic="undo"></i>Deshacer</span><span class="play sm"><i data-ic="pause"></i></span><span class="b soft">Volver 3 s</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const T = { sop: "var(--t-sop)", alt: "var(--t-alt)", ten: "var(--t-ten)", baj: "var(--t-baj)", pno: "var(--t-pno)" };
+  const fmt = (s) => { if (s == null) return null; const m = Math.floor(s / 60), r = (s - m * 60).toFixed(2).padStart(5, "0").replace(".", ","); return `${m}:${r}`; };
+  const keysC = (k) => `<span class="keys-c">${k.map((x) => `<i style="--tc:${T[x]}"></i>`).join("")}</span>`;
+  const vText = (v, extra = "") => v.k.length > 1
+    ? `<span class="v multi" style="--tc:${T[v.k[0]]};--tc2:${T[v.k[1]]}">${v.t}${extra}</span>`
+    : `<span class="v" style="--tc:${T[v.k[0]]}">${v.t}${extra}</span>`;
+  const tm = (v) => v.s != null ? `<span class="tm">${fmt(v.s)} → ${fmt(v.e)}</span>` : `<span class="tm none">sin tiempo</span>`;
+
+  // letra con algunos versos sin tiempo para mostrar el estado
+  const L = JSON.parse(JSON.stringify(ENS.lyrics));
+  L[2].verses.forEach((v) => { v.s = null; v.e = null; });
+
+  function doc(sel, opts = {}) {
+    return L.map((st, si) => {
+      const rows = st.verses.map((v, vi) => {
+        const id = `${si}-${vi}`;
+        const cls = sel.includes(id) ? " sel" : "";
+        const cmt = vi === 0 && st.comment ? `<span class="cmt-ed">${ic("comment")}${st.comment}</span>` : "";
+        if (v.cols) {
+          return `<div class="colwrap${cls}" style="position:relative"><span class="grip" style="color:var(--faint);font-size:15px;display:grid;place-items:center">${ic("grip")}</span><div class="colsr">${v.cols.map((col) => `<div>${col.map((cv) => `<div class="vr"><span>${keysC(cv.k)}</span><span class="vt">${vText(cv)}</span>${opts.times === false ? "" : tm(cv)}</div>`).join("")}</div>`).join("")}</div></div>`;
+        }
+        const caret = opts.caret === id ? `<span class="caret"></span>` : "";
+        return `<div class="vr${cls}"><span class="grip">${ic("grip")}</span><span>${keysC(v.k)}</span><span class="vt">${cmt}${vText(v, caret)}</span>${opts.times === false ? "" : tm(v)}</div>`;
+      }).join("");
+      return `<div class="stanza"><div class="sth"><span class="eyebrow-m">Estrofa ${si + 1}</span></div>${rows}</div>`;
+    }).join("");
+  }
+  document.getElementById("doc-body").innerHTML = doc(["1-0"], { caret: "1-0" });
+  document.getElementById("doc-multi").innerHTML = doc(["0-0", "0-1", "0-2"]);
+
+  const chips = (on, some = []) => ["sop", "alt", "ten", "baj", "pno"].map((k) => `<span class="${on.includes(k) ? "on" : some.includes(k) ? "some" : ""}" style="--tc:${T[k]}">${k}</span>`).join("");
+  const plist = (on, mix = []) => ENS.tracks.map((t) => `<div style="--tc:${T[t.key]}"><span class="chk ${on.includes(t.key) ? "on" : mix.includes(t.key) ? "mix" : ""}" style="--tc:${T[t.key]}">${on.includes(t.key) ? ic("check") : mix.includes(t.key) ? "–" : ""}</span><span class="dot" style="--tc:${T[t.key]}"></span>${t.title}</div>`).join("");
+
+  document.getElementById("insp-one").innerHTML = `
+    <div class="insp-h"><div><b>Verso</b><span>Estrofa 2 · verso 1 · “Vidala, vidala”</span></div><span class="b sm icon soft">${ic("dots")}</span></div>
+    <div class="insp-b">
+      <div class="isec"><span class="lbl">Colores <span class="help">el degradé sigue este orden</span></span><div class="cchips">${chips(["sop", "alt"])}</div></div>
+      <div class="isec"><span class="lbl">Pistas <span class="help">su letra se oculta con la pista</span></span><div class="plist">${plist(["sop", "alt"])}</div></div>
+      <div class="isec"><span class="lbl">Comentario</span><div class="in">Coro</div></div>
+      <div class="isec"><span class="lbl">Tiempos</span>
+        <div class="times"><div class="field"><span class="help">Inicio</span><div class="nudge"><span>−</span><b>0:27,00</b><span>+</span></div></div><div class="field"><span class="help">Fin</span><div class="nudge"><span>−</span><b>0:29,40</b><span>+</span></div></div></div>
+        <div class="m-row" style="gap:6px;flex-wrap:wrap"><span class="b sm soft">${ic("flag")}Usar tiempo actual<kbd>⌘,</kbd></span><span class="b sm soft">${ic("arrowRight")}Ir al verso<kbd>⌘G</kbd></span></div>
+      </div>
+    </div>
+    <div class="insp-f"><span class="b sm soft">${ic("copy")}Duplicar</span><div class="m-grow"></div><span class="b sm danger">${ic("trash")}Eliminar verso</span></div>`;
+
+  document.getElementById("insp-multi").innerHTML = `
+    <div class="insp-h"><div><b>3 versos seleccionados</b><span>Estrofa 1 · versos 1 a 3</span></div><span class="b sm soft">Soltar</span></div>
+    <div class="insp-b">
+      <div class="isec"><span class="lbl">Colores <span class="help">rayado: solo en algunos</span></span><div class="cchips">${chips([], ["sop", "alt", "ten"])}</div></div>
+      <div class="isec"><span class="lbl">Pistas</span><div class="plist">${plist([], ["sop", "alt", "ten"])}</div></div>
+      <div class="isec"><span class="lbl">Tiempos</span><span class="help">Se editan de a uno o en Sincronizar. <u>Limpiar tiempos de los 3</u></span></div>
+    </div>`;
+
+  // lista de versos en Sincronizar
+  const flat = [];
+  L.forEach((st) => st.verses.forEach((v) => { if (v.cols) flat.push({ t: v.cols.map((c) => c[0].t).join(" · "), k: ["sop"], s: null }); else flat.push(v); }));
+  flat[5] = { ...flat[5], e: null }; // que el viento…: con inicio, sin fin
+  document.getElementById("vlist").innerHTML = `<div class="insp-h" style="padding:12px 14px"><div><b style="font-size:14px">Versos</b><span>6 de 9 con tiempo</span></div></div>` + flat.map((v, i) => {
+    const cur = i === 5 ? " cur" : "";
+    const state = i === 5 ? `<span class="badge c">marcando</span>` : v.s != null ? `<span class="tm">${fmt(v.s)}</span>` : `<span class="tm none">sin tiempo</span>`;
+    return `<div class="row${cur}"><span class="dot" style="--tc:${T[v.k[0]]}"></span><span>${v.t}</span>${state}</div>`;
+  }).join("");
+
+  // línea de tiempo: ventana de 18 s a 42 s
+  const W0 = 18, W1 = 42, pct = (s) => ((s - W0) / (W1 - W0)) * 100;
+  let ruler = "";
+  for (let s = W0; s <= W1; s++) ruler += `<i class="${s % 5 === 0 ? "maj" : ""}" style="left:${pct(s)}%"></i>` + (s % 5 === 0 ? `<span style="left:${pct(s)}%">0:${String(s).padStart(2, "0")}</span>` : "");
+  const regs = [
+    { t: "cada nota que se asoma", k: "ten", s: 19.3, e: 22.6 },
+    { t: "vuelve al mismo corazón", k: "baj", s: 22.7, e: 26.2 },
+    { t: "Vidala, vidala", k: "sop", s: 27.0, e: 29.4, sel: true },
+    { t: "que el viento te va a llevar", k: "ten", s: 29.5, e: 30.2, open: true },
+  ];
+  const regions = regs.map((r) => `<span class="rg${r.sel ? " sel" : ""}${r.open ? " open" : ""}" style="--tc:${T[r.k]};left:${pct(r.s)}%;width:${pct(r.e) - pct(r.s)}%">${r.t}</span>`).join("");
+  const waves = ENS.tracks.map((t, i) => `<div class="wave" data-seed="${i + 3}" data-bars="170" data-progress="${(30.2 - W0) / (W1 - W0)}" style="--tc:${T[t.key]}"></div>`).join("");
+  document.getElementById("lanes").innerHTML = `<div class="ruler">${ruler}</div><div class="regions">${regions}</div>${waves}<span class="ph2" style="left:${pct(30.2)}%"></span>`;
+
+  // hoja de atajos (comandos reales de useLyricsCommands; ctrl = ⌘ en Mac)
+  const K = [
+    ["Moverse", [["Verso anterior o siguiente", ["↑", "↓"]], ["Dentro del texto o entre columnas", ["←", "→"]], ["Ir al tiempo del verso", ["⌘", "G"]]]],
+    ["Versos", [["Verso después", ["↵"]], ["Verso antes", ["⌥", "↵"]], ["Verso fuera de columnas", ["⇧", "↵"]], ["Duplicar verso", ["⌘", "D"]], ["Eliminar verso", ["⌘", "⌫"]], ["Borrar verso vacío", ["⌫"]], ["Mover verso", ["⌘", "⇧", "↑↓"]]]],
+    ["Columnas y estrofas", [["Convertir en columnas", ["⌘", "]"]], ["Columna a la derecha", ["⌘", "]"]], ["Columna a la izquierda", ["⌘", "["]], ["Estrofa nueva", ["⌘", "↵"]], ["Dividir estrofa", ["⌘", "⇧", "↵"]], ["Unir con la anterior", ["⌘", "⇧", "⌫"]]]],
+    ["Tiempos", [["Marcar inicio y avanzar (en Letra)", ["⌘", "↓"]], ["Marcar inicio y avanzar (en Sincronizar)", ["↓"]], ["Marcar inicio", ["⌘", ","]], ["Marcar fin", ["⌘", "."]], ["Limpiar inicio", ["⌘", "⇧", ","]], ["Limpiar fin", ["⌘", "⇧", "."]], ["Limpiar ambos", ["⌘", "/"]], ["Limpiar la estrofa", ["⌘", "⇧", "/"]]]],
+    ["Selección y propiedades", [["Extender selección", ["⇧", "clic"]], ["Sumar un verso", ["⌘", "clic"]], ["Soltar la selección", ["Esc"]]]],
+    ["General", [["Deshacer", ["⌘", "Z"]], ["Rehacer", ["⌘", "⇧", "Z"]], ["Guardar", ["⌘", "S"]], ["Reproducir o pausar", ["⌃", "Espacio"]], ["Esta ayuda", ["F1"]]]],
+  ];
+  document.getElementById("kgrid").innerHTML = K.map(([g, items]) => `<div class="kgrp"><div class="mh" style="border:0">${g}</div>${items.map(([d, ks]) => `<div><span>${d}</span><span>${ks.map((k) => `<kbd>${k}</kbd>`).join("")}</span></div>`).join("")}</div>`).join("");
+
+  // teléfono: documento compacto
+  document.getElementById("p-doc").innerHTML = L.slice(0, 2).map((st, si) => `<div class="stanza"><div class="sth" style="padding-left:14px"><span class="eyebrow-m">Estrofa ${si + 1}</span></div>${st.verses.filter((v) => !v.cols).map((v, vi) => `<div class="vr${si === 1 && vi === 0 ? " sel" : ""}"><span>${keysC(v.k)}</span><span class="vt">${vText(v)}</span></div>`).join("")}</div>`).join("");
+
+
+  ENS.hydrateWaves();
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>

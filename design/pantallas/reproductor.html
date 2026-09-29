@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ensayando · Reproductor</title>
+<link rel="stylesheet" href="../shared/ds.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/sample.js"></script>
+<style>
+/* ---------- piezas propias de esta pantalla ---------- */
+.topbar { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 10px 0 10px; z-index: 3; }
+.colbtn { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; border-radius: 14px; }
+.colbtn .t { display: flex; flex-direction: column; gap: 3px; }
+.colbtn .t b { font: 650 14px/1 var(--ui); display: flex; align-items: center; gap: 4px; }
+.colbtn .t span { font: 500 12px/1 var(--ui); color: var(--muted); }
+.songtitle { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.songtitle b { font: 700 21px/1 var(--ui); letter-spacing: -0.0125em; font-variation-settings: "opsz" 96; }
+.songtitle span { font: 500 12px/1 var(--ui); color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.stage { position: absolute; left: 0; right: 0; top: 84px; display: flex; justify-content: center; }
+.dock { position: absolute; left: 14px; right: 14px; bottom: 14px; border-radius: var(--r-dock); padding: 12px 18px 12px; z-index: 3; display: flex; flex-direction: column; gap: 6px; }
+.transport { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 58px; }
+.transport .l { display: flex; align-items: center; gap: 14px; }
+.transport .c { display: flex; align-items: center; gap: 10px; }
+.transport .r { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+.mixer { position: relative; display: flex; flex-direction: column; padding: 4px 0 2px 14px; }
+.mixer .trk { height: 46px; grid-template-columns: 198px minmax(0, 1fr); }
+.mixer .wave { height: 34px; }
+.mixer .ph { position: absolute; top: 0; bottom: 0; left: calc(14px + 198px + 16px + (100% - 14px - 198px - 16px) * var(--p)); }
+.mypart { display: inline-flex; align-items: center; gap: 8px; }
+.mypart .dots { display: inline-flex; }
+.mypart .dots .dot { width: 9px; height: 9px; margin-left: -3px; box-shadow: 0 0 0 2px var(--surface); }
+
+/* teléfono */
+.p-top { position: absolute; left: 10px; right: 10px; top: 52px; height: 56px; border-radius: 18px; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 6px; z-index: 3; }
+.p-top .art { width: 40px; height: 40px; font-size: 15px; }
+.p-top .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.p-top .t b { font: 700 17px/1.05 var(--ui); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variation-settings: "opsz" 96; }
+.p-top .t span { font: 500 11.5px/1 var(--ui); color: var(--muted); }
+.p-stage { position: absolute; left: 0; right: 0; top: 118px; display: flex; justify-content: center; --t-lyr: var(--t-lyr-m); }
+.p-stage .lyr { gap: 24px; padding: 0 22px; }
+.p-sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 30px; padding: 8px 16px 26px; z-index: 3; display: flex; flex-direction: column; gap: 10px; }
+.grab { width: 38px; height: 5px; border-radius: 3px; background: oklch(from var(--ink) l c h / 0.2); align-self: center; }
+.p-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.p-chips::-webkit-scrollbar { display: none; }
+.p-chips > span { --tc: var(--c); display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px 7px 9px; border-radius: 999px; font: 600 12.5px/1 var(--ui); background: oklch(from var(--ink) l c h / 0.06); white-space: nowrap; }
+.p-chips > span.m { color: var(--faint); text-decoration: line-through; }
+.p-chips > span.m .dot { background: var(--faint); box-shadow: none; }
+.p-trk { --tc: var(--c); display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.p-trk .name { display: flex; align-items: center; gap: 8px; font: 600 14px/1 var(--ui); }
+.p-trk .tb > i, .p-trk .tb > b { width: 34px; height: 30px; border-radius: 9px; font-size: 12px; }
+.p-trk .tb .ic { font-size: 17px; }
+.p-trk .vol { grid-column: 1 / -1; height: 5px; }
+
+/* piezas sueltas del deck */
+.legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 0; list-style: none; counter-reset: an; }
+.legend li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: var(--t-sm); color: var(--muted); counter-increment: an; }
+.legend li::before { content: counter(an); width: 20px; height: 20px; border-radius: 50%; background: oklch(55% 0.25 15); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--ink); font-weight: 650; display: block; }
+@media (max-width: 900px) { .legend { grid-template-columns: 1fr; } }
+.zoom { padding: 22px 26px; border-radius: var(--r-box); }
+.zoom .trk { height: 64px; grid-template-columns: 260px minmax(0, 1fr); }
+.zoom .trk .name { font-size: 16px; }
+.zoom .tb > i, .zoom .tb > b { width: 34px; height: 28px; font-size: 12px; }
+.zoom .tb .ic { font-size: 17px; }
+.zoom .wave { height: 44px; }
+.callouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .callouts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.callouts .note b { display: flex; align-items: center; gap: 8px; }
+.mini { padding: 26px 20px; border-radius: var(--r-box); min-height: 250px; display: flex; align-items: center; justify-content: center; --t-lyr: 20px; }
+.mini .lyr { gap: 18px; }
+.keys { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+.keys div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: var(--t-sm); }
+.keys div span:last-child { display: flex; gap: 4px; }
+@media (max-width: 700px) { .keys { grid-template-columns: 1fr; } }
+.compact { position: relative; height: 160px; border-radius: 18px; }
+.compact .dock { position: absolute; }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Pantallas · 1 de 6</span>
+    <h1 class="d">Reproductor</h1>
+    <p class="lede">Es la pantalla principal: hoy se entra a la app y se cae acá. La estructura funciona y se mantiene (arriba la canción, al centro la letra, abajo las pistas), pero cambia la jerarquía. La letra ocupa el escenario, la colección se vuelve luz de fondo y los controles viven en dos piezas de vidrio. Todo lo que hoy es un gesto escondido pasa a ser un botón.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
+    <div class="grid-3">
+      <div class="note"><span class="tag refine">Ajuste</span><b>La letra manda</b><p>Más aire alrededor del verso activo, que crece un 14 % y en oscuro brilla con su color. Los versos cantados bajan al 30 % del texto. Los comentarios (<i>Coro</i>, <i>Solo soprano</i>) pasan a ser una etiqueta chica y espaciada, no una línea de letra más.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Dock de vidrio</b><p>Transporte, tiempo y pistas en una sola pieza flotante. Con las pistas a la vista, las ondas son la línea de tiempo: se toca cualquiera para saltar. Solo donde no hay ondas (dock compacto, teléfono) aparece una barra de progreso simple.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Mi parte</b><p>Cada persona marca sus pistas (por ejemplo, Contralto). Sus versos quedan a pleno y el resto se atenúa. Se recuerda por colección y por dispositivo.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Solo, silencio y letra visibles</b><p>Hoy el solo es una pulsación larga y el "solo letra" otra, en un botón distinto. Pasan a tres botones chicos por pista: <b>M</b>, <b>S</b> y letra. La pulsación larga queda como atajo, no como único camino.</p></div>
+      <div class="note"><span class="tag refine">Ajuste de comportamiento</span><b>Solo y silencio dejan de tocar el volumen</b><p>Hoy el solo es exclusivo y funciona bajando a cero las demás pistas; al salir, todas vuelven al 100 % y se pierden los volúmenes elegidos. Pasan a ser estados propios de cada pista: puede haber varias en solo y los volúmenes no se reinician. Lo que suena es volumen × no silenciada × (sin solos o en solo). Esa misma ganancia usan la reproducción, la descarga de la mezcla y la sincronización entre pistas.</p></div>
+      <div class="note"><span class="tag moved">Sale de un atajo</span><b>Descargar mezcla</b><p>Hoy existe solo como <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. Pasa al menú de la canción, usa la ganancia que está sonando (volumen, silencio, solo y Mi parte), normaliza a −1 dB como hoy y muestra el progreso en un aviso.</p></div>
+      <div class="note"><span class="tag drop">Se quita</span><b>Copiador de tiempos</b><p>El aviso que copia <span class="mono">"start_time": 12.40</span> con <kbd>⌘</kbd><kbd>,</kbd> es de cuando la letra se editaba a mano en JSON. Lo reemplaza el modo Sincronizar del editor.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Escritorio</h2>
+      <p>La colección de ejemplo se cambia desde la barra de arriba; el tema también. La canción está sonando, en el primer verso del coro.</p>
+    </div>
+    <div class="frame" data-w="1280"><div class="fit">
+      <div class="app desk" id="desk">
+        <div class="amb"></div>
+
+        <div class="topbar g1">
+          <div class="colbtn"><span class="b icon soft"><i data-ic="playlist"></i></span><div class="t"><b>Coro del Puerto · 2026 <i data-ic="selector" style="font-size:14px;color:var(--faint)"></i></b><span>7 canciones</span></div></div>
+          <div class="songtitle"><b>Vidala del viento</b></div>
+          <div class="m-grow"></div>
+          <span class="b sm soft mypart"><span class="dots"><span class="dot" style="--tc:var(--t-alt)"></span></span>Mi parte: Contralto</span>
+          <span class="b sm soft"><i data-ic="pencil"></i>Editar</span>
+          <span class="b icon sm"><i data-ic="search"></i></span>
+          <span class="b icon sm"><i data-ic="dots"></i></span>
+          <span class="avatar">FF</span>
+        </div>
+
+        <div class="stage" style="height:350px">
+          <div class="lyr fade-y" style="height:350px;justify-content:center;padding-top:6px">
+            <div class="stz">
+              <span class="v past" style="--tc:var(--t-ten)">cada nota que se asoma</span>
+              <span class="v past" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
+            </div>
+            <div class="stz">
+              <span class="cmt">Coro</span>
+              <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+              <span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span>
+              <div class="cols"><div><span class="v" style="--tc:var(--t-sop)">Ay, vidala</span></div><div><span class="v" style="--tc:var(--t-baj)">(uh, uh)</span></div></div>
+            </div>
+            <div class="stz">
+              <span class="cmt">Solo soprano</span>
+              <span class="v" style="--tc:var(--t-sop)">Si me quedo en esta orilla</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dock g2">
+          <div class="transport">
+            <div class="l"><span class="time"><b>0:27</b><small>.4</small> / 4:05</span></div>
+            <div class="c">
+              <span class="b icon"><i data-ic="prev"></i></span>
+              <span class="play"><i data-ic="pause"></i></span>
+              <span class="b icon"><i data-ic="next"></i></span>
+            </div>
+            <div class="r">
+              <span class="b sm muted"><i data-ic="chevDown"></i>Ocultar pistas</span>
+            </div>
+          </div>
+          <div class="mixer" id="d-mixer" style="--p:.11"></div>
+        </div>
+
+        <span class="annot" data-n="1" style="left:22px;top:84px">Biblioteca</span>
+        <span class="annot solo" data-n="2" style="left:748px;top:24px"></span>
+        <span class="annot solo" data-n="3" style="left:1050px;top:24px"></span>
+        <span class="annot solo" data-n="4" style="left:392px;top:236px"></span>
+        <span class="annot solo" data-n="5" style="left:140px;top:478px"></span>
+                <span class="annot solo" data-n="6" style="left:20px;top:596px"></span>
+      </div>
+    </div></div>
+    <ol class="legend">
+      <li><span><b>Botón de biblioteca</b>Nombre de la colección; la portada aparece solo si la colección tiene una. Abre la biblioteca (canciones y colecciones). Reemplaza al botón de menú de color pleno.</span></li>
+      <li><span><b>Canción en el centro</b>Solo el título, en Bricolage display.</span></li>
+      <li><span><b>Acciones a la derecha</b>Mi parte, Editar (solo editores y admins), buscar <kbd>⌘K</kbd>, menú de la canción y cuenta.</span></li>
+      <li><span><b>Verso activo</b>Crece, sube a 700 y en oscuro emite su color. Los versos con dos pistas llevan un degradé entre sus tintas.</span></li>
+      <li><span><b>Transporte</b>Tiempo en Geist Mono con décimas, anterior, reproducir y siguiente. El botón de reproducir es el único relleno pleno de la pantalla.</span></li>
+      <li><span><b>Mezcladora</b>Por pista: nombre, M, S, letra y volumen; a la derecha, la onda. La línea de reproducción cruza todas las ondas.</span></li>
+    </ol>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Teléfono</h2>
+      <p>Lo mismo en una columna. El dock se vuelve una hoja con dos alturas: cerrada muestra el transporte y las pistas como fichas; abierta, la mezcladora completa con controles más grandes para el dedo. Las ondas se omiten en la hoja abierta del teléfono: a ese ancho no ayudan a ubicarse y la barra de progreso cumple ese papel.</p>
+    </div>
+    <div class="mocks-row">
+      <div class="col phone">
+        <div class="cap"><b>Hoja cerrada</b><span>390 px</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone">
+            <div class="amb"></div>
+            <div class="p-top g1">
+              <span class="b icon soft"><i data-ic="playlist"></i></span>
+              <div class="t"><b>Vidala del viento</b></div>
+              <span class="b icon sm"><i data-ic="dots"></i></span>
+            </div>
+            <div class="p-stage" style="height:440px">
+              <div class="lyr fade-y" style="height:440px;justify-content:center">
+                <div class="stz">
+                  <span class="v past" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
+                </div>
+                <div class="stz">
+                  <span class="cmt">Coro</span>
+                  <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+                  <span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span>
+                  <div class="cols" style="gap:16px"><div><span class="v" style="--tc:var(--t-sop)">Ay, vidala</span></div><div><span class="v" style="--tc:var(--t-baj)">(uh, uh)</span></div></div>
+                </div>
+                <div class="stz">
+                  <span class="cmt">Solo soprano</span>
+                  <span class="v" style="--tc:var(--t-sop)">Si me quedo en esta orilla</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-sheet g2">
+              <span class="grab"></span>
+              <div class="prog" style="--p:11%"><i></i><span class="knob"></span></div>
+              <div class="m-row" style="justify-content:space-between">
+                <span class="time"><b>0:27</b> / 4:05</span>
+                <div class="m-row" style="gap:6px">
+                  <span class="b icon"><i data-ic="prev"></i></span>
+                  <span class="play"><i data-ic="pause"></i></span>
+                  <span class="b icon"><i data-ic="next"></i></span>
+                </div>
+                <span class="b icon muted"><i data-ic="adjust"></i></span>
+              </div>
+              <div class="p-chips">
+                <span style="--tc:var(--t-sop)"><span class="dot" style="--tc:var(--t-sop)"></span>Soprano</span>
+                <span style="--tc:var(--t-alt)"><span class="dot" style="--tc:var(--t-alt)"></span>Contralto</span>
+                <span class="m"><span class="dot"></span>Tenor</span>
+                <span style="--tc:var(--t-baj)"><span class="dot" style="--tc:var(--t-baj)"></span>Bajo</span>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col phone">
+        <div class="cap"><b>Hoja abierta</b><span>deslizar hacia arriba</span></div>
+        <div class="frame" data-w="390"><div class="fit">
+          <div class="app phone">
+            <div class="amb"></div>
+            <div class="p-top g1">
+              <span class="b icon soft"><i data-ic="playlist"></i></span>
+              <div class="t"><b>Vidala del viento</b></div>
+              <span class="b icon sm"><i data-ic="dots"></i></span>
+            </div>
+            <div class="p-stage" style="height:200px">
+              <div class="lyr fade-y" style="height:200px;justify-content:center">
+                <div class="stz">
+                  <span class="cmt">Coro</span>
+                  <span class="v multi now" style="--tc:var(--t-sop);--tc2:var(--t-alt)">Vidala, vidala</span>
+                  <span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-sheet g2" style="top:330px">
+              <span class="grab"></span>
+              <div class="prog" style="--p:11%"><i></i><span class="knob"></span></div>
+              <div class="m-row" style="justify-content:space-between">
+                <span class="time"><b>0:27</b> / 4:05</span>
+                <div class="m-row" style="gap:6px">
+                  <span class="b icon"><i data-ic="prev"></i></span>
+                  <span class="play"><i data-ic="pause"></i></span>
+                  <span class="b icon"><i data-ic="next"></i></span>
+                </div>
+                <span class="b icon tint"><i data-ic="adjust"></i></span>
+              </div>
+              <div id="p-mixer"></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">La pista, de cerca</h2>
+      <p>Hoy cada pista tiene un deslizador, un botón de letra y uno de volumen, y el resto se descubre con pulsaciones largas y Mayús. La propuesta deja las tres acciones a la vista, con el mismo orden en todas las pistas.</p>
+    </div>
+    <div class="zoom sheet tracks-demo" style="position:relative" id="zoom"></div>
+    <div class="callouts">
+      <div class="note"><b><span class="kbd">M</span> Silenciar</b><p>Toque: silencia o activa la pista. La onda pasa a gris y la fila se apaga. Con <kbd>⇧</kbd>: también oculta su letra (se mantiene el comportamiento de hoy).</p></div>
+      <div class="note"><b><span class="kbd">S</span> Solo</b><p>Toque: deja sonar solo esta pista. Varias pistas pueden estar en solo a la vez y los volúmenes se conservan. Hoy es una pulsación larga (o <kbd>⌘</kbd>+clic) sobre el parlante; <kbd>⌘</kbd>+clic sobre M sigue haciendo solo.</p></div>
+      <div class="note"><b><i data-ic="lyrics"></i> Letra</b><p>Toque: muestra u oculta los versos de la pista. Pulsación larga o <kbd>⌘</kbd>+clic: solo la letra de esta pista (como hoy). Pintado con la tinta de la pista cuando está activo.</p></div>
+      <div class="note"><b><i data-ic="vol"></i> Volumen</b><p>Deslizador en la tinta de la pista. Doble clic vuelve al 100 %. Llevarlo a cero equivale a silenciar.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Mi parte</h2>
+      <p>En un ensayo cada persona canta una voz. Mi parte deja en primer plano los versos de las pistas elegidas sin ocultar el resto, que sigue siendo la referencia de entrada. Se elige desde la barra superior; opcionalmente baja 6 dB las demás pistas.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Sin elegir</b><span>como hoy</span></div>
+        <div class="app mini auto" style="border-radius:var(--r-box)"><div class="amb"></div>
+          <div class="lyr">
+            <div class="stz"><span class="cmt">Todos</span>
+              <span class="v" style="--tc:var(--t-sop)">Sopla el viento por la loma</span>
+              <span class="v now" style="--tc:var(--t-alt)">y se lleva mi canción</span>
+              <span class="v" style="--tc:var(--t-ten)">cada nota que se asoma</span>
+              <span class="v" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cap"><b>Mi parte: Contralto</b><span>el resto al 32 %</span></div>
+        <div class="app mini auto" style="border-radius:var(--r-box)"><div class="amb"></div>
+          <div class="lyr">
+            <div class="stz"><span class="cmt">Todos</span>
+              <span class="v dim" style="--tc:var(--t-sop)">Sopla el viento por la loma</span>
+              <span class="v now" style="--tc:var(--t-alt)">y se lleva mi canción</span>
+              <span class="v dim" style="--tc:var(--t-ten)">cada nota que se asoma</span>
+              <span class="v dim" style="--tc:var(--t-baj)">vuelve al mismo corazón</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="note"><b>Dónde se guarda</b><p>En el dispositivo, por colección (<span class="mono">localStorage</span>). No hace falta tocar la base. Si más adelante se quiere que siga a la persona entre dispositivos, se agrega a <span class="mono">user_collections</span>.</p></div>
+      <div class="note"><b>Relación con "letra"</b><p>Mi parte no oculta nada: atenúa. Ocultar la letra de una pista sigue siendo el botón de letra en la mezcladora.</p></div>
+      <div class="note"><b>Sin sesión</b><p>Las colecciones públicas se escuchan sin cuenta. Mi parte funciona igual porque vive en el dispositivo.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Estados del dock y menú de la canción</h2>
+      <p>El dock tiene dos alturas: completo, con la mezcladora, y compacto, solo transporte y barra de progreso. Hoy el panel se colapsa a una franja de 8 px y el transporte vive arriba; la propuesta mantiene el transporte siempre a mano, abajo, donde está el pulgar en el teléfono.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <div class="cap"><b>Dock compacto</b><span>“Ocultar pistas”</span></div>
+        <div class="app compact auto" style="height:150px"><div class="amb"></div>
+          <div class="dock g2" style="left:14px;right:14px;bottom:14px">
+            <div class="transport" style="height:52px">
+              <div class="l"><span class="time"><b>0:27</b><small>.4</small> / 4:05</span></div>
+              <div class="c"><span class="b icon sm"><i data-ic="prev"></i></span><span class="play sm"><i data-ic="pause"></i></span><span class="b icon sm"><i data-ic="next"></i></span></div>
+              <div class="r"><span class="b sm muted"><i data-ic="chevUp"></i>Mostrar pistas</span></div>
+            </div>
+            <div class="prog" style="--p:11%"><i></i><span class="knob"></span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cap"><b>Menú de la canción</b><span>vidrio pop</span></div>
+        <div class="app auto" style="height:318px;border-radius:var(--r-box);display:flex;justify-content:flex-end;padding:16px"><div class="amb"></div>
+          <div class="menu g3" style="width:290px">
+            <div class="mi"><i data-ic="download"></i>Descargar mezcla<span class="end"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd></span></div>
+            <div class="mi"><i data-ic="pencil"></i>Editar canción<span class="end"><kbd>E</kbd></span></div>
+            <div class="mi"><i data-ic="keyboard"></i>Atajos de teclado<span class="end"><kbd>?</kbd></span></div>
+            <div class="sep"></div>
+            <div class="mh">Tema</div>
+            <div style="padding:2px 6px 6px"><span class="seg" style="width:100%"><span class="on" style="flex:1;justify-content:center"><i data-ic="half"></i>Sistema</span><span style="flex:1;justify-content:center"><i data-ic="sun"></i>Claro</span><span style="flex:1;justify-content:center"><i data-ic="moon"></i>Oscuro</span></span></div>
+            <div class="sep"></div>
+            <div class="mi"><i data-ic="settings"></i>Ajustes de la colección</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="note"><span class="tag new">Nuevo</span><b>Selector de tema</b><p>Hoy la app sigue siempre al sistema. Se agrega Sistema, Claro y Oscuro en el menú, recordado en el dispositivo. En ensayo, con poca luz, el oscuro es el que más se usa.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Descarga como MP3</b><p>La mezcla se arma en el navegador con la ganancia que está sonando y se normaliza a −1 dB, como hoy. Mientras se codifica, un aviso de vidrio muestra "Preparando la mezcla…" y al terminar la descarga empieza sola.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Lo que no se ve y se mantiene</h2>
+      <p>Comportamientos de hoy que el rediseño no toca, o mejora sin cambiar la idea.</p>
+    </div>
+    <div class="grid-3">
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Tocar un verso salta a su tiempo</b><p>Y la letra se centra sola en el verso activo mientras suena.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Carga en iOS</b><p>En iPhone las pistas se cargan una por una, con decodificación diferida y el desbloqueo de audio al primer toque. No se toca: es lo que hace que suene en Safari.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Una pista que falla no frena la canción</b><p>Hoy, si una pista no carga, Reproducir no se habilita nunca. La pista que falla cuenta como resuelta, queda fuera de la mezcla y no es la referencia de tiempo (hoy se asume la primera).</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Anterior y siguiente en los auriculares</b><p>La sesión multimedia de hoy tiene reproducir, pausar y saltos de 10 s. Se suman canción anterior y siguiente, igual que en el dock.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Portada en la pantalla de bloqueo</b><p>Si la colección tiene portada, se usa como arte en la pantalla de bloqueo, como hoy.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>App instalada</b><p>Instalada como app, la hoja del teléfono suma el margen inferior del sistema (<span class="mono">safe-area-inset-bottom</span>), como hoy hace el panel colapsado.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Atajos</h2>
+      <p>Los de hoy se mantienen. Se agregan los que hacen falta para no tener que buscar botones y se muestran en una hoja de ayuda con <kbd>?</kbd>.</p>
+    </div>
+    <div class="keys">
+      <div><span>Reproducir o pausar</span><span><kbd>Espacio</kbd></span></div>
+      <div><span>Retroceder o avanzar 0,1 s</span><span><kbd>←</kbd><kbd>→</kbd></span></div>
+      <div><span>Retroceder o avanzar 3 s</span><span><kbd>⇧</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
+      <div><span>Estrofa anterior o siguiente, fuera del modo edición <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>↑</kbd><kbd>↓</kbd></span></div>
+      <div><span>Canción anterior o siguiente <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>⇧</kbd><kbd>↑</kbd><kbd>↓</kbd></span></div>
+      <div><span>Silenciar o solo de la pista 1 a 9 (se detecta la tecla física, así <kbd>⌥</kbd> no cambia el carácter en Mac) <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>1</kbd>…<kbd>9</kbd> · <kbd>⌥</kbd><kbd>1</kbd></span></div>
+      <div><span>Buscar canción o acción <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>⌘</kbd><kbd>K</kbd></span></div>
+      <div><span>Editar canción <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>E</kbd></span></div>
+      <div><span>Descargar mezcla</span><span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd></span></div>
+      <div><span>Ayuda</span><span><kbd>?</kbd></span></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const T = { sop: "var(--t-sop)", alt: "var(--t-alt)", ten: "var(--t-ten)", baj: "var(--t-baj)", pno: "var(--t-pno)" };
+  const STATES = { sop: { v: 0.8 }, alt: { v: 1, s: true, l: true }, ten: { v: 0, m: true }, baj: { v: 0.65 }, pno: { v: 0.45, lOff: true } };
+  function trackRow(t, i, p) {
+    const st = STATES[t.key] || {};
+    return `<div class="trk${st.m ? " muted" : ""}" style="--tc:${T[t.key]}">
+      <div class="meta">
+        <span class="name"><span class="dot" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}"></span><span>${t.title}</span></span>
+        <span class="tb"><b class="${st.m ? "m-on" : ""}">M</b><b class="${st.s ? "s-on" : ""}">S</b><i class="${st.lOff ? "" : "l-on"}">${ic("lyrics")}</i></span>
+        <span class="vol"><span style="width:${st.v * 100}%"></span></span>
+      </div>
+      <div class="wave" data-seed="${i + 3}" data-bars="150" data-progress="${p}" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}"></div>
+    </div>`;
+  }
+  const mixer = document.getElementById("d-mixer");
+  mixer.innerHTML = ENS.tracks.map((t, i) => trackRow(t, i, 0.11)).join("") + `<span class="playhead ph"></span>`;
+  document.getElementById("zoom").innerHTML = ENS.tracks.slice(1, 3).map((t, i) => trackRow(t, i + 1, 0.4)).join("");
+  document.getElementById("p-mixer").innerHTML = ENS.tracks.map((t) => {
+    const st = STATES[t.key] || {};
+    return `<div class="p-trk" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}">
+      <span class="name"><span class="dot" style="--tc:${st.m ? "oklch(60% 0 0)" : T[t.key]}"></span>${t.title}</span>
+      <span class="tb"><b class="${st.m ? "m-on" : ""}">M</b><b class="${st.s ? "s-on" : ""}">S</b><i class="${st.lOff ? "" : "l-on"}">${ic("lyrics")}</i></span>
+      <span class="vol"><span style="width:${st.v * 100}%"></span></span>
+    </div>`;
+  }).join("");
+  ENS.hydrateWaves();
+  hydrateIcons();
+  window.fitMocks && fitMocks();
+})();
+</script>
+</html>

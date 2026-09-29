@@ -3,7 +3,9 @@ import { IconKey, IconLogIn, IconUser, IconUserPlus } from "@/components/ui/icon
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import RoomLight from "@/components/ui/RoomLight.vue";
 import { AdminManagedAccountError, useAuthStore } from "@/stores/auth";
+import { loginErrorMessage } from "@/utils/authErrors";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -45,7 +47,7 @@ watch(
 
 const handleSubmit = async () => {
   if (!username.value || !password.value) {
-    error.value = "Por favor, completa todos los campos";
+    error.value = "Completá el usuario y la contraseña.";
     return;
   }
 
@@ -72,10 +74,11 @@ const handleSubmit = async () => {
       // watcher will redirect
     }
   } catch (err: unknown) {
-    error.value =
-      err instanceof Error
+    error.value = isSignUp.value
+      ? err instanceof Error
         ? err.message
-        : `Error al ${isSignUp.value ? "registrarse" : "iniciar sesión"}`;
+        : "Error al registrarse"
+      : loginErrorMessage(err);
   } finally {
     isLoading.value = false;
   }
@@ -109,7 +112,7 @@ const handleForgotPassword = async () => {
     if (err instanceof AdminManagedAccountError) {
       resetNotice.value = {
         kind: "admin-managed",
-        text: "Tu cuenta es administrada manualmente. Pedile al administrador que te la resetee."
+        text: "Tu cuenta la administra la persona a cargo de la colección. Si no te acordás la contraseña, pedile que te la restablezca."
       };
     } else {
       error.value = err instanceof Error ? err.message : "No se pudo enviar el email";
@@ -125,9 +128,8 @@ watch(username, () => {
 </script>
 
 <template>
-  <div
-    class="bg-base-200 from-primary/15 flex min-h-dvh items-center justify-center bg-linear-to-t p-3 sm:p-6"
-  >
+  <div class="bg-base-200 relative isolate flex min-h-dvh items-center justify-center p-3 sm:p-6">
+    <RoomLight />
     <div class="w-full max-w-md">
       <div
         class="mb-8 text-center"
@@ -136,11 +138,11 @@ watch(username, () => {
         <div class="mb-3 flex justify-center">
           <img src="/pwa-512x512.png" alt="Ensayando" class="h-16 w-16" />
         </div>
-        <h1 class="text-3xl font-bold tracking-tight">Ensayando</h1>
+        <h1 class="font-display text-3xl font-bold">Ensayando</h1>
       </div>
 
       <div
-        class="bg-base-200/80 rounded-box p-4 shadow-lg sm:p-8"
+        class="glass-2 rounded-box p-4 sm:p-8"
         style="animation: empty-stagger 400ms ease-out both; animation-delay: 100ms"
       >
         <div v-if="isSignUpEnabled" role="tablist" class="tabs tabs-box mb-8 w-full">
@@ -166,7 +168,7 @@ watch(username, () => {
 
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
           <label
-            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered w-full field-focus"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 180ms"
           >
             <IconUser class="size-4" />
@@ -183,7 +185,7 @@ watch(username, () => {
           </label>
 
           <label
-            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered w-full field-focus"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
           >
             <IconKey class="size-4" />

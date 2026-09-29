@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { average, selectMostContrasting } from "@/utils/color-utils";
 import { IconPalette, IconClose } from "@/components/ui/icons";
 import { computed } from "vue";
 
@@ -32,20 +31,17 @@ const buttonStyle = computed(() => {
 
   if (props.selectedColors.length === 1) {
     const colorValue = props.availableColors.find((c) => c.key === props.selectedColors[0])?.value;
-    return {
-      backgroundColor: colorValue,
-      color: colorValue ? selectMostContrasting(colorValue, ["#ffffff", "#000000"]) : undefined
-    };
+    return { backgroundColor: colorValue, color: colorValue ? "white" : undefined };
   }
 
-  // Multiple colors - create gradient
+  // Multiple colors - create gradient (swatches are fills, which always take white text)
   const colors = props.selectedColors
     .map((key) => props.availableColors.find((c) => c.key === key)?.value)
     .filter(Boolean) as string[];
 
   return {
     background: `linear-gradient(135deg, ${colors.join(", ")})`,
-    color: selectMostContrasting(average(colors), ["#ffffff", "#000000"])
+    color: "white"
   };
 });
 
@@ -98,10 +94,7 @@ const clearColors = () => {
 
 const getColorStyle = (colorKey: string) => {
   const colorValue = props.availableColors.find((c) => c.key === colorKey)?.value;
-  return {
-    backgroundColor: colorValue,
-    color: colorValue ? selectMostContrasting(colorValue, ["#ffffff", "#000000"]) : undefined
-  };
+  return { backgroundColor: colorValue, color: colorValue ? "white" : undefined };
 };
 
 const isColorSelected = (colorKey: string) => {
@@ -124,7 +117,7 @@ const isColorSelected = (colorKey: string) => {
     <div
       v-if="!disabled"
       tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-50 min-w-max border p-2 shadow-xl"
+      class="dropdown-content menu glass-3 rounded-box z-50 min-w-max p-2"
     >
       <div class="flex flex-col gap-2">
         <span

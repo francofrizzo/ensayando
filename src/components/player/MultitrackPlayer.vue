@@ -1,27 +1,54 @@
 <script setup lang="ts">
-import { IconChevronDown, IconLyrics } from "@/components/ui/icons";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { isIOS } from "@/utils/platform";
+import { computed, nextTick, onMounted, onUnmounted, ref, toRef, watch } from "vue";
+import {
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+  type RouteLocationNormalized,
+  useRouter
+} from "vue-router";
 import { toast } from "vue-sonner";
-
-import SongEditor from "@/components/editor/SongEditor.vue";
-import TimeCopier from "@/components/editor/TimeCopier.vue";
-import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
-import PlayerControls from "@/components/player/PlayerControls.vue";
-import PlayerHeader from "@/components/player/PlayerHeader.vue";
-import TrackPlayer from "@/components/player/TrackPlayer.vue";
-import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
-import { providePlayerState } from "@/composables/useCurrentTime";
-import { useCurrentSong } from "@/composables/useCurrentSong";
-import { useMediaSession } from "@/composables/useMediaSession";
-import { useNavigation } from "@/composables/useNavigation";
-import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
-import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 import type WaveSurfer from "wavesurfer.js";
-import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
+
+import EditBar from "@/components/editor/EditBar.vue";
+import EditorPanels from "@/components/editor/EditorPanels.vue";
+import UnsavedChangesDialog from "@/components/editor/UnsavedChangesDialog.vue";
+import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
+import MyPartMenu from "@/components/player/MyPartMenu.vue";
+import PlayerControls from "@/components/player/PlayerControls.vue";
+import PlayerShortcutsModal from "@/components/player/PlayerShortcutsModal.vue";
+import PlayerTopBar from "@/components/player/PlayerTopBar.vue";
+import ProgressBar from "@/components/player/ProgressBar.vue";
+import TrackPlayer from "@/components/player/TrackPlayer.vue";
+import {
+  IconChevronDown,
+  IconChevronUp,
+  IconEdit,
+  IconLyrics,
+  IconMixer,
+  IconSkipNext,
+  IconSkipPrev,
+  IconUpload
+} from "@/components/ui/icons";
+import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
+import RoomLight from "@/components/ui/RoomLight.vue";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
+import { useCurrentSong } from "@/composables/useCurrentSong";
+import { provideEditorSession } from "@/composables/useEditorSession";
+import { providePlayerState } from "@/composables/useCurrentTime";
+import { useMediaSession } from "@/composables/useMediaSession";
+import { useMyPart } from "@/composables/useMyPart";
+import { useNavigation } from "@/composables/useNavigation";
+import { type TrackInit, usePlayerState } from "@/composables/usePlayerState";
 import { artworkPlaybackUrl, audioPlaybackUrl } from "@/data/storage";
+import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
+import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
-import { mixAndEncodeMp3 } from "../../utils/mixdown";
+import { COMMAND_EVENT, type CommandEventDetail, dispatchPlayback } from "@/utils/appEvents";
+import { mixAndEncodeMp3 } from "@/utils/mixdown";
+import { lowerRestVolumes, myPartForSong } from "@/utils/myPart";
+import { isIOS } from "@/utils/platform";
+import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
+import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -30,7 +57,12 @@ const props = defineProps<{
 }>();
 
 const uiStore = useUIStore();
+const collectionsStore = useCollectionsStore();
+const router = useRouter();
 const { prevSong, nextSong } = useCurrentSong();
+
+const canEdit = computed(() => collectionsStore.canEditCurrentCollection);
+const isAdmin = computed(() => props.collection.user_role === "admin");
 const { navigateToSong } = useNavigation();
 
 // General state
@@ -62,11 +94,40 @@ const buildTrackInits = (): TrackInit[] =>
     hasLyrics: tracksIdsWithLyrics.value.includes(track.id)
   }));
 
-const state = usePlayerState(buildTrackInits(), {
-  onSeekTrack: (trackIndex, time) => {
-    trackPlayers.value[trackIndex]?.seekTo(time);
+// "Mi parte": remembered per collection; only this song's tracks count here.
+const myPartStore = useMyPart(computed(() => props.collection.id));
+const myPart = computed(() =>
+  myPartForSong(
+    myPartStore.part.value,
+    sortedTracks.value.map((track) => track.id)
+  )
+);
+
+const state = usePlayerState(
+  buildTrackInits(),
+  {
+    onSeekTrack: (trackIndex, time) => {
+      trackPlayers.value[trackIndex]?.seekTo(time);
+    }
   }
-});
+);
+
+// "Bajar el resto": the other tracks' sliders go to half, visibly, and come back
+// when the option goes off (see lowerRestVolumes).
+let lowerRestSaved: Record<number, number> = {};
+watch(
+  [myPart, () => state.trackStates.value.length],
+  () => {
+    const tracks = state.trackStates.value.map((t) => ({ id: t.id, volume: t.volume }));
+    const { changes, saved } = lowerRestVolumes(tracks, myPart.value, lowerRestSaved);
+    lowerRestSaved = saved;
+    state.trackStates.value.forEach((t, index) => {
+      const volume = changes[t.id];
+      if (volume !== undefined) state.onVolumeChange(index, volume);
+    });
+  },
+  { immediate: true, deep: true }
+);
 
 const { isReady, trackIdsWithLyricsEnabled } = state;
 
@@ -79,7 +140,10 @@ providePlayerState({
   totalDuration: state.totalDuration,
   isPlaying: state.playing,
   isReady,
-  seekTo: (time: number) => onSeekToTime(time)
+  seekTo: (time: number) => onSeekToTime(time),
+  playPause: (play?: boolean) => {
+    if (play === undefined || play !== state.playing.value) void onPlayPause(play);
+  }
 });
 // Cleanup and reset when switching songs to prevent lingering decoders/buffers
 watch(
@@ -145,6 +209,8 @@ const onReady = (trackIndex: number, duration: number) => {
 };
 
 const onTrackError = (trackIndex: number) => {
+  // A failed track counts as resolved: the rest of the song still plays.
+  state.onTrackError(trackIndex);
   // On iOS, continue sequential decode even if a track fails
   if (isIOS) {
     const nextIndex = trackIndex + 1;
@@ -156,6 +222,11 @@ const onTrackError = (trackIndex: number) => {
       }
     }
   }
+};
+
+const onTrackRetry = (trackIndex: number) => {
+  state.onTrackRetry(trackIndex);
+  trackPlayers.value[trackIndex]?.retry();
 };
 
 const onPlayPause = async (forcePlay?: boolean) => {
@@ -199,6 +270,86 @@ const onSeekToTime = (time: number) => {
   seekAllTracks(time);
 };
 
+const stanzaStarts = computed(() => stanzaStartTimes(props.lyrics));
+
+const goToSong = (song: Song | null) => {
+  if (song) navigateToSong(props.collection, song);
+};
+
+const showShortcuts = ref(false);
+
+const openSettings = () => {
+  router.push(`/${props.collection.slug}/ajustes/general`);
+};
+
+// Commands from the library and ⌘K (src/utils/appEvents.ts).
+const onCommand = (event: Event) => {
+  const { id } = (event as CustomEvent<CommandEventDetail>).detail;
+  if (id === "download-mix") {
+    void onDownloadMix();
+  } else if (id === "edit-song" && canEdit.value) {
+    uiStore.openEditor(uiStore.editTab ?? "cancion");
+  } else if (id === "new-song" && canEdit.value) {
+    void router.push({ name: "new-song", params: { collectionSlug: props.collection.slug } });
+  }
+};
+
+// ---------- Edit mode ----------
+// Editing is a mode of this screen (?editar=…): the edit bar replaces the top bar, the
+// editor replaces the stage and the dock stays so you can listen while editing.
+const editor = provideEditorSession();
+
+// Someone without edit rights (or a stale link) lands on ?editar: drop it.
+watch(
+  () => [uiStore.editTab, canEdit.value] as const,
+  ([tab, allowed]) => {
+    if (tab && !allowed && !collectionsStore.isLoading) uiStore.closeEditor();
+  },
+  { immediate: true }
+);
+
+/** Leaving edit mode, or this song, with unsaved changes asks first. */
+const leavesEditor = (to: RouteLocationNormalized, from: RouteLocationNormalized) =>
+  "editar" in from.query &&
+  (!("editar" in to.query) ||
+    to.params.songSlug !== from.params.songSlug ||
+    to.params.collectionSlug !== from.params.collectionSlug);
+
+const guardLeave = async () => {
+  if (!editor.isDirty.value) return true;
+  const choice = await editor.confirmLeave();
+  if (choice === "stay") return false;
+  if (choice === "save") return await editor.save();
+  await editor.discard();
+  return true;
+};
+
+onBeforeRouteUpdate((to, from) => (leavesEditor(to, from) ? guardLeave() : true));
+onBeforeRouteLeave(() => (uiStore.editMode ? guardLeave() : true));
+
+const onBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (uiStore.editMode && editor.isDirty.value) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+};
+
+// ⌘S saves everything in edit mode (capture: it wins over the lyrics editor and the browser).
+const onSaveShortcut = (event: KeyboardEvent) => {
+  if (!uiStore.editMode) return;
+  if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    event.stopPropagation();
+    void editor.save();
+  }
+};
+
+// Let the library animate its "now playing" bars.
+watch(
+  () => state.playing.value,
+  (playing) => dispatchPlayback(playing)
+);
+
 const keydownHandler = (event: KeyboardEvent) => {
   // Check if the event originates from an capturing element
   const target = event.target as HTMLElement;
@@ -206,6 +357,8 @@ const keydownHandler = (event: KeyboardEvent) => {
     target &&
     (target.closest(".jse-modal") || target.closest("input") || target.closest("textarea")) &&
     !event.ctrlKey;
+  const isTyping = !!target?.closest("input, textarea, [contenteditable='true'], .jse-modal");
+  const hasCommandModifier = event.metaKey || event.ctrlKey;
 
   if (event.key === " " && (!isInCapturingElement || event.ctrlKey)) {
     event.preventDefault();
@@ -221,18 +374,49 @@ const keydownHandler = (event: KeyboardEvent) => {
     const newTime = Math.min(state.totalDuration.value, state.currentTime.value + step);
     onSeekToTime(newTime);
   } else if (
-    event.key === "e" &&
-    (event.metaKey || event.ctrlKey) &&
+    event.key.toLowerCase() === "e" &&
+    hasCommandModifier &&
     event.shiftKey &&
     !isInCapturingElement
   ) {
     event.preventDefault();
     onDownloadMix();
+  } else if (isTyping || hasCommandModifier || uiStore.editMode) {
+    // Everything below is a plain key; the editor owns the keyboard while editing.
+    return;
+  } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
+    event.preventDefault();
+    goToSong(event.key === "ArrowUp" ? prevSong.value : nextSong.value);
+  } else if (event.key === "ArrowUp" && !event.altKey) {
+    event.preventDefault();
+    onSeekToTime(previousStanzaTime(stanzaStarts.value, state.currentTime.value));
+  } else if (event.key === "ArrowDown" && !event.altKey) {
+    const next = nextStanzaTime(stanzaStarts.value, state.currentTime.value);
+    event.preventDefault();
+    if (next !== null) onSeekToTime(next);
+  } else if (/^Digit[1-9]$/.test(event.code)) {
+    // event.code: on a Mac, ⌥+digit types another character.
+    const index = Number(event.code.slice(5)) - 1;
+    if (index >= sortedTracks.value.length) return;
+    event.preventDefault();
+    if (event.altKey) state.onSoloTrack(index);
+    else state.onToggleTrackMuted(index, event.shiftKey);
+  } else if (event.key.toLowerCase() === "e" && !event.altKey && canEdit.value) {
+    event.preventDefault();
+    uiStore.openEditor();
+  } else if (event.key === "?") {
+    event.preventDefault();
+    showShortcuts.value = !showShortcuts.value;
+  } else if (event.key === "Escape" && showShortcuts.value) {
+    showShortcuts.value = false;
   }
 };
 
 onMounted(() => {
   window.addEventListener("keydown", keydownHandler);
+  window.addEventListener("keydown", onSaveShortcut, true);
+  window.addEventListener("beforeunload", onBeforeUnload);
+  window.addEventListener(COMMAND_EVENT, onCommand);
   initMediaSession();
   // Kick off sequential decode on iOS: use nextTick so template refs are populated
   if (isIOS) {
@@ -252,6 +436,10 @@ onMounted(() => {
 onUnmounted(async () => {
   try {
     window.removeEventListener("keydown", keydownHandler);
+    window.removeEventListener("keydown", onSaveShortcut, true);
+    window.removeEventListener("beforeunload", onBeforeUnload);
+    window.removeEventListener(COMMAND_EVENT, onCommand);
+    dispatchPlayback(false);
   } catch (error) {
     handleAudioError(error as Error, "removeEventListener");
   }
@@ -304,10 +492,37 @@ onUnmounted(async () => {
 });
 
 // UI/Visual related state
-const tracksVisible = ref(true);
+// Phone: the dock is a sheet that starts closed. Desktop: the mixer starts open.
+const phoneQuery = window.matchMedia("(max-width: 767px)");
+const isPhone = ref(phoneQuery.matches);
+const onPhoneQueryChange = (event: MediaQueryListEvent) => {
+  isPhone.value = event.matches;
+};
+phoneQuery.addEventListener("change", onPhoneQueryChange);
+onUnmounted(() => phoneQuery.removeEventListener("change", onPhoneQueryChange));
+const mixerOpen = ref(!isPhone.value);
 
-// PWA detection
-const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+// The dock starts compact while editing and comes back as it was.
+let mixerOpenBeforeEdit: boolean | null = null;
+watch(
+  () => uiStore.editMode,
+  (editing) => {
+    if (editing) {
+      mixerOpenBeforeEdit = mixerOpen.value;
+      mixerOpen.value = false;
+    } else if (mixerOpenBeforeEdit !== null) {
+      mixerOpen.value = mixerOpenBeforeEdit;
+      mixerOpenBeforeEdit = null;
+      editor.jsonOpen.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+const { trackColor } = useCollectionPalette(toRef(props, "collection"));
+const progress = computed(() =>
+  state.totalDuration.value > 0 ? state.currentTime.value / state.totalDuration.value : 0
+);
 
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
@@ -337,11 +552,14 @@ const onDownloadMix = async () => {
   if (!isReady.value || exporting.value) return;
   exporting.value = true;
 
-  const toastId = toast.loading("Generando audio para descargar...");
+  const toastId = toast.loading("Preparando la mezcla…");
 
   try {
-    const urls = sortedTracks.value.map((track) => audioPlaybackUrl(track) || null);
-    const gains = state.trackStates.value.map((s) => Math.max(0, Math.min(1, s.volume ?? 0)));
+    // The mix uses what you hear: volume, mute, solo and Mi parte. Failed tracks stay out.
+    const urls = sortedTracks.value.map((track, i) =>
+      state.trackStates.value[i]?.failed ? null : audioPlaybackUrl(track) || null
+    );
+    const gains = state.gains.value.slice();
     const sampleRate = audioContext.value?.sampleRate ?? 44100;
     const duration = state.totalDuration.value;
 
@@ -388,9 +606,9 @@ const onDownloadMix = async () => {
     });
   } catch (error) {
     handleAudioError(error as Error, "onDownloadMix");
-    toast.error("Error al generar mezcla", {
+    toast.error("No se pudo preparar la mezcla", {
       id: toastId,
-      description: "Revisa la consola para más detalles"
+      description: "Probá de nuevo en un momento."
     });
   } finally {
     exporting.value = false;
@@ -401,7 +619,8 @@ const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
   if (audioContext.value?.state !== "running") return;
 
-  const referenceTrack = trackPlayers.value[0];
+  const referenceIndex = state.referenceIndex.value;
+  const referenceTrack = trackPlayers.value[referenceIndex];
   if (!referenceTrack?.waveSurfer) return;
 
   try {
@@ -411,8 +630,8 @@ const checkAndCorrectSync = () => {
     if (referenceTime < 0) return;
 
     trackPlayers.value.forEach((player, index) => {
-      if (!player?.waveSurfer || index === 0) return; // Skip reference track
-      if (state.trackStates.value[index]?.volume === 0) return; // Skip muted tracks
+      if (!player?.waveSurfer || index === referenceIndex) return; // Skip reference track
+      if (state.gains.value[index] === 0) return; // Silent tracks re-seek when they become audible
 
       try {
         const time = player.waveSurfer.getCurrentTime?.() ?? 0;
@@ -473,7 +692,7 @@ watch(
       }
 
       // Fallback: derive context from first wavesurfer instance if we didn't create one
-      const firstTrack = trackPlayers.value[0];
+      const firstTrack = trackPlayers.value[state.referenceIndex.value];
       if (firstTrack?.waveSurfer) {
         const ws = firstTrack.waveSurfer as WaveSurfer & {
           backend?: { audioContext?: AudioContext };
@@ -504,7 +723,9 @@ const {
 } = useMediaSession(mediaSessionOptions, {
   onPlay: () => onPlayPause(true),
   onPause: () => onPlayPause(false),
-  onSeek: (time) => onSeekToTime(time)
+  onSeek: (time) => onSeekToTime(time),
+  onPreviousTrack: () => goToSong(prevSong.value),
+  onNextTrack: () => goToSong(nextSong.value)
 });
 
 const isUpdatingFromMediaSession = ref(false);
@@ -668,185 +889,350 @@ const initializeAudioContext = async () => {
 </script>
 
 <template>
-  <div class="drawer drawer-end" :class="{ 'lg:drawer-open': uiStore.editMode }">
-    <input
-      id="song-editor-drawer"
-      type="checkbox"
-      class="drawer-toggle"
-      :checked="uiStore.editMode"
-      @change="uiStore.setEditMode(($event.target as HTMLInputElement).checked)"
-    />
+  <div class="bg-base-200 relative isolate flex h-dvh min-w-0 flex-col overflow-hidden select-none">
+    <RoomLight :collection="collection" :playing="state.playing.value" />
 
-    <div class="drawer-content">
-      <div
-        class="bg-base-200 flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
+    <div
+      class="relative z-20 px-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] md:px-3.5 md:pt-3.5"
+    >
+      <EditBar
+        v-if="uiStore.editMode"
+        :title="song.title"
+        :tab="uiStore.editTab ?? 'cancion'"
+        @exit="uiStore.closeEditor()"
+        @tab="uiStore.setEditorTab"
+      />
+      <PlayerTopBar
+        v-else
+        :collection="collection"
+        :song="song"
+        :song-count="collectionsStore.songs.length"
+        :tracks="sortedTracks"
+        :my-part="myPart"
+        :can-edit="canEdit"
+        :is-admin="isAdmin"
+        :edit-mode="uiStore.editMode"
+        :exporting="exporting"
+        :can-download="isReady"
+        @library="uiStore.openLibrary()"
+        @search="uiStore.openCommandPalette()"
+        @edit="uiStore.openEditor()"
+        @download="onDownloadMix"
+        @shortcuts="showShortcuts = true"
+        @settings="openSettings"
+        @my-part-toggle="myPartStore.toggleTrack"
+        @my-part-duck="myPartStore.setDuckOthers"
+        @my-part-clear="myPartStore.clear"
+      />
+    </div>
+
+    <!-- Edit mode: the editor takes the stage; the dock below keeps playing.
+         "Vista previa" hides it (kept mounted, so nothing is lost) and shows the stage. -->
+    <div
+      v-if="uiStore.editMode"
+      v-show="!uiStore.editorPreview"
+      class="relative z-10 flex min-h-0 flex-1 flex-col px-2.5 py-2.5 md:px-3.5 md:py-3"
+    >
+      <EditorPanels :tab="uiStore.editTab ?? 'cancion'" />
+    </div>
+
+    <div
+      v-if="uiStore.editMode && uiStore.editorPreview"
+      class="pointer-events-none absolute inset-x-0 top-[88px] z-20 flex justify-center md:top-[96px]"
+    >
+      <button
+        class="glass-3 btn btn-sm pointer-events-auto gap-2 rounded-full border-0 font-semibold"
+        data-testid="exit-preview"
+        @click="uiStore.setEditorPreview(false)"
       >
-        <div class="relative flex items-center justify-between gap-3 p-3 md:p-0 md:pb-3">
-          <PlayerHeader
-            :collection="collection"
-            :song="song"
-            @toggle-edit="uiStore.toggleEditMode"
-          />
-          <PlayerControls
-            :current-time="state.currentTime.value"
-            :total-duration="state.totalDuration.value"
-            :is-playing="state.playing.value"
-            :is-ready="isReady"
-            :prev-song="prevSong"
-            :next-song="nextSong"
-            @play-pause="onPlayPause"
-            @skip-prev="prevSong && navigateToSong(collection, prevSong)"
-            @skip-next="nextSong && navigateToSong(collection, nextSong)"
-          />
-          <div class="absolute top-2 left-1/2 flex -translate-x-1/2 items-center justify-end">
-            <TimeCopier :current-time="state.currentTime.value" />
-          </div>
-        </div>
+        <IconEdit class="size-4" />
+        Vista previa · Volver a editar
+        <kbd class="kbd kbd-xs">P</kbd>
+      </button>
+    </div>
 
-        <div
-          v-if="lyrics.length > 0"
-          class="relative flex-grow-1 snap-y overflow-auto"
-          style="animation: fade-in 300ms ease-out 100ms both"
-        >
-          <div
-            class="sticky inset-0 h-[32px]"
-            style="
-              background: linear-gradient(
-                to bottom,
-                var(--color-base-200) 0%,
-                color-mix(in oklch, var(--color-base-200) 40%, transparent) 50%,
-                transparent 100%
-              );
-            "
-          />
-          <LyricsViewer
-            :lyrics="lyrics"
-            :current-time="state.currentTime.value"
-            :is-disabled="!isReady"
-            :collection="collection"
-            :enabled-track-ids="trackIdsWithLyricsEnabled"
-            @seek="onSeekToTime"
-          />
-          <div
-            class="sticky inset-0 h-[32px]"
-            style="
-              background: linear-gradient(
-                to top,
-                var(--color-base-200) 0%,
-                color-mix(in oklch, var(--color-base-200) 40%, transparent) 50%,
-                transparent 100%
-              );
-            "
-          />
-        </div>
-        <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
-          <IconLyrics
-            class="empty-state-enter-active mb-4 size-22 opacity-50"
-            style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
-          />
-          <h2
-            class="text-base-content/80 text-2xl font-semibold"
-            style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms"
-          >
-            Letra faltante
-          </h2>
-          <p
-            class="text-base-content/40"
-            style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms"
-          >
-            La letra de esta canción todavía no está disponible.
-          </p>
-        </div>
+    <template v-if="uiStore.editMode && !uiStore.editorPreview" />
+    <!-- Stage: the lyrics. Never inside glass (gradient text vanishes under backdrop-filter). -->
+    <div
+      v-else-if="lyrics.length > 0"
+      class="relative min-h-0 flex-grow-1 snap-y overflow-auto py-10"
+      style="
+        animation: fade-in 300ms ease-out 100ms both;
+        mask-image: linear-gradient(transparent, #000 48px, #000 calc(100% - 48px), transparent);
+      "
+    >
+      <LyricsViewer
+        :lyrics="lyrics"
+        :current-time="state.currentTime.value"
+        :is-disabled="!isReady"
+        :collection="collection"
+        :enabled-track-ids="trackIdsWithLyricsEnabled"
+        :my-part="myPart"
+        @seek="onSeekToTime"
+      />
+    </div>
+    <div v-else class="flex min-h-0 flex-grow-1 flex-col items-center justify-center gap-4 p-10">
+      <IconLyrics
+        class="empty-state-enter-active mb-4 size-22 opacity-50"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
+      />
+      <h2
+        class="text-base-content/80 font-display text-2xl font-bold"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 80ms"
+      >
+        {{ canEdit ? "Esta canción no tiene letra" : "Todavía no hay letra" }}
+      </h2>
+      <p
+        class="text-base-content/50 max-w-sm text-center"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 160ms"
+      >
+        {{
+          canEdit
+            ? "Escribila o pegala; después la sincronizás con las pistas."
+            : sortedTracks.length > 0
+              ? "Podés escuchar las pistas igual. La letra aparece acá cuando alguien la cargue."
+              : "La letra aparece acá cuando alguien la cargue."
+        }}
+      </p>
+      <button
+        v-if="canEdit"
+        class="btn btn-primary rounded-full"
+        style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
+        data-testid="write-lyrics"
+        @click="uiStore.openEditor('letra')"
+      >
+        <IconEdit class="size-4" />
+        Escribir la letra
+      </button>
+    </div>
 
-        <div
-          class="border-base-300 md:rounded-box bg-base-100 relative border-t shadow-sm transition-[max-height] duration-300 md:border"
-          :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
+    <!-- A song without audio has nothing to play: say so instead of a spinning play button -->
+    <div
+      v-if="sortedTracks.length === 0 && !uiStore.editMode"
+      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-wrap items-center gap-3 rounded-[22px] px-4 py-3 md:mx-3.5 md:mb-3.5 md:px-[18px]"
+      data-testid="player-no-tracks"
+    >
+      <button
+        class="btn btn-circle btn-ghost btn-sm"
+        :disabled="!prevSong"
+        aria-label="Canción anterior"
+        @click="goToSong(prevSong)"
+      >
+        <IconSkipPrev class="size-[18px]" />
+      </button>
+      <div class="flex min-w-0 flex-1 flex-col">
+        <span class="text-sm font-semibold">Esta canción todavía no tiene pistas</span>
+        <span class="text-base-content/60 text-xs">
+          {{ canEdit ? "Subí los audios desde el editor para poder escucharla." : "Cuando alguien suba los audios, se van a poder escuchar acá." }}
+        </span>
+      </div>
+      <button
+        v-if="canEdit"
+        class="btn btn-sm btn-primary rounded-full"
+        @click="uiStore.openEditor('cancion')"
+      >
+        <IconUpload class="size-4" />
+        Agregar pistas
+      </button>
+      <button
+        class="btn btn-circle btn-ghost btn-sm"
+        :disabled="!nextSong"
+        aria-label="Canción siguiente"
+        @click="goToSong(nextSong)"
+      >
+        <IconSkipNext class="size-[18px]" />
+      </button>
+    </div>
+
+    <!-- Dock (desktop) / sheet (phone). Sincronizar brings its own transport, so it hides
+         (v-show: the track players inside must stay mounted to keep playing). -->
+    <div
+      v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar') && (sortedTracks.length > 0 || uiStore.editMode)"
+      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
+      data-testid="player-dock"
+    >
+      <button
+        class="bg-base-content/20 mx-auto h-[5px] w-[38px] shrink-0 rounded-full md:hidden"
+        :aria-label="mixerOpen ? 'Cerrar las pistas' : 'Abrir las pistas'"
+        @click="mixerOpen = !mixerOpen"
+      />
+
+      <ProgressBar
+        class="md:hidden"
+        :current-time="state.currentTime.value"
+        :total-duration="state.totalDuration.value"
+        :disabled="!isReady"
+        @seek="onSeekToTime"
+      />
+
+      <PlayerControls
+        class="md:h-[58px]"
+        :compact="isPhone"
+        :current-time="state.currentTime.value"
+        :total-duration="state.totalDuration.value"
+        :is-playing="state.playing.value"
+        :is-ready="isReady"
+        :prev-song="prevSong"
+        :next-song="nextSong"
+        @play-pause="onPlayPause"
+        @skip-prev="goToSong(prevSong)"
+        @skip-next="goToSong(nextSong)"
+      >
+        <button
+          class="btn btn-sm btn-ghost text-base-content/60 hidden gap-1.5 rounded-full font-semibold md:inline-flex"
+          data-testid="toggle-mixer"
+          @click="mixerOpen = !mixerOpen"
         >
-          <div
-            class="md:rounded-box h-full overflow-y-auto transition-all duration-300"
-            :class="{ 'opacity-0': !tracksVisible }"
+          <component :is="mixerOpen ? IconChevronDown : IconChevronUp" class="size-4" />
+          {{ mixerOpen ? "Ocultar pistas" : "Mostrar pistas" }}
+        </button>
+        <button
+          class="btn btn-circle btn-ghost md:hidden"
+          :class="{ 'bg-collection-soft text-collection-ink': mixerOpen }"
+          :aria-label="mixerOpen ? 'Cerrar las pistas' : 'Abrir las pistas'"
+          @click="mixerOpen = !mixerOpen"
+        >
+          <IconMixer class="size-5" />
+        </button>
+      </PlayerControls>
+
+      <ProgressBar
+        v-if="!mixerOpen"
+        class="hidden md:flex"
+        :current-time="state.currentTime.value"
+        :total-duration="state.totalDuration.value"
+        :disabled="!isReady"
+        @seek="onSeekToTime"
+      />
+
+      <!-- Phone, sheet closed: tracks as chips; a tap mutes -->
+      <div
+        v-if="!mixerOpen"
+        class="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] md:hidden"
+        style="mask-image: linear-gradient(90deg, #000 85%, transparent)"
+      >
+        <button
+          v-for="(track, index) in sortedTracks"
+          :key="track.id"
+          class="bg-base-content/6 flex shrink-0 items-center gap-1.5 rounded-full py-[7px] pr-2.5 pl-[9px] text-[12.5px] font-semibold whitespace-nowrap"
+          :class="{ 'text-base-content/40 line-through': state.gains.value[index] === 0 }"
+          :aria-pressed="!state.trackStates.value[index]?.muted"
+          @click="state.onToggleTrackMuted(index)"
+        >
+          <span
+            class="size-2 rounded-full"
+            :style="{
+              background:
+                state.gains.value[index] === 0
+                  ? 'var(--color-base-content)'
+                  : trackColor(track.color_key, 'wave'),
+              opacity: state.gains.value[index] === 0 ? 0.35 : 1
+            }"
+          />
+          {{ track.title }}
+        </button>
+      </div>
+
+      <!-- Mixer: always mounted (the tracks are the audio); collapsed with height -->
+      <div
+        class="relative -mx-4 overflow-y-auto overscroll-contain px-4 transition-[max-height,opacity] duration-300 md:-mx-[18px] md:pr-[18px] md:pl-8"
+        :class="
+          mixerOpen
+            ? 'max-h-[55dvh] opacity-100 md:max-h-[42dvh]'
+            : 'pointer-events-none max-h-0 opacity-0'
+        "
+        :aria-hidden="!mixerOpen || undefined"
+        data-testid="mixer"
+      >
+        <div
+          v-if="sortedTracks.length > 1"
+          class="flex items-center justify-between pb-2 md:hidden"
+        >
+          <span class="text-base-content/50 text-[11px] font-semibold tracking-[0.1em] uppercase"
+            >Pistas</span
           >
-            <div class="overflow-hidden">
-              <TrackPlayer
-                v-for="(track, index) in sortedTracks"
-                :key="index"
-                :ref="
-                  (el) => {
-                    if (el) trackPlayers[index] = el as InstanceType<typeof TrackPlayer>;
+          <MyPartMenu
+            :collection="collection"
+            :tracks="sortedTracks"
+            :part="myPart"
+            @toggle-track="myPartStore.toggleTrack"
+            @set-duck="myPartStore.setDuckOthers"
+            @clear="myPartStore.clear"
+          />
+        </div>
+        <div class="relative flex flex-col md:py-1">
+          <TrackPlayer
+            v-for="(track, index) in sortedTracks"
+            :key="index"
+            :ref="
+              (el) => {
+                if (el) trackPlayers[index] = el as InstanceType<typeof TrackPlayer>;
+              }
+            "
+            :style="
+              isReady
+                ? {
+                    animation: `empty-stagger 300ms ease-out both`,
+                    animationDelay: `${index * 50}ms`
                   }
-                "
-                class="pl-4 first:pt-2 last:pb-2"
-                :style="
-                  isReady
-                    ? {
-                        animation: `empty-stagger 300ms ease-out both`,
-                        animationDelay: `${index * 50}ms`
-                      }
-                    : { opacity: 0 }
-                "
-                :track="track"
-                :collection="collection"
-                :is-playing="state.playing.value"
-                :is-ready="state.trackStates.value[index]!.isReady"
-                :volume="state.trackStates.value[index]!.volume"
-                :has-lyrics="state.trackStates.value[index]!.hasLyrics"
-                :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
-                :edit-mode="uiStore.editMode"
-                :audio-context="audioContext || undefined"
-                :defer-load="isIOS"
-                @ready="(duration: number) => onReady(index, duration)"
-                @time-update="(time: number) => state.onTimeUpdate(index, time)"
-                @volume-change="(volume: number) => state.onVolumeChange(index, volume)"
-                @toggle-muted="
-                  (toggleLyrics: boolean) => state.onToggleTrackMuted(index, toggleLyrics)
-                "
-                @toggle-solo="(toggleLyrics: boolean) => state.onSoloTrack(index, toggleLyrics)"
-                @toggle-lyrics="() => state.onToggleTrackLyrics(track.id)"
-                @solo-lyrics="() => state.onSoloTrackLyrics(track.id)"
-                @seek="onSeekToTime"
-                @finish="state.onFinish(index)"
-                @error="onTrackError(index)"
-              />
-            </div>
-          </div>
+                : { opacity: 0 }
+            "
+            :track="track"
+            :collection="collection"
+            :position="index < 9 ? index + 1 : undefined"
+            :is-playing="state.playing.value"
+            :is-ready="state.trackStates.value[index]!.isReady"
+            :failed="state.trackStates.value[index]!.failed"
+            :volume="state.trackStates.value[index]!.volume"
+            :gain="state.gains.value[index] ?? 0"
+            :muted="state.trackStates.value[index]!.muted"
+            :soloed="state.trackStates.value[index]!.soloed"
+            :has-lyrics="state.trackStates.value[index]!.hasLyrics"
+            :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
+            :edit-mode="uiStore.editMode"
+            :audio-context="audioContext || undefined"
+            :defer-load="isIOS"
+            @ready="(duration: number) => onReady(index, duration)"
+            @time-update="(time: number) => state.onTimeUpdate(index, time)"
+            @volume-change="(volume: number) => state.onVolumeChange(index, volume)"
+            @toggle-muted="(toggleLyrics: boolean) => state.onToggleTrackMuted(index, toggleLyrics)"
+            @toggle-solo="(toggleLyrics: boolean) => state.onSoloTrack(index, toggleLyrics)"
+            @toggle-lyrics="() => state.onToggleTrackLyrics(track.id)"
+            @solo-lyrics="() => state.onSoloTrackLyrics(track.id)"
+            @seek="onSeekToTime"
+            @finish="state.onFinish(index)"
+            @error="onTrackError(index)"
+            @retry="onTrackRetry(index)"
+          />
+          <!-- Playhead across every wave (name column 198px + 16px gap) -->
+          <span
+            v-if="isReady"
+            class="bg-base-content pointer-events-none absolute inset-y-0 hidden w-0.5 rounded-full md:block"
+            :style="{ left: `calc(214px + (100% - 214px) * ${progress})` }"
+          />
+        </div>
 
+        <div
+          v-if="!isReady && mixerOpen"
+          class="absolute inset-0 z-10 flex items-center justify-center select-none"
+        >
           <div
-            class="pointer-events-none absolute inset-x-0 top-0 z-10 -mt-6 flex h-6 cursor-pointer justify-center"
+            class="text-base-content/45 flex flex-col items-center gap-4"
+            style="animation: pulse-subtle 3s ease-in-out infinite"
           >
-            <button
-              class="bg-base-100 text-base-content/50 rounded-t-box border-base-300 pointer-events-auto flex w-16 cursor-pointer items-center justify-center border-t border-r border-l p-2"
-              @click="tracksVisible = !tracksVisible"
-            >
-              <IconChevronDown
-                class="h-7 w-7 transition-transform duration-300"
-                :class="{ 'rotate-180': !tracksVisible }"
-              />
-            </button>
-          </div>
-
-          <div
-            v-if="!isReady && tracksVisible"
-            class="bg-base-100/80 md:rounded-box absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px] select-none"
-          >
-            <div
-              class="text-base-content/35 flex flex-col items-center gap-4"
-              style="animation: pulse-subtle 3s ease-in-out infinite"
-            >
-              <LoadingWaveform size="lg" :bar-count="12" />
-              <span class="text-sm tracking-wide">Cargando...</span>
-            </div>
+            <LoadingWaveform size="lg" :bar-count="12" />
+            <span class="text-sm tracking-wide">Cargando...</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="drawer-side z-50">
-      <label for="song-editor-drawer" aria-label="Cerrar editor" class="drawer-overlay"></label>
-      <div
-        class="bg-base-100/75 lg:bg-base-100 min-h-full w-full shadow-lg backdrop-blur-lg sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
-      >
-        <SongEditor v-if="uiStore.editMode" @toggle-edit="uiStore.toggleEditMode" />
-      </div>
-    </div>
+    <UnsavedChangesDialog />
+
+    <PlayerShortcutsModal
+      :show="showShortcuts"
+      :can-edit="canEdit"
+      @close="showShortcuts = false"
+    />
   </div>
 </template>

@@ -71,7 +71,7 @@ Supabase (Postgres). Migrations live in `supabase/migrations/`. Auth uses Supaba
 
 Row-Level Security (RLS) controls access — collections can be public or private with per-user roles.
 
-For admin tasks the app UI doesn't expose (user management, collection CRUD, song deletion/reordering, granting collection roles), use the `admin` skill at `.claude/skills/admin/SKILL.md` — it runs SQL against the linked Supabase project via `npx supabase db query --linked`.
+Collection administration (members and roles, managed accounts and password resets, name, address, visibility, cover, colors, song order and deletion) is in the app: `/:collectionSlug/ajustes` for collection admins and `/nueva-coleccion` for app admins (see `docs/permissions.md`). For the few tasks the app doesn't cover (granting app admin, deleting an account, changing an account's email, bulk operations, orphaned storage files), use the `admin` skill at `.claude/skills/admin/SKILL.md` — it runs SQL against the linked Supabase project via `npx supabase db query --linked`.
 
 ## Deployment
 

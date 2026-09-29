@@ -155,8 +155,6 @@ export function useLyricsEditor(
     },
     handleSmartBackspace,
     duplicateLineWithInheritance,
-    toggleCopyPropertiesToMode: () => properties.toggleCopyPropertiesToMode(currentFocus.value),
-    exitCopyPropertiesToMode: properties.exitCopyPropertiesToMode,
     convertToColumns: () => {
       convertToColumnsWithInheritance();
     },
@@ -199,13 +197,7 @@ export function useLyricsEditor(
   };
 
   // Initialize commands composable
-  const commands = useLyricsCommands(
-    () => currentFocus.value,
-    isColumnContext,
-    commandActions,
-    onSave,
-    () => properties.copyPropertiesToMode.value
-  );
+  const commands = useLyricsCommands(() => currentFocus.value, isColumnContext, commandActions, onSave);
 
   // Return the public API
   return {
@@ -214,6 +206,7 @@ export function useLyricsEditor(
     showHelp: commands.showHelp,
     handleInputFocus,
     focusInput,
+    getCurrentVerse,
 
     commandRegistry: commands.commandRegistry,
 
@@ -223,12 +216,6 @@ export function useLyricsEditor(
     getCurrentVerseAudioTrackIds: () => properties.getCurrentVerseAudioTrackIds(currentFocus.value),
     setCurrentVerseAudioTrackIds: (trackIds: number[]) =>
       properties.setCurrentVerseAudioTrackIds(currentFocus.value, trackIds),
-    copyPropertiesToMode: properties.copyPropertiesToMode,
-    sourcePosition: properties.sourcePosition,
-    toggleCopyPropertiesToMode: () => properties.toggleCopyPropertiesToMode(currentFocus.value),
-    exitCopyPropertiesToMode: properties.exitCopyPropertiesToMode,
-    copyPropertiesToVerse: (targetPosition: FocusPosition) =>
-      properties.copyPropertiesToVerse(targetPosition),
     getCurrentVerseComment: () => properties.getCurrentVerseComment(currentFocus.value),
     setCurrentVerseComment: (comment: string | undefined) =>
       properties.setCurrentVerseComment(currentFocus.value, comment)

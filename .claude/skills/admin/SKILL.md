@@ -1,71 +1,70 @@
 ---
 name: admin
-description: Run Ensayando admin tasks that the app UI doesn't expose, via SQL against the linked Supabase project. Use for user management (find, create, delete, reset password, change email; supports both real-email and username-only users), collection access (grant, change, revoke roles, list members), collection CRUD (create, delete, rename, change slug, set visibility private/unlisted/public, edit colors, change artwork URL), and song operations (delete, reorder). Runs `npx supabase db query --linked`.
+description: Run the few Ensayando admin tasks the app can't do, via SQL against the linked Supabase project. Use to make someone an app admin (they can create collections), delete an account from the whole app, change an account's email, look up which collections an account is in, bulk operations, cleaning orphaned storage files, and ad-hoc diagnostics. Members, roles, managed accounts, password resets, collection settings and song order/deletion are in the app (Ajustes de colección), not here. Runs `npx supabase db query --linked`.
 ---
 
 # Admin
 
-The Ensayando app UI is intentionally narrow — it doesn't expose user management, collection CRUD, or song deletion/reordering. For any of the above, run SQL directly against the linked Supabase project.
+Almost all administration lives in the app now, under **Ajustes de colección** (`/:colección/ajustes`, for the collection's admins) and **Nueva colección** (`/nueva-coleccion`, for app admins):
+
+- Members: add existing accounts, create managed accounts, invite by email, change roles, remove access, reset passwords (a new temporary password for managed accounts, a recovery email otherwise).
+- Collection: name, address (slug), visibility, cover, colors (hue and intensity per track), deletion.
+- Songs: order, visibility, deletion (audio files are removed from R2 too).
+
+Point people there first. This skill covers what's left.
 
 ## Entry point
 
-The common flows are wrapped in `scripts/admin.sh`. Run `scripts/admin.sh` with no args (or `help`) to see the subcommand list. Always `scripts/admin.sh preflight` first — it verifies cwd + CLI login + linked project and prints actionable errors otherwise (do **not** try to self-heal `login` or `link`; they need the user).
+The flows are wrapped in `scripts/admin.sh`. Run `scripts/admin.sh` with no args (or `help`) to see the subcommand list. Always `scripts/admin.sh preflight` first — it verifies cwd + CLI login + linked project and prints actionable errors otherwise (do **not** try to self-heal `login` or `link`; they need the user).
 
-For flows not covered by the script (listed at the bottom), hand-write SQL and run it with `npx supabase db query --linked "<SQL>"`.
+For flows not covered by the script, hand-write SQL and run it with `npx supabase db query --linked "<SQL>"`.
+
+## App admins
+
+`public.app_admins` lists who can create collections (and so become the admin of the ones they create). It isn't editable from the app, on purpose.
+
+- `admin.sh list-app-admins`
+- `admin.sh grant-app-admin <email>`
+- `admin.sh revoke-app-admin <email>`
+
+An app admin does **not** see every collection: only the ones they are a member of.
 
 ## User identifiers
 
 The login form accepts either a username or a real email:
 
 - If the input contains `@`, it's used verbatim.
-- Otherwise, the app appends `@ensayando.com.ar` (see `EMAIL_DOMAIN` in `src/stores/auth.ts`) and uses that as a synthetic email.
+- Otherwise, the app appends `@ensayando.com.ar` (see `EMAIL_DOMAIN` in `src/stores/auth.ts`).
 
 So `auth.users.email` has two shapes:
 
-- **Username-only users** — `<username>@ensayando.com.ar`. Email-based password reset flows do **not** work (no real inbox). The login UI detects these and shows "Tu cuenta es administrada manualmente. Pedile al administrador que te la resetee." — reset via SQL (`admin.sh reset-password`).
-- **Real-email users** — any other domain. The app has a self-serve password reset (`LoginView.vue` "¿Olvidaste tu contraseña?" → `ResetPasswordView.vue`). Only use `admin.sh reset-password` if the user can't receive the email.
+- **Managed accounts** — `<username>@ensayando.com.ar`, no real inbox. Their passwords are reset by a collection admin in Miembros.
+- **Real-email accounts** — self-serve reset from the login screen, or a recovery email sent from Miembros.
 
-`auth.users.raw_user_meta_data->>'username'` stores whatever the user typed at signup (raw username or full email). It drives the display name in `AuthStatus.vue`.
-
-When a user gives you a "username" to act on, use `admin.sh find-user <input>` — it looks up by all three shapes at once.
+`auth.users.raw_user_meta_data->>'username'` holds the display name. When someone gives you a "username", use `admin.sh find-user <input>`: it looks up all three shapes at once.
 
 ## Runtime notes
 
-- The Supabase CLI does **not** expose `supabase auth admin` subcommands; always use SQL.
-- Destructive ops (`delete-user`, `delete-collection`, `delete-song`) require an explicit `--yes` flag. **Always confirm with the user before passing it.**
-- For ad-hoc SQL, `--linked` is required on every `db query` call — without it the CLI targets local Supabase.
+- The Supabase CLI does **not** expose `supabase auth admin` subcommands; use SQL.
+- `delete-user` requires `--yes`. **Always confirm with the user before passing it.** It removes the account from every collection; the "at least one admin" guard doesn't block it, so check `list-user-collections` first and make sure no collection is left without an admin.
+- `--linked` is required on every ad-hoc `db query` call — without it the CLI targets local Supabase.
 - Query output comes back wrapped in an untrusted-data safety envelope; ignore the wrapper text.
-- Storage files (artwork, audio tracks) are **not** removed when their parent collection/song is deleted. Storage cleanup is out of scope.
-- Roles are free-text in the schema but the app only recognises `admin`, `editor`, `viewer`. Do not invent new role strings.
-- Collection visibility is the `visibility` column (`'private' | 'unlisted' | 'public'`). `private` = members only; `unlisted` = readable by anyone with the link but hidden from sidebar listings; `public` = listed for everyone. RLS treats `unlisted` and `public` the same (both link-readable); the listing/sidebar distinction is enforced client-side. Use `admin.sh set-visibility <slug> <value>`.
 
 ## Schema
 
-- `auth.users` — Supabase-managed. Relevant columns: `id` (uuid), `email`, `encrypted_password`, `email_confirmed_at`, `raw_user_meta_data`, `created_at`.
+- `auth.users` — `id` (uuid), `email`, `encrypted_password`, `email_confirmed_at`, `raw_user_meta_data`, `last_sign_in_at`, `created_at`.
 - `auth.identities` — provider rows. A user needs a matching `email` identity or GoTrue fails login with "Database error querying schema".
-- `public.collections` — `id` (bigint), `slug` (text, unique), `title`, `main_color` (CSS color string — typically `oklch(...)`, not hex), `track_colors` (jsonb — `Record<string, string>` per `src/data/types.ts`, values are also CSS color strings), `artwork_file_url` (text, nullable), `visibility` (text: `'private' | 'unlisted' | 'public'`, default `'private'`, CHECK-constrained), `created_at`.
-- `public.songs` — `id` (bigint), `slug`, `collection_id` (FK → collections), `title`, `visible` (bool), `order` (int, reserved keyword — quote it), `lyrics` (jsonb), `created_at`.
-- `public.audio_tracks` — FK → songs; cascades on song delete.
-- `public.user_collections` — junction: `user_id` (uuid, FK → auth.users, ON DELETE CASCADE), `collection_id` (bigint, FK → public.collections), `role` (`'admin' | 'editor' | 'viewer'`).
+- `public.app_admins` — `user_id` (pk, FK → auth.users, on delete cascade), `created_at`.
+- `public.collections` — `id`, `slug` (unique), `title`, `hue` (0–359), `intensity` (`suave | media | intensa`), `track_colors` (jsonb: key → `{hue, intensity}` or `{neutral: true}`), `artwork_file_key`, `visibility` (`private | unlisted | public`), `created_by`, `created_at`.
+- `public.songs` — `id`, `slug` (unique per collection; `nueva`, `ajustes`, `editar` are reserved), `collection_id`, `title`, `visible`, `order` (quote it), `lyrics` (jsonb), `duration`, `created_at`.
+- `public.audio_tracks` — FK → songs, cascades on song delete.
+- `public.user_collections` — `user_id`, `collection_id`, `role` (`admin | editor | viewer`). At least one admin per collection is enforced by a trigger.
 
-## Palette editing (interactive)
+See `docs/permissions.md` for the RLS policies and database functions behind the app's settings.
 
-For collection colors, use the browser editor rather than hand-writing `UPDATE` statements — the OKLCH picker preserves color-space fidelity that any hex round-trip would lose.
+## Flows without a script
 
-Flow:
-
-1. `scripts/admin.sh edit-palette <slug>` — fetches the current `main_color` + `track_colors`, spawns a local HTTP server, opens the editor in the default browser. Supports editing, adding, removing, and renaming track-color entries.
-2. When the user clicks **Save**, the full new palette JSON is printed to stdout (one line, shape: `{"main_color": "...", "track_colors": {...}}`). The script exits 0. **Cancel** or closing the tab exits 2 with no output.
-3. Show the user a diff of the change (key renames, added/removed entries, before→after oklch values) and confirm before applying.
-4. `scripts/admin.sh apply-palette <slug> '<json>'` — runs the UPDATE. Pass the JSON payload verbatim.
-
-If the user only wants to preview (no edits), they can still use `edit-palette` and click Cancel.
-
-## Non-extracted flows
-
-These vary too much per call to script — write SQL inline. For each, the resolved `<email>` is the synthetic `<username>@ensayando.com.ar` for username-only users, otherwise the real address.
-
-### Change a user's email
+### Change an account's email
 
 ```sql
 UPDATE auth.users SET email = '<new-email>'
@@ -73,38 +72,16 @@ WHERE email = '<old-email>'
 RETURNING id, email;
 ```
 
-If this is temporary (e.g. to route a reset email through a real inbox), always change it back afterward and confirm with the user before leaving the DB in the temporary state.
+Also update the matching `auth.identities` row (`identity_data->>'email'`). If this is temporary (e.g. to route a recovery email through a real inbox), change it back afterward and confirm with the user before leaving it in the temporary state.
 
-### Create a collection
+### Bulk operations
 
-```sql
-INSERT INTO public.collections (slug, title, main_color, track_colors, visibility)
-VALUES ('<slug>', '<title>', '<css-color>', '<json>'::jsonb, '<private|unlisted|public>')
-RETURNING id, slug, title, visibility;
-```
+Importing many people or songs at once isn't in the app. Write the SQL per case, show the user the exact statements and a count of affected rows before running them, and prefer one transaction.
 
-`track_colors` is JSONB matching `Record<string, string>`. Values are CSS colors, conventionally `oklch(...)` in this DB, e.g. `'{"v1":"oklch(60.6% 0.25 292.717)","bg":"oklch(76.8% 0.233 130.85)"}'`.
+### Orphaned storage files
 
-### Rename / change slug / change artwork URL
+Deleting songs and collections from the app removes their R2 objects; when some can't be removed, the app reports them (`orphanedKeys`). Files orphaned before that (or listed in such a report) can be found by comparing R2 keys (`audio/<collection-id>/…`, `artwork/<collection-id>/…`) with `audio_tracks.audio_file_key` and `collections.artwork_file_key`, and deleted with the helpers in `server/storage/r2.ts`. Confirm the list with the user before deleting anything.
 
-```sql
-UPDATE public.collections
-SET title = '<new-title>',             -- optional
-    slug = '<new-slug>',               -- optional
-    artwork_file_url = '<url-or-null>' -- optional
-WHERE slug = '<old-slug>'
-RETURNING *;
-```
+### Diagnostics
 
-Include only the columns being changed. For `main_color` / `track_colors`, use `admin.sh edit-palette` (see above) instead of hand-writing the UPDATE.
-
-### Reorder songs
-
-`order` is a reserved word — always quote it. Inspect first with `admin.sh list-songs <collection-slug>`, then one UPDATE per song:
-
-```sql
-UPDATE public.songs SET "order" = <int>
-WHERE collection_id = (SELECT id FROM public.collections WHERE slug = '<collection-slug>')
-  AND slug = '<song-slug>'
-RETURNING id, slug, "order";
-```
+Anything else: read-only SQL first (`SELECT …`), show the result, then propose changes.

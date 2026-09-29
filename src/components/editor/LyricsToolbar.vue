@@ -1,472 +1,232 @@
 <script setup lang="ts">
-import {
-  IconInsertAfter,
-  IconInsertLeft,
-  IconInsertRight,
-  IconInsertBefore,
-  IconTimestamp,
-  IconColumns,
-  IconCopy,
-  IconAddStanza,
-  IconJoinStanza,
-  IconComment,
-  IconCopyProperties,
-  IconRedo,
-  IconSplitStanza,
-  IconTrash,
-  IconUndo,
-  IconClose
-} from "@/components/ui/icons";
 import { computed } from "vue";
 
-import ColorPicker from "@/components/editor/ColorPicker.vue";
-import { useCollectionsStore } from "@/stores/collections";
-import TrackPicker from "@/components/editor/TrackPicker.vue";
-import KeybindingDisplay from "@/components/ui/KeybindingDisplay.vue";
+import {
+  IconChevronDown,
+  IconColumns,
+  IconFollowPlayback,
+  IconKeyboard,
+  IconPlus,
+  IconPreview,
+  IconRedo,
+  IconTimestamp,
+  IconUndo
+} from "@/components/ui/icons";
 import type { CommandRegistry } from "@/composables/useCommands";
 import type { FocusPosition } from "@/composables/useLyricsEditor";
-import type { AudioTrack } from "@/data/types";
+import { prettyKeyParts } from "@/utils/keys";
 
-type Props = {
-  currentFocus: FocusPosition | null;
+const props = defineProps<{
   commandRegistry: CommandRegistry;
-  // Color operations
-  currentVerseColors: string[];
-  availableColors: { key: string; value: string }[];
-  onColorsChange: (colors: string[]) => void;
-  // Audio track operations
-  currentVerseAudioTrackIds: number[];
-  availableAudioTracks: AudioTrack[];
-  onAudioTrackIdsChange: (trackIds: number[]) => void;
-  // Copy properties mode
-  copyPropertiesToMode: boolean;
-  // Timestamp visibility
+  currentFocus: FocusPosition | null;
+  canUndo: boolean;
+  canRedo: boolean;
   showTimestamps: boolean;
-  onToggleTimestamps: () => void;
-  // Comment
-  currentVerseComment: string | undefined;
-  onCommentChange: (comment: string | undefined) => void;
-  // Timestamp offset
-  timestampOffset: number;
-};
-
-const props = defineProps<Props>();
-
-const emit = defineEmits<{
-  "update:timestampOffset": [value: number];
+  followPlayback: boolean;
 }>();
 
-const collectionsStore = useCollectionsStore();
+const emit = defineEmits<{
+  "toggle-timestamps": [];
+  "toggle-follow": [];
+  preview: [];
+  help: [];
+}>();
 
-const hasColumnContext = computed(() => {
-  return props.currentFocus?.columnIndex !== undefined;
-});
+const inColumns = computed(() => props.currentFocus?.columnIndex !== undefined);
+const hasFocus = computed(() => props.currentFocus !== null);
 
-const canPerformActions = computed(() => {
-  return props.currentFocus !== null;
-});
-
-const getCommand = (commandId: string) => {
-  return props.commandRegistry.getCommand(commandId);
+type MenuItem = {
+  id: string;
+  label: string;
+  /** Why the item can't run right now: shown instead of hiding the item. */
+  reason?: string | null;
+  danger?: boolean;
 };
 
-const executeCommand = (commandId: string) => {
-  const command = getCommand(commandId);
-  if (command && (!command.canExecute || command.canExecute())) {
-    command.execute();
+const insertItems = computed<MenuItem[]>(() => [
+  { id: "insert-line", label: "Verso después" },
+  { id: "insert-line-before", label: "Verso antes" },
+  {
+    id: "insert-line-outside-after",
+    label: "Verso fuera de columnas",
+    reason: inColumns.value ? null : "solo en columnas"
+  },
+  { id: "insert-stanza", label: "Estrofa nueva" },
+  { id: "duplicate-line", label: "Duplicar verso" }
+]);
+
+const structureItems = computed<MenuItem[]>(() => [
+  {
+    id: "convert-to-columns",
+    label: "Convertir en columnas",
+    reason: inColumns.value ? "ya está en columnas" : null
+  },
+  {
+    id: "insert-column-left",
+    label: "Columna a la izquierda",
+    reason: inColumns.value ? null : "solo en columnas"
+  },
+  {
+    id: "insert-column-right",
+    label: "Columna a la derecha",
+    reason: inColumns.value ? null : "solo en columnas"
+  },
+  { id: "split-stanza", label: "Dividir estrofa acá" },
+  { id: "join-stanzas", label: "Unir con la anterior" },
+  { id: "move-line-up", label: "Mover verso arriba" },
+  { id: "move-line-down", label: "Mover verso abajo" },
+  { id: "delete-line", label: "Eliminar verso", danger: true }
+]);
+
+const menus = computed(() => [
+  { id: "insert", label: "Insertar", icon: IconPlus, items: insertItems.value, width: "w-72" },
+  {
+    id: "structure",
+    label: "Estructura",
+    icon: IconColumns,
+    items: structureItems.value,
+    width: "w-80"
   }
+]);
+
+const keysFor = (commandId: string): string[] => {
+  const command = props.commandRegistry.getCommand(commandId);
+  return command ? prettyKeyParts(props.commandRegistry.getKeybindingParts(command)) : [];
 };
 
-const getKeybindingParts = (commandId: string): string[] => {
-  const command = getCommand(commandId);
-  return command ? props.commandRegistry.getKeybindingParts(command) : [];
+const isDisabled = (item: MenuItem) => !hasFocus.value || !!item.reason;
+
+const closeMenus = () => (document.activeElement as HTMLElement | null)?.blur?.();
+
+const run = (commandId: string) => {
+  props.commandRegistry.execute(commandId);
+  // DaisyUI dropdowns stay open while something inside them has focus.
+  closeMenus();
 };
 </script>
 
 <template>
   <div
-    class="bg-base-100/50 border-base-content/10 rounded-box flex flex-wrap items-center justify-center gap-1.5 border p-1.5 shadow-lg backdrop-blur-sm"
+    class="border-base-content/8 flex flex-wrap items-center gap-1 border-b px-2.5 py-2 md:px-3"
+    data-testid="lyrics-toolbar"
   >
-    <!-- Undo/Redo -->
-    <div
-      class="bg-base-content/5 flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
-    >
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Deshacer<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('undo')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!collectionsStore.canUndo"
-          @click="() => executeCommand('undo')"
-        >
-          <IconUndo class="size-3" />
-          <span class="sr-only">Deshacer</span>
-        </button>
-      </div>
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Rehacer<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('redo')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!collectionsStore.canRedo"
-          @click="() => executeCommand('redo')"
-        >
-          <IconRedo class="size-3" />
-          <span class="sr-only">Rehacer</span>
-        </button>
-      </div>
+    <div class="flex items-center">
+      <button
+        class="btn btn-ghost btn-sm btn-square rounded-full"
+        :disabled="!canUndo"
+        title="Deshacer (⌘Z)"
+        @mousedown.prevent
+        @click="run('undo')"
+      >
+        <IconUndo class="size-4" />
+        <span class="sr-only">Deshacer</span>
+      </button>
+      <button
+        class="btn btn-ghost btn-sm btn-square rounded-full"
+        :disabled="!canRedo"
+        title="Rehacer (⌘⇧Z)"
+        @mousedown.prevent
+        @click="run('redo')"
+      >
+        <IconRedo class="size-4" />
+        <span class="sr-only">Rehacer</span>
+      </button>
     </div>
 
-    <!-- Line operations -->
-    <div
-      class="bg-base-content/5 flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
-    >
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Agregar verso después<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('insert-line')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('insert-line')"
-        >
-          <IconInsertAfter class="size-3" />
-          <span class="sr-only">Agregar verso después</span>
-        </button>
+    <span class="bg-base-content/10 mx-1 h-5 w-px" />
+
+    <!-- mousedown.prevent keeps the verse's textarea focused, so commands still know where to act -->
+    <div v-for="menu in menus" :key="menu.id" class="dropdown">
+      <div
+        tabindex="0"
+        role="button"
+        class="btn btn-ghost btn-sm gap-1.5 rounded-full font-semibold"
+        :data-testid="`menu-${menu.id}`"
+        @mousedown.prevent="($event.currentTarget as HTMLElement).focus()"
+      >
+        <component :is="menu.icon" class="size-4" />
+        {{ menu.label }}
+        <IconChevronDown class="size-3.5 opacity-60" />
       </div>
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Agregar verso antes<br />
-          <KeybindingDisplay
-            :key-parts="getKeybindingParts('insert-line-before')"
-            kbd-class="kbd-xs"
-          />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('insert-line-before')"
-        >
-          <IconInsertBefore class="size-3" />
-          <span class="sr-only">Agregar verso antes</span>
-        </button>
-      </div>
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Duplicar verso<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('duplicate-line')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('duplicate-line')"
-        >
-          <IconCopy class="size-3" />
-          <span class="sr-only">Duplicar verso</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Column operations -->
-    <div
-      class="bg-base-content/5 flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
-    >
-      <div v-if="!hasColumnContext" class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Convertir a columnas<br />
-          <KeybindingDisplay
-            :key-parts="getKeybindingParts('convert-to-columns')"
-            kbd-class="kbd-xs"
-          />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('convert-to-columns')"
-        >
-          <IconColumns class="size-3" />
-          <span class="sr-only">Convertir a columnas</span>
-        </button>
-      </div>
-
-      <div v-if="hasColumnContext" class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Insertar columna a la izquierda<br />
-          <KeybindingDisplay
-            :key-parts="getKeybindingParts('insert-column-left')"
-            kbd-class="kbd-xs"
-          />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('insert-column-left')"
-        >
-          <IconInsertLeft class="size-3" />
-          <span class="sr-only">Insertar columna a la izquierda</span>
-        </button>
-      </div>
-
-      <div v-if="hasColumnContext" class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Insertar columna a la derecha<br />
-          <KeybindingDisplay
-            :key-parts="getKeybindingParts('insert-column-right')"
-            kbd-class="kbd-xs"
-          />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('insert-column-right')"
-        >
-          <IconInsertRight class="size-3" />
-          <span class="sr-only">Insertar columna a la derecha</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Color and audio track operations -->
-    <div
-      class="bg-base-content/5 flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
-    >
-      <ColorPicker
-        title="Colores del verso"
-        :selected-colors="currentVerseColors"
-        :available-colors="availableColors"
-        :multiple="true"
-        :disabled="!canPerformActions || copyPropertiesToMode"
-        btn-class="btn-xs"
-        @update:selected-colors="onColorsChange"
-      />
-
-      <TrackPicker
-        :selected-track-ids="currentVerseAudioTrackIds"
-        :available-tracks="availableAudioTracks"
-        :available-colors="availableColors"
-        :multiple="true"
-        :disabled="!canPerformActions || copyPropertiesToMode"
-        btn-class="btn-xs"
-        @update:selected-track-ids="onAudioTrackIdsChange"
-      />
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Copiar propiedades a otros versos<br />
-          <KeybindingDisplay
-            :key-parts="getKeybindingParts('copy-properties')"
-            kbd-class="kbd-xs"
-          />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :class="{ 'btn-active': copyPropertiesToMode }"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('copy-properties')"
-        >
-          <IconCopyProperties class="size-3" />
-          <span class="sr-only">Copiar propiedades a otros versos</span>
-        </button>
-      </div>
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content text-[11px]">Agregar/quitar comentario al verso</div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :class="{ 'btn-active': props.currentVerseComment !== '' }"
-          :disabled="!canPerformActions || copyPropertiesToMode"
-          @click="
-            props.currentVerseComment !== undefined
-              ? props.onCommentChange(undefined)
-              : props.onCommentChange('')
-          "
-        >
-          <IconComment class="size-3" />
-          <span class="sr-only">Comentario del verso</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Timestamp section -->
-    <div
-      class="flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
-      :class="showTimestamps ? 'bg-primary/10' : 'bg-base-content/5'"
-    >
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Mostrar/ocultar marcas de tiempo
-        </div>
-        <button
-          class="btn btn-xs btn-square"
-          :class="{
-            'btn-ghost': !showTimestamps,
-            'btn-primary': showTimestamps
-          }"
-          @click="onToggleTimestamps"
-        >
-          <IconTimestamp class="size-3" />
-          <span class="sr-only">Mostrar/ocultar marcas de tiempo</span>
-        </button>
-      </div>
-
-      <div class="dropdown">
-        <div
-          tabindex="0"
-          role="button"
-          class="btn btn-xs btn-ghost gap-0 px-1.5 font-mono"
-          title="Corrección por tiempo de reacción"
-        >
-          <span class="text-base-content/40 text-[10px]"
-            >−{{ props.timestampOffset.toFixed(2) }}s</span
+      <ul
+        tabindex="0"
+        class="dropdown-content menu glass-3 rounded-box z-40 mt-1.5 p-1.5"
+        :class="menu.width"
+      >
+        <li v-for="item in menu.items" :key="item.id">
+          <button
+            class="flex items-center justify-between gap-3"
+            :class="{ 'menu-disabled': isDisabled(item), 'text-error': item.danger }"
+            :disabled="isDisabled(item)"
+            :data-testid="`command-${item.id}`"
+            @mousedown.prevent
+            @click="run(item.id)"
           >
-        </div>
-        <div
-          tabindex="0"
-          class="dropdown-content bg-base-100 rounded-box border-base-content/10 z-50 border p-3 shadow-xl"
-        >
-          <div class="flex flex-col gap-2">
-            <span class="text-base-content/50 text-[10px] font-medium tracking-wider uppercase"
-              >Corrección por reacción</span
-            >
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              :value="props.timestampOffset"
-              class="range range-xs range-primary w-32"
-              @input="
-                (e) => {
-                  const v = parseFloat((e.target as HTMLInputElement).value);
-                  if (!isNaN(v)) emit('update:timestampOffset', v);
-                }
-              "
-            />
-            <span class="text-base-content/50 text-center font-mono text-xs"
-              >{{ props.timestampOffset.toFixed(2) }}s</span
-            >
-          </div>
-        </div>
-      </div>
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Establecer tiempo de inicio<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('set-start-time')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('set-start-time')"
-        >
-          <IconInsertLeft class="size-3" />
-          <span class="sr-only">Establecer tiempo de inicio</span>
-        </button>
-      </div>
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Establecer tiempo de finalización<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('set-end-time')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('set-end-time')"
-        >
-          <IconInsertRight class="size-3" />
-          <span class="sr-only">Establecer tiempo de finalización</span>
-        </button>
-      </div>
-
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Limpiar tiempos<br />
-          <KeybindingDisplay
-            :key-parts="getKeybindingParts('clear-both-times')"
-            kbd-class="kbd-xs"
-          />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('clear-both-times')"
-        >
-          <IconClose class="size-3" />
-          <span class="sr-only">Limpiar ambos tiempos</span>
-        </button>
-      </div>
+            <span>{{ item.label }}</span>
+            <span v-if="item.reason" class="text-base-content/45 text-xs italic">
+              {{ item.reason }}
+            </span>
+            <span v-else class="flex gap-0.5">
+              <kbd v-for="k in keysFor(item.id)" :key="k" class="kbd kbd-xs">{{ k }}</kbd>
+            </span>
+          </button>
+        </li>
+      </ul>
     </div>
 
-    <!-- Stanza + Delete -->
-    <div
-      class="bg-base-content/5 flex items-center gap-0.5 rounded-[calc(var(--radius-box)-0.375rem)] px-1 py-0.5"
+    <span class="bg-base-content/10 mx-1 hidden h-5 w-px sm:block" />
+
+    <label
+      class="btn btn-ghost btn-sm hidden gap-2 rounded-full font-semibold sm:inline-flex"
+      title="Mostrar el tiempo de cada verso"
     >
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Agregar estrofa<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('insert-stanza')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('insert-stanza')"
-        >
-          <IconAddStanza class="size-3" />
-          <span class="sr-only">Agregar estrofa</span>
-        </button>
-      </div>
+      <input
+        type="checkbox"
+        class="toggle toggle-xs toggle-primary"
+        :checked="showTimestamps"
+        data-testid="toggle-times"
+        @change="emit('toggle-timestamps')"
+      />
+      <IconTimestamp class="size-4 opacity-70" />
+      Tiempos
+    </label>
 
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Dividir estrofa<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('split-stanza')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions || currentFocus?.itemIndex === 0"
-          @click="() => executeCommand('split-stanza')"
-        >
-          <IconSplitStanza class="size-3" />
-          <span class="sr-only">Dividir estrofa</span>
-        </button>
-      </div>
+    <label
+      class="btn btn-ghost btn-sm hidden gap-2 rounded-full font-semibold sm:inline-flex"
+      title="Seguir reproducción: la hoja acompaña al verso que está sonando"
+    >
+      <input
+        type="checkbox"
+        class="toggle toggle-xs toggle-primary"
+        :checked="followPlayback"
+        data-testid="toggle-follow"
+        @change="emit('toggle-follow')"
+      />
+      <IconFollowPlayback class="size-4 opacity-70" />
+      Seguir
+    </label>
 
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Unir con estrofa anterior
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost"
-          :disabled="!canPerformActions || (currentFocus?.stanzaIndex ?? 0) === 0"
-          @click="() => executeCommand('join-stanzas')"
-        >
-          <IconJoinStanza class="size-3" />
-          <span class="sr-only">Unir estrofas</span>
-        </button>
-      </div>
+    <button
+      class="btn btn-ghost btn-sm gap-1.5 rounded-full font-semibold"
+      title="Vista previa: el escenario con los cambios sin guardar (P)"
+      data-testid="preview"
+      @click="emit('preview')"
+    >
+      <IconPreview class="size-4" />
+      <span class="hidden md:inline">Vista previa</span>
+    </button>
 
-      <div class="tooltip tooltip-bottom flex">
-        <div class="tooltip-content flex flex-col items-center gap-0.5 text-[11px]">
-          Eliminar verso<br />
-          <KeybindingDisplay :key-parts="getKeybindingParts('delete-line')" kbd-class="kbd-xs" />
-        </div>
-        <button
-          class="btn btn-xs btn-square btn-ghost hover:text-error"
-          :disabled="!canPerformActions"
-          @click="() => executeCommand('delete-line')"
-        >
-          <IconTrash class="size-3" />
-          <span class="sr-only">Eliminar verso</span>
-        </button>
-      </div>
-    </div>
+    <div class="flex-1" />
+
+    <button
+      class="btn btn-ghost btn-sm gap-1.5 rounded-full font-semibold"
+      title="Atajos de teclado (F1 o ?)"
+      data-testid="shortcuts"
+      @click="emit('help')"
+    >
+      <IconKeyboard class="size-4" />
+      <span class="hidden md:inline">Atajos</span>
+      <kbd class="kbd kbd-xs hidden md:inline-flex">F1</kbd>
+    </button>
   </div>
 </template>

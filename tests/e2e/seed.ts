@@ -58,11 +58,12 @@ async function seed() {
     .insert({
       slug: "test-collection",
       title: "Test Collection",
-      main_color: "#3b82f6",
+      hue: 260,
+      intensity: "media",
       track_colors: {
-        guitar: "#ef4444",
-        vocals: "#3b82f6",
-        drums: "#22c55e"
+        guitar: { hue: 25, intensity: "intensa" },
+        vocals: { hue: 260, intensity: "intensa" },
+        drums: { hue: 150, intensity: "intensa" }
       },
       visibility: "private"
     })
