@@ -3,7 +3,7 @@ import { IconEmpty, IconSearch } from "@/components/ui/icons";
 import { computed } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 
-import SongMenu from "@/components/navigation/SongMenu.vue";
+import LibraryButton from "@/components/navigation/LibraryButton.vue";
 
 type Props = {
   type: "not-found" | "collection-not-found" | "song-not-found" | "no-collections" | "no-songs";
@@ -52,7 +52,7 @@ const message = computed(() => config[props.type].message);
 <template>
   <div class="relative min-h-dvh">
     <div class="fixed top-3 left-3 z-50 lg:top-4 lg:left-4">
-      <SongMenu />
+      <LibraryButton />
     </div>
 
     <div class="mx-auto flex min-h-dvh max-w-md flex-grow-1 flex-col">
