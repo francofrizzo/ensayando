@@ -9,12 +9,11 @@ import {
   IconLink,
   IconLock,
   IconPlus,
-  IconSave,
   IconTrash,
-  IconClose,
   IconUpload
 } from "@/components/ui/icons";
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
 import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
@@ -24,7 +23,7 @@ import SafeTeleport from "@/components/ui/SafeTeleport.vue";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
-import { useNavigation } from "@/composables/useNavigation";
+import { useEditorTab } from "@/composables/useEditorSession";
 import {
   deleteAudioTracks,
   insertAudioTrack,
@@ -46,7 +45,7 @@ import {
 // Composables and stores
 const { currentSong } = useCurrentSong();
 const { currentCollection } = useCurrentCollection();
-const { replaceToSong } = useNavigation();
+const router = useRouter();
 const authStore = useAuthStore();
 const collectionsStore = useCollectionsStore();
 
@@ -444,7 +443,11 @@ const handleCreateSong = async () => {
     toast.success("Canción creada correctamente");
     isCreateMode.value = false;
     isDirty.value = false;
-    replaceToSong(currentCollection.value, newSong);
+    void router.replace({
+      name: "song",
+      params: { collectionSlug: currentCollection.value.slug, songSlug: newSong.slug },
+      query: { editar: "cancion" }
+    });
   } catch (error: unknown) {
     console.error("Error creating song:", error);
     toast.error(
@@ -495,8 +498,11 @@ const handleUpdateSong = async () => {
     isDirty.value = false;
 
     if (originalSlug !== formData.slug) {
-      const updatedSong = { ...currentSong.value, slug: formData.slug };
-      replaceToSong(currentCollection.value, updatedSong);
+      void router.replace({
+        name: "song",
+        params: { collectionSlug: currentCollection.value.slug, songSlug: formData.slug },
+        query: router.currentRoute.value.query
+      });
     }
   } catch (error: unknown) {
     console.error("Error saving song:", error);
@@ -560,22 +566,6 @@ watch(
 // Swatches derived from the collection palette for the current theme.
 const { colorOptions: colorOptions } = useCollectionPalette(currentCollection);
 
-const canSave = computed(
-  () =>
-    authStore.isAuthenticated &&
-    collectionsStore.canEditCurrentCollection &&
-    isDirty.value &&
-    !isSaving.value
-);
-
-const canCreateNewSong = computed(
-  () =>
-    authStore.isAuthenticated &&
-    collectionsStore.canEditCurrentCollection &&
-    !isCreateMode.value &&
-    !isSaving.value
-);
-
 const tracksForRendering = computed(() =>
   formData.audio_tracks.map((track, index) => ({
     ...track,
@@ -584,7 +574,17 @@ const tracksForRendering = computed(() =>
   }))
 );
 
-// Expose isDirty to parent component
+// The edit bar's Guardar / Descartar drive this form.
+const editorSession = useEditorTab("cancion", {
+  isDirty: () => isDirty.value,
+  isSaving: () => isSaving.value,
+  save: handleSave,
+  discard: async () => {
+    if (isCreateMode.value) await enterCreateMode();
+    else await cancelCreateMode();
+  }
+});
+
 defineExpose({
   isDirty,
   enterCreateMode
@@ -850,46 +850,19 @@ defineExpose({
       </div>
     </div>
   </div>
-  <SafeTeleport to="[data-song-editor-actions]">
-    <div class="flex gap-2">
-      <button
-        v-if="isCreateMode && currentSong"
-        class="btn btn-xs btn-soft"
-        @click="cancelCreateMode"
-      >
-        <IconClose class="size-3.5" />
-        <span class="hidden md:block">Cancelar</span>
-      </button>
-      <button
-        v-if="!isCreateMode"
-        class="btn btn-xs btn-primary btn-soft"
-        :disabled="!canCreateNewSong"
-        @click="enterCreateMode"
-      >
-        <IconPlus class="size-3.5" />
-        <span class="hidden md:block">Nueva canción</span>
-      </button>
-      <button class="btn btn-xs btn-primary" :disabled="!canSave" @click="handleSave">
-        <template v-if="isSaving">
-          <span class="loading loading-spinner loading-xs" />
-          <span>{{ isCreateMode ? "Creando..." : "Guardando..." }}</span>
-        </template>
-        <template v-else>
-          <IconSave class="size-3.5" />
-          <span class="hidden md:block">{{
-            isCreateMode ? "Crear canción" : "Guardar cambios"
-          }}</span>
-        </template>
-      </button>
-
-      <button
-        class="btn btn-xs btn-square tooltip tooltip-bottom"
-        :class="{ 'btn-primary': showAdvancedOptions, 'btn-soft': !showAdvancedOptions }"
-        :data-tip="'Opciones avanzadas'"
-        @click="showAdvancedOptions = !showAdvancedOptions"
-      >
-        <IconSettings class="size-3.5" />
-      </button>
-    </div>
+  <SafeTeleport
+    v-if="editorSession.activeTab.value === 'cancion'"
+    to="[data-song-editor-actions]"
+  >
+    <button
+      class="btn btn-sm btn-circle"
+      :class="showAdvancedOptions ? 'btn-primary' : 'btn-ghost'"
+      :aria-pressed="showAdvancedOptions"
+      aria-label="Opciones avanzadas"
+      title="Opciones avanzadas"
+      @click="showAdvancedOptions = !showAdvancedOptions"
+    >
+      <IconSettings class="size-[18px]" />
+    </button>
   </SafeTeleport>
 </template>

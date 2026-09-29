@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconProhibited, IconSave } from "@/components/ui/icons";
+import { IconProhibited } from "@/components/ui/icons";
 import {
   Mode,
   createAjvValidator,
@@ -9,15 +9,14 @@ import {
   type OnChangeStatus
 } from "vanilla-jsoneditor";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { toast } from "vue-sonner";
 
 import JsonEditor from "@/components/editor/JsonEditor.vue";
-import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useEditorTab } from "@/composables/useEditorSession";
 import lyricSchema from "@/data/lyric-schema.json";
 import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
-const { saveLyrics, updateLocalLyrics } = store;
+const { updateLocalLyrics } = store;
 
 const hasValidationErrors = ref(false);
 const editorRef = ref<{ get: () => Content; set: (content: Content) => void } | null>(null);
@@ -29,15 +28,6 @@ let validationTimeout: ReturnType<typeof setTimeout> | null = null;
 const initialContent = {
   text: JSON.stringify(store.localLyrics.value, null, 2)
 };
-
-const isSaveDisabled = computed(() => {
-  return (
-    !store.canEditCurrentCollection ||
-    !store.localLyrics.isDirty ||
-    store.localLyrics.isSaving ||
-    hasValidationErrors.value
-  );
-});
 
 watch(
   () => store.currentSong,
@@ -52,26 +42,6 @@ watch(
   },
   { immediate: false }
 );
-
-const handleSaveClick = () => {
-  if (hasValidationErrors.value) {
-    toast.error("Cannot save: Please fix validation errors first");
-    return;
-  }
-
-  try {
-    if (editorRef.value) {
-      const currentContent = editorRef.value.get();
-      if (isTextContent(currentContent) && currentContent.text) {
-        const parsedLyrics = JSON.parse(currentContent.text);
-        updateLocalLyrics(parsedLyrics);
-      }
-    }
-    saveLyrics();
-  } catch (error) {
-    toast.error(`Error al guardar letras: ${error}`);
-  }
-};
 
 const handleEditorChange = (
   content: Content,
@@ -112,6 +82,17 @@ onBeforeUnmount(() => {
   }
 });
 
+// Lyrics changes are saved by the edit bar; invalid JSON blocks it.
+// isDirty mirrors the lyrics so "Descartar" also resets the editor text (after the store).
+useEditorTab("letra", {
+  isDirty: () => store.localLyrics.isDirty,
+  save: async () => {},
+  discard: () => {
+    editorRef.value?.set({ text: JSON.stringify(store.localLyrics.value, null, 2) });
+  },
+  canSave: () => !hasValidationErrors.value
+});
+
 // Expose hasUnsavedChanges to parent component
 defineExpose({
   hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
@@ -131,28 +112,13 @@ defineExpose({
       class="json-editor min-h-0 flex-1"
     />
 
-    <SafeTeleport to="[data-song-editor-actions]">
-      <button
-        class="btn btn-xs btn-primary"
-        :disabled="isSaveDisabled"
-        :class="{ 'btn-error': hasValidationErrors }"
-        @click="handleSaveClick"
-      >
-        <template v-if="store.localLyrics.isSaving">
-          <span class="loading loading-spinner loading-xs" />
-          <span>Guardando...</span>
-        </template>
-
-        <template v-else-if="hasValidationErrors">
-          <IconProhibited class="size-3.5" />
-          <span class="hidden md:block">Hay errores</span>
-        </template>
-
-        <template v-else>
-          <IconSave class="size-3.5" />
-          <span class="hidden md:block">Guardar cambios</span>
-        </template>
-      </button>
-    </SafeTeleport>
+    <div
+      v-if="hasValidationErrors"
+      class="bg-error/10 text-error flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
+      role="status"
+    >
+      <IconProhibited class="size-4" />
+      El JSON tiene errores. Corregilos para poder guardar.
+    </div>
   </div>
 </template>

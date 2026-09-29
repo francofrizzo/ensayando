@@ -64,6 +64,15 @@ const router = createRouter({
       props: true
     },
     {
+      // Declared before the song route: "nueva" is a reserved song slug.
+      path: "/:collectionSlug/nueva",
+      name: "new-song",
+      component: () => import("@/views/NewSongView.vue"),
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
       path: "/:collectionSlug/:songSlug",
       name: "song",
       component: () => import("@/views/SongView.vue"),
