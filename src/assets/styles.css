@@ -35,11 +35,11 @@
    ------------------------------------------------------------------ */
 :root {
   --collection-hue: 314;
-  --collection-fill: oklch(0.429 0.2 314);
-  --collection-ink-light: oklch(0.429 0.2 314);
+  --collection-fill: oklch(0.429 0.2124 314);
+  --collection-ink-light: oklch(0.429 0.2124 314);
   --collection-ink-dark: oklch(0.76 0.17 314);
   --collection-soft-light: oklch(0.93 0.0481 314);
-  --collection-soft-dark: oklch(0.3 0.09 314);
+  --collection-soft-dark: oklch(0.3 0.0956 314);
 }
 
 @plugin "daisyui/theme" {

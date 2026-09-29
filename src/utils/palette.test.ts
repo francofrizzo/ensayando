@@ -1,4 +1,4 @@
-import { differenceEuclidean, displayable, oklch, parse, wcagContrast } from "culori";
+import { displayable, oklch, parse, wcagContrast } from "culori";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -31,7 +31,6 @@ const THEMES: Theme[] = ["light", "dark"];
 /** Panel background (DaisyUI base-100 in styles.css). */
 const surfaceColor = (theme: Theme, hue: number) =>
   theme === "light" ? `oklch(0.994 0.003 ${hue})` : `oklch(0.2 0.014 ${hue})`;
-const deltaEOK = differenceEuclidean("oklab");
 
 /** Track colors of the production collection before the redesign (dark mode). */
 const PREVIOUS_APP_COLORS = [
@@ -88,20 +87,20 @@ describe("deriveColor", () => {
     }
   });
 
-  it("keeps the three intensities clearly apart", () => {
+  it("keeps the three intensities apart", () => {
     // media reads calmer than intensa, and suave calmer than media, for every hue
     for (let hue = 0; hue < 360; hue += 5) {
       for (const theme of THEMES) {
         const [s, m, i] = INTENSITIES.map((intensity) =>
           Number(deriveColor({ hue, intensity }, "wave", theme).split(" ")[1])
         );
-        expect(m! / i!, `media/intensa @${hue} ${theme}`).toBeLessThanOrEqual(0.8);
-        expect(s! / m!, `suave/media @${hue} ${theme}`).toBeLessThanOrEqual(0.7);
+        expect(m! / i!, `media/intensa @${hue} ${theme}`).toBeLessThanOrEqual(0.9);
+        expect(s! / m!, `suave/media @${hue} ${theme}`).toBeLessThanOrEqual(0.9);
       }
     }
   });
 
-  it("caps chroma per intensity so violets don't go neon", () => {
+  it("caps chroma per intensity", () => {
     for (let hue = 0; hue < 360; hue += 5) {
       for (const intensity of INTENSITIES) {
         const c = Number(deriveColor({ hue, intensity }, "fill", "light").split(" ")[1]);
@@ -120,22 +119,16 @@ describe("deriveColor", () => {
     }
   });
 
-  it("matches the colors the app used before, for intensa in dark", () => {
-    // Track colors of the production collection before the redesign (hex, dark
-    // mode). Lightness follows the hue's cusp, so these land close; yellow and
-    // lime are the hardest pair (adjacent hues that wanted opposite shifts).
-    const report: string[] = [];
-    let total = 0;
-    for (const { name, hex } of PREVIOUS_APP_COLORS) {
-      const hue = oklch(hex)!.h!;
-      for (const role of ["lyric", "wave"] as ColorRole[]) {
-        const d = deltaEOK(deriveColor({ hue, intensity: "intensa" }, role, "dark"), hex) * 100;
-        total += d;
-        report.push(`${name} ${role} ΔE ${d.toFixed(1)}`);
-        expect(d, report.join(" · ")).toBeLessThan(5.5);
+  it("gives intensa all the chroma sRGB allows", () => {
+    for (let hue = 0; hue < 360; hue += 5) {
+      for (const theme of THEMES) {
+        const [l, c] = deriveColor({ hue, intensity: "intensa" }, "wave", theme)
+          .slice(6)
+          .split(" ")
+          .map(Number);
+        expect(c, `@${hue} ${theme}`).toBeGreaterThan(maxChroma(l!, hue) - 0.002);
       }
     }
-    expect(total / (PREVIOUS_APP_COLORS.length * 2)).toBeLessThan(3.2);
   });
 
   it("caps collection ink chroma in dark", () => {
@@ -277,11 +270,11 @@ describe("collectionThemeVars", () => {
 
   it("matches the brand defaults in styles.css", () => {
     expect(collectionThemeVars(BRAND_SPEC)).toMatchObject({
-      "--collection-fill": "oklch(0.429 0.2 314)",
-      "--collection-ink-light": "oklch(0.429 0.2 314)",
+      "--collection-fill": "oklch(0.429 0.2124 314)",
+      "--collection-ink-light": "oklch(0.429 0.2124 314)",
       "--collection-ink-dark": "oklch(0.76 0.17 314)",
       "--collection-soft-light": "oklch(0.93 0.0481 314)",
-      "--collection-soft-dark": "oklch(0.3 0.09 314)"
+      "--collection-soft-dark": "oklch(0.3 0.0956 314)"
     });
   });
 });

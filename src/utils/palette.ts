@@ -27,9 +27,9 @@ export type Theme = "light" | "dark";
 
 /**
  * Intensity = share of the hue's maximum sRGB chroma at the role's lightness,
- * with an absolute cap so violets and pinks (which reach ~0.29) don't go neon.
- * "intensa" is calibrated against the colors the app used before the redesign;
- * "media" and "suave" sit clearly below it so the three read as different.
+ * with an absolute cap for the softer two. "intensa" takes all the chroma
+ * sRGB allows (violets and pinks reach ~0.29); "suave" stays a clear pastel
+ * rather than a gray.
  * `lift` raises the lightness of the roles that allow it (see RoleRule.lift):
  * less chroma alone reads gray and muddy, less chroma plus more light reads
  * pastel. Contrast still has the last word (RoleRule.contrast).
@@ -38,9 +38,9 @@ export const INTENSITY_RULES: Record<
   Intensity,
   { share: number; cap: number; lift: Record<Theme, number> }
 > = {
-  suave: { share: 0.4, cap: 0.08, lift: { light: 0.15, dark: 0.1 } },
-  media: { share: 0.68, cap: 0.14, lift: { light: 0.07, dark: 0.05 } },
-  intensa: { share: 1, cap: 0.2, lift: { light: 0, dark: 0 } }
+  suave: { share: 0.55, cap: 0.11, lift: { light: 0.15, dark: 0.1 } },
+  media: { share: 0.75, cap: 0.16, lift: { light: 0.07, dark: 0.05 } },
+  intensa: { share: 1, cap: Infinity, lift: { light: 0, dark: 0 } }
 };
 
 const maxChromaCache = new Map<string, number>();
@@ -108,9 +108,10 @@ export const BRAND_SPEC: ColorSpec = { hue: 314, intensity: "intensa" };
 // Tinted backgrounds and borders take a fraction of the fill's chroma rather
 // than their own maximum (`fromFill`).
 // Roles with `lift` take the intensity's lift on top (max included), then step
-// back down until they keep `contrast`: white text on fills, and light-theme
-// text and waves on the canvas (tinted, so it is darker than the panels).
-// Dark-theme text only gains contrast by getting lighter, so it needs no check.
+// away from their background until they keep `contrast`: white text on fills
+// (darker), light-theme text and waves on the canvas (darker; the canvas is
+// tinted, so darker than the panels), dark-theme ones on theirs (lighter:
+// saturated violets and blues are dark for their lightness).
 type RoleRule = {
   offset: number;
   min: number;
@@ -143,9 +144,9 @@ export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
   dark: {
     fill: { offset: -0.2, min: 0.42, max: 0.5, ...lifted("white", 4.55), chroma: (c) => c },
     ink: { offset: 0, min: 0.76, max: 0.86, chroma: (c) => Math.min(c, 0.17) },
-    lyric: { offset: 0, min: 0.6, max: 0.86, lift: true, chroma: (c) => c },
-    stage: { offset: 0, min: 0.6, max: 0.86, lift: true, chroma: (c) => c },
-    wave: { offset: 0, min: 0.6, max: 0.86, lift: true, chroma: (c) => c },
+    lyric: { offset: 0, min: 0.6, max: 0.86, ...lifted("canvas", 4.55), chroma: (c) => c },
+    stage: { offset: 0, min: 0.6, max: 0.86, ...lifted("canvas", 3.05), chroma: (c) => c },
+    wave: { offset: 0, min: 0.6, max: 0.86, ...lifted("canvas", 3.05), chroma: (c) => c },
     soft: { offset: 0, min: 0.3, max: 0.3, fromFill: true, chroma: (c) => c * 0.45 },
     line: { offset: 0, min: 0.45, max: 0.45, fromFill: true, chroma: (c) => c * 0.6 }
   }
@@ -222,7 +223,10 @@ export const liftedLightness = (spec: ColorSpec, role: ColorRole, theme: Theme):
     const bg = rule.contrast.against === "white" ? "white" : canvasColor(theme, spec.hue);
     return wcagContrast(color, bg) >= rule.contrast.ratio;
   };
-  while (l > base && !passes(l)) l = round(Math.max(base, l - 0.005), 3);
+  // Darker against white or the light canvas, lighter against the dark canvas.
+  const lighter = rule.contrast?.against === "canvas" && theme === "dark";
+  if (lighter) while (l < 0.95 && !passes(l)) l = round(l + 0.005, 3);
+  else while (l > base && !passes(l)) l = round(Math.max(base, l - 0.005), 3);
   liftCache.set(key, l);
   return l;
 };
