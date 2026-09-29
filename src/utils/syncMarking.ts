@@ -234,10 +234,16 @@ export const setUnitTimes = (
   return next;
 };
 
+const itemKey = (unit: SyncUnit) => {
+  const position = unit.positions[0]!;
+  return `${position.stanzaIndex}-${position.itemIndex}`;
+};
+
 /**
- * Where a unit's region ends when it has no end: the next marked start that the player
- * would use (any voice for a regular verse; for a column verse, the next one in its
- * column or else the next regular verse after the line), or start + 4 s.
+ * Where a unit's region ends when it has no end, the way the player ends it: for a
+ * column verse, the next marked verse in its column; otherwise the next item that has
+ * a later start (a regular verse or a whole row of columns, whose start is its
+ * earliest verse). Else start + 4 s.
  */
 export const regionEnd = (
   units: SyncUnit[],
@@ -247,16 +253,24 @@ export const regionEnd = (
   const unit = units[index];
   if (!unit || unit.start === undefined) return undefined;
   if (unit.end !== undefined) return unit.end;
+  const startsLater = (u: SyncUnit) => u.start !== undefined && u.start > unit.start!;
   const later = units.slice(index + 1);
-  const next =
-    unit.voice === "main"
-      ? later.find((u) => u.start !== undefined && u.start > unit.start!)
-      : (later.find(
-          (u) => u.voice === unit.voice && u.start !== undefined && u.start > unit.start!
-        ) ??
-        later.find((u) => u.voice === "main" && u.start !== undefined && u.start > unit.start!));
-  const fallback = unit.start + 4;
-  const end = next?.start ?? fallback;
+
+  let end: number | undefined;
+  if (unit.voice !== "main") {
+    end = later.find((u) => u.voice === unit.voice && startsLater(u))?.start;
+  }
+  if (end === undefined) {
+    const ownItem = itemKey(unit);
+    const next = later.find((u) => itemKey(u) !== ownItem && startsLater(u));
+    if (next) {
+      const nextItem = itemKey(next);
+      end = minDefined(
+        later.filter((u) => itemKey(u) === nextItem && startsLater(u)).map((u) => u.start)
+      );
+    }
+  }
+  end ??= unit.start + 4;
   return duration > 0 ? Math.min(end, duration) : end;
 };
 

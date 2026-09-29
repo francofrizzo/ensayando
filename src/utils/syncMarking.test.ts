@@ -285,6 +285,22 @@ describe("multicolumn regions", () => {
     expect(regionEnd(units, byText("antes"), 240)).toBe(2);
   });
 
+  it("ends a column verse at the next row of columns, not at the next regular verse", () => {
+    // Two rows of columns in a row: "oh" has no end and ends where the next row starts.
+    const source: LyricStanza[] = [
+      [
+        [[{ text: "oh", start_time: 25.18 }], [{ text: "uh", start_time: 25.94 }]],
+        [[{ text: "ah", start_time: 28.06 }], [{ text: "uh 2", start_time: 28.68 }]],
+        { text: "ah solo", start_time: 32 }
+      ]
+    ];
+    const units = buildSyncUnits(source);
+    const byText = (text: string) => units.findIndex((u) => u.texts[0] === text);
+    expect(regionEnd(units, byText("oh"), 240)).toBe(28.06);
+    expect(regionEnd(units, byText("uh"), 240)).toBe(28.06);
+    expect(regionEnd(units, byText("ah"), 240)).toBe(32);
+  });
+
   it("doesn't flag columns that overlap in time as out of order", () => {
     expect([...outOfOrderIndices(buildSyncUnits(multicolumn()))]).toEqual([]);
   });
