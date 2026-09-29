@@ -126,7 +126,9 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
       </button>
     </template>
 
-    <label class="input w-full max-w-sm">
+    <label
+      class="input focus-within:shadow-[inset_0_0_0_1.5px_var(--collection-ink),0_0_0_4px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] w-full max-w-sm focus-within:outline-none"
+    >
       <IconSearch class="size-4 opacity-60" />
       <input v-model="filter" class="grow" placeholder="Buscar por nombre, usuario o email" />
     </label>
