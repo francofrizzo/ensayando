@@ -58,10 +58,28 @@ const router = createRouter({
       }
     },
     {
+      path: "/nueva-coleccion",
+      name: "new-collection",
+      component: () => import("@/views/NewCollectionView.vue"),
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
       path: "/:collectionSlug",
       name: "collection",
       component: () => import("@/views/CollectionView.vue"),
       props: true
+    },
+    {
+      // Declared before the song route so "ajustes" is never read as a song slug
+      // (songs can't use it either: RESERVED_SONG_SLUGS).
+      path: "/:collectionSlug/ajustes/:section(general|colores|canciones|miembros|peligro)?",
+      name: "collection-settings",
+      component: () => import("@/views/CollectionSettingsView.vue"),
+      meta: {
+        requiresAuth: true
+      }
     },
     {
       path: "/:collectionSlug/:songSlug",

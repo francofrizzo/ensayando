@@ -1,0 +1,519 @@
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import { toast } from "vue-sonner";
+
+import ColorPreview from "@/components/settings/ColorPreview.vue";
+import HueSlider from "@/components/settings/HueSlider.vue";
+import SaveBar from "@/components/settings/SaveBar.vue";
+import SettingsSection from "@/components/settings/SettingsSection.vue";
+import { IconPlus, IconTrash, IconWarning } from "@/components/ui/icons";
+import { useTheme } from "@/composables/useTheme";
+import { AdminError, updateCollectionPalette } from "@/data/admin";
+import type { CollectionWithRole, Song } from "@/data/types";
+import {
+  COLOR_KEY_PATTERN,
+  colorKeyFromName,
+  colorUsage,
+  hueConflicts,
+  hueDistance,
+  MIN_HUE_DISTANCE,
+  nearestFreeHue,
+  usageLabel
+} from "@/utils/collectionSettings";
+import {
+  type ColorSpec,
+  deriveColor,
+  type Intensity,
+  isNeutral,
+  resolveCollectionPalette
+} from "@/utils/palette";
+
+const props = defineProps<{ collection: CollectionWithRole; songs: Song[] }>();
+const emit = defineEmits<{ updated: [collection: CollectionWithRole]; "songs-changed": [] }>();
+
+const { resolvedTheme } = useTheme();
+
+type Row = { uid: number; originalKey: string | null; key: string; spec: ColorSpec };
+type Removed = { originalKey: string; replacement: string };
+
+let nextUid = 1;
+function initialRows(): Row[] {
+  const palette = resolveCollectionPalette(props.collection);
+  return Object.entries(palette.tracks).map(([key, spec]) => ({
+    uid: nextUid++,
+    originalKey: key,
+    key,
+    spec: { ...spec }
+  }));
+}
+
+const savedRows = ref<Row[]>(initialRows());
+const rows = ref<Row[]>(savedRows.value.map((r) => ({ ...r, spec: { ...r.spec } })));
+const mainHue = ref(props.collection.hue);
+const mainIntensity = ref<Intensity>(props.collection.intensity);
+const removed = ref<Removed[]>([]);
+const selected = ref<number | "main">("main");
+const saving = ref(false);
+const error = ref("");
+
+const usage = computed(() => colorUsage(props.songs));
+
+// Tracks name their color: "Bajo" reads better than "baj". The most common title of the
+// tracks using a key, or the key itself.
+const labels = computed(() => {
+  const counts: Record<string, Record<string, number>> = {};
+  for (const song of props.songs) {
+    for (const track of song.audio_tracks ?? []) {
+      counts[track.color_key] ??= {};
+      counts[track.color_key]![track.title] = (counts[track.color_key]![track.title] ?? 0) + 1;
+    }
+  }
+  const out: Record<string, string> = {};
+  for (const [key, titles] of Object.entries(counts)) {
+    out[key] = Object.entries(titles).sort((a, b) => b[1] - a[1])[0]![0];
+  }
+  return out;
+});
+const labelFor = (row: Row) => labels.value[row.originalKey ?? ""] ?? row.key;
+const usageFor = (row: Row) => (row.originalKey ? usage.value[row.originalKey] : undefined);
+
+const selectedRow = computed(() =>
+  selected.value === "main" ? null : (rows.value.find((r) => r.uid === selected.value) ?? null)
+);
+
+const conflicts = computed(() =>
+  hueConflicts(rows.value.map((r) => ({ key: String(r.uid), name: labelFor(r), spec: r.spec })))
+);
+const conflictFor = (row: Row) =>
+  conflicts.value.find((c) => c.a === String(row.uid) || c.b === String(row.uid));
+const conflictPartner = (row: Row) => {
+  const c = conflictFor(row);
+  if (!c) return null;
+  const otherUid = Number(c.a === String(row.uid) ? c.b : c.a);
+  return rows.value.find((r) => r.uid === otherUid) ?? null;
+};
+
+const swatch = (spec: ColorSpec) => deriveColor(spec, "fill", resolvedTheme.value);
+const specLabel = (spec: ColorSpec) =>
+  isNeutral(spec) ? { hue: "—", intensity: "neutra" } : { hue: `${spec.hue}°`, intensity: spec.intensity };
+
+const marksFor = (row: Row | null) =>
+  rows.value
+    .filter((r) => r !== row && !isNeutral(r.spec))
+    .map((r) => ({
+      hue: (r.spec as { hue: number }).hue,
+      label: labelFor(r),
+      warn:
+        !!row &&
+        !isNeutral(row.spec) &&
+        hueDistance((r.spec as { hue: number }).hue, (row.spec as { hue: number }).hue) <
+          MIN_HUE_DISTANCE
+    }));
+
+function setHue(row: Row, hue: number) {
+  if (isNeutral(row.spec)) return;
+  row.spec = { hue, intensity: row.spec.intensity };
+}
+function setIntensity(row: Row, intensity: Intensity) {
+  if (isNeutral(row.spec)) return;
+  row.spec = { hue: row.spec.hue, intensity };
+}
+function setNeutral(row: Row, neutral: boolean) {
+  if (neutral) row.spec = { neutral: true };
+  else {
+    const others = rows.value.filter((r) => r !== row && !isNeutral(r.spec));
+    const hue = nearestFreeHue(mainHue.value + 180, others.map((r) => (r.spec as { hue: number }).hue));
+    row.spec = { hue: hue ?? 0, intensity: "normal" };
+  }
+}
+
+const suggestion = computed(() => {
+  const row = selectedRow.value;
+  if (!row || isNeutral(row.spec) || !conflictFor(row)) return null;
+  const others = rows.value
+    .filter((r) => r !== row && !isNeutral(r.spec))
+    .map((r) => (r.spec as { hue: number }).hue);
+  return nearestFreeHue(row.spec.hue, others);
+});
+
+function addColor() {
+  const taken = rows.value.map((r) => r.key);
+  const others = rows.value.filter((r) => !isNeutral(r.spec)).map((r) => (r.spec as { hue: number }).hue);
+  const hue = nearestFreeHue((mainHue.value + 180) % 360, others) ?? 0;
+  const row: Row = {
+    uid: nextUid++,
+    originalKey: null,
+    key: colorKeyFromName("color", taken),
+    spec: { hue, intensity: "normal" }
+  };
+  rows.value.push(row);
+  selected.value = row.uid;
+}
+
+function removeRow(row: Row) {
+  const inUse = (usageFor(row)?.tracks ?? 0) + (usageFor(row)?.verses ?? 0) > 0;
+  rows.value = rows.value.filter((r) => r !== row);
+  if (row.originalKey && inUse) {
+    removed.value.push({ originalKey: row.originalKey, replacement: rows.value[0]?.key ?? "" });
+  }
+  selected.value = "main";
+}
+
+// ---------- changes ----------
+
+const keyErrors = computed(() => {
+  const errors: Record<number, string> = {};
+  const seen = new Map<string, number>();
+  for (const row of rows.value) {
+    if (!COLOR_KEY_PATTERN.test(row.key)) {
+      errors[row.uid] = "Minúsculas, números, guion o guion bajo (hasta 24).";
+    } else if (seen.has(row.key)) {
+      errors[row.uid] = "Ya hay otro color con esa clave.";
+    }
+    seen.set(row.key, row.uid);
+  }
+  return errors;
+});
+
+const changeList = computed(() => {
+  const list: string[] = [];
+  if (mainHue.value !== props.collection.hue || mainIntensity.value !== props.collection.intensity) {
+    list.push("color principal");
+  }
+  for (const row of rows.value) {
+    const before = savedRows.value.find((r) => r.originalKey === row.originalKey && row.originalKey);
+    if (!before) {
+      list.push(`${row.key} nuevo`);
+      continue;
+    }
+    if (row.key !== before.key) list.push(`${before.key} renombrado`);
+    if (JSON.stringify(row.spec) !== JSON.stringify(before.spec)) {
+      list.push(isNeutral(row.spec) ? `${labelFor(row)} neutra` : `${labelFor(row)} a ${row.spec.hue}°`);
+    }
+  }
+  for (const before of savedRows.value) {
+    if (!rows.value.some((r) => r.originalKey === before.originalKey)) list.push(`${before.key} quitado`);
+  }
+  return list;
+});
+
+const saveLabel = computed(() => {
+  const n = changeList.value.length;
+  return `${n} ${n === 1 ? "cambio" : "cambios"}: ${changeList.value.join(", ")}`;
+});
+
+const blocked = computed(
+  () =>
+    Object.keys(keyErrors.value).length > 0 ||
+    removed.value.some((r) => !rows.value.some((row) => row.key === r.replacement))
+);
+
+async function save() {
+  if (blocked.value) return;
+  saving.value = true;
+  error.value = "";
+  const keyMap: Record<string, string> = {};
+  for (const row of rows.value) {
+    if (row.originalKey && row.originalKey !== row.key) keyMap[row.originalKey] = row.key;
+  }
+  for (const r of removed.value) keyMap[r.originalKey] = r.replacement;
+  const trackColors = Object.fromEntries(rows.value.map((r) => [r.key, r.spec]));
+  try {
+    await updateCollectionPalette(props.collection.id, {
+      hue: mainHue.value,
+      intensity: mainIntensity.value,
+      trackColors,
+      keyMap
+    });
+    emit("updated", {
+      ...props.collection,
+      hue: mainHue.value,
+      intensity: mainIntensity.value,
+      track_colors: trackColors
+    });
+    if (Object.keys(keyMap).length) emit("songs-changed");
+    savedRows.value = rows.value.map((r) => ({ ...r, originalKey: r.key, spec: { ...r.spec } }));
+    rows.value = savedRows.value.map((r) => ({ ...r, spec: { ...r.spec } }));
+    removed.value = [];
+    toast.success("Colores guardados");
+  } catch (e) {
+    error.value = e instanceof AdminError ? e.message : "No se pudieron guardar los colores.";
+  } finally {
+    saving.value = false;
+  }
+}
+
+function discard() {
+  rows.value = savedRows.value.map((r) => ({ ...r, spec: { ...r.spec } }));
+  mainHue.value = props.collection.hue;
+  mainIntensity.value = props.collection.intensity;
+  removed.value = [];
+  error.value = "";
+  selected.value = "main";
+}
+
+const INTENSITIES: { value: Intensity; label: string }[] = [
+  { value: "suave", label: "Suave" },
+  { value: "normal", label: "Normal" },
+  { value: "intensa", label: "Intensa" }
+];
+const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mainIntensity.value }));
+</script>
+
+<template>
+  <SettingsSection
+    title="Colores"
+    description="El color principal tiñe la sala y los botones. Cada pista tiene su tono, que colorea sus versos y su onda."
+  >
+    <template #actions>
+      <button class="btn btn-soft btn-sm" data-testid="add-color" @click="addColor">
+        <IconPlus class="size-4" /> Agregar color
+      </button>
+    </template>
+
+    <div class="grid gap-3 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <!-- list -->
+      <div class="bg-base-100 rounded-box border-base-content/10 flex flex-col border p-2">
+        <button
+          class="flex items-center gap-3 rounded-lg p-2.5 text-left"
+          :class="selected === 'main' ? 'bg-primary/15' : 'hover:bg-base-content/5'"
+          @click="selected = 'main'"
+        >
+          <span class="size-9 shrink-0 rounded-lg" :style="{ background: swatch(mainSpec) }" />
+          <span class="flex min-w-0 flex-1 flex-col">
+            <span class="font-semibold">Color principal</span>
+            <span class="text-base-content/50 font-mono text-xs">colección</span>
+          </span>
+          <span class="text-right font-mono text-xs leading-tight">
+            {{ mainHue }}°<br /><span class="text-base-content/50">{{ mainIntensity }}</span>
+          </span>
+        </button>
+        <div class="border-base-content/10 mx-2 my-1 border-t" />
+        <button
+          v-for="row in rows"
+          :key="row.uid"
+          class="flex items-center gap-3 rounded-lg p-2.5 text-left"
+          :class="selected === row.uid ? 'bg-primary/15' : 'hover:bg-base-content/5'"
+          :data-testid="`color-row-${row.key}`"
+          @click="selected = row.uid"
+        >
+          <span
+            class="size-9 shrink-0 rounded-lg"
+            :class="{ 'neutral-swatch': isNeutral(row.spec) }"
+            :style="isNeutral(row.spec) ? {} : { background: swatch(row.spec) }"
+          />
+          <span class="flex min-w-0 flex-1 flex-col">
+            <span class="flex items-center gap-2 font-semibold">
+              <span class="truncate">{{ labelFor(row) }}</span>
+              <span v-if="conflictFor(row)" class="badge badge-warning badge-soft badge-xs gap-1">
+                <IconWarning class="size-3" />{{ conflictFor(row)!.distance }}° de
+                {{ labelFor(conflictPartner(row)!) }}
+              </span>
+            </span>
+            <span class="text-base-content/50 truncate font-mono text-xs"
+              >{{ row.key }} · {{ usageLabel(usageFor(row)) }}</span
+            >
+          </span>
+          <span class="text-right font-mono text-xs leading-tight">
+            {{ specLabel(row.spec).hue }}<br /><span class="text-base-content/50">{{
+              specLabel(row.spec).intensity
+            }}</span>
+          </span>
+        </button>
+        <p v-if="rows.length === 0" class="text-base-content/50 p-3 text-sm">
+          Todavía no hay colores de pista. Agregá uno para asignarlo a las pistas.
+        </p>
+      </div>
+
+      <!-- editor -->
+      <div class="bg-base-100 rounded-box border-base-content/10 flex flex-col gap-4 border p-5">
+        <template v-if="!selectedRow">
+          <div class="flex items-center gap-3">
+            <span class="size-11 shrink-0 rounded-xl" :style="{ background: swatch(mainSpec) }" />
+            <div class="flex flex-col">
+              <span class="font-semibold">Color principal</span>
+              <span class="text-base-content/60 text-sm">Luz de sala, botones y lo seleccionado.</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <span class="text-base-content/70 mb-1 block text-sm font-semibold">Tono</span>
+              <HueSlider v-model="mainHue" :intensity="mainIntensity" label="Tono del color principal" />
+            </div>
+            <input
+              v-model.number="mainHue"
+              type="number"
+              min="0"
+              max="359"
+              class="input input-sm no-spinner w-20 font-mono"
+              aria-label="Tono en grados"
+            />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <span class="text-base-content/70 text-sm font-semibold">Intensidad</span>
+            <div class="join">
+              <button
+                v-for="i in INTENSITIES"
+                :key="i.value"
+                class="btn btn-sm join-item"
+                :class="mainIntensity === i.value ? 'btn-active' : 'btn-ghost'"
+                @click="mainIntensity = i.value"
+              >
+                {{ i.label }}
+              </button>
+            </div>
+          </div>
+          <ColorPreview :spec="mainSpec" :collection-hue="mainHue" />
+        </template>
+
+        <template v-else>
+          <div class="flex items-end gap-3">
+            <span
+              class="size-11 shrink-0 rounded-xl"
+              :class="{ 'neutral-swatch': isNeutral(selectedRow.spec) }"
+              :style="isNeutral(selectedRow.spec) ? {} : { background: swatch(selectedRow.spec) }"
+            />
+            <div class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="text-base-content/70 text-sm font-semibold">{{ labelFor(selectedRow) }}</span>
+              <span class="text-base-content/50 text-xs">{{ usageLabel(usageFor(selectedRow)) }}</span>
+            </div>
+            <label class="flex w-32 flex-col gap-1">
+              <span class="text-base-content/70 text-sm font-semibold">Clave</span>
+              <input
+                v-model.trim="selectedRow.key"
+                class="input input-sm font-mono"
+                :class="{ 'input-error': keyErrors[selectedRow.uid] }"
+                autocapitalize="none"
+                spellcheck="false"
+              />
+            </label>
+            <button
+              class="btn btn-ghost btn-sm btn-square text-error"
+              aria-label="Quitar color"
+              @click="removeRow(selectedRow)"
+            >
+              <IconTrash class="size-4" />
+            </button>
+          </div>
+          <p v-if="keyErrors[selectedRow.uid]" class="text-error -mt-2 text-xs">
+            {{ keyErrors[selectedRow.uid] }}
+          </p>
+          <p
+            v-else-if="selectedRow.originalKey && selectedRow.key !== selectedRow.originalKey"
+            class="text-base-content/60 -mt-2 text-xs"
+          >
+            Al guardar, las pistas y los versos que usan <span class="font-mono">{{ selectedRow.originalKey }}</span>
+            pasan a <span class="font-mono">{{ selectedRow.key }}</span>.
+          </p>
+
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <span class="text-base-content/70 mb-1 block text-sm font-semibold">Tono</span>
+              <HueSlider
+                :model-value="isNeutral(selectedRow.spec) ? 0 : selectedRow.spec.hue"
+                :intensity="isNeutral(selectedRow.spec) ? 'normal' : selectedRow.spec.intensity"
+                :marks="marksFor(selectedRow)"
+                :disabled="isNeutral(selectedRow.spec)"
+                @update:model-value="setHue(selectedRow, $event)"
+              />
+            </div>
+            <input
+              :value="isNeutral(selectedRow.spec) ? '' : selectedRow.spec.hue"
+              type="number"
+              min="0"
+              max="359"
+              class="input input-sm no-spinner w-20 font-mono"
+              aria-label="Tono en grados"
+              :disabled="isNeutral(selectedRow.spec)"
+              @change="setHue(selectedRow, Number(($event.target as HTMLInputElement).value) % 360)"
+            />
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-col gap-1.5">
+              <span class="text-base-content/70 text-sm font-semibold">Intensidad</span>
+              <div class="join">
+                <button
+                  v-for="i in INTENSITIES"
+                  :key="i.value"
+                  class="btn btn-sm join-item"
+                  :class="
+                    !isNeutral(selectedRow.spec) && selectedRow.spec.intensity === i.value
+                      ? 'btn-active'
+                      : 'btn-ghost'
+                  "
+                  :disabled="isNeutral(selectedRow.spec)"
+                  @click="setIntensity(selectedRow, i.value)"
+                >
+                  {{ i.label }}
+                </button>
+              </div>
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                class="toggle toggle-sm"
+                :checked="isNeutral(selectedRow.spec)"
+                @change="setNeutral(selectedRow, ($event.target as HTMLInputElement).checked)"
+              />
+              Neutra (sin color)
+            </label>
+          </div>
+
+          <div v-if="conflictFor(selectedRow)" class="alert alert-warning alert-soft text-sm">
+            <IconWarning class="size-4" />
+            <span>
+              {{ labelFor(selectedRow) }} y {{ labelFor(conflictPartner(selectedRow)!) }} están a
+              {{ conflictFor(selectedRow)!.distance }}° de tono: cuesta distinguirlos.
+              <template v-if="suggestion !== null">
+                <button class="link font-semibold" @click="setHue(selectedRow, suggestion)">
+                  Probá {{ suggestion }}°
+                </button>
+                (el lugar libre más cercano) o pasá una de las dos a intensidad suave.
+              </template>
+            </span>
+          </div>
+
+          <ColorPreview :spec="selectedRow.spec" :collection-hue="mainHue" />
+        </template>
+      </div>
+    </div>
+
+    <!-- removed colors still in use -->
+    <div
+      v-for="r in removed"
+      :key="r.originalKey"
+      class="alert alert-warning alert-soft flex flex-wrap text-sm"
+    >
+      <IconWarning class="size-4" />
+      <span class="flex-1">
+        Quitaste <span class="font-mono">{{ r.originalKey }}</span>, que usan
+        {{ usageLabel(usage[r.originalKey]) }}. ¿Con qué color los reemplazamos?
+      </span>
+      <select v-model="r.replacement" class="select select-sm w-40">
+        <option v-for="row in rows" :key="row.uid" :value="row.key">{{ labelFor(row) }} ({{ row.key }})</option>
+      </select>
+    </div>
+
+    <p v-if="error" class="text-error px-1 text-sm">{{ error }}</p>
+
+    <SaveBar
+      v-if="changeList.length"
+      :label="saveLabel"
+      :saving="saving"
+      :disabled="blocked"
+      save-label="Guardar colores"
+      @save="save"
+      @discard="discard"
+    />
+  </SettingsSection>
+</template>
+
+<style scoped>
+.neutral-swatch {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklch, currentColor 35%, transparent) 0 5px,
+    color-mix(in oklch, currentColor 10%, transparent) 5px 10px
+  );
+}
+</style>
