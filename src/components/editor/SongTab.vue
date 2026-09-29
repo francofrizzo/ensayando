@@ -1,29 +1,26 @@
 <script setup lang="ts">
-import {
-  IconMoveDown,
-  IconMoveUp,
-  IconMusic,
-  IconSettings,
-  IconVisible,
-  IconHash,
-  IconLink,
-  IconLock,
-  IconPlus,
-  IconTrash,
-  IconUpload
-} from "@/components/ui/icons";
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
-import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
-import ColorPicker from "@/components/editor/ColorPicker.vue";
-// PeaksUploader removed; peaks are generated client-side
-import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import TrackRow, { type TrackUploadState } from "@/components/editor/TrackRow.vue";
+import ConfirmTypedDialog from "@/components/settings/ConfirmTypedDialog.vue";
+import SegmentedControl from "@/components/settings/SegmentedControl.vue";
+import {
+  IconChevronDown,
+  IconHidden,
+  IconPlus,
+  IconTrash,
+  IconUpload,
+  IconVisible,
+  IconWarning
+} from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useEditorTab } from "@/composables/useEditorSession";
+import { AdminError, deleteSong } from "@/data/admin";
+import { audioPlaybackUrl, deleteAudioFile, uploadAudioFile } from "@/data/storage";
 import {
   deleteAudioTracks,
   insertAudioTrack,
@@ -31,25 +28,35 @@ import {
   updateAudioTrack,
   updateSongBasicInfo
 } from "@/data/supabase";
-import { audioPlaybackUrl, deleteAudioFile } from "@/data/storage";
-import type { AudioTrack, TrackPeaks } from "@/data/types";
+import type { AudioTrack } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
 import { generateTrackPeaks } from "@/utils/audio-utils";
 import {
-  generateSlugFromTitle as generateSlug,
+  isAudioFile,
+  moveItem,
+  nextColorKey,
+  songFormChanges,
+  titlesFromFilenames,
+  tracksWithoutAudio,
+  withOrder
+} from "@/utils/songForm";
+import {
+  generateSlugFromTitle,
+  RESERVED_SONG_SLUGS,
   songDurationFromTracks,
   validateSongForm
 } from "@/utils/songUtils";
 
-// Composables and stores
 const { currentSong } = useCurrentSong();
 const { currentCollection } = useCurrentCollection();
 const router = useRouter();
 const authStore = useAuthStore();
 const collectionsStore = useCollectionsStore();
+const { trackColor, colorOptions } = useCollectionPalette(currentCollection);
 
-// Reactive state
+// ---------- form state ----------
+
 const formData = reactive({
   title: "",
   slug: "",
@@ -58,480 +65,564 @@ const formData = reactive({
 });
 
 const isSaving = ref(false);
-const isDirty = ref(false);
-const isInitializing = ref(true);
 const isCreateMode = ref(false);
 const trackKeyCounter = ref(0);
-const uploadingTrackIndex = ref<number | null>(null);
-const peaksGeneratingIndex = ref<number | null>(null);
-const draggingTrackId = ref<number | null>(null);
-const trackDragDepths = new Map<number, number>();
-const audioUploaderRefs = new Map<number, { uploadDroppedFile: (file: File) => Promise<void> }>();
-const pendingUploadKeys = new Set<string>();
-const errors = reactive({
-  title: "",
-  slug: "",
-  audio_tracks: ""
-});
+/** While true, the slug follows the title as it's typed. */
+const slugFollowsTitle = ref(true);
+const showAdvanced = ref(false);
+const peaksGeneratingId = ref<number | null>(null);
+const errors = reactive({ title: "", slug: "", audio_tracks: "" });
 
-// Utility functions
+// Uploads, keyed by track id (negative for tracks not saved yet)
+const uploads = reactive(new Map<number, TrackUploadState>());
+const retryFiles = new Map<number, File>();
+const fileInfo = reactive(new Map<number, { name: string; size: number }>());
+/** Keys uploaded in this session and not saved yet: removed from R2 if they end up unused. */
+const pendingUploadKeys = new Set<string>();
+
+const isUploading = computed(() =>
+  [...uploads.values()].some((u) => u.state === "uploading" || u.state === "peaks")
+);
+
 const clearErrors = () => {
-  Object.keys(errors).forEach((key) => {
-    (errors as Record<string, string>)[key] = "";
-  });
+  errors.title = "";
+  errors.slug = "";
+  errors.audio_tracks = "";
 };
 
 const sortTracksByOrder = (tracks: AudioTrack[]) =>
   [...tracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-const serializeFormData = (song: typeof currentSong.value) =>
-  song ? JSON.parse(JSON.stringify(sortTracksByOrder(song.audio_tracks))) : [];
-
 const restoreFormFromSong = (song: typeof currentSong.value) => {
   if (!song) return;
-
   formData.title = song.title;
   formData.slug = song.slug;
   formData.visible = song.visible;
-  formData.audio_tracks = serializeFormData(song);
-  isDirty.value = false;
-  isInitializing.value = true;
-  nextTick(() => {
-    isInitializing.value = false;
-  });
+  formData.audio_tracks = JSON.parse(JSON.stringify(sortTracksByOrder(song.audio_tracks)));
+  slugFollowsTitle.value = song.slug === generateSlugFromTitle(song.title);
+  uploads.clear();
+  retryFiles.clear();
   clearErrors();
 };
 
-const generateSlugFromTitle = () => {
-  formData.slug = generateSlug(formData.title);
+const isDirty = computed(() => {
+  if (isCreateMode.value) {
+    return !!(formData.title || formData.audio_tracks.length > 0);
+  }
+  const song = currentSong.value;
+  return !!song && songFormChanges(formData, song).length > 0;
+});
+
+// ---------- title and address ----------
+
+const onTitleInput = (value: string) => {
+  formData.title = value;
+  if (errors.title && value.trim()) errors.title = "";
+  if (slugFollowsTitle.value) formData.slug = generateSlugFromTitle(value);
 };
 
-// Track operations
-const createNewTrack = (): AudioTrack => {
-  const newOrder = Math.max(...formData.audio_tracks.map((t) => t.order ?? 0), 0) + 1;
+const onSlugInput = (value: string) => {
+  formData.slug = value;
+  slugFollowsTitle.value = value === generateSlugFromTitle(formData.title);
+  errors.slug = (RESERVED_SONG_SLUGS as readonly string[]).includes(value)
+    ? "Esa dirección está reservada. Probá con otra."
+    : "";
+};
+
+const regenerateSlug = () => {
+  onSlugInput(generateSlugFromTitle(formData.title));
+  slugFollowsTitle.value = true;
+};
+
+const urlPrefix = computed(() => `${window.location.host}/${currentCollection.value?.slug ?? ""}/`);
+
+type Visibility = "visible" | "oculta";
+const visibility = computed<Visibility>({
+  get: () => (formData.visible ? "visible" : "oculta"),
+  set: (value) => (formData.visible = value === "visible")
+});
+const VISIBILITY_OPTIONS = [
+  { value: "visible" as const, label: "Visible", icon: IconVisible },
+  { value: "oculta" as const, label: "Oculta", icon: IconHidden }
+];
+
+// ---------- tracks ----------
+
+const availableColorKeys = computed(() => colorOptions.value.map((o) => o.key));
+
+const createTrack = (title = ""): AudioTrack => {
   trackKeyCounter.value++;
-
-  const availableColors = Object.keys(currentCollection.value?.track_colors ?? {});
-  const defaultColorKey = availableColors[0] ?? "blue";
-
   return {
     id: -trackKeyCounter.value,
     song_id: currentSong.value?.id ?? 0,
-    title: "",
-    color_key: defaultColorKey,
+    title,
+    color_key: nextColorKey(
+      formData.audio_tracks.map((t) => t.color_key),
+      availableColorKeys.value
+    ),
     audio_file_url: "",
     audio_file_key: null,
     peaks: null,
-    order: newOrder,
+    order: formData.audio_tracks.length + 1,
     created_at: new Date().toISOString()
   };
 };
 
-const updateTrackField = (
-  index: number,
-  field: keyof AudioTrack,
-  value: AudioTrack[keyof AudioTrack]
-) => {
-  const newTracks = [...formData.audio_tracks];
-  newTracks[index] = { ...newTracks[index]!, [field]: value };
-  formData.audio_tracks = newTracks;
+const updateTrack = (id: number, changes: Partial<AudioTrack>) => {
+  formData.audio_tracks = formData.audio_tracks.map((t) =>
+    t.id === id ? { ...t, ...changes } : t
+  );
 };
 
-const reorderTracks = () => {
-  formData.audio_tracks = formData.audio_tracks.map((track, i) => ({
-    ...track,
-    order: i + 1
-  }));
+const addEmptyTrack = () => {
+  formData.audio_tracks = [...formData.audio_tracks, createTrack()];
 };
 
-const swapTracks = (index1: number, index2: number) => {
-  const newTracks = [...formData.audio_tracks];
-  [newTracks[index1], newTracks[index2]] = [newTracks[index2]!, newTracks[index1]!];
-  formData.audio_tracks = newTracks;
-  reorderTracks();
+const moveTrack = async (index: number, delta: number) => {
+  const target = index + delta;
+  formData.audio_tracks = withOrder(moveItem(formData.audio_tracks, index, target));
+  await nextTick();
+  // Keep focus on the handle that moved, for keyboard reordering
+  document
+    .querySelector<HTMLElement>(`[data-testid="track-row-${target}"] [data-testid="track-handle"]`)
+    ?.focus();
 };
 
-const addAudioTrack = () => {
-  formData.audio_tracks = [...formData.audio_tracks, createNewTrack()];
-};
-
-const removeAudioTrack = async (index: number) => {
+// Undo is local: nothing is deleted from storage until the song is saved.
+const removeTrack = (index: number) => {
   const track = formData.audio_tracks[index];
-  formData.audio_tracks = formData.audio_tracks.filter((_, i) => i !== index);
-  reorderTracks();
-
-  if (track?.audio_file_key && pendingUploadKeys.has(track.audio_file_key)) {
-    await cleanupUploadedFiles([track.audio_file_key]);
-  }
+  if (!track) return;
+  formData.audio_tracks = withOrder(formData.audio_tracks.filter((_, i) => i !== index));
+  uploads.delete(track.id);
+  toast(`Quitaste “${track.title || "la pista"}”`, {
+    description: "El audio se borra recién al guardar.",
+    duration: 8000,
+    action: {
+      label: "Deshacer",
+      onClick: () => {
+        const tracks = [...formData.audio_tracks];
+        tracks.splice(Math.min(index, tracks.length), 0, track);
+        formData.audio_tracks = withOrder(tracks);
+      }
+    }
+  });
 };
 
-const moveTrackUp = async (index: number) => {
-  if (index > 0) {
-    swapTracks(index, index - 1);
-    await nextTick();
-  }
-};
+// ---------- uploads ----------
 
-const moveTrackDown = async (index: number) => {
-  if (index < formData.audio_tracks.length - 1) {
-    swapTracks(index, index + 1);
-    await nextTick();
-  }
-};
-
-// Event handlers
-const handleTitleBlur = () => {
-  if (!formData.slug) {
-    generateSlugFromTitle();
-  }
-};
-
-const handleTrackTitleInput = (index: number, event: Event) => {
-  const value = (event.target as HTMLInputElement).value;
-  updateTrackField(index, "title", value);
-};
-
-const handleTrackUrlInput = (index: number, event: Event) => {
-  const value = (event.target as HTMLInputElement).value;
-  const previousKey = formData.audio_tracks[index]?.audio_file_key;
-  updateTrackField(index, "audio_file_url", value);
-  updateTrackField(index, "audio_file_key", null);
-  updateTrackField(index, "playback_url", value);
-
-  if (previousKey && pendingUploadKeys.has(previousKey)) {
-    void cleanupUploadedFiles([previousKey]);
-  }
-};
-
-const handleColorChange = (index: number, colorKey: string) => {
-  updateTrackField(index, "color_key", colorKey);
-};
-
-const handleUploadStart = (index: number) => {
-  uploadingTrackIndex.value = index;
-};
-
-const handleUploadEnd = () => {
-  uploadingTrackIndex.value = null;
-};
-
-const setAudioUploaderRef = (trackId: number, instance: unknown) => {
-  if (instance) {
-    audioUploaderRefs.set(
-      trackId,
-      instance as { uploadDroppedFile: (file: File) => Promise<void> }
-    );
-  } else {
-    audioUploaderRefs.delete(trackId);
-  }
-};
-
-const handleTrackDragEnter = (trackId: number) => {
-  if (!formData.slug && isCreateMode.value) return;
-  trackDragDepths.set(trackId, (trackDragDepths.get(trackId) ?? 0) + 1);
-  draggingTrackId.value = trackId;
-};
-
-const handleTrackDragLeave = (trackId: number) => {
-  const nextDepth = Math.max((trackDragDepths.get(trackId) ?? 1) - 1, 0);
-  if (nextDepth > 0) {
-    trackDragDepths.set(trackId, nextDepth);
+const uploadInto = async (trackId: number, file: File) => {
+  const collection = currentCollection.value;
+  if (!collection) return;
+  if (!isAudioFile(file)) {
+    uploads.set(trackId, {
+      state: "error",
+      fileName: file.name,
+      message: "No es un archivo de audio. Probá con MP3, WAV, M4A, AAC, OGG o FLAC."
+    });
     return;
   }
 
-  trackDragDepths.delete(trackId);
-  if (draggingTrackId.value === trackId) draggingTrackId.value = null;
+  retryFiles.set(trackId, file);
+  uploads.set(trackId, { state: "uploading", progress: 0, fileName: file.name });
+  try {
+    const result = await uploadAudioFile(file, collection.id, (progress) => {
+      if (uploads.get(trackId)?.state === "uploading") {
+        uploads.set(trackId, { state: "uploading", progress, fileName: file.name });
+      }
+    });
+    pendingUploadKeys.add(result.key);
+
+    // The track may have been removed while it uploaded
+    if (!formData.audio_tracks.some((t) => t.id === trackId)) {
+      uploads.delete(trackId);
+      return;
+    }
+
+    uploads.set(trackId, { state: "peaks", fileName: file.name });
+    let peaks = null;
+    try {
+      peaks = await generateTrackPeaks(file);
+    } catch (error) {
+      console.warn("No se pudo generar la forma de onda:", error);
+    }
+
+    updateTrack(trackId, {
+      audio_file_url: "",
+      audio_file_key: result.key,
+      playback_url: result.url,
+      ...(peaks ? { peaks } : {})
+    });
+    fileInfo.set(trackId, { name: file.name, size: file.size });
+    uploads.delete(trackId);
+    retryFiles.delete(trackId);
+    if (errors.audio_tracks) errors.audio_tracks = "";
+  } catch (error) {
+    console.error("Upload error:", error);
+    uploads.set(trackId, {
+      state: "error",
+      fileName: file.name,
+      message: error instanceof Error ? error.message : "No se pudo subir el audio."
+    });
+  }
 };
 
-const handleTrackDrop = async (trackId: number, event: DragEvent) => {
-  trackDragDepths.delete(trackId);
-  draggingTrackId.value = null;
-
-  const file = event.dataTransfer?.files[0];
-  if (file) await audioUploaderRefs.get(trackId)?.uploadDroppedFile(file);
+const retryUpload = (trackId: number) => {
+  const file = retryFiles.get(trackId);
+  if (file) void uploadInto(trackId, file);
 };
 
-const handleUploadSuccess = (
-  index: number,
-  data: { key: string; url: string; suggestedTitle: string; peaks: TrackPeaks | null }
-) => {
-  const previousKey = formData.audio_tracks[index]?.audio_file_key;
-  pendingUploadKeys.add(data.key);
-  updateTrackField(index, "audio_file_url", "");
-  updateTrackField(index, "audio_file_key", data.key);
-  updateTrackField(index, "playback_url", data.url);
-
-  if (previousKey && previousKey !== data.key && pendingUploadKeys.has(previousKey)) {
-    void cleanupUploadedFiles([previousKey]);
+/** One new track per file, named from the file names. */
+const addFiles = (files: File[]) => {
+  const audio = files.filter(isAudioFile);
+  if (audio.length < files.length) {
+    toast.error(
+      audio.length === 0
+        ? "Esos archivos no son audio"
+        : `${files.length - audio.length} archivos no son audio y quedaron afuera`
+    );
   }
+  if (audio.length === 0) return;
 
-  const track = formData.audio_tracks[index];
-  if (track && !track.title) {
-    updateTrackField(index, "title", data.suggestedTitle);
-  }
+  const titles = titlesFromFilenames(
+    audio.map((f) => f.name),
+    formData.slug
+  );
+  const created = audio.map((_, i) => {
+    const track = createTrack(titles[i]);
+    formData.audio_tracks = [...formData.audio_tracks, track];
+    return track;
+  });
+  created.forEach((track, i) => void uploadInto(track.id, audio[i]!));
+};
 
-  if (data.peaks) {
-    updateTrackField(index, "peaks", data.peaks);
+const dropzoneInput = ref<HTMLInputElement | null>(null);
+const dropzoneOver = ref(false);
+let dropzoneDepth = 0;
+const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes("Files") ?? false;
+const onDropzoneEnter = (event: DragEvent) => {
+  if (!hasFiles(event)) return;
+  dropzoneDepth++;
+  dropzoneOver.value = true;
+};
+const onDropzoneLeave = (event: DragEvent) => {
+  if (!hasFiles(event)) return;
+  dropzoneDepth = Math.max(0, dropzoneDepth - 1);
+  if (dropzoneDepth === 0) dropzoneOver.value = false;
+};
+const onDropzoneDrop = (event: DragEvent) => {
+  dropzoneDepth = 0;
+  dropzoneOver.value = false;
+  addFiles(Array.from(event.dataTransfer?.files ?? []));
+};
+const onDropzonePick = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  addFiles(Array.from(input.files ?? []));
+  input.value = "";
+};
+
+// ---------- reorder by dragging the handle ----------
+
+const liftedId = ref<number | null>(null);
+const onTrackDragStart = (event: DragEvent, id: number) => {
+  liftedId.value = id;
+  event.dataTransfer?.setData("application/x-ensayando-track", String(id));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+};
+const onTrackDragOver = (event: DragEvent, index: number) => {
+  if (liftedId.value === null) return;
+  event.preventDefault();
+  const from = formData.audio_tracks.findIndex((t) => t.id === liftedId.value);
+  if (from !== -1 && from !== index) {
+    formData.audio_tracks = withOrder(moveItem(formData.audio_tracks, from, index));
   }
 };
 
-// Advanced options (duration manual input)
-const showAdvancedOptions = ref(false);
+// ---------- advanced ----------
 
-const handleGeneratePeaks = async (index: number) => {
-  const track = formData.audio_tracks[index];
-  if (!track || !audioPlaybackUrl(track)) return;
-
-  peaksGeneratingIndex.value = index;
+const regeneratePeaks = async (track: AudioTrack) => {
+  if (!audioPlaybackUrl(track)) return;
+  peaksGeneratingId.value = track.id;
   try {
     const response = await fetch(audioPlaybackUrl(track), { cache: "no-store" });
     const blob = await response.blob();
-    const filename = track.title ? `${track.title}.audio` : `track-${track.id}.audio`;
-    const file = new File([blob], filename, { type: blob.type || "audio/mpeg" });
-    const peaks = await generateTrackPeaks(file);
-    updateTrackField(index, "peaks", peaks);
-    toast.success("Forma de onda generada correctamente");
-  } catch (error: unknown) {
+    const file = new File([blob], `${track.title || "pista"}.audio`, {
+      type: blob.type || "audio/mpeg"
+    });
+    updateTrack(track.id, { peaks: await generateTrackPeaks(file) });
+    toast.success("Forma de onda generada");
+  } catch (error) {
     console.error("Error generating peaks:", error);
     toast.error("No se pudo generar la forma de onda");
   } finally {
-    peaksGeneratingIndex.value = null;
+    peaksGeneratingId.value = null;
   }
 };
 
-// Validation
-const validateForm = () => {
-  clearErrors();
-  const result = validateSongForm(formData);
-  Object.assign(errors, result.errors);
-  return result.isValid;
+const setTrackUrl = (track: AudioTrack, url: string) => {
+  updateTrack(track.id, { audio_file_url: url, audio_file_key: null, playback_url: url });
+  fileInfo.delete(track.id);
 };
 
+// ---------- storage cleanup ----------
+
 const cleanupUploadedFiles = async (keys: string[]) => {
-  await Promise.all(
-    [...new Set(keys)].map(async (key) => {
-      try {
-        await deleteAudioFile(key);
-        pendingUploadKeys.delete(key);
-      } catch (error) {
-        console.error("Error cleaning up audio file:", error);
-        toast.warning("No se pudo limpiar un archivo de audio sin uso");
-      }
-    })
-  );
+  const unique = [...new Set(keys)];
+  const results = await Promise.allSettled(unique.map((key) => deleteAudioFile(key)));
+  let failed = 0;
+  results.forEach((result, i) => {
+    if (result.status === "fulfilled") pendingUploadKeys.delete(unique[i]!);
+    else {
+      failed++;
+      console.error("Error cleaning up audio file:", result.reason);
+    }
+  });
+  // One notice for the whole batch; the files stay as orphans in storage
+  if (failed > 0) {
+    toast.warning(
+      failed === 1
+        ? "No se pudo borrar un audio que ya no se usa"
+        : `No se pudieron borrar ${failed} audios que ya no se usan`
+    );
+  }
 };
 
 const cleanupPendingUploads = async () => {
   await cleanupUploadedFiles([...pendingUploadKeys]);
 };
 
-// Mode management
+// ---------- modes ----------
+
 const enterCreateMode = async () => {
   await cleanupPendingUploads();
   isCreateMode.value = true;
   formData.title = "";
   formData.slug = "";
-  formData.visible = true;
+  // New songs are born hidden until someone publishes them
+  formData.visible = false;
   formData.audio_tracks = [];
-  isDirty.value = false;
+  slugFollowsTitle.value = true;
+  uploads.clear();
   clearErrors();
 };
 
-const cancelCreateMode = async () => {
+const discardChanges = async () => {
   await cleanupPendingUploads();
-  isCreateMode.value = false;
-  restoreFormFromSong(currentSong.value);
+  if (isCreateMode.value) await enterCreateMode();
+  else restoreFormFromSong(currentSong.value);
 };
 
-// Save operations
-const saveAudioTracks = async (songId: number) => {
-  for (const track of formData.audio_tracks) {
-    const trackData = {
-      song_id: songId,
-      title: track.title,
-      color_key: track.color_key,
-      audio_file_url: track.audio_file_url,
-      audio_file_key: track.audio_file_key ?? null,
-      peaks: track.peaks ?? null,
-      order: track.order
-    };
+// ---------- validation and save ----------
 
-    if (track.id < 0) {
-      const { error } = await insertAudioTrack(trackData);
-      if (error) throw error;
-    }
+const validateForm = () => {
+  clearErrors();
+  const result = validateSongForm(formData);
+  Object.assign(errors, result.errors);
+  const missing = tracksWithoutAudio(formData.audio_tracks);
+  if (result.isValid && missing.length > 0) {
+    const names = missing.map((t) => `“${t.title || "sin nombre"}”`).join(", ");
+    errors.audio_tracks =
+      missing.length === 1
+        ? `A la pista ${names} le falta el audio.`
+        : `A las pistas ${names} les falta el audio.`;
+    return false;
+  }
+  return result.isValid;
+};
+
+const trackRow = (track: AudioTrack) => ({
+  title: track.title,
+  color_key: track.color_key,
+  audio_file_url: track.audio_file_url,
+  audio_file_key: track.audio_file_key ?? null,
+  peaks: track.peaks ?? null,
+  order: track.order
+});
+
+const insertNewTracks = async (songId: number) => {
+  for (const track of formData.audio_tracks.filter((t) => t.id < 0)) {
+    const { error } = await insertAudioTrack({ song_id: songId, ...trackRow(track) });
+    if (error) throw error;
   }
 };
 
 const updateExistingTracks = async () => {
-  if (!currentSong.value) return;
+  const song = currentSong.value;
+  if (!song) return;
 
-  const existingTrackIds = currentSong.value.audio_tracks.map((t) => t.id);
-  const formTrackIds = formData.audio_tracks.filter((t) => t.id > 0).map((t) => t.id);
-  const tracksToDelete = existingTrackIds.filter((id) => !formTrackIds.includes(id));
-
-  // Delete removed tracks
-  if (tracksToDelete.length > 0) {
-    const { error } = await deleteAudioTracks(tracksToDelete);
+  const formIds = new Set(formData.audio_tracks.filter((t) => t.id > 0).map((t) => t.id));
+  const toDelete = song.audio_tracks.map((t) => t.id).filter((id) => !formIds.has(id));
+  if (toDelete.length > 0) {
+    const { error } = await deleteAudioTracks(toDelete);
     if (error) throw error;
   }
 
-  // Update existing tracks
   for (const track of formData.audio_tracks.filter((t) => t.id > 0)) {
-    const originalTrack = currentSong.value.audio_tracks.find((t) => t.id === track.id);
-    if (!originalTrack) continue;
-
-    const updateData: Partial<AudioTrack> = {};
-    const fieldsToCheck = [
-      "title",
-      "color_key",
-      "audio_file_url",
-      "audio_file_key",
-      "order",
-      "peaks"
-    ] as const;
-
-    fieldsToCheck.forEach((field) => {
-      if (track[field] !== originalTrack[field]) {
-        (updateData as Partial<Record<typeof field, AudioTrack[typeof field]>>)[field] =
-          track[field];
-      }
-    });
-
-    if (Object.keys(updateData).length > 0) {
-      const { error } = await updateAudioTrack(track.id, updateData);
+    const original = song.audio_tracks.find((t) => t.id === track.id);
+    if (!original) continue;
+    const next = trackRow(track);
+    const changes = Object.fromEntries(
+      Object.entries(next).filter(
+        ([field, value]) =>
+          JSON.stringify(value) !== JSON.stringify(original[field as keyof AudioTrack] ?? null)
+      )
+    );
+    if (Object.keys(changes).length > 0) {
+      const { error } = await updateAudioTrack(track.id, changes);
       if (error) throw error;
     }
   }
 
-  // Insert new tracks
-  await saveAudioTracks(currentSong.value.id);
+  await insertNewTracks(song.id);
 };
 
-const handleCreateSong = async () => {
-  if (
-    !validateForm() ||
-    !authStore.isAuthenticated ||
-    !collectionsStore.canEditCurrentCollection ||
-    !currentCollection.value
-  ) {
-    return;
-  }
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-  isSaving.value = true;
+const createSong = async () => {
+  const collection = currentCollection.value;
+  if (!collection) return;
+  const { data, error } = await insertSong({
+    collection_id: collection.id,
+    title: formData.title,
+    slug: formData.slug,
+    visible: formData.visible,
+    duration: songDurationFromTracks(formData.audio_tracks)
+  });
+  if (error) throw error;
+  const song = data?.[0];
+  if (!song) throw new Error("No se pudo crear la canción");
 
-  try {
-    const { data: newSongData, error: songError } = await insertSong({
-      collection_id: currentCollection.value.id,
-      title: formData.title,
-      slug: formData.slug,
-      visible: formData.visible,
-      duration: songDurationFromTracks(formData.audio_tracks)
-    });
+  await insertNewTracks(song.id);
+  formData.audio_tracks.forEach(
+    (t) => t.audio_file_key && pendingUploadKeys.delete(t.audio_file_key)
+  );
+  await cleanupPendingUploads();
+  await collectionsStore.fetchSongsByCollectionId(collection.id);
 
-    if (songError) throw songError;
-    if (!newSongData?.[0]) throw new Error("No se pudo crear la canción");
+  toast.success("Canción creada");
+  isCreateMode.value = false;
+  // Clean before navigating, so leaving /nueva doesn't ask about unsaved changes
+  formData.title = "";
+  formData.audio_tracks = [];
+  await router.replace({
+    name: "song",
+    params: { collectionSlug: collection.slug, songSlug: song.slug },
+    query: { editar: "letra" }
+  });
+};
 
-    const newSong = newSongData[0];
-    await saveAudioTracks(newSong.id);
-    formData.audio_tracks.forEach((track) => {
-      if (track.audio_file_key) pendingUploadKeys.delete(track.audio_file_key);
-    });
-    await cleanupPendingUploads();
-    await collectionsStore.fetchSongsByCollectionId(currentCollection.value.id);
+const updateSong = async () => {
+  const song = currentSong.value;
+  const collection = currentCollection.value;
+  if (!song || !collection) return;
+  const originalSlug = song.slug;
 
-    toast.success("Canción creada correctamente");
-    isCreateMode.value = false;
-    isDirty.value = false;
-    void router.replace({
+  const { error } = await updateSongBasicInfo(song.id, {
+    title: formData.title,
+    slug: formData.slug,
+    visible: formData.visible,
+    duration: songDurationFromTracks(formData.audio_tracks)
+  });
+  if (error) throw error;
+
+  await updateExistingTracks();
+
+  // Audio replaced or removed: deleted from R2 only now that the song is saved
+  const activeKeys = new Set(
+    formData.audio_tracks.flatMap((t) => (t.audio_file_key ? [t.audio_file_key] : []))
+  );
+  const unusedSavedKeys = song.audio_tracks
+    .flatMap((t) => (t.audio_file_key ? [t.audio_file_key] : []))
+    .filter((key) => !activeKeys.has(key));
+  activeKeys.forEach((key) => pendingUploadKeys.delete(key));
+  await cleanupPendingUploads();
+  await cleanupUploadedFiles(unusedSavedKeys);
+  await collectionsStore.fetchSongsByCollectionId(song.collection_id);
+
+  toast.success("Cambios guardados");
+  if (originalSlug !== formData.slug) {
+    await router.replace({
       name: "song",
-      params: { collectionSlug: currentCollection.value.slug, songSlug: newSong.slug },
-      query: { editar: "cancion" }
+      params: { collectionSlug: collection.slug, songSlug: formData.slug },
+      query: router.currentRoute.value.query
     });
-  } catch (error: unknown) {
-    console.error("Error creating song:", error);
-    toast.error(
-      "Error al crear la canción: " + (error instanceof Error ? error.message : String(error))
-    );
-  } finally {
-    isSaving.value = false;
-  }
-};
-
-const handleUpdateSong = async () => {
-  if (
-    !validateForm() ||
-    !currentSong.value ||
-    !authStore.isAuthenticated ||
-    !collectionsStore.canEditCurrentCollection ||
-    !currentCollection.value
-  ) {
-    return;
-  }
-
-  isSaving.value = true;
-  const originalSlug = currentSong.value.slug;
-
-  try {
-    const { error: songError } = await updateSongBasicInfo(currentSong.value.id, {
-      title: formData.title,
-      slug: formData.slug,
-      visible: formData.visible,
-      duration: songDurationFromTracks(formData.audio_tracks)
-    });
-
-    if (songError) throw songError;
-
-    await updateExistingTracks();
-    const activeKeys = new Set(
-      formData.audio_tracks.flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []))
-    );
-    const replacedOrRemovedKeys = currentSong.value.audio_tracks
-      .flatMap((track) => (track.audio_file_key ? [track.audio_file_key] : []))
-      .filter((key) => !activeKeys.has(key));
-    activeKeys.forEach((key) => pendingUploadKeys.delete(key));
-    await cleanupPendingUploads();
-    await cleanupUploadedFiles(replacedOrRemovedKeys);
-    await collectionsStore.fetchSongsByCollectionId(currentSong.value.collection_id);
-
-    toast.success("Canción actualizada correctamente");
-    isDirty.value = false;
-
-    if (originalSlug !== formData.slug) {
-      void router.replace({
-        name: "song",
-        params: { collectionSlug: currentCollection.value.slug, songSlug: formData.slug },
-        query: router.currentRoute.value.query
-      });
-    }
-  } catch (error: unknown) {
-    console.error("Error saving song:", error);
-    toast.error(
-      "Error al guardar la canción: " + (error instanceof Error ? error.message : String(error))
-    );
-  } finally {
-    isSaving.value = false;
   }
 };
 
 const handleSave = async () => {
-  if (isCreateMode.value) {
-    await handleCreateSong();
-  } else {
-    await handleUpdateSong();
+  if (!authStore.isAuthenticated || !collectionsStore.canEditCurrentCollection) return;
+  if (!validateForm()) {
+    toast.error("Revisá los datos de la canción antes de guardar");
+    return;
+  }
+  isSaving.value = true;
+  try {
+    if (isCreateMode.value) await createSong();
+    else await updateSong();
+  } catch (error) {
+    console.error("Error saving song:", error);
+    toast.error(
+      isCreateMode.value ? "No se pudo crear la canción" : "No se pudo guardar la canción",
+      { description: errorText(error) }
+    );
+  } finally {
+    isSaving.value = false;
   }
 };
+
+// ---------- delete ----------
+
+const isAdmin = computed(() => currentCollection.value?.user_role === "admin");
+const deleteOpen = ref(false);
+const deleting = ref(false);
+const deleteError = ref("");
+
+const confirmDelete = async () => {
+  const song = currentSong.value;
+  const collection = currentCollection.value;
+  if (!song || !collection) return;
+  deleting.value = true;
+  deleteError.value = "";
+  try {
+    const result = await deleteSong(song.id);
+    // Nothing left to save: leave without the unsaved-changes question
+    restoreFormFromSong(song);
+    collectionsStore.discardLyricsChanges();
+    await cleanupPendingUploads();
+    deleteOpen.value = false;
+    if (result.orphanedKeys.length) {
+      toast.warning(`Eliminaste “${song.title}”`, {
+        description: `${result.orphanedKeys.length} archivos de audio no se pudieron borrar del almacenamiento.`
+      });
+    } else {
+      toast.success(`Eliminaste “${song.title}”`);
+    }
+    await collectionsStore.fetchSongsByCollectionId(collection.id);
+    await router.replace({ name: "collection", params: { collectionSlug: collection.slug } });
+  } catch (error) {
+    deleteError.value =
+      error instanceof AdminError ? error.message : "No se pudo eliminar la canción.";
+  } finally {
+    deleting.value = false;
+  }
+};
+
+const deleteDescription = computed(() => {
+  const count = currentSong.value?.audio_tracks.length ?? 0;
+  const tracks = count === 1 ? "la pista y su audio" : `las ${count} pistas y sus audios`;
+  return `Se borran la letra, ${tracks}. Nadie de la colección va a poder volver a escucharla.`;
+});
+
+// ---------- lifecycle ----------
 
 onBeforeUnmount(() => {
   void cleanupPendingUploads();
 });
 
-// Watchers
 watch(
   currentSong,
-  (song) => {
+  (song, previous) => {
     if (song && !isCreateMode.value) {
-      void cleanupPendingUploads();
+      if (previous?.id !== song.id) void cleanupPendingUploads();
       restoreFormFromSong(song);
     } else if (!song && !isCreateMode.value) {
       void enterCreateMode();
@@ -540,329 +631,264 @@ watch(
   { immediate: true }
 );
 
-watch(
-  () => ({ ...formData }),
-  () => {
-    if (isInitializing.value) return;
-    if (isCreateMode.value) {
-      isDirty.value = !!(formData.title || formData.slug || formData.audio_tracks.length > 0);
-    } else if (currentSong.value) {
-      const hasBasicChanges =
-        formData.title !== currentSong.value.title ||
-        formData.slug !== currentSong.value.slug ||
-        formData.visible !== currentSong.value.visible;
-
-      const hasTrackChanges =
-        JSON.stringify(formData.audio_tracks) !==
-        JSON.stringify(serializeFormData(currentSong.value));
-
-      isDirty.value = hasBasicChanges || hasTrackChanges;
-    }
-  },
-  { deep: true }
-);
-
-// Computed properties
-// Swatches derived from the collection palette for the current theme.
-const { colorOptions: colorOptions } = useCollectionPalette(currentCollection);
-
-const tracksForRendering = computed(() =>
-  formData.audio_tracks.map((track, index) => ({
-    ...track,
-    renderIndex: index,
-    stableKey: `track-${Math.abs(track.id)}-${index}`
-  }))
-);
-
 // The edit bar's Guardar / Descartar drive this form.
-const editorSession = useEditorTab("cancion", {
+useEditorTab("cancion", {
   isDirty: () => isDirty.value,
   isSaving: () => isSaving.value,
+  // Guardar waits for uploads to finish
+  canSave: () => !isUploading.value,
   save: handleSave,
-  discard: async () => {
-    if (isCreateMode.value) await enterCreateMode();
-    else await cancelCreateMode();
-  }
+  discard: discardChanges
 });
 
-defineExpose({
-  isDirty,
-  enterCreateMode
-});
+defineExpose({ isDirty, enterCreateMode });
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-y-auto px-2 lg:pl-3">
-    <div class="flex flex-1 flex-col gap-4 pt-2 pb-3">
-      <div class="card bg-base-200 border-base-300 border shadow-sm">
-        <div class="card-body p-5">
-          <div class="flex items-start justify-between">
-            <h3 class="text-base-content font-medium tracking-wide uppercase">
-              Información básica
-            </h3>
-            <div class="form-control">
-              <label class="label cursor-pointer justify-start gap-3">
-                <div class="flex items-center gap-2">
-                  <IconVisible v-if="formData.visible" class="size-4" />
-                  <IconLock v-else class="size-4" />
-                  <span class="label-text font-medium">
-                    {{ formData.visible ? "Visible" : "Oculta" }}
-                  </span>
-                </div>
-                <input
-                  v-model="formData.visible"
-                  type="checkbox"
-                  class="toggle toggle-primary toggle-sm"
-                />
-              </label>
-            </div>
-          </div>
+  <div class="h-full overflow-y-auto" data-testid="song-tab">
+    <div class="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-5 md:px-8 md:py-8">
+      <!-- Song -->
+      <section class="flex flex-col gap-5" aria-labelledby="song-details">
+        <h2 id="song-details" class="sr-only">Datos de la canción</h2>
 
-          <div class="flex flex-col gap-2">
-            <div class="form-control w-full">
-              <label class="label">
-                <span class="label-text font-medium">Título</span>
-              </label>
-              <label
-                class="input input-bordered flex w-full items-center gap-2"
-                :class="{ 'input-error': errors.title }"
+        <label class="flex flex-col gap-1.5">
+          <span class="text-base-content/70 text-[12.5px] font-semibold">Título</span>
+          <input
+            :value="formData.title"
+            type="text"
+            placeholder="Título de la canción"
+            class="input font-display w-full text-lg font-bold"
+            :class="{ 'input-error': errors.title }"
+            data-testid="song-title-input"
+            @input="onTitleInput(($event.target as HTMLInputElement).value)"
+          />
+          <span v-if="errors.title" class="text-error text-xs">{{ errors.title }}</span>
+        </label>
+
+        <div class="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
+          <label class="flex min-w-0 flex-col gap-1.5">
+            <span class="flex items-center justify-between gap-2">
+              <span class="text-base-content/70 text-[12.5px] font-semibold">Dirección</span>
+              <button
+                v-if="!slugFollowsTitle && formData.title"
+                type="button"
+                class="link link-hover text-collection-ink text-xs font-semibold"
+                @click="regenerateSlug"
               >
-                <IconMusic class="size-4 opacity-70" />
-                <input
-                  v-model="formData.title"
-                  type="text"
-                  placeholder="Título de la canción"
-                  class="grow"
-                  @blur="handleTitleBlur"
-                />
-              </label>
-              <div v-if="errors.title" class="label">
-                <span class="label-text-alt text-error">{{ errors.title }}</span>
-              </div>
-            </div>
-
-            <div v-if="showAdvancedOptions" class="form-control w-full">
-              <label class="label flex justify-between">
-                <span class="label-text font-medium">Slug (URL)</span>
-                <button
-                  type="button"
-                  class="label-text-alt link link-primary"
-                  @click="generateSlugFromTitle"
-                >
-                  Generar desde título
-                </button>
-              </label>
-              <label
-                class="input input-bordered flex w-full items-center gap-2"
-                :class="{ 'input-error': errors.slug }"
-              >
-                <IconHash class="size-4 opacity-70" />
-                <input
-                  v-model="formData.slug"
-                  type="text"
-                  placeholder="url-de-la-cancion"
-                  class="grow font-mono"
-                />
-              </label>
-              <div v-if="errors.slug" class="label">
-                <span class="label-text-alt text-error">{{ errors.slug }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card bg-base-200 border-base-300 border shadow-sm">
-        <div class="card-body gap-3 p-5">
-          <div class="flex items-start justify-between">
-            <h3 class="text-base-content font-medium tracking-wide uppercase">Tracks de audio</h3>
-            <div class="-mt-1">
-              <button class="btn btn-square btn-sm btn-soft" @click="addAudioTrack">
-                <IconPlus class="size-3.5" />
-                <span class="sr-only">Agregar track</span>
+                Generar desde el título
               </button>
-            </div>
-          </div>
-
-          <div v-if="errors.audio_tracks" class="alert alert-error">
-            <span class="text-sm">{{ errors.audio_tracks }}</span>
-          </div>
-
-          <div
-            v-if="formData.audio_tracks.length === 0"
-            class="text-base-content/60 py-8 text-center"
-          >
-            <IconMusic class="mx-auto mb-2 size-8 opacity-50" />
-            <p>Aún no hay pistas de audio configuradas</p>
-          </div>
-
-          <div v-else class="flex flex-col gap-3">
-            <div
-              v-for="track in tracksForRendering"
-              :key="track.stableKey"
-              class="card bg-base-100 border-base-300 relative rounded-lg border border-t-[3px] transition-shadow"
-              :class="{
-                'ring-primary ring-2 ring-offset-2': draggingTrackId === track.id
-              }"
-              :style="{
-                borderTopColor:
-                  colorOptions?.find(
-                    (c: { key: string; value: string }) =>
-                      c.key === formData.audio_tracks[track.renderIndex]?.color_key
-                  )?.value || 'var(--color-base-300)'
-              }"
-              @dragenter.prevent="handleTrackDragEnter(track.id)"
-              @dragover.prevent
-              @dragleave.prevent="handleTrackDragLeave(track.id)"
-              @drop.prevent="handleTrackDrop(track.id, $event)"
+            </span>
+            <span
+              class="input flex w-full items-center gap-0 font-mono text-[13px]"
+              :class="{ 'input-error': errors.slug }"
             >
-              <div
-                v-if="draggingTrackId === track.id"
-                class="border-primary bg-primary/15 pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg border-2"
+              <span class="text-base-content/45 hidden shrink-0 sm:inline"
+                >…/{{ currentCollection?.slug }}/</span
               >
-                <div class="badge badge-primary gap-2 px-4 py-3 font-medium shadow-lg">
-                  <IconUpload class="size-4" />
-                  Soltá el audio acá
-                </div>
-              </div>
-              <div class="card-body flex flex-row items-center gap-3 p-4">
-                <div class="join join-vertical -my-1 -ml-1 flex shrink-0 flex-col">
-                  <button
-                    class="btn btn-xs btn-ghost btn-square join-item"
-                    :disabled="track.renderIndex === 0"
-                    @click="moveTrackUp(track.renderIndex)"
-                  >
-                    <IconMoveUp class="size-3.5" />
-                  </button>
-                  <button
-                    class="btn btn-xs btn-ghost btn-square join-item"
-                    :disabled="track.renderIndex === formData.audio_tracks.length - 1"
-                    @click="moveTrackDown(track.renderIndex)"
-                  >
-                    <IconMoveDown class="size-3.5" />
-                  </button>
-                </div>
+              <input
+                :value="formData.slug"
+                type="text"
+                placeholder="vidala-del-viento"
+                class="min-w-0 grow"
+                autocapitalize="none"
+                spellcheck="false"
+                data-testid="song-slug-input"
+                @input="onSlugInput(($event.target as HTMLInputElement).value)"
+              />
+            </span>
+            <span v-if="errors.slug" class="text-error text-xs">{{ errors.slug }}</span>
+            <span v-else class="text-base-content/50 truncate text-xs">
+              {{ urlPrefix }}{{ formData.slug || "…" }}
+              <template v-if="slugFollowsTitle"> · se completa desde el título</template>
+              <template
+                v-else-if="!isCreateMode && currentSong && formData.slug !== currentSong.slug"
+              >
+                · los enlaces viejos dejan de funcionar
+              </template>
+            </span>
+          </label>
 
-                <div class="flex flex-1 flex-row flex-wrap justify-end gap-2">
-                  <div class="form-control">
-                    <label class="label sr-only">Color</label>
-                    <ColorPicker
-                      :selected-colors="[formData.audio_tracks[track.renderIndex]!.color_key]"
-                      :available-colors="colorOptions"
-                      :multiple="false"
-                      @update:selected-colors="
-                        (colors: string[]) =>
-                          handleColorChange(
-                            track.renderIndex,
-                            colors[0] || colorOptions[0]?.key || 'blue'
-                          )
-                      "
-                    />
-                  </div>
-
-                  <div class="form-control min-w-16 flex-1">
-                    <label class="label sr-only">Título de la pista</label>
-                    <input
-                      :value="formData.audio_tracks[track.renderIndex]!.title"
-                      type="text"
-                      placeholder="Título"
-                      class="input input-bordered input-sm"
-                      @input="handleTrackTitleInput(track.renderIndex, $event)"
-                    />
-                  </div>
-
-                  <div class="form-control min-w-32 flex-3">
-                    <label class="label sr-only">URL del audio</label>
-                    <label
-                      class="input input-bordered input-sm flex w-full items-center gap-2"
-                      :class="{ 'input-error': errors.slug }"
-                    >
-                      <IconLink class="size-4 opacity-70" />
-                      <input
-                        :value="formData.audio_tracks[track.renderIndex]!.audio_file_url"
-                        type="url"
-                        placeholder="URL"
-                        class="grow font-mono"
-                        @input="handleTrackUrlInput(track.renderIndex, $event)"
-                      />
-                    </label>
-                  </div>
-
-                  <div class="flex w-full items-center gap-2">
-                    <AudioTrackUploader
-                      v-if="currentCollection"
-                      :ref="(instance) => setAudioUploaderRef(track.id, instance)"
-                      :collection="currentCollection"
-                      :disabled="!formData.slug && isCreateMode"
-                      @upload-start="handleUploadStart(track.renderIndex)"
-                      @upload-end="handleUploadEnd"
-                      @upload-success="
-                        (data: {
-                          key: string;
-                          url: string;
-                          suggestedTitle: string;
-                          peaks: TrackPeaks | null;
-                        }) => handleUploadSuccess(track.renderIndex, data)
-                      "
-                    />
-                    <span class="text-base-content/50 mr-auto hidden text-xs sm:inline">
-                      o arrastralo sobre toda la pista
-                    </span>
-                    <div
-                      v-if="showAdvancedOptions"
-                      class="tooltip tooltip-top"
-                      :data-tip="'Generar forma de onda'"
-                    >
-                      <button
-                        class="btn btn-sm btn-square"
-                        :class="
-                          formData.audio_tracks[track.renderIndex]!.peaks
-                            ? 'btn-primary'
-                            : 'btn-soft'
-                        "
-                        :disabled="
-                          !audioPlaybackUrl(formData.audio_tracks[track.renderIndex]!) ||
-                          peaksGeneratingIndex === track.renderIndex
-                        "
-                        @click="handleGeneratePeaks(track.renderIndex)"
-                      >
-                        <template v-if="peaksGeneratingIndex === track.renderIndex">
-                          <span class="loading loading-spinner loading-xs" />
-                        </template>
-                        <template v-else>
-                          <IconMusic class="size-3.5" />
-                        </template>
-                      </button>
-                    </div>
-
-                    <button
-                      class="btn btn-sm btn-error btn-soft btn-square shrink-0"
-                      @click="removeAudioTrack(track.renderIndex)"
-                    >
-                      <IconTrash class="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="flex flex-col gap-1.5">
+            <span class="text-base-content/70 text-[12.5px] font-semibold">Visibilidad</span>
+            <SegmentedControl
+              v-model="visibility"
+              label="Visibilidad"
+              :options="VISIBILITY_OPTIONS"
+            />
+            <span class="text-base-content/50 text-xs">
+              <template v-if="formData.visible">La ve toda la colección.</template>
+              <template v-else-if="isCreateMode">Oculta hasta que la publiques.</template>
+              <template v-else>Oculta: solo la ven editores y admins.</template>
+            </span>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Tracks -->
+      <section class="flex flex-col gap-3" aria-labelledby="song-tracks">
+        <div class="flex items-end justify-between gap-3">
+          <div class="flex flex-col gap-1">
+            <h2 id="song-tracks" class="font-display text-lg font-bold">Pistas</h2>
+            <p class="text-base-content/60 text-[13px]">
+              El orden de acá es el orden de la mezcladora. Arrastrá desde la manija para cambiarlo.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm bg-base-content/7 hover:bg-base-content/12 shrink-0 gap-1.5 rounded-full border-0 font-semibold shadow-none"
+            data-testid="add-track"
+            @click="addEmptyTrack"
+          >
+            <IconPlus class="size-4" />
+            <span class="hidden sm:inline">Agregar pista</span>
+          </button>
+        </div>
+
+        <div
+          v-if="errors.audio_tracks"
+          class="bg-error/10 text-error flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium"
+          role="alert"
+        >
+          <IconWarning class="size-4 shrink-0" />
+          {{ errors.audio_tracks }}
+        </div>
+
+        <TransitionGroup tag="div" name="track-list" class="flex flex-col gap-2.5">
+          <TrackRow
+            v-for="(track, index) in formData.audio_tracks"
+            :key="track.id"
+            :track="track"
+            :index="index"
+            :total="formData.audio_tracks.length"
+            :fill="trackColor(track.color_key, 'fill')"
+            :wave="trackColor(track.color_key, 'wave')"
+            :color-options="colorOptions"
+            :upload="uploads.get(track.id) ?? null"
+            :file-info="fileInfo.get(track.id) ?? null"
+            :show-advanced="showAdvanced"
+            :lifted="liftedId === track.id"
+            :generating-peaks="peaksGeneratingId === track.id"
+            :title-error="!!errors.audio_tracks && !track.title"
+            @title="(value: string) => updateTrack(track.id, { title: value })"
+            @color="(key: string) => updateTrack(track.id, { color_key: key })"
+            @replace="(file: File) => uploadInto(track.id, file)"
+            @retry="retryUpload(track.id)"
+            @remove="removeTrack(index)"
+            @move="(delta: number) => moveTrack(index, delta)"
+            @url="(value: string) => setTrackUrl(track, value)"
+            @regenerate-peaks="regeneratePeaks(track)"
+            @drag-start="(event: DragEvent) => onTrackDragStart(event, track.id)"
+            @drag-end="liftedId = null"
+            @dragover="onTrackDragOver($event, index)"
+          />
+        </TransitionGroup>
+
+        <!-- Drop zone: one track per file -->
+        <div
+          class="rounded-box flex flex-col items-center gap-2 border-2 border-dashed px-4 py-6 text-center transition-colors"
+          :class="
+            dropzoneOver
+              ? 'border-primary bg-primary/10'
+              : 'border-base-content/15 hover:border-base-content/30'
+          "
+          data-testid="track-dropzone"
+          @dragenter="onDropzoneEnter"
+          @dragover.prevent
+          @dragleave="onDropzoneLeave"
+          @drop.prevent="onDropzoneDrop"
+        >
+          <IconUpload class="text-base-content/50 size-6" />
+          <p class="text-[13.5px]">
+            <template v-if="dropzoneOver">Soltá para crear una pista por archivo</template>
+            <template v-else>
+              Soltá uno o varios audios o
+              <button
+                type="button"
+                class="link link-hover text-collection-ink font-semibold"
+                @click="dropzoneInput?.click()"
+              >
+                elegilos</button
+              >.
+            </template>
+          </p>
+          <p class="text-base-content/50 text-xs">
+            Se crea una pista por archivo, con el nombre del archivo.
+          </p>
+          <input
+            ref="dropzoneInput"
+            type="file"
+            multiple
+            accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
+            class="hidden"
+            data-testid="track-files-input"
+            @change="onDropzonePick"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="text-base-content/60 hover:text-base-content flex items-center gap-1.5 self-start text-[13px] font-semibold"
+          :aria-expanded="showAdvanced"
+          @click="showAdvanced = !showAdvanced"
+        >
+          <IconChevronDown
+            class="size-4 transition-transform"
+            :class="{ '-rotate-90': !showAdvanced }"
+          />
+          Opciones avanzadas
+          <span class="text-base-content/45 font-normal">· URL del audio y forma de onda</span>
+        </button>
+      </section>
+
+      <p v-if="isUploading" class="text-base-content/60 flex items-center gap-2 text-[13px]">
+        <span class="loading loading-spinner loading-xs" />
+        Guardar se habilita cuando terminen de subir los audios.
+      </p>
+
+      <!-- Danger zone: admins only -->
+      <section
+        v-if="isAdmin && !isCreateMode && currentSong"
+        class="border-error/25 rounded-box flex flex-col gap-3 border p-4 md:flex-row md:items-center md:justify-between"
+        aria-labelledby="song-danger"
+      >
+        <div class="flex flex-col gap-1">
+          <h2 id="song-danger" class="text-error text-[13px] font-semibold">Zona de peligro</h2>
+          <p class="text-[13.5px] font-semibold">Eliminar canción</p>
+          <p class="text-base-content/60 text-[13px]">
+            Se borran la letra, las pistas y sus audios. No se puede deshacer.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn btn-sm text-error bg-error/10 hover:bg-error/15 shrink-0 gap-1.5 self-start rounded-full border-0 font-semibold shadow-none md:self-center"
+          data-testid="delete-song"
+          @click="
+            deleteError = '';
+            deleteOpen = true;
+          "
+        >
+          <IconTrash class="size-4" />
+          Eliminar
+        </button>
+      </section>
     </div>
+
+    <ConfirmTypedDialog
+      :open="deleteOpen"
+      :title="`¿Eliminar “${currentSong?.title ?? ''}”?`"
+      :description="deleteDescription"
+      :expected="currentSong?.title ?? ''"
+      confirm-label="Eliminar canción"
+      :busy="deleting"
+      :error="deleteError"
+      @confirm="confirmDelete"
+      @cancel="deleteOpen = false"
+    />
   </div>
-  <SafeTeleport
-    v-if="editorSession.activeTab.value === 'cancion'"
-    to="[data-song-editor-actions]"
-  >
-    <button
-      class="btn btn-sm btn-circle"
-      :class="showAdvancedOptions ? 'btn-primary' : 'btn-ghost'"
-      :aria-pressed="showAdvancedOptions"
-      aria-label="Opciones avanzadas"
-      title="Opciones avanzadas"
-      @click="showAdvancedOptions = !showAdvancedOptions"
-    >
-      <IconSettings class="size-[18px]" />
-    </button>
-  </SafeTeleport>
 </template>
+
+<style scoped>
+.track-list-move {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+</style>
