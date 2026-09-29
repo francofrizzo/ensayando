@@ -141,6 +141,8 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - Texto del color de la colección (seleccionados, enlaces, iniciales, bordes de selección) usa siempre la tinta, nunca el relleno; en oscuro su claridad mínima es 0,76 para pasar 4,5:1 también sobre los fondos teñidos.
 - Ajustes de colección: se recortaron los textos de ayuda (subtítulos de sección, nota al pie, ayudas de portada y visibilidad) a lo mínimo.
 - El resumen de cambios de Colores muestra tono e intensidad (p. ej. "Tenor: 195° → 210°, media → intensa") y el paso a neutra.
+- Ajustes: la sección "Colores" se llama **Pistas** (`/ajustes/pistas`; `/ajustes/colores` redirige). Cada pista tiene un nombre editable ("Voz 1", "Pista") guardado junto a su tono en `track_colors`; sin nombre, se usa el título más común de las pistas que la usan.
+- Aviso de tonos cercanos: solo cuando las dos pistas tienen la misma intensidad o una vecina (suave–media, media–intensa). Suave al lado de intensa se distingue aunque el tono sea casi el mismo.
 
 ## Estructura
 

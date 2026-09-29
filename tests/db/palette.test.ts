@@ -169,4 +169,38 @@ describe.skipIf(!enabled)("update_collection_palette", () => {
     });
     expect(error?.message).toBe("INVALID_PALETTE");
   });
+  it("stores an optional name with each track color", async () => {
+    const current = await service.from("collections").select("track_colors").eq("id", collectionId).single();
+    const colors = current.data!.track_colors as Record<string, Record<string, unknown>>;
+    const [first, ...rest] = Object.keys(colors);
+    const named = { ...colors, [first!]: { ...colors[first!], name: "Voz 1" } };
+    const { error } = await admin.rpc("update_collection_palette", {
+      p_collection_id: collectionId,
+      p_hue: 48,
+      p_intensity: "media",
+      p_track_colors: named,
+      p_key_map: {}
+    });
+    expect(error).toBeNull();
+    const saved = await service.from("collections").select("track_colors").eq("id", collectionId).single();
+    const stored = saved.data!.track_colors as Record<string, Record<string, unknown>>;
+    expect(stored[first!]!.name).toBe("Voz 1");
+    for (const key of rest) expect(stored[key]!.name).toBeUndefined();
+  });
+
+  it("rejects names that are empty, too long or not text", async () => {
+    const current = await service.from("collections").select("track_colors").eq("id", collectionId).single();
+    const colors = current.data!.track_colors as Record<string, Record<string, unknown>>;
+    const first = Object.keys(colors)[0]!;
+    for (const name of ["   ", "x".repeat(41), 12]) {
+      const { error } = await admin.rpc("update_collection_palette", {
+        p_collection_id: collectionId,
+        p_hue: 48,
+        p_intensity: "media",
+        p_track_colors: { ...colors, [first]: { ...colors[first], name } },
+        p_key_map: {}
+      });
+      expect(error?.message).toBe("INVALID_PALETTE");
+    }
+  });
 });

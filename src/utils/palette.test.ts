@@ -19,7 +19,9 @@ import {
   type Theme,
   parseLegacyColor,
   toColorSpec,
-  unplayedWaveColor
+  unplayedWaveColor,
+  trackColorName,
+  withTrackColorName
 } from "@/utils/palette";
 
 import legacyColors from "@/__fixtures__/legacy-colors.json";
@@ -304,5 +306,29 @@ describe("unplayedWaveColor hue", () => {
   it("keeps the track's hue instead of drifting toward the collection's", () => {
     const unplayed = oklch(unplayedWaveColor({ hue: 25, intensity: "intensa" }, "dark", 300))!;
     expect(Math.abs((unplayed.h ?? 0) - 25)).toBeLessThan(3);
+  });
+});
+
+describe("track color names", () => {
+  it("keeps a trimmed name, drops empty or non-text ones", () => {
+    expect(trackColorName({ hue: 1, intensity: "media", name: "  Voz 1 " })).toBe("Voz 1");
+    expect(trackColorName({ hue: 1, intensity: "media", name: "  " })).toBeUndefined();
+    expect(trackColorName({ neutral: true, name: 3 })).toBeUndefined();
+    expect(withTrackColorName({ neutral: true }, "")).toEqual({ neutral: true });
+    expect(withTrackColorName({ hue: 5, intensity: "suave" }, " Pista ")).toEqual({
+      hue: 5,
+      intensity: "suave",
+      name: "Pista"
+    });
+  });
+
+  it("resolves names alongside specs", () => {
+    const palette = resolveCollectionPalette({
+      hue: 300,
+      intensity: "media",
+      track_colors: { v1: { hue: 20, intensity: "intensa", name: "Voz 1" }, p: { neutral: true } }
+    });
+    expect(palette.tracks.v1).toEqual({ hue: 20, intensity: "intensa" });
+    expect(palette.names).toEqual({ v1: "Voz 1" });
   });
 });

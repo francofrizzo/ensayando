@@ -29,7 +29,7 @@ import { initials } from "@/utils/collectionSettings";
 
 // Ajustes de colección (design/pantallas/coleccion.html): everything that used to be
 // done with SQL through the admin skill. Only the collection's admins get here.
-type Section = "general" | "colores" | "canciones" | "miembros" | "peligro";
+type Section = "general" | "pistas" | "canciones" | "miembros" | "peligro";
 
 const route = useRoute();
 const router = useRouter();
@@ -86,7 +86,7 @@ watch(
 
 const NAV: { id: Section; label: string; icon: typeof IconSettings }[] = [
   { id: "general", label: "General", icon: IconSettings },
-  { id: "colores", label: "Colores", icon: IconPalette },
+  { id: "pistas", label: "Pistas", icon: IconPalette },
   { id: "canciones", label: "Canciones", icon: IconLibrary },
   { id: "miembros", label: "Miembros", icon: IconMembers }
 ];
@@ -255,7 +255,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             @updated="onCollectionUpdated"
           />
           <SettingsColors
-            v-else-if="section === 'colores'"
+            v-else-if="section === 'pistas'"
             :key="`colors-${collection.id}`"
             :collection="collection"
             :songs="collectionsStore.songs"

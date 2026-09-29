@@ -7,7 +7,12 @@ import { type ColorSpec, deriveColor, canvasColor, type Theme } from "@/utils/pa
 // waveform, painted with the same derivation the player uses.
 const props = defineProps<{ spec: ColorSpec; collectionHue: number }>();
 
-const LINES = ["Cada nota que se asoma", "Vuelve al mismo corazón", "Que el viento te va a llevar"];
+const LINES = [
+  "Alexander Hamilton",
+  "Te estamos esperando a vos",
+  "Ya no hay vuelta atrás",
+  "Ya la historia te da tu lugar"
+];
 
 // Deterministic bar heights, so the preview doesn't jump between renders.
 const BARS = Array.from({ length: 48 }, (_, i) => {

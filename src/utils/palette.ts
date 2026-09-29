@@ -17,6 +17,8 @@ import { clampChroma, displayable, formatCss, oklch } from "culori";
 
 export type Intensity = "suave" | "media" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
+/** A stored track color: its spec plus an optional name ("Voz 1", "Pista"). */
+export type TrackColor = ColorSpec & { name?: string };
 export type ColorRole = "fill" | "ink" | "lyric" | "wave" | "soft" | "line";
 export type Theme = "light" | "dark";
 
@@ -270,6 +272,23 @@ export const toColorSpec = (value: unknown): ColorSpec | null => {
   return null;
 };
 
+export const TRACK_COLOR_NAME_MAX = 40;
+
+/** A stored track color's name, if it has a usable one. */
+export const trackColorName = (value: unknown): string | undefined => {
+  if (value === null || typeof value !== "object") return undefined;
+  const name = (value as Record<string, unknown>).name;
+  if (typeof name !== "string") return undefined;
+  const trimmed = name.trim().slice(0, TRACK_COLOR_NAME_MAX);
+  return trimmed || undefined;
+};
+
+/** A spec with its name, ready to store in track_colors (no name → no key). */
+export const withTrackColorName = (spec: ColorSpec, name: string | undefined): TrackColor => {
+  const trimmed = name?.trim().slice(0, TRACK_COLOR_NAME_MAX);
+  return trimmed ? { ...spec, name: trimmed } : { ...spec };
+};
+
 /** Converts OKLab to lightness, chroma and hue (degrees 0–360). */
 const labToLch = (lightness: number, a: number, b: number) => ({
   lightness,
@@ -348,23 +367,29 @@ export type PaletteSource = {
 export type CollectionPalette = {
   main: ColorSpec;
   tracks: Record<string, ColorSpec>;
+  /** Names given to track colors in collection settings, by key. */
+  names: Record<string, string>;
 };
 
 /** Resolves a collection's palette; without a collection, the brand color. */
 export const resolveCollectionPalette = (
   source: PaletteSource | null | undefined
 ): CollectionPalette => {
-  if (!source) return { main: BRAND_SPEC, tracks: {} };
+  if (!source) return { main: BRAND_SPEC, tracks: {}, names: {} };
   const main: ColorSpec = {
     hue: normalizeHue(source.hue),
     intensity: isIntensity(source.intensity) ? source.intensity : "media"
   };
   const tracks: Record<string, ColorSpec> = {};
+  const names: Record<string, string> = {};
   for (const [key, value] of Object.entries(source.track_colors ?? {})) {
     const spec = toColorSpec(value);
-    if (spec) tracks[key] = spec;
+    if (!spec) continue;
+    tracks[key] = spec;
+    const name = trackColorName(value);
+    if (name) names[key] = name;
   }
-  return { main, tracks };
+  return { main, tracks, names };
 };
 
 /** A spec's color at an arbitrary lightness (generated banners, glows). */

@@ -16,9 +16,11 @@ import {
   COLOR_KEY_PATTERN,
   colorKeyFromName,
   colorUsage,
+  competingHues,
   describeColorChange,
   hueConflicts,
   hueDistance,
+  intensitiesClash,
   MIN_HUE_DISTANCE,
   nearestFreeHue,
   usageLabel
@@ -29,7 +31,9 @@ import {
   type Intensity,
   isNeutral,
   normalizeHue,
-  resolveCollectionPalette
+  resolveCollectionPalette,
+  TRACK_COLOR_NAME_MAX,
+  withTrackColorName
 } from "@/utils/palette";
 
 const props = defineProps<{
@@ -42,7 +46,8 @@ const emit = defineEmits<{ updated: [collection: CollectionWithRole]; "songs-cha
 
 const { resolvedTheme } = useTheme();
 
-type Row = { uid: number; originalKey: string | null; key: string; spec: ColorSpec };
+/** `name` is what the collection calls this track ("Voz 1"); empty falls back to the tracks' titles. */
+type Row = { uid: number; originalKey: string | null; key: string; name: string; spec: ColorSpec };
 type Removed = { originalKey: string; replacement: string };
 
 let nextUid = 1;
@@ -52,6 +57,7 @@ function initialRows(): Row[] {
     uid: nextUid++,
     originalKey: key,
     key,
+    name: palette.names[key] ?? "",
     spec: { ...spec }
   }));
 }
@@ -67,8 +73,8 @@ const error = ref("");
 
 const usage = computed(() => colorUsage(props.songs));
 
-// Tracks name their color: "Bajo" reads better than "baj". The most common title of the
-// tracks using a key, or the key itself.
+// Each color has a name: the one given here, or else the most common title of the
+// tracks using it ("Bajo" reads better than "baj"), or the key itself.
 const labels = computed(() => {
   const counts: Record<string, Record<string, number>> = {};
   for (const song of props.songs) {
@@ -83,7 +89,8 @@ const labels = computed(() => {
   }
   return out;
 });
-const labelFor = (row: Row) => labels.value[row.originalKey ?? ""] ?? row.key;
+const derivedLabel = (row: Row) => labels.value[row.originalKey ?? ""] ?? row.key;
+const labelFor = (row: Row) => row.name.trim() || derivedLabel(row);
 const usageFor = (row: Row) => (row.originalKey ? usage.value[row.originalKey] : undefined);
 
 const selectedRow = computed(() =>
@@ -115,8 +122,8 @@ const marksFor = (row: Row | null) =>
       warn:
         !!row &&
         !isNeutral(row.spec) &&
-        hueDistance((r.spec as { hue: number }).hue, (row.spec as { hue: number }).hue) <
-          MIN_HUE_DISTANCE
+        hueDistance((r.spec as { hue: number }).hue, row.spec.hue) < MIN_HUE_DISTANCE &&
+        intensitiesClash((r.spec as { intensity: Intensity }).intensity, row.spec.intensity)
     }));
 
 function setHue(row: Row, hue: number) {
@@ -130,8 +137,8 @@ function setIntensity(row: Row, intensity: Intensity) {
 function setNeutral(row: Row, neutral: boolean) {
   if (neutral) row.spec = { neutral: true };
   else {
-    const others = rows.value.filter((r) => r !== row && !isNeutral(r.spec));
-    const hue = nearestFreeHue(mainHue.value + 180, others.map((r) => (r.spec as { hue: number }).hue));
+    const others = rows.value.filter((r) => r !== row).map((r) => r.spec);
+    const hue = nearestFreeHue(mainHue.value + 180, competingHues("media", others));
     row.spec = { hue: hue ?? 0, intensity: "media" };
   }
 }
@@ -139,20 +146,19 @@ function setNeutral(row: Row, neutral: boolean) {
 const suggestion = computed(() => {
   const row = selectedRow.value;
   if (!row || isNeutral(row.spec) || !conflictFor(row)) return null;
-  const others = rows.value
-    .filter((r) => r !== row && !isNeutral(r.spec))
-    .map((r) => (r.spec as { hue: number }).hue);
-  return nearestFreeHue(row.spec.hue, others);
+  const others = rows.value.filter((r) => r !== row).map((r) => r.spec);
+  return nearestFreeHue(row.spec.hue, competingHues(row.spec.intensity, others));
 });
 
 function addColor() {
   const taken = rows.value.map((r) => r.key);
-  const others = rows.value.filter((r) => !isNeutral(r.spec)).map((r) => (r.spec as { hue: number }).hue);
-  const hue = nearestFreeHue((mainHue.value + 180) % 360, others) ?? 0;
+  const others = rows.value.map((r) => r.spec);
+  const hue = nearestFreeHue((mainHue.value + 180) % 360, competingHues("media", others)) ?? 0;
   const row: Row = {
     uid: nextUid++,
     originalKey: null,
     key: colorKeyFromName("color", taken),
+    name: "",
     spec: { hue, intensity: "media" }
   };
   rows.value.push(row);
@@ -179,7 +185,7 @@ const keyErrors = computed(() => {
     if (!COLOR_KEY_PATTERN.test(row.key)) {
       errors[row.uid] = "Minúsculas, números, guion o guion bajo (hasta 24).";
     } else if (seen.has(row.key)) {
-      errors[row.uid] = "Ya hay otro color con esa clave.";
+      errors[row.uid] = "Ya hay otra pista con esa clave.";
     }
     seen.set(row.key, row.uid);
   }
@@ -204,6 +210,9 @@ const changeList = computed(() => {
       continue;
     }
     if (row.key !== before.key) list.push(`${before.key} renombrado`);
+    if (row.name.trim() !== before.name.trim()) {
+      list.push(row.name.trim() ? `${before.key}: nombre “${row.name.trim()}”` : `${before.key}: sin nombre`);
+    }
     if (JSON.stringify(row.spec) !== JSON.stringify(before.spec)) {
       list.push(describeColorChange(labelFor(row), before.spec, row.spec));
     }
@@ -235,7 +244,9 @@ async function save() {
     if (row.originalKey && row.originalKey !== row.key) keyMap[row.originalKey] = row.key;
   }
   for (const r of removed.value) keyMap[r.originalKey] = r.replacement;
-  const trackColors = Object.fromEntries(rows.value.map((r) => [r.key, r.spec]));
+  const trackColors = Object.fromEntries(
+    rows.value.map((r) => [r.key, withTrackColorName(r.spec, r.name)])
+  );
   try {
     await updateCollectionPalette(props.collection.id, {
       hue: mainHue.value,
@@ -250,12 +261,17 @@ async function save() {
       track_colors: trackColors
     });
     if (Object.keys(keyMap).length) emit("songs-changed");
-    savedRows.value = rows.value.map((r) => ({ ...r, originalKey: r.key, spec: { ...r.spec } }));
+    savedRows.value = rows.value.map((r) => ({
+      ...r,
+      name: r.name.trim(),
+      originalKey: r.key,
+      spec: { ...r.spec }
+    }));
     rows.value = savedRows.value.map((r) => ({ ...r, spec: { ...r.spec } }));
     removed.value = [];
-    toast.success("Colores guardados");
+    toast.success("Pistas guardadas");
   } catch (e) {
-    error.value = e instanceof AdminError ? e.message : "No se pudieron guardar los colores.";
+    error.value = e instanceof AdminError ? e.message : "No se pudieron guardar las pistas.";
   } finally {
     saving.value = false;
   }
@@ -288,7 +304,7 @@ function discard() {
 }
 
 useSettingsSection({
-  label: "los colores",
+  label: "las pistas",
   isDirty: () => changeList.value.length > 0,
   save,
   discard,
@@ -304,10 +320,10 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
 </script>
 
 <template>
-  <SettingsSection title="Colores">
+  <SettingsSection title="Pistas">
     <template #actions>
       <button class="btn btn-soft btn-sm" data-testid="add-color" @click="addColor">
-        <IconPlus class="size-4" /> Agregar color
+        <IconPlus class="size-4" /> Agregar pista
       </button>
     </template>
 
@@ -361,7 +377,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
           </span>
         </button>
         <p v-if="rows.length === 0" class="text-base-content/50 p-3 text-sm">
-          Todavía no hay colores de pista. Agregá uno para asignarlo a las pistas.
+          Todavía no hay pistas. Agregá una para darle nombre y color.
         </p>
       </div>
 
@@ -405,10 +421,16 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
               :class="{ 'neutral-swatch': isNeutral(selectedRow.spec) }"
               :style="isNeutral(selectedRow.spec) ? {} : { background: swatch(selectedRow.spec) }"
             />
-            <div class="flex min-w-0 flex-1 flex-col gap-1">
-              <span class="text-base-content/70 text-sm font-semibold">{{ labelFor(selectedRow) }}</span>
-              <span class="text-base-content/50 text-xs">{{ usageLabel(usageFor(selectedRow)) }}</span>
-            </div>
+            <label class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="text-base-content/70 text-sm font-semibold">Nombre</span>
+              <input
+                v-model="selectedRow.name"
+                class="input input-sm field-focus"
+                :placeholder="derivedLabel(selectedRow)"
+                :maxlength="TRACK_COLOR_NAME_MAX"
+                data-testid="color-name"
+              />
+            </label>
             <label class="flex w-32 flex-col gap-1">
               <span class="text-base-content/70 text-sm font-semibold">Clave</span>
               <input
@@ -421,7 +443,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
             </label>
             <button
               class="btn btn-ghost btn-sm btn-square text-error"
-              aria-label="Quitar color"
+              aria-label="Quitar pista"
               :disabled="!songsLoaded"
               :title="songsLoaded ? undefined : 'Esperá a que carguen las canciones'"
               @click="removeRow(selectedRow)"
@@ -493,8 +515,9 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
                 <button class="link font-semibold" @click="setHue(selectedRow, suggestion)">
                   Probá {{ suggestion }}°
                 </button>
-                (el lugar libre más cercano) o pasá una de las dos a intensidad suave.
+                (el lugar libre más cercano) o separalas en intensidad: una suave y la otra intensa.
               </template>
+              <template v-else>Separalas en intensidad: una suave y la otra intensa.</template>
             </span>
           </div>
 
@@ -512,7 +535,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
       <IconWarning class="size-4" />
       <span class="flex-1">
         Quitaste <span class="font-mono">{{ r.originalKey }}</span>, que usan
-        {{ usageLabel(usage[r.originalKey]) }}. ¿Con qué color los reemplazamos?
+        {{ usageLabel(usage[r.originalKey]) }}. ¿Con qué pista los reemplazamos?
       </span>
       <select v-model="r.replacement" class="select select-sm w-40 field-focus">
         <option v-for="row in rows" :key="row.uid" :value="row.key">{{ labelFor(row) }} ({{ row.key }})</option>
@@ -526,7 +549,7 @@ const mainSpec = computed<ColorSpec>(() => ({ hue: mainHue.value, intensity: mai
       :label="saveLabel"
       :saving="saving"
       :disabled="blocked"
-      save-label="Guardar colores"
+      save-label="Guardar pistas"
       @save="save"
       @discard="discard"
     />
