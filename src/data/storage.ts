@@ -46,8 +46,15 @@ function contentTypeForAudio(file: File): string {
   return CONTENT_TYPES_BY_EXTENSION[extension] ?? "application/octet-stream";
 }
 
-export async function uploadAudioFile(file: File, collectionId: number): Promise<UploadResult> {
-  return await uploadFile(file, collectionId, "audio", contentTypeForAudio(file));
+/** Fraction of the file sent, 0 to 1. */
+export type UploadProgress = (fraction: number) => void;
+
+export async function uploadAudioFile(
+  file: File,
+  collectionId: number,
+  onProgress?: UploadProgress
+): Promise<UploadResult> {
+  return await uploadFile(file, collectionId, "audio", contentTypeForAudio(file), onProgress);
 }
 
 // Collection artwork: only the collection's admins may upload it (api/storage.ts).
@@ -59,11 +66,32 @@ export async function deleteArtworkFile(key: string): Promise<void> {
   await storageRequest<void>({ action: "delete", fileType: "artwork", key });
 }
 
+// fetch() can't report upload progress; XMLHttpRequest can.
+function putWithProgress(
+  url: string,
+  headers: Record<string, string>,
+  file: File,
+  onProgress: UploadProgress
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    Object.entries(headers).forEach(([name, value]) => xhr.setRequestHeader(name, value));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => resolve(xhr.status);
+    xhr.onerror = () => reject(new Error("Se cortó la conexión mientras subía el audio"));
+    xhr.send(file);
+  });
+}
+
 async function uploadFile(
   file: File,
   collectionId: number,
   fileType: "audio" | "artwork",
-  contentType: string
+  contentType: string,
+  onProgress?: UploadProgress
 ): Promise<UploadResult> {
   const signed = await storageRequest<{
     key: string;
@@ -78,13 +106,11 @@ async function uploadFile(
     size: file.size
   });
 
-  const upload = await fetch(signed.url, {
-    method: "PUT",
-    headers: signed.headers,
-    body: file
-  });
-  if (!upload.ok) {
-    throw new Error(`R2 rechazó la carga (${upload.status})`);
+  const status = onProgress
+    ? await putWithProgress(signed.url, signed.headers, file, onProgress)
+    : (await fetch(signed.url, { method: "PUT", headers: signed.headers, body: file })).status;
+  if (status < 200 || status >= 300) {
+    throw new Error(`R2 rechazó la carga (${status})`);
   }
 
   const completed = await storageRequest<{ url: string; size: number }>({
