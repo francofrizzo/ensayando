@@ -1,286 +1,299 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { IconHelp } from "@/components/ui/icons";
-
-import LyricsTimestamps from "@/components/editor/LyricsTimestamps.vue";
-import SafeTeleport from "@/components/ui/SafeTeleport.vue";
-import { useEditorSession } from "@/composables/useEditorSession";
+import LyricsInspector from "@/components/editor/LyricsInspector.vue";
+import LyricsToolbar from "@/components/editor/LyricsToolbar.vue";
+import LyricsVerseRow from "@/components/editor/LyricsVerseRow.vue";
+import { IconMixer } from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { usePlayerState } from "@/composables/useCurrentTime";
+import { useEditorSession } from "@/composables/useEditorSession";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import { useLyricsEditor, type FocusPosition } from "@/composables/useLyricsEditor";
-import type { LyricVerse } from "@/data/types";
+import { useReactionOffset } from "@/composables/useReactionOffset";
+import type { LyricStanza, LyricVerse } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
+import { useUIStore } from "@/stores/ui";
+import { isTypingTarget } from "@/utils/keys";
+import {
+  activeVerseKeys,
+  adjacentPosition,
+  getVerseAt,
+  moveItemTo,
+  positionKey,
+  pruneSelection,
+  selectRange,
+  setCommentInVerses,
+  toggleColorInVerses,
+  togglePosition,
+  toggleTrackInVerses,
+  updateVerses
+} from "@/utils/lyricsSelection";
+import { addStatusToLyrics } from "@/utils/lyricsViewerUtils";
+
 import KeyboardHelpModal from "./KeyboardHelpModal.vue";
-import LyricsTextarea from "./LyricsTextarea.vue";
-import LyricsToolbar from "./LyricsToolbar.vue";
 
 const store = useCollectionsStore();
+const uiStore = useUIStore();
 const { currentCollection } = useCurrentCollection();
-const { currentTime, seekTo } = usePlayerState();
+const { currentTime, isPlaying, seekTo } = usePlayerState();
 const { getVerseStyles } = useLyricsColoring();
+const { palette, trackColor } = useCollectionPalette(currentCollection);
+const reaction = useReactionOffset();
 const session = useEditorSession();
 
-// The lyrics' own "save" command (⌘S) goes through the edit bar, which saves everything.
-const handleSaveClick = () => {
+// ⌘S goes through the edit bar, which saves every tab.
+const handleSave = () => {
   void session.save();
 };
 
-const lyricsToDisplay = computed(() => {
-  const lyrics = store.localLyrics.value;
-  if (lyrics.length === 0) {
-    // Return a single stanza with one empty verse
-    return [[{ text: "", start_time: undefined, end_time: undefined }]];
-  }
-  return lyrics;
-});
+const EMPTY_LYRICS: LyricStanza[] = [[{ text: "", start_time: undefined, end_time: undefined }]];
+
+const lyricsToDisplay = computed<LyricStanza[]>(() =>
+  store.localLyrics.value.length === 0 ? EMPTY_LYRICS : store.localLyrics.value
+);
 
 const {
   currentFocus,
   updateLyrics,
   showHelp,
   handleInputFocus,
-  commandRegistry,
-  getCurrentVerseColors,
-  setCurrentVerseColors,
-  getCurrentVerseAudioTrackIds,
-  setCurrentVerseAudioTrackIds,
-  copyPropertiesToMode,
-  copyPropertiesToVerse,
-  getCurrentVerseComment,
-  setCurrentVerseComment
+  focusInput,
+  commandRegistry
 } = useLyricsEditor(
   lyricsToDisplay,
   store.updateLocalLyrics,
-  handleSaveClick,
-  () => Math.max(0, Math.round((currentTime.value - timestampOffset.value) * 100) / 100),
+  handleSave,
+  // Every mark subtracts the reaction-time correction (remembered on this device).
+  () => reaction.apply(currentTime.value),
   seekTo,
   store.undo,
   store.redo
 );
 
-// Timestamp visibility state
-const showTimestamps = ref(true);
-
-// Reaction time offset for timestamping (seconds)
-const timestampOffset = ref(0.2);
-
-const toggleTimestamps = () => {
-  showTimestamps.value = !showTimestamps.value;
+// ---------- view toggles (remembered on this device) ----------
+const readFlag = (key: string, fallback: boolean) => {
+  try {
+    const stored = window.localStorage.getItem(key);
+    return stored === null ? fallback : stored === "1";
+  } catch {
+    return fallback;
+  }
 };
-
-const createVerseModel = (stanzaIndex: number, itemIndex: number) => {
-  return computed({
-    get: (): string => {
-      const stanza = store.localLyrics.value[stanzaIndex];
-      if (stanza && !Array.isArray(stanza[itemIndex])) {
-        return (stanza[itemIndex] as LyricVerse).text;
-      }
-      return "";
-    },
-    set: (newText: string) => {
-      let currentLyrics = [...store.localLyrics.value];
-
-      // If lyrics are empty, initialize with the default structure
-      if (currentLyrics.length === 0) {
-        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
-      }
-
-      const stanza = currentLyrics[stanzaIndex];
-      if (stanza && !Array.isArray(stanza[itemIndex])) {
-        (stanza[itemIndex] as LyricVerse).text = newText;
-        updateLyrics(currentLyrics);
-      }
-    }
-  });
+const writeFlag = (key: string, value: boolean) => {
+  try {
+    window.localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    // Storage can be unavailable (private mode); the toggle lasts for the session.
+  }
 };
+const showTimestamps = ref(readFlag("ens-lyrics-times", true));
+const followPlayback = ref(readFlag("ens-lyrics-follow", true));
+watch(showTimestamps, (value) => writeFlag("ens-lyrics-times", value));
+watch(followPlayback, (value) => writeFlag("ens-lyrics-follow", value));
 
-const createColumnModel = (
-  stanzaIndex: number,
-  itemIndex: number,
-  columnIndex: number,
-  lineIndex: number
-) => {
-  return computed({
-    get: (): string => {
-      const stanza = store.localLyrics.value[stanzaIndex];
-      if (stanza && Array.isArray(stanza[itemIndex])) {
-        const columns = stanza[itemIndex] as LyricVerse[][];
-        if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
-          return columns[columnIndex][lineIndex].text;
-        }
-      }
-      return "";
-    },
-    set: (newText: string) => {
-      let currentLyrics = [...store.localLyrics.value];
+// ---------- selection ----------
+// The focused verse is always selected; ⇧+clic / ⇧↑↓ extend from the anchor, ⌘+clic toggles.
+const selection = ref<FocusPosition[]>([]);
+const anchor = ref<FocusPosition | null>(null);
+let pendingGesture: "extend" | "toggle" | null = null;
 
-      // If lyrics are empty, initialize with the default structure
-      if (currentLyrics.length === 0) {
-        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
-      }
-
-      const stanza = currentLyrics[stanzaIndex];
-      if (stanza && Array.isArray(stanza[itemIndex])) {
-        const columns = stanza[itemIndex] as LyricVerse[][];
-        if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
-          columns[columnIndex][lineIndex].text = newText;
-          updateLyrics(currentLyrics);
-        }
-      }
-    }
-  });
-};
-
-const onInputFocus = (position: FocusPosition) => {
-  handleInputFocus(position);
-};
-
-// Color functionality
-const currentVerseColors = computed(() => getCurrentVerseColors());
-
-// Swatches derived from the collection palette for the current theme.
-const { colorOptions: availableColors } = useCollectionPalette(currentCollection);
-
-const handleColorsChange = (colors: string[]) => {
-  setCurrentVerseColors(colors);
-};
-
-// Audio track functionality
-const currentVerseAudioTrackIds = computed(() => getCurrentVerseAudioTrackIds());
-
-const availableAudioTracks = computed(() => {
-  const currentSong = store.currentSong;
-  if (!currentSong) return [];
-  return [...currentSong.audio_tracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+const selectedKeys = computed(
+  () => new Set(pruneSelection(lyricsToDisplay.value, selection.value).map(positionKey))
+);
+const effectiveSelection = computed(() => {
+  const pruned = pruneSelection(lyricsToDisplay.value, selection.value);
+  if (pruned.length > 0) return pruned;
+  return currentFocus.value ? [currentFocus.value] : [];
 });
 
-const handleAudioTrackIdsChange = (trackIds: number[]) => {
-  setCurrentVerseAudioTrackIds(trackIds);
+const onRowMouseDown = (event: MouseEvent, position: FocusPosition) => {
+  pendingGesture = event.shiftKey ? "extend" : event.metaKey || event.ctrlKey ? "toggle" : null;
+  if (!pendingGesture) return;
+  // With a modifier the browser would extend the text selection of the focused verse
+  // instead of moving to the clicked one, so we move focus ourselves.
+  event.preventDefault();
+  const input = document.querySelector(`[data-lyrics-input="${positionKey(position)}"]`);
+  if (input && input === document.activeElement) onVerseFocus(position);
+  else void focusInput(position);
 };
 
-// Comment functionality
-const currentVerseComment = computed(() => getCurrentVerseComment());
-
-const handleCommentChange = (comment: string | undefined) => {
-  setCurrentVerseComment(comment);
-};
-
-const isVerseSelected = (
-  stanzaIndex: number,
-  itemIndex: number,
-  columnIndex?: number,
-  lineIndex?: number
-) => {
-  const f = currentFocus.value;
-  if (!f) return false;
-  if (f.stanzaIndex !== stanzaIndex || f.itemIndex !== itemIndex) return false;
-  if (columnIndex !== undefined && lineIndex !== undefined) {
-    return f.columnIndex === columnIndex && f.lineIndex === lineIndex;
+const onVerseFocus = (position: FocusPosition) => {
+  handleInputFocus(position);
+  const gesture = pendingGesture;
+  pendingGesture = null;
+  if (gesture === "extend") {
+    selection.value = selectRange(lyricsToDisplay.value, anchor.value ?? position, position);
+  } else if (gesture === "toggle") {
+    const base = selection.value.length > 0 ? selection.value : [];
+    const next = togglePosition(base, position);
+    selection.value = next.length > 0 ? next : [position];
+    anchor.value = position;
+  } else {
+    selection.value = [position];
+    anchor.value = position;
   }
-  return f.columnIndex === undefined;
 };
 
-const focusTextareaAndMoveCursorToEnd = (event: Event) => {
-  const target = event.target as HTMLElement;
-  if (target.closest("input")) {
+// Structure changes (insert, delete, move) can leave positions pointing elsewhere.
+watch(
+  () => store.localLyrics.value,
+  () => {
+    selection.value = pruneSelection(lyricsToDisplay.value, selection.value);
+  }
+);
+
+const collapseSelection = () => {
+  if (currentFocus.value) {
+    selection.value = [currentFocus.value];
+    anchor.value = currentFocus.value;
+  }
+};
+
+// ---------- inspector actions (each is one undo step) ----------
+const apply = (next: LyricStanza[]) => updateLyrics(next);
+
+const colorOptions = computed(() =>
+  Object.keys(palette.value.tracks).map((key) => ({ key, ink: trackColor(key, "lyric") }))
+);
+const trackInk = (colorKey: string) => trackColor(colorKey, "lyric");
+
+const availableAudioTracks = computed(() => {
+  const song = store.currentSong;
+  if (!song) return [];
+  return [...song.audio_tracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+});
+
+const onToggleColor = (key: string) =>
+  apply(toggleColorInVerses(lyricsToDisplay.value, effectiveSelection.value, key));
+const onToggleTrack = (id: number) =>
+  apply(toggleTrackInVerses(lyricsToDisplay.value, effectiveSelection.value, id));
+const onSetComment = (comment: string | undefined) =>
+  apply(setCommentInVerses(lyricsToDisplay.value, effectiveSelection.value, comment));
+const onSetTime = (which: "start" | "end", value: number | undefined) =>
+  apply(
+    updateVerses(lyricsToDisplay.value, effectiveSelection.value.slice(0, 1), (verse) => {
+      if (which === "start") verse.start_time = value;
+      else verse.end_time = value;
+    })
+  );
+
+// ---------- text ----------
+const setVerseText = (position: FocusPosition, text: string) => {
+  const lyrics = [...lyricsToDisplay.value];
+  const verse = getVerseAt(lyrics, position);
+  if (!verse) return;
+  verse.text = text;
+  updateLyrics(lyrics);
+};
+
+const verseDots = (verse: LyricVerse) => (verse.color_keys ?? []).map((key) => trackInk(key));
+
+// ---------- playback ----------
+const soundingKeys = computed(() =>
+  activeVerseKeys(addStatusToLyrics(lyricsToDisplay.value, currentTime.value))
+);
+const firstSounding = computed(() => [...soundingKeys.value][0] ?? null);
+const sheetRef = ref<HTMLElement | null>(null);
+watch(firstSounding, async (key) => {
+  if (!key || !followPlayback.value || !isPlaying.value) return;
+  // Don't pull the page away from someone who is typing a verse.
+  if (isTypingTarget(document.activeElement)) return;
+  await nextTick();
+  sheetRef.value
+    ?.querySelector(`[data-verse-key="${key}"]`)
+    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+// ---------- drag and drop (whole items) ----------
+const dragFrom = ref<{ stanzaIndex: number; itemIndex: number } | null>(null);
+const dropTarget = ref<{ stanzaIndex: number; itemIndex: number } | null>(null);
+
+const onDragStart = (event: DragEvent, stanzaIndex: number, itemIndex: number) => {
+  dragFrom.value = { stanzaIndex, itemIndex };
+  event.dataTransfer?.setData("text/plain", `${stanzaIndex}-${itemIndex}`);
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+};
+const onDragOver = (event: DragEvent, stanzaIndex: number, itemIndex: number) => {
+  if (!dragFrom.value) return;
+  event.preventDefault();
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const after = event.clientY > rect.top + rect.height / 2;
+  dropTarget.value = { stanzaIndex, itemIndex: after ? itemIndex + 1 : itemIndex };
+};
+const onDrop = () => {
+  if (dragFrom.value && dropTarget.value) {
+    const result = moveItemTo(lyricsToDisplay.value, dragFrom.value, dropTarget.value);
+    if (result) {
+      apply(result.lyrics);
+      void focusInput(result.position);
+    }
+  }
+  onDragEnd();
+};
+const onDragEnd = () => {
+  dragFrom.value = null;
+  dropTarget.value = null;
+};
+const isDropBefore = (stanzaIndex: number, itemIndex: number) =>
+  dropTarget.value?.stanzaIndex === stanzaIndex && dropTarget.value.itemIndex === itemIndex;
+
+// ---------- keyboard: selection, preview, help ----------
+const togglePreview = () => uiStore.setEditorPreview(!uiStore.editorPreview);
+
+const handleKeydown = (event: KeyboardEvent) => {
+  const typing = isTypingTarget(event.target);
+  const onVerse = (event.target as HTMLElement | null)?.hasAttribute?.("data-lyrics-input");
+  const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
+
+  if (
+    plain &&
+    event.shiftKey &&
+    (event.key === "ArrowUp" || event.key === "ArrowDown") &&
+    currentFocus.value &&
+    (!typing || onVerse)
+  ) {
+    const next = adjacentPosition(
+      lyricsToDisplay.value,
+      currentFocus.value,
+      event.key === "ArrowUp" ? "up" : "down"
+    );
+    event.preventDefault();
+    if (!next) return;
+    pendingGesture = "extend";
+    if (!anchor.value) anchor.value = currentFocus.value;
+    void focusInput(next);
     return;
   }
-  const textarea = target.closest("[data-lyric-hitbox]")?.querySelector("textarea");
-  if (textarea) {
-    textarea.focus();
-    // Only move cursor to end if the click target is not the textarea itself
-    if (target !== textarea) {
-      const length = textarea.value.length;
-      textarea.setSelectionRange(length, length);
-    }
+
+  if (typing) return;
+  if (plain && event.key === "?") {
+    event.preventDefault();
+    showHelp.value = !showHelp.value;
+  } else if (plain && !event.shiftKey && event.key.toLowerCase() === "p") {
+    event.preventDefault();
+    togglePreview();
+  } else if (event.key === "Escape" && selection.value.length > 1) {
+    collapseSelection();
   }
 };
 
-// Timestamp update functions
-const createTimestampUpdateFunction = (
-  stanzaIndex: number,
-  itemIndex: number,
-  columnIndex?: number,
-  lineIndex?: number
-) => {
-  return {
-    onUpdateStartTime: (value: number | undefined) => {
-      let currentLyrics = [...store.localLyrics.value];
+onMounted(() => document.addEventListener("keydown", handleKeydown));
+onUnmounted(() => {
+  document.removeEventListener("keydown", handleKeydown);
+  uiStore.setEditorPreview(false);
+});
 
-      if (currentLyrics.length === 0) {
-        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
-      }
+// ---------- phone: the inspector is a bottom sheet ----------
+const inspectorSheetOpen = ref(false);
+watch(currentFocus, (focus) => {
+  if (!focus) inspectorSheetOpen.value = false;
+});
 
-      const stanza = currentLyrics[stanzaIndex];
-      if (stanza) {
-        let verse: LyricVerse;
-
-        if (columnIndex !== undefined && lineIndex !== undefined) {
-          // Multi-column verse
-          if (Array.isArray(stanza[itemIndex])) {
-            const columns = stanza[itemIndex] as LyricVerse[][];
-            if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
-              verse = columns[columnIndex][lineIndex];
-            } else {
-              return;
-            }
-          } else {
-            return;
-          }
-        } else {
-          // Single verse
-          if (!Array.isArray(stanza[itemIndex])) {
-            verse = stanza[itemIndex] as LyricVerse;
-          } else {
-            return;
-          }
-        }
-
-        verse.start_time = value;
-        updateLyrics(currentLyrics);
-      }
-    },
-    onUpdateEndTime: (value: number | undefined) => {
-      let currentLyrics = [...store.localLyrics.value];
-
-      if (currentLyrics.length === 0) {
-        currentLyrics = [[{ text: "", start_time: undefined, end_time: undefined }]];
-      }
-
-      const stanza = currentLyrics[stanzaIndex];
-      if (stanza) {
-        let verse: LyricVerse;
-
-        if (columnIndex !== undefined && lineIndex !== undefined) {
-          // Multi-column verse
-          if (Array.isArray(stanza[itemIndex])) {
-            const columns = stanza[itemIndex] as LyricVerse[][];
-            if (columns[columnIndex] && columns[columnIndex][lineIndex]) {
-              verse = columns[columnIndex][lineIndex];
-            } else {
-              return;
-            }
-          } else {
-            return;
-          }
-        } else {
-          // Single verse
-          if (!Array.isArray(stanza[itemIndex])) {
-            verse = stanza[itemIndex] as LyricVerse;
-          } else {
-            return;
-          }
-        }
-
-        verse.end_time = value;
-        updateLyrics(currentLyrics);
-      }
-    }
-  };
-};
+const verseKey = (stanzaIndex: number, itemIndex: number, columnIndex?: number, lineIndex?: number) =>
+  positionKey({ stanzaIndex, itemIndex, columnIndex, lineIndex });
+const isFocused = (key: string) => !!currentFocus.value && positionKey(currentFocus.value) === key;
 
 defineExpose({
   hasUnsavedChanges: computed(() => store.localLyrics.isDirty)
@@ -288,182 +301,181 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex h-full min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto px-2 lg:pl-3">
-    <LyricsToolbar
-      class="sticky top-2 z-10 mx-3 self-center"
-      :current-focus="currentFocus"
-      :command-registry="commandRegistry"
-      :current-verse-colors="currentVerseColors"
-      :available-colors="availableColors"
-      :on-colors-change="handleColorsChange"
-      :current-verse-audio-track-ids="currentVerseAudioTrackIds"
-      :available-audio-tracks="availableAudioTracks"
-      :on-audio-track-ids-change="handleAudioTrackIdsChange"
-      :copy-properties-to-mode="copyPropertiesToMode"
-      :show-timestamps="showTimestamps"
-      :on-toggle-timestamps="toggleTimestamps"
-      :current-verse-comment="currentVerseComment"
-      :on-comment-change="handleCommentChange"
-      :timestamp-offset="timestampOffset"
-      @update:timestamp-offset="(v: number) => (timestampOffset = v)"
-    />
+  <div class="relative flex h-full min-h-0" data-testid="lyrics-tab">
+    <div class="flex min-w-0 flex-1 flex-col">
+      <LyricsToolbar
+        :command-registry="commandRegistry"
+        :current-focus="currentFocus"
+        :can-undo="store.canUndo"
+        :can-redo="store.canRedo"
+        :show-timestamps="showTimestamps"
+        :follow-playback="followPlayback"
+        @toggle-timestamps="showTimestamps = !showTimestamps"
+        @toggle-follow="followPlayback = !followPlayback"
+        @preview="togglePreview"
+        @help="showHelp = !showHelp"
+      />
 
-    <div class="flex flex-1 flex-col pb-3">
       <div
-        v-for="(stanza, i) in lyricsToDisplay"
-        :key="i"
-        class="bg-base-200 border-base-300 rounded-box not-last:border-b-base-content/20 overflow-x-auto border py-4 shadow-sm not-first:rounded-t-none not-first:border-t-0 not-last:rounded-b-none"
+        ref="sheetRef"
+        class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 py-3 md:px-4"
+        data-testid="lyrics-sheet"
+        @dragover.prevent
+        @drop.prevent="onDrop"
       >
-        <div class="flex flex-col items-stretch gap-1">
+        <section
+          v-for="(stanza, i) in lyricsToDisplay"
+          :key="i"
+          class="border-base-content/10 flex flex-col gap-0.5 border-dashed pb-3 not-first:mt-2 not-first:border-t not-first:pt-3"
+          :data-stanza="i"
+        >
+          <h4
+            class="text-base-content/40 pb-1 pl-11 text-[10.5px] font-semibold tracking-[0.12em] uppercase"
+          >
+            Estrofa {{ i + 1 }}
+          </h4>
+
           <template v-for="(item, j) in stanza" :key="`${i}-${j}`">
-            <div
+            <LyricsVerseRow
               v-if="!Array.isArray(item)"
-              class="flex items-stretch"
-              data-lyric-hitbox
-              :class="{
-                'bg-base-content/8': isVerseSelected(i, j),
-                'cursor-text': !copyPropertiesToMode,
-                'bg-base-content/5 hover:bg-base-content/10 cursor-pointer': copyPropertiesToMode
-              }"
-              @click="
-                copyPropertiesToMode
-                  ? copyPropertiesToVerse({ stanzaIndex: i, itemIndex: j })
-                  : focusTextareaAndMoveCursorToEnd($event)
-              "
+              :verse="item"
+              :input-key="verseKey(i, j)"
+              :selected="selectedKeys.has(verseKey(i, j)) && selectedKeys.size > 1"
+              :focused="isFocused(verseKey(i, j))"
+              :sounding="soundingKeys.has(verseKey(i, j))"
+              :show-times="showTimestamps"
+              :verse-styles="getVerseStyles(item, currentCollection)"
+              :dots="verseDots(item)"
+              :draggable="true"
+              :drop-before="isDropBefore(i, j)"
+              :placeholder="i === 0 && j === 0 ? 'Escribí el primer verso' : ''"
+              @select="(event: MouseEvent) => onRowMouseDown(event, { stanzaIndex: i, itemIndex: j })"
+              @focus="onVerseFocus({ stanzaIndex: i, itemIndex: j })"
+              @update:text="(text) => setVerseText({ stanzaIndex: i, itemIndex: j }, text)"
+              @dragstart="(event) => onDragStart(event, i, j)"
+              @dragend="onDragEnd"
+              @dragover="(event: DragEvent) => onDragOver(event, i, j)"
+            />
+
+            <!-- Columns: side by side with a dashed divider; the row moves as a whole -->
+            <div
+              v-else
+              class="relative flex w-full items-stretch"
+              @dragover="(event: DragEvent) => onDragOver(event, i, j)"
             >
-              <div
-                class="w-[3px] flex-shrink-0 rounded-r-sm transition-all duration-150"
-                :class="isVerseSelected(i, j) ? 'bg-primary' : 'bg-transparent'"
+              <span
+                v-if="isDropBefore(i, j)"
+                class="bg-primary pointer-events-none absolute inset-x-2 -top-px h-0.5 rounded-full"
               />
-              <div class="flex min-w-0 flex-1 flex-col px-5">
-                <input
-                  v-if="item.comment !== undefined"
-                  type="text"
-                  :value="item.comment"
-                  placeholder="Comentario..."
-                  class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 font-mono text-xs outline-none"
-                  @input="
-                    (e) => {
-                      const lyrics = [...store.localLyrics.value];
-                      const verse = lyrics[i]?.[j];
-                      if (verse && !Array.isArray(verse)) {
-                        verse.comment = (e.target as HTMLInputElement).value;
-                        updateLyrics(lyrics);
-                      }
-                    }
-                  "
-                />
-                <LyricsTimestamps
-                  v-if="showTimestamps"
-                  :verse="item"
-                  :available-audio-tracks="availableAudioTracks"
-                  v-bind="createTimestampUpdateFunction(i, j)"
-                />
-                <LyricsTextarea
-                  v-model="createVerseModel(i, j).value"
-                  :data-lyrics-input="`${i}-${j}`"
-                  :verse-styles="getVerseStyles(item, currentCollection)"
-                  :readonly="copyPropertiesToMode"
-                  :class="{ 'cursor-pointer': copyPropertiesToMode }"
-                  @focus="onInputFocus({ stanzaIndex: i, itemIndex: j })"
-                />
-              </div>
-            </div>
-            <div v-else class="flex w-full flex-row items-stretch">
               <div
                 v-for="(column, k) in item"
                 :key="`${i}-${j}-${k}`"
-                class="border-base-content/20 flex flex-1 flex-col justify-center border-dashed not-last:border-r-1"
+                class="border-base-content/15 flex min-w-0 flex-1 flex-col justify-center border-dashed not-last:border-r"
               >
-                <div
+                <LyricsVerseRow
                   v-for="(line, l) in column"
                   :key="`${i}-${j}-${k}-${l}`"
-                  class="flex items-stretch"
-                  data-lyric-hitbox
-                  :class="{
-                    'bg-base-content/8': isVerseSelected(i, j, k, l),
-                    'cursor-text': !copyPropertiesToMode,
-                    'bg-base-content/5 hover:bg-base-content/10 cursor-pointer':
-                      copyPropertiesToMode
-                  }"
-                  @click="
-                    copyPropertiesToMode
-                      ? copyPropertiesToVerse({
-                          stanzaIndex: i,
-                          itemIndex: j,
-                          columnIndex: k,
-                          lineIndex: l
-                        })
-                      : focusTextareaAndMoveCursorToEnd($event)
+                  :verse="line"
+                  :input-key="verseKey(i, j, k, l)"
+                  :selected="selectedKeys.has(verseKey(i, j, k, l)) && selectedKeys.size > 1"
+                  :focused="isFocused(verseKey(i, j, k, l))"
+                  :sounding="soundingKeys.has(verseKey(i, j, k, l))"
+                  :show-times="showTimestamps"
+                  :verse-styles="getVerseStyles(line, currentCollection)"
+                  :dots="verseDots(line)"
+                  :draggable="k === 0 && l === 0"
+                  @select="
+                    (event: MouseEvent) =>
+                      onRowMouseDown(event, {
+                        stanzaIndex: i,
+                        itemIndex: j,
+                        columnIndex: k,
+                        lineIndex: l
+                      })
                   "
-                >
-                  <div
-                    class="w-[3px] flex-shrink-0 rounded-r-sm transition-all duration-150"
-                    :class="isVerseSelected(i, j, k, l) ? 'bg-primary' : 'bg-transparent'"
-                  />
-                  <div
-                    class="flex min-w-0 flex-1 flex-col px-3"
-                    :class="{
-                      'pl-5': k === 0,
-                      'pr-5': k === item.length - 1
-                    }"
-                  >
-                    <input
-                      v-if="line.comment !== undefined"
-                      type="text"
-                      :value="line.comment"
-                      placeholder="Comentario..."
-                      class="text-base-content/40 focus:text-base-content/60 w-full border-none bg-transparent px-1 font-mono text-xs outline-none"
-                      @input="
-                        (e) => {
-                          const lyrics = [...store.localLyrics.value];
-                          const stanza = lyrics[i]?.[j];
-                          if (stanza && Array.isArray(stanza)) {
-                            const verse = (stanza as any)[k]?.[l];
-                            if (verse) {
-                              verse.comment = (e.target as HTMLInputElement).value;
-                              updateLyrics(lyrics);
-                            }
-                          }
-                        }
-                      "
-                    />
-                    <LyricsTimestamps
-                      v-if="showTimestamps"
-                      :verse="line"
-                      :available-audio-tracks="availableAudioTracks"
-                      :max-tracks="1"
-                      v-bind="createTimestampUpdateFunction(i, j, k, l)"
-                    />
-                    <LyricsTextarea
-                      v-model="createColumnModel(i, j, k, l).value"
-                      :data-lyrics-input="`${i}-${j}-${k}-${l}`"
-                      :verse-styles="getVerseStyles(line, currentCollection)"
-                      :readonly="copyPropertiesToMode"
-                      :class="{ 'cursor-pointer': copyPropertiesToMode }"
-                      @focus="
-                        onInputFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
-                      "
-                    />
-                  </div>
-                </div>
+                  @focus="
+                    onVerseFocus({ stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l })
+                  "
+                  @update:text="
+                    (text) =>
+                      setVerseText(
+                        { stanzaIndex: i, itemIndex: j, columnIndex: k, lineIndex: l },
+                        text
+                      )
+                  "
+                  @dragstart="(event) => onDragStart(event, i, j)"
+                  @dragend="onDragEnd"
+                />
               </div>
             </div>
           </template>
-        </div>
+
+          <div
+            class="h-2"
+            @dragover="(event: DragEvent) => onDragOver(event, i, stanza.length - 1)"
+          />
+        </section>
+      </div>
+
+      <!-- Phone / tablet: open the inspector as a sheet -->
+      <div
+        v-if="currentFocus && !inspectorSheetOpen"
+        class="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center lg:hidden"
+      >
+        <button
+          class="btn btn-sm glass-3 pointer-events-auto gap-2 rounded-full border-0 font-semibold"
+          data-testid="open-inspector"
+          @mousedown.prevent
+          @click="inspectorSheetOpen = true"
+        >
+          <IconMixer class="size-4" />
+          {{
+            effectiveSelection.length > 1
+              ? `${effectiveSelection.length} versos`
+              : "Propiedades del verso"
+          }}
+        </button>
       </div>
     </div>
 
-    <SafeTeleport to="[data-song-editor-actions]">
-      <button
-        class="btn btn-sm btn-circle btn-ghost"
-        aria-label="Atajos de la letra"
-        title="Atajos de la letra (F1)"
-        @click="showHelp = !showHelp"
+    <!-- Desktop: the inspector is always there -->
+    <LyricsInspector
+      class="border-base-content/8 hidden w-[300px] shrink-0 border-l lg:flex"
+      :lyrics="lyricsToDisplay"
+      :selection="effectiveSelection"
+      :colors="colorOptions"
+      :tracks="availableAudioTracks"
+      :track-ink="trackInk"
+      :command-registry="commandRegistry"
+      @toggle-color="onToggleColor"
+      @toggle-track="onToggleTrack"
+      @set-comment="onSetComment"
+      @set-time="onSetTime"
+    />
+
+    <Transition name="sheet">
+      <div
+        v-if="inspectorSheetOpen && currentFocus"
+        class="bg-base-100 rounded-t-box ring-base-content/10 absolute inset-x-0 bottom-0 z-20 flex max-h-[92%] flex-col shadow-2xl ring-1 lg:hidden"
       >
-        <IconHelp class="size-[18px]" />
-      </button>
-    </SafeTeleport>
+        <div class="bg-base-content/20 mx-auto mt-2 h-[5px] w-[38px] shrink-0 rounded-full" />
+        <LyricsInspector
+          sheet
+          class="min-h-0 flex-1"
+          :lyrics="lyricsToDisplay"
+          :selection="effectiveSelection"
+          :colors="colorOptions"
+          :tracks="availableAudioTracks"
+          :track-ink="trackInk"
+          :command-registry="commandRegistry"
+          @toggle-color="onToggleColor"
+          @toggle-track="onToggleTrack"
+          @set-comment="onSetComment"
+          @set-time="onSetTime"
+          @close="inspectorSheetOpen = false"
+        />
+      </div>
+    </Transition>
 
     <KeyboardHelpModal
       :show="showHelp"
@@ -472,3 +484,17 @@ defineExpose({
     />
   </div>
 </template>
+
+<style scoped>
+.sheet-enter-active,
+.sheet-leave-active {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
+}
+.sheet-enter-from,
+.sheet-leave-to {
+  transform: translateY(24px);
+  opacity: 0;
+}
+</style>
