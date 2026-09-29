@@ -13,7 +13,8 @@ import {
   IconPause,
   IconPlay,
   IconPlus,
-  IconUndo
+  IconUndo,
+  IconWarning
 } from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { usePlayerState } from "@/composables/useCurrentTime";
@@ -28,6 +29,7 @@ import {
   firstUnmarkedIndex,
   markEnd,
   markStart,
+  outOfOrderIndices,
   regionEnd,
   setUnitTimes,
   type SyncUnit,
@@ -129,6 +131,8 @@ const startFrom = (index: number) => {
 const nudgeOffset = (direction: 1 | -1) => nudgeReaction(direction);
 
 // ---------- timeline ----------
+const outOfOrder = computed(() => outOfOrderIndices(units.value));
+
 const regions = computed<TimelineRegion[]>(() =>
   units.value.flatMap((unit, index) => {
     const end = regionEnd(units.value, index, duration.value);
@@ -140,7 +144,8 @@ const regions = computed<TimelineRegion[]>(() =>
         end,
         label: unit.texts.join(" · "),
         ink: trackColor(unit.colorKeys[0], "lyric"),
-        wave: trackColor(unit.colorKeys[0], "wave")
+        wave: trackColor(unit.colorKeys[0], "wave"),
+        outOfOrder: outOfOrder.value.has(index)
       }
     ];
   })
@@ -359,9 +364,13 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
                 >
                 <span
                   v-else-if="unit.start !== undefined"
-                  class="text-base-content/60 font-mono text-[11.5px] tabular-nums"
+                  class="flex items-center gap-1 font-mono text-[11.5px] tabular-nums"
+                  :class="outOfOrder.has(index) ? 'text-warning' : 'text-base-content/60'"
+                  :title="outOfOrder.has(index) ? 'Empieza antes que un verso anterior' : undefined"
                   data-testid="sync-row-time"
-                  >{{ formatClock(unit.start, 2) }}</span
+                  ><IconWarning v-if="outOfOrder.has(index)" class="size-3" aria-hidden="true" />{{
+                    formatClock(unit.start, 2)
+                  }}</span
                 >
                 <span v-else class="text-base-content/40 text-[11px] italic uppercase">sin tiempo</span>
               </button>
@@ -375,10 +384,11 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
         <div class="flex flex-wrap items-center gap-3">
           <button
             class="btn btn-circle btn-primary play-glow size-11 border-0"
+            :class="!player.isReady.value && 'cursor-default'"
             :aria-label="playing ? 'Pausar' : 'Reproducir'"
-            :disabled="!player.isReady.value"
+            :aria-disabled="!player.isReady.value"
             data-testid="sync-play"
-            @click="player.playPause()"
+            @click="player.isReady.value && player.playPause()"
           >
             <span v-if="!player.isReady.value" class="loading loading-spinner loading-sm" />
             <IconPause v-else-if="playing" class="size-5" />
@@ -527,9 +537,10 @@ watch(cursor, (index) => listItems.value[index]?.scrollIntoView({ block: "neares
           </button>
           <button
             class="btn btn-circle btn-primary play-glow size-11 border-0"
+            :class="!player.isReady.value && 'cursor-default'"
             :aria-label="playing ? 'Pausar' : 'Reproducir'"
-            :disabled="!player.isReady.value"
-            @click="player.playPause()"
+            :aria-disabled="!player.isReady.value"
+            @click="player.isReady.value && player.playPause()"
           >
             <IconPause v-if="playing" class="size-5" />
             <IconPlay v-else class="size-5 translate-x-[1px]" />

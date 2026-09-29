@@ -103,3 +103,25 @@ export const followScroll = (
   const target = playheadPx - viewportWidth * 0.3;
   return Math.min(Math.max(0, target), Math.max(0, contentWidth - viewportWidth));
 };
+
+/** At most this many stacked lanes; further overlaps share the last one. */
+export const MAX_LANES = 3;
+
+/**
+ * Lane for each region so overlapping regions stack instead of piling up.
+ * Greedy by start time: each region takes the first lane that is free when it starts.
+ * Returns one lane index per input region, in input order.
+ */
+export const assignLanes = (regions: Region[], maxLanes = MAX_LANES): number[] => {
+  const order = regions.map((_, index) => index).sort((a, b) => regions[a]!.start - regions[b]!.start);
+  const laneEnds: number[] = [];
+  const lanes = new Array<number>(regions.length).fill(0);
+  for (const index of order) {
+    const region = regions[index]!;
+    let lane = laneEnds.findIndex((end) => end <= region.start + 1e-9);
+    if (lane === -1) lane = laneEnds.length < maxLanes ? laneEnds.length : maxLanes - 1;
+    laneEnds[lane] = Math.max(laneEnds[lane] ?? 0, region.end);
+    lanes[index] = lane;
+  }
+  return lanes;
+};

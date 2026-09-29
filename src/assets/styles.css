@@ -197,6 +197,10 @@
   box-shadow:
     0 0 0 6px color-mix(in oklch, var(--color-primary) 14%, transparent),
     0 12px 32px -8px color-mix(in oklch, var(--color-primary) 70%, transparent);
+  /* The focus outline sits outside the glow ring instead of stacking on it */
+  &:focus-visible {
+    outline-offset: 8px;
+  }
 }
 
 /* Titles: Bricolage at its display optical size, with light negative tracking. */

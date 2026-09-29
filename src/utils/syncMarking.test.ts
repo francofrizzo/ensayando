@@ -8,6 +8,7 @@ import {
   firstUnmarkedIndex,
   markEnd,
   markStart,
+  outOfOrderIndices,
   regionEnd,
   setUnitTimes,
   unitState
@@ -133,5 +134,21 @@ describe("regions and states", () => {
     current = markStart(current, buildSyncUnits(current), 2, 27); // start + previous end
     expect(countNewTimes(saved, current)).toBe(4);
     expect(countNewTimes(saved, saved)).toBe(0);
+  });
+});
+
+describe("outOfOrderIndices", () => {
+  const unit = (start?: number) => ({ id: String(start), stanzaIndex: 0, positions: [], texts: [], colorKeys: [], start });
+
+  it("flags a unit that starts before an earlier one", () => {
+    expect([...outOfOrderIndices([unit(1), unit(2), unit(1.5), unit(3)])]).toEqual([2]);
+  });
+
+  it("skips units without a start", () => {
+    expect([...outOfOrderIndices([unit(1), unit(), unit(2)])]).toEqual([]);
+  });
+
+  it("compares against the latest start in order, not just the previous unit", () => {
+    expect([...outOfOrderIndices([unit(5), unit(1), unit(2), unit(6)])]).toEqual([1, 2]);
   });
 });

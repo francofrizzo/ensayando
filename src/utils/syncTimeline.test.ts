@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyRegionDrag,
+  assignLanes,
   followScroll,
   formatClock,
   MIN_REGION,
@@ -113,5 +114,24 @@ describe("followScroll", () => {
 
   it("never scrolls past the content", () => {
     expect(followScroll(4990, 0, 1000, 5000)).toBe(4000);
+  });
+});
+
+describe("assignLanes", () => {
+  it("keeps regions that don't overlap in one lane", () => {
+    expect(assignLanes([{ start: 0, end: 1 }, { start: 1, end: 2 }, { start: 2.5, end: 3 }])).toEqual([0, 0, 0]);
+  });
+
+  it("stacks overlapping regions", () => {
+    expect(assignLanes([{ start: 0, end: 2 }, { start: 1, end: 3 }, { start: 2.5, end: 4 }])).toEqual([0, 1, 0]);
+  });
+
+  it("orders by start, not by input order", () => {
+    expect(assignLanes([{ start: 1, end: 3 }, { start: 0, end: 2 }])).toEqual([1, 0]);
+  });
+
+  it("caps the number of lanes", () => {
+    const all = [0, 0.1, 0.2, 0.3].map((start) => ({ start, end: 5 }));
+    expect(assignLanes(all, 3)).toEqual([0, 1, 2, 2]);
   });
 });

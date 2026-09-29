@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
+import { IconWarning } from "@/components/ui/icons";
+
 import {
   applyRegionDrag,
+  assignLanes,
   type DragMode,
   followScroll,
   formatClock,
@@ -23,6 +26,8 @@ export type TimelineRegion = {
   ink: string;
   /** Wave color of that track (fill and border). */
   wave: string;
+  /** Starts before an earlier verse: shown with a warning outline. */
+  outOfOrder?: boolean;
 };
 
 export type TimelineTrack = {
@@ -49,6 +54,8 @@ const emit = defineEmits<{
   change: [index: number, region: Region];
   "play-region": [index: number];
 }>();
+
+const selectedIndex = computed(() => props.selectedIndex);
 
 const ROW_HEIGHT = 26;
 const ROW_GAP = 5;
@@ -78,12 +85,35 @@ const drag = reactive<{
   moved: boolean;
 }>({ index: null, mode: "move", originX: 0, origin: { start: 0, end: 0 }, preview: null, moved: false });
 
-const regionBox = (region: TimelineRegion) => {
-  const shown = drag.index === region.index && drag.preview ? drag.preview : region;
-  return {
+// Overlapping regions stack in lanes so every label stays readable.
+const LANE_HEIGHT = 24;
+const LANE_GAP = 3;
+const shownRegion = (region: TimelineRegion) =>
+  drag.index === region.index && drag.preview ? drag.preview : region;
+const lanes = computed(() => assignLanes(props.regions.map(shownRegion)));
+const laneCount = computed(() => Math.max(1, ...lanes.value.map((lane) => lane + 1)));
+const regionsHeight = computed(() =>
+  laneCount.value === 1 ? 54 : 8 + laneCount.value * LANE_HEIGHT + (laneCount.value - 1) * LANE_GAP
+);
+
+const regionBox = (region: TimelineRegion, position: number) => {
+  const shown = shownRegion(region);
+  const box: Record<string, string> = {
     left: `${shown.start * pps.value}px`,
     width: `${Math.max(6, (shown.end - shown.start) * pps.value)}px`
   };
+  if (laneCount.value > 1) {
+    box.top = `${4 + (lanes.value[position] ?? 0) * (LANE_HEIGHT + LANE_GAP)}px`;
+    box.height = `${LANE_HEIGHT}px`;
+    box.bottom = "auto";
+  }
+  return box;
+};
+
+const regionOutline = (region: TimelineRegion) => {
+  if (selectedIndex.value === region.index) return `inset 0 0 0 2px ${region.ink}`;
+  if (region.outOfOrder) return "inset 0 0 0 1.5px var(--color-warning)";
+  return `inset 0 0 0 1px color-mix(in oklch, ${region.wave} 60%, transparent)`;
 };
 
 const onRegionPointerDown = (event: PointerEvent, region: TimelineRegion, mode: DragMode) => {
@@ -285,22 +315,22 @@ defineExpose({ pps });
         </div>
 
         <!-- Verse regions -->
-        <div class="relative h-[54px]" @click="onBackgroundClick">
+        <div class="relative" :style="{ height: `${regionsHeight}px` }" @click="onBackgroundClick">
           <div
-            v-for="region in regions"
+            v-for="(region, position) in regions"
             :key="region.index"
-            class="group absolute top-1 bottom-1 cursor-grab touch-none overflow-hidden rounded-[9px] px-2 py-1.5 font-lyrics text-[11px] leading-tight font-semibold tracking-[0.02em] whitespace-nowrap uppercase select-none active:cursor-grabbing"
-            :class="{ 'z-10': selectedIndex === region.index }"
+            class="group absolute top-1 bottom-1 flex cursor-grab touch-none items-center gap-1 overflow-hidden rounded-[9px] px-2 font-lyrics text-[11px] leading-tight font-semibold tracking-[0.02em] whitespace-nowrap uppercase select-none active:cursor-grabbing"
+            :class="[
+              { 'z-10': selectedIndex === region.index },
+              laneCount > 1 ? 'py-0' : 'items-start py-1.5'
+            ]"
             :style="{
-              ...regionBox(region),
+              ...regionBox(region, position),
               color: region.ink,
               background: `color-mix(in oklch, ${region.wave} ${selectedIndex === region.index ? 34 : 22}%, transparent)`,
-              boxShadow:
-                selectedIndex === region.index
-                  ? `inset 0 0 0 2px ${region.ink}`
-                  : `inset 0 0 0 1px color-mix(in oklch, ${region.wave} 60%, transparent)`
+              boxShadow: regionOutline(region)
             }"
-            :title="region.label"
+            :title="region.outOfOrder ? `${region.label} · Empieza antes que un verso anterior` : region.label"
             data-testid="sync-region"
             @pointerdown="(e) => onRegionPointerDown(e, region, 'move')"
             @pointermove="onRegionPointerMove"
@@ -309,7 +339,8 @@ defineExpose({ pps });
             @click.stop
             @dblclick.stop="emit('play-region', region.index)"
           >
-            <span class="block overflow-hidden text-ellipsis">{{ region.label }}</span>
+            <IconWarning v-if="region.outOfOrder" class="text-warning size-3 shrink-0" aria-hidden="true" />
+            <span class="block min-w-0 overflow-hidden text-ellipsis">{{ region.label }}</span>
             <span
               class="absolute inset-y-0 left-0 w-2 cursor-ew-resize"
               aria-hidden="true"

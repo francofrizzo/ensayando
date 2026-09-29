@@ -207,3 +207,18 @@ export const countNewTimes = (saved: LyricStanza[], current: LyricStanza[]): num
   }
   return count;
 };
+
+/**
+ * Units that start before an earlier unit in reading order: usually a mistake while
+ * marking (a key pressed late, or a verse marked twice). Units without a start are skipped.
+ */
+export const outOfOrderIndices = (units: SyncUnit[]): Set<number> => {
+  const flagged = new Set<number>();
+  let latest = -Infinity;
+  units.forEach((unit, index) => {
+    if (unit.start === undefined) return;
+    if (unit.start < latest - 1e-9) flagged.add(index);
+    else latest = unit.start;
+  });
+  return flagged;
+};
