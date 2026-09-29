@@ -108,3 +108,36 @@ test("⇧+clic selects several verses and the inspector applies to all", async (
   await page.getByTestId("unsaved-discard").click();
   await expect(page).not.toHaveURL(/editar=/);
 });
+
+test("a line of a column can be dragged out of its row", async ({ page }) => {
+  await page.goto(`${SONG}?editar=letra`);
+  await expect(page.locator("[data-lyrics-input]").first()).toBeVisible({ timeout: 15000 });
+
+  // "uno / dos" is a row of two columns; "tres" a regular verse
+  await page.getByRole("button", { name: "Más opciones" }).click();
+  await page.getByTestId("paste-lyrics").click();
+  await page.getByLabel("Reemplazar la letra actual").check();
+  await page.getByTestId("paste-lyrics-text").fill("uno / dos\ntres");
+  await page.getByTestId("paste-lyrics-apply").click();
+
+  const inputs = page.locator("[data-lyrics-input]");
+  await expect(inputs).toHaveCount(3);
+  // Rows in order: "uno" and "dos" (the row of columns), then "tres"
+  const rows = page.locator("[data-lyric-hitbox]");
+  await expect(inputs.nth(1)).toHaveValue("dos");
+
+  // Drag "dos" (the second column) below "tres"
+  const target = rows.nth(2);
+  const box = (await target.boundingBox())!;
+  await rows
+    .nth(1)
+    .locator("[draggable='true']")
+    .dragTo(target, { targetPosition: { x: box.width / 2, y: box.height - 2 } });
+
+  await expect(inputs).toHaveCount(3);
+  expect(
+    await inputs.evaluateAll((els) => els.map((el) => (el as HTMLTextAreaElement).value))
+  ).toEqual(["uno", "tres", "dos"]);
+  // The row it left had one line left, so it became a regular verse
+  await expect(page.getByTestId("columns-drag-handle")).toHaveCount(0);
+});

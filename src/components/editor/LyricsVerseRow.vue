@@ -16,7 +16,7 @@ const props = defineProps<{
   verseStyles: CSSProperties;
   /** Lyric inks of the verse's colors, in gradient order. */
   dots: string[];
-  /** Whole verses can be dragged; lines inside columns move with ⌘⇧↑↓. */
+  /** Shows the drag handle (every verse and every line of a column). */
   draggable: boolean;
   dropBefore?: boolean;
   /** For the last line of a column: a verse would land after it. */

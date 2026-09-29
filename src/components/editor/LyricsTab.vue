@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch, type CSSPropert
 import LyricsInspector from "@/components/editor/LyricsInspector.vue";
 import LyricsToolbar from "@/components/editor/LyricsToolbar.vue";
 import LyricsVerseRow from "@/components/editor/LyricsVerseRow.vue";
-import { IconMixer } from "@/components/ui/icons";
+import { IconDragHandle, IconMixer } from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { usePlayerState } from "@/composables/useCurrentTime";
@@ -239,19 +239,24 @@ watch(firstSounding, async (key) => {
 });
 
 // ---------- drag and drop ----------
-// Whole items (a verse or a row of columns) are dragged. A single verse can land between
-// items of a stanza or between the lines of a column; a row of columns only between items.
-const dragFrom = ref<{ stanzaIndex: number; itemIndex: number } | null>(null);
+// A verse, a single line of a column, or a whole row of columns (by its own handle) can
+// be dragged. A single verse or line can land between items of a stanza or between the
+// lines of a column; a row of columns only between items.
+const dragFrom = ref<FocusPosition | null>(null);
 const dropTarget = ref<DropTarget | null>(null);
 
-const onDragStart = (event: DragEvent, stanzaIndex: number, itemIndex: number) => {
-  dragFrom.value = { stanzaIndex, itemIndex };
-  event.dataTransfer?.setData("text/plain", `${stanzaIndex}-${itemIndex}`);
+const onDragStart = (event: DragEvent, from: FocusPosition) => {
+  dragFrom.value = from;
+  event.dataTransfer?.setData("text/plain", positionKey(from));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
 };
 const draggingGroup = () => {
   const from = dragFrom.value;
-  return !!from && Array.isArray(lyricsToDisplay.value[from.stanzaIndex]?.[from.itemIndex]);
+  return (
+    !!from &&
+    from.columnIndex === undefined &&
+    Array.isArray(lyricsToDisplay.value[from.stanzaIndex]?.[from.itemIndex])
+  );
 };
 // dragover fires continuously: only touch reactive state when the spot really changes.
 const setDropTarget = (target: DropTarget) => {
@@ -420,18 +425,28 @@ defineExpose({
               "
               @focus="onVerseFocus({ stanzaIndex: i, itemIndex: j })"
               @update:text="(text) => setVerseText({ stanzaIndex: i, itemIndex: j }, text)"
-              @dragstart="(event) => onDragStart(event, i, j)"
+              @dragstart="(event) => onDragStart(event, { stanzaIndex: i, itemIndex: j })"
               @dragend="onDragEnd"
               @dragover="(event: DragEvent) => onDragOver(event, i, j)"
             />
 
-            <!-- Columns: side by side with a dashed divider; the row moves as a whole,
-                 single verses can be dropped between its lines -->
+            <!-- Columns: side by side with a dashed divider. Each line drags on its own
+                 (into another column or out of the row); the handle on top moves the row -->
             <div
               v-else
-              class="relative flex w-full items-stretch"
+              class="group/cols relative flex w-full items-stretch"
               @dragover="(event: DragEvent) => onDragOver(event, i, j)"
             >
+              <span
+                draggable="true"
+                class="text-base-content/40 hover:text-base-content/70 bg-base-100 ring-base-content/10 absolute -top-2 left-1/2 z-10 -translate-x-1/2 cursor-grab rounded-full px-1.5 opacity-0 shadow-sm ring-1 transition-opacity group-hover/cols:opacity-100 active:cursor-grabbing"
+                title="Arrastrar para mover las columnas"
+                data-testid="columns-drag-handle"
+                @dragstart="(event) => onDragStart(event, { stanzaIndex: i, itemIndex: j })"
+                @dragend="onDragEnd"
+              >
+                <IconDragHandle class="size-3.5 rotate-90" />
+              </span>
               <span
                 v-if="dropKey === verseKey(i, j)"
                 class="bg-primary pointer-events-none absolute inset-x-2 -top-px h-0.5 rounded-full"
@@ -452,7 +467,7 @@ defineExpose({
                   :show-times="showTimestamps"
                   :verse-styles="decor(line).styles"
                   :dots="decor(line).dots"
-                  :draggable="k === 0 && l === 0"
+                  :draggable="true"
                   :drop-before="dropKey === verseKey(i, j, k, l)"
                   :drop-after="l === column.length - 1 && dropKey === verseKey(i, j, k, l + 1)"
                   @select="
@@ -474,7 +489,15 @@ defineExpose({
                         text
                       )
                   "
-                  @dragstart="(event) => onDragStart(event, i, j)"
+                  @dragstart="
+                    (event) =>
+                      onDragStart(event, {
+                        stanzaIndex: i,
+                        itemIndex: j,
+                        columnIndex: k,
+                        lineIndex: l
+                      })
+                  "
                   @dragend="onDragEnd"
                   @dragover="(event: DragEvent) => onColumnDragOver(event, i, j, k, l)"
                 />
