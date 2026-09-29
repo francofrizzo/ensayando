@@ -136,6 +136,11 @@ describe("assignLanes", () => {
     const all = [0, 0.1, 0.2, 0.3].map((start) => ({ start, end: 5 }));
     expect(assignLanes(all, 3)).toEqual([0, 1, 2, 2]);
   });
+
+  it("gives four simultaneous voices a lane each", () => {
+    const voices = [0, 0.2, 0.4, 0.6].map((start) => ({ start, end: 4 }));
+    expect(assignLanes(voices)).toEqual([0, 1, 2, 3]);
+  });
 });
 
 describe("shouldFollow", () => {

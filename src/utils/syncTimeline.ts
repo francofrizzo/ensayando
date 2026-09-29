@@ -111,8 +111,8 @@ export const FOLLOW_PAUSE_MS = 3000;
 export const shouldFollow = (now: number, lastManualScrollAt: number | null): boolean =>
   lastManualScrollAt === null || now - lastManualScrollAt >= FOLLOW_PAUSE_MS;
 
-/** At most this many stacked lanes; further overlaps share the last one. */
-export const MAX_LANES = 3;
+/** At most this many stacked lanes (one per simultaneous voice, with room to spare); further overlaps share the last one. */
+export const MAX_LANES = 6;
 
 /**
  * Lane for each region so overlapping regions stack instead of piling up.
