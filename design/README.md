@@ -99,7 +99,7 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - **Sin compatibilidad hacia atrás.** `collections.hue` e `intensity` reemplazan a `main_color`, y los valores de `track_colors` pasan a `{hue, intensity}` o `{neutral: true}` en la misma migración, que convierte los colores existentes en SQL. No hay columnas viejas ni doble escritura.
 - **Derivación en JS.** La app calcula cada color (relleno, tinta, letra, onda, suave, borde) con `src/utils/palette.ts`, con el color ya llevado al gamut de pantalla, y lo inyecta como valor final. Sin sintaxis relativa de color, por Safari de iOS 17. Un barrido de los 360 tonos en las tres intensidades verifica el contraste en los tests.
 - **Colores de la colección.** Las pistas no tienen un nombre editable en Colores: el nombre que se ve sale de los títulos de las pistas y solo se renombra la clave. "Nueva colección" elige el color con muestras y "Otro" (tono libre), no con la barra completa.
-- **Cuentas administradas.** Al crear una, se pide solo el usuario: la contraseña la genera el servidor y se muestra una vez. Los admins de colección pueden restablecer contraseñas solo de cuentas administradas que estén únicamente en colecciones que administran.
+- **Cuentas administradas.** Al crear una, se pide solo el usuario: la contraseña la genera el servidor y se muestra una vez. Los admins de colección pueden restablecer contraseñas solo de cuentas administradas que estén únicamente en colecciones que administran, y nunca las de otros admins ni de admins de la app. El usuario de una cuenta administrada se guarda donde la persona no lo puede cambiar (metadatos de la app), y la búsqueda de cuentas no usa nombres elegidos por cada uno.
 - **Admins de la app.** Tabla `app_admins`. No ven todas las colecciones: al crear una, quedan como su admin. Los primeros se cargan a mano (la skill tiene los comandos).
 - **Tema.** El selector Sistema/Claro/Oscuro vive en el menú de la canción y en el pie de la biblioteca.
 - **Solo y silencio.** Estado separado por pista; varias pistas pueden estar en solo; nunca se reinician los volúmenes. La mezcla descargada usa la misma ganancia aplicada.
@@ -111,12 +111,23 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - **Foco.** Un solo anillo de foco para todos los campos (`field-focus`): 1,5 px en la tinta de la colección y un halo suave.
 - **Errores de ingreso** en castellano; Supabase responde en inglés.
 - **Pausa.** WaveSurfer 7.12 emite un `timeupdate(0)` al pausar; el reloj volvía a 0:00. Ya pasaba antes del rediseño; se lee la posición real.
+- **Guardar todo junto.** Guardar primero la letra (y Sincronizar) y al final los datos de la canción, que pueden cambiar la dirección. La lista de canciones se actualiza en segundo plano, sin pasar por la pantalla de carga ni reiniciar el reproductor, y una canción renombrada sigue encontrándose en su dirección vieja hasta que la ruta se actualiza. Nada que se esté editando se pisa al refrescar.
+- **Deshacer y guardar la letra.** "Descartar" también reinicia el historial de deshacer. Lo que se escribe mientras se guarda queda como cambio sin guardar.
+- **Copiar de este verso.** Con varios versos seleccionados, el inspector ofrece "Copiar colores y pistas de …": todos quedan con los del verso enfocado, en un solo paso de deshacer. Reemplaza al modo "copiar propiedades" de antes.
+- **Sincronizar al volver a marcar.** El final del verso anterior se mueve con el inicio si estaban pegados, y el final automático nunca cruza de una estrofa a otra.
+- **Duración del reproductor.** Es la de la pista que maneja el reloj, no la de la más larga (su final no se podía reproducir). "Reintentar" una pista no frena a las demás, y la pista vuelve en el punto donde va la canción.
+- **Ajustes de colección.** Cambiar de sección, volver o cerrar con cambios sin guardar en General o Colores pregunta primero, con el mismo diálogo que el modo edición. Colores no deja quitar colores ni guardar hasta que cargan las canciones de la colección; el tono escrito se lleva a 0–359. Una portada que se subió pero no se pudo guardar se borra del almacenamiento.
+- **Permisos más estrictos.** Quien edita no puede mover canciones ni pistas a otra colección. Los admins de colección cambian solo nombre, dirección, visibilidad y portada (los colores van por su propia función, que valida cada valor y no deja versos con un color quitado). Quien creó una colección deja de verla si lo quitan. Dos admins no pueden sacarse el rol mutuamente a la vez y dejarla sin admin.
+- **Direcciones reservadas de colección.** `login`, `reset-password`, `nueva-coleccion`, `404`, `api` y `assets` chocan con rutas de la app: se rechazan, y las existentes suman `-coleccion`.
+- **Migración de colores.** Además de `oklch()` y hex, convierte `rgb()`. Un valor que no puede leer (hsl, nombres, números mal escritos) no corta el despliegue: queda en el tono de marca o neutro, con un aviso, y los valores originales se guardan en `collections_color_backup`.
+- **Enlaces en emails.** En producción, las invitaciones y los restablecimientos usan solo `APP_URL`; sin esa variable, fallan en lugar de confiar en el origen del pedido.
 - **Desarrollo local.** `pnpm dev` sirve también las funciones de `api/` (`server/dev-api.ts`), así se prueban miembros y borrados sin `vercel dev`.
 
 ### Antes de publicar (a cargo del dueño)
 
 - Comparar el esquema de producción con las migraciones (`supabase db diff --linked`): puede haber diferencias, y los índices únicos de dirección fallan si hay duplicados.
-- Configurar `SUPABASE_SERVICE_ROLE_KEY` en Vercel (y `APP_URL` si hace falta).
+- Configurar `SUPABASE_SERVICE_ROLE_KEY` y `APP_URL` en Vercel (`APP_URL` es obligatoria en producción para los emails). Mantener estricta la lista de direcciones de redirección de Supabase, sin comodines.
+- Revisar los colores y las direcciones de colección actuales antes de migrar (consultas en `docs/permissions.md`).
 - Verificar que Supabase pueda mandar emails (invitaciones y recuperación de contraseña).
 - Cargar los primeros admins de la app.
 - Aplicar las migraciones y revisar los colores convertidos en las colecciones reales.
