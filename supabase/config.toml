@@ -408,3 +408,27 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+[remotes.production]
+project_id = "szwejhoyemgokppoabfb"
+
+[remotes.production.auth]
+additional_redirect_urls = ["https://*.francofrizzo.com/**", "http://localhost:5173/**", "https://app.ensayando.com.ar/**"]
+enable_signup = false
+site_url = "https://app.ensayando.com.ar"
+
+[remotes.production.db]
+major_version = 15
+
+[remotes.production.auth.email]
+double_confirm_changes = false
+enable_confirmations = true
+max_frequency = "1m0s"
+
+[remotes.production.db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
