@@ -536,7 +536,17 @@ const updateSong = async () => {
   activeKeys.forEach((key) => pendingUploadKeys.delete(key));
   await cleanupPendingUploads();
   await cleanupUploadedFiles(unusedSavedKeys);
-  await collectionsStore.fetchSongsByCollectionId(song.collection_id);
+  // Apply the change in place (this also keeps the old address resolving after a slug
+  // change), then refresh tracks quietly: the player keeps playing and nothing reloads.
+  collectionsStore.patchSong(song.id, {
+    title: formData.title,
+    slug: formData.slug,
+    visible: formData.visible,
+    duration: songDurationFromTracks(formData.audio_tracks)
+  });
+  await collectionsStore.fetchSongsByCollectionId(song.collection_id, { background: true });
+  // Pick up what the database assigned (new track ids, order) now that nothing is pending.
+  restoreFormFromSong(currentSong.value);
 
   toast.success("Cambios guardados");
   if (originalSlug !== formData.slug) {
@@ -622,7 +632,11 @@ watch(
   currentSong,
   (song, previous) => {
     if (song && !isCreateMode.value) {
-      if (previous?.id !== song.id) void cleanupPendingUploads();
+      const sameSong = previous?.id === song.id;
+      // The same song refreshed (e.g. its lyrics were just saved) must not wipe edits
+      // in progress here; our own save restores the form explicitly.
+      if (sameSong && previous && songFormChanges(formData, previous).length > 0) return;
+      if (!sameSong) void cleanupPendingUploads();
       restoreFormFromSong(song);
     } else if (!song && !isCreateMode.value) {
       void enterCreateMode();

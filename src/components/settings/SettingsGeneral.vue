@@ -7,6 +7,8 @@ import SettingsSection from "@/components/settings/SettingsSection.vue";
 import { IconGlobe, IconImage, IconLink, IconLock, IconTrash, IconWarning } from "@/components/ui/icons";
 import { useRoomLightArtwork } from "@/composables/useRoomLightArtwork";
 import { AdminError, updateCollection } from "@/data/admin";
+import { useSettingsSection } from "@/composables/useSettingsGuard";
+import { collectionSlugError } from "@/utils/collectionSlug";
 import { artworkPlaybackUrl, deleteArtworkFile, uploadArtworkFile } from "@/data/storage";
 import type { CollectionVisibility, CollectionWithRole } from "@/data/types";
 import { changedFields, changesLabel } from "@/utils/collectionSettings";
@@ -28,13 +30,7 @@ const changes = computed(() => changedFields(saved.value, draft.value));
 const saving = ref(false);
 const error = ref("");
 
-const slugError = computed(() => {
-  if (!draft.value.slug) return "La dirección no puede quedar vacía.";
-  if (!/^[a-z0-9-]+$/.test(draft.value.slug)) {
-    return "Solo letras minúsculas, números y guiones.";
-  }
-  return "";
-});
+const slugError = computed(() => collectionSlugError(draft.value.slug));
 const titleError = computed(() => (draft.value.title.trim() ? "" : "El nombre es obligatorio."));
 
 const VISIBILITY: {
@@ -91,6 +87,14 @@ function discard() {
   error.value = "";
 }
 
+useSettingsSection({
+  label: "los datos de la colección",
+  isDirty: () => changes.value.length > 0,
+  save,
+  discard,
+  canSave: () => !slugError.value && !titleError.value && !saving.value
+});
+
 // ---------- portada ----------
 
 const artworkUrl = computed(() => artworkPlaybackUrl(props.collection));
@@ -107,16 +111,21 @@ async function uploadArtwork(file: File | undefined) {
   }
   uploading.value = true;
   const previousKey = props.collection.artwork_file_key;
+  let uploadedKey: string | null = null;
   try {
     const uploaded = await uploadArtworkFile(file, props.collection.id);
+    uploadedKey = uploaded.key;
     const updated = await updateCollection(props.collection.id, {
       artwork_file_key: uploaded.key,
       artwork_file_url: null
     });
+    uploadedKey = null;
     emit("updated", { ...props.collection, ...updated, artwork_playback_url: uploaded.url });
     if (previousKey) await deleteArtworkFile(previousKey).catch(() => undefined);
     toast.success("Portada actualizada");
   } catch (e) {
+    // Uploaded but not saved on the collection: don't leave the file behind.
+    if (uploadedKey) await deleteArtworkFile(uploadedKey).catch(() => undefined);
     toast.error(`No se pudo subir la portada. ${(e as Error).message}`);
   } finally {
     uploading.value = false;

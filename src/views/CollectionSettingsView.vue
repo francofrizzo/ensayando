@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 
 import SettingsColors from "@/components/settings/SettingsColors.vue";
 import SettingsDanger from "@/components/settings/SettingsDanger.vue";
@@ -17,9 +17,11 @@ import {
   IconSettings,
   IconWarning
 } from "@/components/ui/icons";
+import LeaveDialog from "@/components/ui/LeaveDialog.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
 import { useCollectionTheme } from "@/composables/useCollectionTheme";
+import { provideSettingsGuard } from "@/composables/useSettingsGuard";
 import { fetchCollectionMembers } from "@/data/admin";
 import type { Collection, CollectionMember } from "@/data/types";
 import { useAuthStore } from "@/stores/auth";
@@ -39,6 +41,23 @@ const collection = computed(() => collectionsStore.currentCollection);
 useCollectionTheme(collection);
 
 const section = computed<Section>(() => (route.params.section as Section) || "general");
+
+// Unsaved changes in a section: switching sections, going back or closing the tab asks first.
+const guard = provideSettingsGuard();
+onBeforeRouteUpdate((to, from) =>
+  to.params.section !== from.params.section || to.params.collectionSlug !== from.params.collectionSlug
+    ? guard.confirmLeave()
+    : true
+);
+onBeforeRouteLeave(() => guard.confirmLeave());
+const onBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (guard.isDirty.value) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+};
+onMounted(() => window.addEventListener("beforeunload", onBeforeUnload));
+onBeforeUnmount(() => window.removeEventListener("beforeunload", onBeforeUnload));
 const isAdmin = computed(() => collection.value?.user_role === "admin");
 const ready = ref(false);
 
@@ -112,12 +131,26 @@ function onCollectionUpdated(updated: Collection) {
   }
 }
 
+// The songs in the store belong to this collection (not a previous one still loading).
+const songsLoaded = computed(
+  () =>
+    !!collection.value &&
+    collectionsStore.songsCollectionId === collection.value.id &&
+    !collectionsStore.isLoading
+);
+
 const userInitials = computed(() => initials(authStore.username ?? "?"));
 </script>
 
 <template>
   <div class="relative isolate flex h-dvh flex-col overflow-hidden">
     <RoomLight :collection="collection" />
+    <LeaveDialog
+      :open="guard.pending.value !== null"
+      :summary="guard.summary.value"
+      :can-save="guard.canSave.value"
+      @choose="(choice) => guard.pending.value?.(choice)"
+    />
 
     <LoadingScreen v-if="!ready || collectionsStore.isLoading" />
 
@@ -234,8 +267,9 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
             :key="`colors-${collection.id}`"
             :collection="collection"
             :songs="collectionsStore.songs"
+            :songs-loaded="songsLoaded"
             @updated="onCollectionUpdated"
-            @songs-changed="collectionsStore.fetchSongsByCollectionId(collection.id)"
+            @songs-changed="collectionsStore.fetchSongsByCollectionId(collection.id, { background: true })"
           />
           <SettingsSongs
             v-else-if="section === 'canciones'"

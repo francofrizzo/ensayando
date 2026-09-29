@@ -5,6 +5,8 @@ import { addStatusToLyrics } from "@/utils/lyricsViewerUtils";
 
 import {
   activeVerseKeys,
+  copyColorsAndTracks,
+  createEmptyLyrics,
   adjacentPosition,
   formatVerseTime,
   getVerseAt,
@@ -197,5 +199,48 @@ describe("moveItemTo", () => {
   it("does nothing when dropped on itself", () => {
     expect(moveItemTo(lyrics(), { stanzaIndex: 0, itemIndex: 1 }, { stanzaIndex: 0, itemIndex: 1 })).toBeNull();
     expect(moveItemTo(lyrics(), { stanzaIndex: 0, itemIndex: 1 }, { stanzaIndex: 0, itemIndex: 2 })).toBeNull();
+  });
+});
+
+describe("createEmptyLyrics", () => {
+  it("returns a new, unshared empty verse every time", () => {
+    const first = createEmptyLyrics();
+    (first[0]![0] as { text: string }).text = "Hola";
+    const second = createEmptyLyrics();
+    expect(second).toEqual([[{ text: "", start_time: undefined, end_time: undefined }]]);
+    expect(second[0]).not.toBe(first[0]);
+  });
+});
+
+describe("copyColorsAndTracks", () => {
+  const lyrics: LyricStanza[] = [
+    [
+      { text: "uno", color_keys: ["sop", "alt"], audio_track_ids: [1, 2], comment: "Coro" },
+      { text: "dos", color_keys: ["ten"], start_time: 3 },
+      { text: "tres", audio_track_ids: [9] }
+    ]
+  ];
+  const at = (itemIndex: number) => ({ stanzaIndex: 0, itemIndex });
+
+  it("gives every target the source's exact colors and tracks", () => {
+    const next = copyColorsAndTracks(lyrics, at(0), [at(0), at(1), at(2)]);
+    expect(next[0]![1]).toEqual({ text: "dos", color_keys: ["sop", "alt"], audio_track_ids: [1, 2], start_time: 3 });
+    expect(next[0]![2]).toEqual({ text: "tres", color_keys: ["sop", "alt"], audio_track_ids: [1, 2] });
+    expect(next[0]![0]).toEqual(lyrics[0]![0]);
+  });
+
+  it("clears colors and tracks when the source has none", () => {
+    const next = copyColorsAndTracks(
+      [[{ text: "a" }, { text: "b", color_keys: ["sop"], audio_track_ids: [1] }]],
+      at(0),
+      [at(1)]
+    );
+    expect(next[0]![1]).toEqual({ text: "b" });
+  });
+
+  it("doesn't mutate the input", () => {
+    const before = JSON.stringify(lyrics);
+    copyColorsAndTracks(lyrics, at(0), [at(1)]);
+    expect(JSON.stringify(lyrics)).toBe(before);
   });
 });

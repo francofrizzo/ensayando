@@ -61,7 +61,7 @@ describe("editor session", () => {
     expect(session.dirtyByTab.value).toEqual({ cancion: true, letra: false, sincronizar: false });
   });
 
-  it("saves the song form before anything else and records the time", async () => {
+  it("saves the song form last (it may navigate) and records the time", async () => {
     const session = setup();
     const calls: string[] = [];
     const a = ref(true);
@@ -83,7 +83,7 @@ describe("editor session", () => {
       discard: () => {}
     });
     expect(await session.save()).toBe(true);
-    expect(calls).toEqual(["cancion", "sincronizar"]);
+    expect(calls).toEqual(["sincronizar", "cancion"]);
     expect(session.lastSavedAt.value).not.toBeNull();
   });
 

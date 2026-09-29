@@ -112,9 +112,12 @@ const forEachVerse = (lyrics: LyricStanza[], unit: SyncUnit, fn: (verse: LyricVe
 };
 
 /**
- * ↓: the unit starts at `time`. If the previous unit has no end yet, it ends here too,
- * so a verse sung straight into the next one doesn't need a second key.
- * An end that would now come before the start is dropped.
+ * ↓: the unit starts at `time`. The previous unit, when it's in the same stanza, ends
+ * here too if it had no end yet, or if its end was tied to this unit's old start (so
+ * re-marking moves both together instead of opening a gap or an overlap). Across a
+ * stanza break the previous end is left alone: the last verse of a stanza shouldn't stay
+ * lit through an instrumental.
+ * An end of this unit that would now come before its start is dropped.
  */
 export const markStart = (
   lyrics: LyricStanza[],
@@ -125,6 +128,7 @@ export const markStart = (
   const unit = units[index];
   if (!unit) return lyrics;
   const at = roundTime(Math.max(0, time));
+  const oldStart = unit.start;
   const next = cloneLyrics(lyrics);
 
   forEachVerse(next, unit, (verse) => {
@@ -133,9 +137,14 @@ export const markStart = (
   });
 
   const previous = units[index - 1];
-  if (previous) {
+  if (previous && previous.stanzaIndex === unit.stanzaIndex) {
     forEachVerse(next, previous, (verse) => {
-      if (verse.end_time === undefined && verse.start_time !== undefined && verse.start_time < at) {
+      const tied = oldStart !== undefined && verse.end_time === oldStart;
+      if (
+        (verse.end_time === undefined || tied) &&
+        verse.start_time !== undefined &&
+        verse.start_time < at
+      ) {
         verse.end_time = at;
       }
     });

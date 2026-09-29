@@ -10,7 +10,8 @@ import { join } from "node:path";
 
 import fixtures from "../../src/__fixtures__/legacy-colors.json";
 
-const CONTAINER = "supabase_db_ensayando";
+// Override for an isolated instance, e.g. HUE_CHECK_CONTAINER=supabase_db_ensayando-p6
+const CONTAINER = process.env.HUE_CHECK_CONTAINER ?? "supabase_db_ensayando";
 const MIGRATION = join(
   import.meta.dirname,
   "../../supabase/migrations/20260929010000_collection_colors_by_hue.sql"
@@ -42,6 +43,10 @@ psql(`
     .join("\n")}
   insert into public.collections (slug, title, main_color, track_colors)
     values ('hue-check-tracks', 'check', null, ${quote(JSON.stringify(trackColors))}::jsonb);
+  insert into public.collections (slug, title, main_color, track_colors)
+    values ('hue-check-odd', 'check', '#3b82f6', ${quote(
+      JSON.stringify({ number: 5, spec: { hue: 10, intensity: "suave" }, bad: { hue: 999 } })
+    )}::jsonb);
 `);
 
 psql(readFileSync(MIGRATION, "utf8"));
@@ -81,6 +86,19 @@ fixtures.forEach((fixture, i) => {
     );
   }
 });
+
+// Values that were never strings: specs are kept, anything else turns neutral.
+const odd = JSON.parse(bySlug.get("hue-check-odd")!.tracks) as Record<string, Spec>;
+const expectedOdd = { number: { neutral: true }, spec: { hue: 10, intensity: "suave" }, bad: { neutral: true } };
+if (JSON.stringify(odd) !== JSON.stringify({ ...odd, ...expectedOdd }) || Object.keys(odd).length !== 3) {
+  failures.push(`non-string track values: got ${JSON.stringify(odd)}`);
+}
+
+// The original values are backed up before the conversion.
+const backup = psql(
+  `select b.main_color from public.collections_color_backup b join public.collections c on c.id = b.collection_id where c.slug = 'hue-check-odd';`
+).trim();
+if (backup !== "#3b82f6") failures.push(`backup: expected #3b82f6, got ${JSON.stringify(backup)}`);
 
 if (failures.length > 0) {
   console.error(failures.join("\n"));

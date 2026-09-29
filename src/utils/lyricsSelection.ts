@@ -281,3 +281,33 @@ export const activeVerseKeys = (
   });
   return keys;
 };
+
+/**
+ * What the editor shows for a song without lyrics: one empty verse. A new object on
+ * every call, because the editor writes into it (a shared constant would carry typed
+ * text over to other songs and survive "Descartar").
+ */
+export function createEmptyLyrics(): LyricStanza[] {
+  return [[{ text: "", start_time: undefined, end_time: undefined }]];
+}
+
+/**
+ * "Copiar de este verso": gives every selected verse exactly the colors and tracks
+ * of the source verse (order included). Comments and times are left alone.
+ */
+export const copyColorsAndTracks = (
+  lyrics: LyricStanza[],
+  source: FocusPosition,
+  targets: FocusPosition[]
+): LyricStanza[] => {
+  const from = getVerseAt(lyrics, source);
+  if (!from) return lyrics;
+  const colorKeys = from.color_keys?.length ? [...from.color_keys] : undefined;
+  const trackIds = from.audio_track_ids?.length ? [...from.audio_track_ids] : undefined;
+  return updateVerses(lyrics, targets, (verse) => {
+    if (colorKeys) verse.color_keys = [...colorKeys];
+    else delete verse.color_keys;
+    if (trackIds) verse.audio_track_ids = [...trackIds];
+    else delete verse.audio_track_ids;
+  });
+};

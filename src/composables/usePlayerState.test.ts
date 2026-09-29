@@ -93,14 +93,37 @@ describe("track lifecycle", () => {
     onTrackError(0);
     onTrackRetry(0);
     expect(trackStates.value[0]!.failed).toBe(false);
+    expect(trackStates.value[0]!.retrying).toBe(true);
     expect(trackStates.value[0]!.isReady).toBe(false);
   });
 
-  it("totalDuration is the longest loaded track", () => {
-    const { totalDuration, onReady } = usePlayerState(threeTracks);
+  it("totalDuration is the reference track's, since it drives the clock", () => {
+    const { totalDuration, onReady, onTrackError } = usePlayerState(threeTracks);
     onReady(0, 185.5);
     onReady(1, 190);
+    expect(totalDuration.value).toBe(185.5);
+    // Track 0 failing hands the clock (and the length) to the next loaded track.
+    onTrackError(0);
     expect(totalDuration.value).toBe(190);
+  });
+
+  it("retrying one track mid-playback keeps the player ready and silent for it", () => {
+    const seeks: [number, number][] = [];
+    const state = usePlayerState(threeTracks, {
+      onSeekTrack: (index, time) => seeks.push([index, time])
+    });
+    state.onReady(0, 120);
+    state.onTrackError(1);
+    state.onReady(2, 120);
+    state.onTimeUpdate(0, 42);
+
+    state.onTrackRetry(1);
+    expect(state.isReady.value).toBe(true);
+    expect(state.gains.value[1]).toBe(0);
+
+    state.onReady(1, 120);
+    expect(seeks).toContainEqual([1, 42]);
+    expect(state.gains.value[1]).toBe(1);
   });
 
   it("the first loaded track drives the clock", () => {

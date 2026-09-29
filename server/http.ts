@@ -67,12 +67,28 @@ export function jsonBody(req: VercelRequest): Record<string, unknown> {
   return body as Record<string, unknown>;
 }
 
-export function requestOrigin(req: VercelRequest): string | undefined {
-  const configured = process.env.APP_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  const origin = req.headers.origin;
-  const value = Array.isArray(origin) ? origin[0] : origin;
-  return value && /^https?:\/\/[^/]+$/.test(value) ? value : undefined;
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+/**
+ * Where links in invitation and recovery emails point. Never taken from an arbitrary
+ * Origin header: production requires APP_URL (fails closed without it); elsewhere only
+ * APP_URL or a local dev origin is accepted.
+ */
+export function requestOrigin(
+  req: VercelRequest,
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const configured = env.APP_URL?.replace(/\/$/, "") || undefined;
+  if (env.VERCEL_ENV === "production") {
+    if (!configured) {
+      throw new ApiError(500, "Falta configurar la dirección de la app (APP_URL).");
+    }
+    return configured;
+  }
+  const header = req.headers.origin;
+  const origin = Array.isArray(header) ? header[0] : header;
+  if (origin && (origin === configured || LOCAL_ORIGIN.test(origin))) return origin;
+  return configured;
 }
 
 // Wraps a handler: POST only, ApiError -> its status and message, anything else -> 500.

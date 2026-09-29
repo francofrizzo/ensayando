@@ -70,33 +70,64 @@ export const useCollectionsStore = defineStore("collections", () => {
     return collections.value.find((c) => c.slug === slug) || null;
   });
 
+  // Old slug → new slug for songs renamed in this session, so the route that still points
+  // at the old address keeps resolving to the song until navigation catches up.
+  const renamedSongSlugs = ref<Record<string, string>>({});
+
   const currentSong = computed(() => {
     const slug = route.params.songSlug as string;
     if (!slug) return null;
-    return visibleSongs.value.find((s) => s.slug === slug) || null;
+    const found = visibleSongs.value.find((s) => s.slug === slug);
+    if (found) return found;
+    const renamed = renamedSongSlugs.value[slug];
+    return (renamed && visibleSongs.value.find((s) => s.slug === renamed)) || null;
   });
 
   // Auto-fetch songs when collection changes
   watch(
     currentCollection,
     async (collection, previousCollection) => {
-      if (collection?.id !== previousCollection?.id) {
+      const sameCollection = collection?.id === previousCollection?.id;
+      if (!sameCollection) {
         songs.value = [];
         songsCollectionId.value = null;
         localLyrics.value.value = [];
         localLyrics.isDirty.value = false;
       }
       if (collection) {
-        await fetchSongsByCollectionId(collection.id);
+        // Same collection re-resolved (e.g. collections refetched): refresh quietly,
+        // without swapping the screen for the loading state.
+        await fetchSongsByCollectionId(collection.id, {
+          background: sameCollection && songsCollectionId.value === collection.id
+        });
       }
     },
     { immediate: true }
   );
 
+  function resetUndo() {
+    undoStack.value = [];
+    redoStack.value = [];
+    _undo.lastSnapshot = cloneLyrics(localLyrics.value.value);
+    _undo.lastFocus = null;
+  }
+
   // Update local lyrics when song changes
   watch(
     currentSong,
-    (song) => {
+    (song, previousSong) => {
+      if (song && previousSong && song.id === previousSong.id) {
+        // Same song refreshed (songs refetched or patched after a save). Never throw away
+        // unsaved edits; when clean, follow the database copy but keep the undo history.
+        if (localLyrics.isDirty.value) return;
+        const incoming = JSON.stringify(song.lyrics ?? []);
+        if (incoming !== savedLyricsSnapshot.value) {
+          savedLyricsSnapshot.value = incoming;
+          localLyrics.value.value = JSON.parse(incoming);
+          resetUndo();
+        }
+        return;
+      }
       if (song) {
         savedLyricsSnapshot.value = JSON.stringify(song.lyrics ?? []);
         localLyrics.value.value = JSON.parse(savedLyricsSnapshot.value);
@@ -106,10 +137,7 @@ export const useCollectionsStore = defineStore("collections", () => {
         localLyrics.value.value = [];
         localLyrics.isDirty.value = false;
       }
-      undoStack.value = [];
-      redoStack.value = [];
-      _undo.lastSnapshot = cloneLyrics(localLyrics.value.value);
-      _undo.lastFocus = null;
+      resetUndo();
     },
     { immediate: true }
   );
@@ -158,8 +186,16 @@ export const useCollectionsStore = defineStore("collections", () => {
     isLoadingCollections.value = false;
   }
 
-  async function fetchSongsByCollectionId(collectionId: number) {
-    isLoadingSongs.value = true;
+  /**
+   * Loads the songs of a collection. `background` refreshes without flipping `isLoading`,
+   * so views keep showing (and playing) the current song while the list updates.
+   */
+  async function fetchSongsByCollectionId(
+    collectionId: number,
+    options: { background?: boolean } = {}
+  ) {
+    const background = options.background ?? false;
+    if (!background) isLoadingSongs.value = true;
     const { data, error } = await supabase.fetchSongsByCollectionId(collectionId);
     if (!error) {
       const sourceTracks = data.flatMap((song) => song.audio_tracks);
@@ -178,7 +214,16 @@ export const useCollectionsStore = defineStore("collections", () => {
     } else {
       console.error(error);
     }
-    isLoadingSongs.value = false;
+    if (!background) isLoadingSongs.value = false;
+  }
+
+  /** Applies saved changes to a loaded song in place (no refetch, no loading state). */
+  function patchSong(songId: number, changes: Partial<Omit<Song, "id">>) {
+    const previous = songs.value.find((song) => song.id === songId);
+    if (previous && changes.slug && changes.slug !== previous.slug) {
+      renamedSongSlugs.value = { ...renamedSongSlugs.value, [previous.slug]: changes.slug };
+    }
+    songs.value = songs.value.map((song) => (song.id === songId ? { ...song, ...changes } : song));
   }
 
   function cloneLyrics(lyrics: LyricStanza[]): LyricStanza[] {
@@ -265,27 +310,29 @@ export const useCollectionsStore = defineStore("collections", () => {
   }
 
   async function saveLyrics() {
+    const song = currentSong.value;
+    if (!song) return;
+    // Save what's on screen now; edits typed while the request is in flight stay dirty.
+    const snapshot = cloneLyrics(toRaw(localLyrics.value.value));
     localLyrics.isSaving.value = true;
-    if (currentSong.value) {
-      const { error } = await supabase.updateSongLyrics(
-        currentSong.value.id,
-        localLyrics.value.value
-      );
-      if (error) {
-        throw error;
-      } else {
-        savedLyricsSnapshot.value = JSON.stringify(toRaw(localLyrics.value.value));
-        localLyrics.isDirty.value = false;
-      }
+    try {
+      const { error } = await supabase.updateSongLyrics(song.id, snapshot);
+      if (error) throw error;
+      savedLyricsSnapshot.value = JSON.stringify(snapshot);
+      localLyrics.isDirty.value =
+        JSON.stringify(toRaw(localLyrics.value.value)) !== savedLyricsSnapshot.value;
+      // Keep the loaded song in sync so a later refresh or song switch doesn't bring back
+      // the old lyrics.
+      patchSong(song.id, { lyrics: snapshot });
+    } finally {
+      localLyrics.isSaving.value = false;
     }
-    localLyrics.isSaving.value = false;
   }
 
   function discardLyricsChanges() {
     localLyrics.value.value = JSON.parse(savedLyricsSnapshot.value);
     localLyrics.isDirty.value = false;
-    undoStack.value = [];
-    redoStack.value = [];
+    resetUndo();
   }
 
   const isLoading = computed(() => {
@@ -313,6 +360,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     fetchCollections,
     ensureCollectionLoaded,
     fetchSongsByCollectionId,
+    patchSong,
     localLyrics,
     savedLyrics,
     updateLocalLyrics,
