@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
 import {
