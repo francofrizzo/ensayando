@@ -57,7 +57,9 @@ begin
   if chroma < 0.04 then
     return '{"neutral": true}'::jsonb;
   end if;
-  hue := mod(mod(round(hue)::numeric, 360) + 360, 360);
+  -- Normalize to [0, 360) before rounding, and round as numeric (half up, like
+  -- Math.round); double precision would round half to even.
+  hue := mod(mod(round(mod((hue + 360)::numeric, 360)), 360) + 360, 360);
   return jsonb_build_object(
     'hue', hue::int,
     'intensity', case when chroma <= 0.115 then 'suave' when chroma <= 0.18 then 'normal' else 'intensa' end
