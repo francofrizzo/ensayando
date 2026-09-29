@@ -1,5 +1,3 @@
--- Keep legacy provider URLs during the dual-read migration while storing new
--- uploads as provider-independent R2 object keys.
 ALTER TABLE public.audio_tracks
   ADD COLUMN audio_file_key text;
 
@@ -14,8 +12,6 @@ CREATE UNIQUE INDEX collections_artwork_file_key_idx
   ON public.collections (artwork_file_key)
   WHERE artwork_file_key IS NOT NULL;
 
--- The migration script copies objects first, then applies every matching key in
--- one database transaction. Source URL checks prevent overwriting concurrent edits.
 CREATE OR REPLACE FUNCTION public.apply_storage_key_migration(
   audio_updates jsonb,
   artwork_updates jsonb
@@ -57,6 +53,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.apply_storage_key_migration(jsonb, jsonb)
-  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.apply_storage_key_migration(jsonb, jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.apply_storage_key_migration(jsonb, jsonb) TO service_role;
