@@ -28,15 +28,15 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
     <div class="flex min-w-0 items-center">
       <span
         v-if="props.isReady"
-        class="flex items-baseline font-mono leading-none tracking-tight whitespace-nowrap tabular-nums"
+        class="flex items-baseline font-sans leading-none whitespace-nowrap tabular-nums"
       >
         <span
           data-testid="time-display"
-          class="text-base-content text-[18px] font-semibold lg:text-[22px]"
+          class="text-base-content text-[17px] font-semibold lg:text-[19px]"
           >{{ formatTime(props.currentTime) }}</span
-        ><span class="text-base-content/40 hidden text-[13px] sm:inline lg:text-[15px]"
+        ><span class="text-base-content/40 hidden text-[12px] sm:inline lg:text-[13px]"
           >.{{ tenths(props.currentTime) }}</span
-        ><span class="text-base-content/60 ml-1.5 text-[15px] lg:text-[17px]"
+        ><span class="text-base-content/60 ml-1.5 text-[14px] lg:text-[15px]"
           >/ {{ formatTime(props.totalDuration) }}</span
         >
       </span>

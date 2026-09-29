@@ -1,4 +1,4 @@
-import { differenceEuclidean, displayable, oklch, wcagContrast } from "culori";
+import { differenceEuclidean, displayable, oklch, parse, wcagContrast } from "culori";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -18,7 +18,8 @@ import {
   resolveCollectionPalette,
   type Theme,
   parseLegacyColor,
-  toColorSpec
+  toColorSpec,
+  unplayedWaveColor
 } from "@/utils/palette";
 
 import legacyColors from "@/__fixtures__/legacy-colors.json";
@@ -277,5 +278,31 @@ describe("collectionThemeVars", () => {
       "--collection-soft-light": "oklch(0.93 0.0481 314)",
       "--collection-soft-dark": "oklch(0.3 0.09 314)"
     });
+  });
+});
+
+describe("unplayedWaveColor", () => {
+  it("is opaque, so WaveSurfer's played part (which keeps its alpha) can stand out", () => {
+    for (const theme of ["light", "dark"] as const) {
+      const color = parse(unplayedWaveColor({ hue: 48, intensity: "intensa" }, theme, 300));
+      expect(color?.alpha ?? 1).toBe(1);
+    }
+  });
+
+  it("sits between the canvas and the played color", () => {
+    const spec = { hue: 220, intensity: "media" } as const;
+    for (const theme of ["light", "dark"] as const) {
+      const canvas = parse(canvasColor(theme, 300))!;
+      const played = parse(deriveColor(spec, "wave", theme))!;
+      const unplayed = parse(unplayedWaveColor(spec, theme, 300))!;
+      expect(wcagContrast(played, canvas)).toBeGreaterThan(wcagContrast(unplayed, canvas));
+    }
+  });
+});
+
+describe("unplayedWaveColor hue", () => {
+  it("keeps the track's hue instead of drifting toward the collection's", () => {
+    const unplayed = oklch(unplayedWaveColor({ hue: 25, intensity: "intensa" }, "dark", 300))!;
+    expect(Math.abs((unplayed.h ?? 0) - 25)).toBeLessThan(3);
   });
 });

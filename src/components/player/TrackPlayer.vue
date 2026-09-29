@@ -9,7 +9,7 @@ import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useLongPress } from "@/composables/useLongPress";
 import { audioPlaybackUrl } from "@/data/storage";
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
-import { type ColorSpec, deriveColor } from "@/utils/palette";
+import { type ColorSpec, deriveColor, specHue, unplayedWaveColor } from "@/utils/palette";
 import { isIOS } from "@/utils/platform";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
@@ -123,8 +123,9 @@ defineExpose({
 });
 
 // Colors come from the collection palette (hue + intensity), per theme. A silent
-// track turns neutral; its unplayed wave is the same color at low alpha.
-const { trackSpec, resolvedTheme } = useCollectionPalette(toRef(props, "collection"));
+// track turns neutral; its unplayed wave is the same color blended toward the
+// background (opaque, so the played part can stand out: see unplayedWaveColor).
+const { palette, trackSpec, resolvedTheme } = useCollectionPalette(toRef(props, "collection"));
 const NEUTRAL: ColorSpec = { neutral: true };
 const ownSpec = computed(() => trackSpec(props.track.color_key));
 const spec = computed(() => (isSilent.value || props.failed ? NEUTRAL : ownSpec.value));
@@ -134,7 +135,7 @@ const glowColor = computed(() => deriveColor(spec.value, "fill", resolvedTheme.v
 const soloBackground = computed(() => deriveColor(ownSpec.value, "fill", resolvedTheme.value, 0.22));
 
 const waveSurferColorScheme = computed(() => ({
-  waveColor: deriveColor(spec.value, "wave", resolvedTheme.value, 0.3),
+  waveColor: unplayedWaveColor(spec.value, resolvedTheme.value, specHue(palette.value.main)),
   progressColor: deriveColor(spec.value, "wave", resolvedTheme.value)
 }));
 

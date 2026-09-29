@@ -13,7 +13,7 @@
 // See palette.test.ts for the contrast sweep and the fit against the colors the
 // app used before the redesign.
 // Kept free of "@/" imports so scripts/ can use it too.
-import { clampChroma, displayable } from "culori";
+import { clampChroma, displayable, formatCss, oklch } from "culori";
 
 export type Intensity = "suave" | "media" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
@@ -137,6 +137,28 @@ export const roleLightness = (role: ColorRole, theme: Theme, hue: number | null)
 /** Theme canvas (page background), tinted with the collection hue. */
 export const canvasColor = (theme: Theme, hue: number = BRAND_SPEC.hue) =>
   theme === "light" ? `oklch(0.974 0.006 ${hue})` : `oklch(0.155 0.012 ${hue})`;
+
+/**
+ * The unplayed part of a waveform: the track's wave color blended toward the
+ * theme canvas, opaque. It can't be the same color at low alpha: WaveSurfer
+ * paints the played part by recoloring the unplayed canvas ("source-in"), which
+ * keeps its alpha, so both halves would look alike.
+ */
+export const unplayedWaveColor = (
+  spec: ColorSpec,
+  theme: Theme,
+  canvasHue: number = BRAND_SPEC.hue,
+  strength = 0.35
+) => {
+  // Blend lightness and chroma toward the canvas but keep the track's own hue:
+  // mixing hues too would turn a red track violet over a violet collection.
+  const canvas = oklch(canvasColor(theme, canvasHue));
+  const wave = oklch(deriveColor(spec, "wave", theme));
+  if (!canvas || !wave) return deriveColor(spec, "wave", theme, strength);
+  const l = canvas.l + (wave.l - canvas.l) * strength;
+  const c = (wave.c ?? 0) * strength;
+  return formatCss(clampChroma({ mode: "oklch", l, c, h: wave.h ?? 0 }, "oklch"));
+};
 
 export const isNeutral = (spec: ColorSpec): spec is { neutral: true } =>
   "neutral" in spec && spec.neutral === true;
