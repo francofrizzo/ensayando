@@ -9,6 +9,7 @@ import {
   deriveColor,
   INTENSITY_RULES,
   legacyMaxChroma,
+  liftedLightness,
   maxChroma,
   ROLE_RULES,
   roleLightness,
@@ -53,14 +54,15 @@ describe("deriveColor", () => {
       for (const theme of THEMES) {
         for (const role of ["fill", "ink", "lyric", "wave", "soft", "line"] as ColorRole[]) {
           const rule = ROLE_RULES[theme][role];
+          const lift = rule.lift ? INTENSITY_RULES.media.lift[theme] : 0;
           const l = L(hue, role, theme);
           expect(l).toBeGreaterThanOrEqual(rule.min - 1e-3);
-          expect(l).toBeLessThanOrEqual(rule.max + 1e-3);
+          expect(l).toBeLessThanOrEqual(rule.max + lift + 1e-3);
         }
       }
     }
     // light-theme text stays dark enough to read on white (yellows turn ochre)
-    expect(L(95, "lyric", "light")).toBeLessThanOrEqual(0.48);
+    expect(L(95, "lyric", "light")).toBeLessThanOrEqual(0.56);
   });
 
   it("gives each intensity a share of the hue's maximum chroma at the role's lightness", () => {
@@ -70,7 +72,7 @@ describe("deriveColor", () => {
       [195, "intensa"],
       [60, "media"]
     ] as [number, Intensity][]) {
-      const l = roleLightness("lyric", "dark", hue);
+      const l = liftedLightness({ hue, intensity }, "lyric", "dark");
       const { share, cap } = INTENSITY_RULES[intensity];
       const c = Number(deriveColor({ hue, intensity }, "lyric", "dark").split(" ")[1]);
       expect(c).toBeCloseTo(Math.min(cap, share * maxChroma(l, hue)), 3);
@@ -170,7 +172,8 @@ describe("contrast sweep over every hue", () => {
           check("ink on soft", deriveColor(spec, "ink", theme), deriveColor(spec, "soft", theme), 4.5);
           check("ink on surface", deriveColor(spec, "ink", theme), surfaceColor(theme, hue), 4.5);
           check("white on fill", "white", deriveColor(spec, "fill", theme), 4.5);
-          check("wave", deriveColor(spec, "wave", theme), canvas, 3);
+          // waves are graphics: soft ones trade some contrast for a pastel tone
+          check("wave", deriveColor(spec, "wave", theme), canvas, intensity === "intensa" ? 3 : 2.5);
         }
         expect(failures).toEqual([]);
       });
@@ -350,6 +353,27 @@ describe("stage lyrics (player)", () => {
   it("is lighter than text-size lyrics in light theme for yellows and greens", () => {
     for (const hue of [90, 110, 130, 150]) {
       expect(roleLightness("stage", "light", hue)).toBeGreaterThan(roleLightness("lyric", "light", hue));
+    }
+  });
+});
+
+describe("intensity lift", () => {
+  it("makes softer intensities lighter, not only grayer", () => {
+    const L = (hue: number, intensity: Intensity, role: ColorRole, theme: Theme) =>
+      liftedLightness({ hue, intensity }, role, theme);
+    for (let hue = 0; hue < 360; hue += 5) {
+      for (const role of ["wave", "stage", "lyric"] as ColorRole[]) {
+        expect(L(hue, "suave", role, "dark")).toBeGreaterThan(L(hue, "intensa", role, "dark"));
+        expect(L(hue, "suave", role, "light")).toBeGreaterThanOrEqual(L(hue, "intensa", role, "light"));
+      }
+    }
+  });
+
+  it("leaves intensa where it was", () => {
+    for (let hue = 0; hue < 360; hue += 5) {
+      expect(liftedLightness({ hue, intensity: "intensa" }, "wave", "dark")).toBe(
+        roleLightness("wave", "dark", hue)
+      );
     }
   });
 });

@@ -13,7 +13,7 @@
 // See palette.test.ts for the contrast sweep and the fit against the colors the
 // app used before the redesign.
 // Kept free of "@/" imports so scripts/ can use it too.
-import { clampChroma, displayable, formatCss, oklch } from "culori";
+import { clampChroma, displayable, formatCss, oklch, wcagContrast } from "culori";
 
 export type Intensity = "suave" | "media" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
@@ -30,11 +30,17 @@ export type Theme = "light" | "dark";
  * with an absolute cap so violets and pinks (which reach ~0.29) don't go neon.
  * "intensa" is calibrated against the colors the app used before the redesign;
  * "media" and "suave" sit clearly below it so the three read as different.
+ * `lift` raises the lightness of the roles that allow it (see RoleRule.lift):
+ * less chroma alone reads gray and muddy, less chroma plus more light reads
+ * pastel. Contrast still has the last word (RoleRule.contrast).
  */
-export const INTENSITY_RULES: Record<Intensity, { share: number; cap: number }> = {
-  suave: { share: 0.4, cap: 0.08 },
-  media: { share: 0.68, cap: 0.14 },
-  intensa: { share: 1, cap: 0.2 }
+export const INTENSITY_RULES: Record<
+  Intensity,
+  { share: number; cap: number; lift: Record<Theme, number> }
+> = {
+  suave: { share: 0.4, cap: 0.08, lift: { light: 0.15, dark: 0.1 } },
+  media: { share: 0.68, cap: 0.14, lift: { light: 0.07, dark: 0.05 } },
+  intensa: { share: 1, cap: 0.2, lift: { light: 0, dark: 0 } }
 };
 
 const maxChromaCache = new Map<string, number>();
@@ -101,31 +107,45 @@ export const BRAND_SPEC: ColorSpec = { hue: 314, intensity: "intensa" };
 // contrast-safe range for the role in that theme (see the sweep in the tests).
 // Tinted backgrounds and borders take a fraction of the fill's chroma rather
 // than their own maximum (`fromFill`).
+// Roles with `lift` take the intensity's lift on top (max included), then step
+// back down until they keep `contrast`: white text on fills, and light-theme
+// text and waves on the canvas (tinted, so it is darker than the panels).
+// Dark-theme text only gains contrast by getting lighter, so it needs no check.
 type RoleRule = {
   offset: number;
   min: number;
   max: number;
   fromFill?: boolean;
+  lift?: boolean;
+  contrast?: { against: "white" | "canvas"; ratio: number };
   chroma: (c: number) => number;
 };
+
+// Ratios carry a small margin over WCAG's 4.5 and 3: the canvas takes the
+// collection's hue, not the track's. Waves are graphics, not text, and hold a
+// looser 2.5:1 so soft ones can go pastel on the light canvas.
+const lifted = (against: "white" | "canvas", ratio: number) => ({
+  lift: true,
+  contrast: { against, ratio }
+});
 
 // Values mirror design/shared/ds.css and design/shared/mock.css.
 export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
   light: {
-    fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
+    fill: { offset: -0.2, min: 0.42, max: 0.5, ...lifted("white", 4.55), chroma: (c) => c },
     ink: { offset: -0.2, min: 0.4, max: 0.47, chroma: (c) => Math.min(c, 0.4) },
-    lyric: { offset: -0.2, min: 0.4, max: 0.48, chroma: (c) => c },
-    stage: { offset: -0.08, min: 0.45, max: 0.62, chroma: (c) => c },
-    wave: { offset: -0.1, min: 0.5, max: 0.59, chroma: (c) => c },
+    lyric: { offset: -0.2, min: 0.4, max: 0.48, ...lifted("canvas", 4.55), chroma: (c) => c },
+    stage: { offset: -0.08, min: 0.45, max: 0.62, ...lifted("canvas", 3.05), chroma: (c) => c },
+    wave: { offset: -0.1, min: 0.5, max: 0.59, ...lifted("canvas", 2.55), chroma: (c) => c },
     soft: { offset: 0, min: 0.93, max: 0.93, fromFill: true, chroma: (c) => c * 0.3 },
     line: { offset: 0, min: 0.8, max: 0.8, fromFill: true, chroma: (c) => c * 0.5 }
   },
   dark: {
-    fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
+    fill: { offset: -0.2, min: 0.42, max: 0.5, ...lifted("white", 4.55), chroma: (c) => c },
     ink: { offset: 0, min: 0.76, max: 0.86, chroma: (c) => Math.min(c, 0.17) },
-    lyric: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
-    stage: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
-    wave: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
+    lyric: { offset: 0, min: 0.6, max: 0.86, lift: true, chroma: (c) => c },
+    stage: { offset: 0, min: 0.6, max: 0.86, lift: true, chroma: (c) => c },
+    wave: { offset: 0, min: 0.6, max: 0.86, lift: true, chroma: (c) => c },
     soft: { offset: 0, min: 0.3, max: 0.3, fromFill: true, chroma: (c) => c * 0.45 },
     line: { offset: 0, min: 0.45, max: 0.45, fromFill: true, chroma: (c) => c * 0.6 }
   }
@@ -181,6 +201,32 @@ export const specHue = (spec: ColorSpec) => (isNeutral(spec) ? 0 : spec.hue);
 
 const round = (n: number, digits: number) => Number(n.toFixed(digits));
 
+const liftCache = new Map<string, number>();
+
+/**
+ * Lightness of a role for a spec: the role's lightness plus the intensity's
+ * lift, stepped back down until it keeps the role's contrast (memoized).
+ */
+export const liftedLightness = (spec: ColorSpec, role: ColorRole, theme: Theme): number => {
+  const rule = ROLE_RULES[theme][role];
+  const base = roleLightness(role, theme, isNeutral(spec) ? null : spec.hue);
+  if (!rule.lift || isNeutral(spec)) return base;
+  const key = `${spec.hue}|${spec.intensity}|${role}|${theme}`;
+  const cached = liftCache.get(key);
+  if (cached !== undefined) return cached;
+  let l = round(base + INTENSITY_RULES[spec.intensity].lift[theme], 3);
+  const passes = (l: number) => {
+    if (!rule.contrast) return true;
+    const c = rule.chroma(specChroma(spec, l));
+    const color = clampChroma({ mode: "oklch", l, c, h: spec.hue }, "oklch");
+    const bg = rule.contrast.against === "white" ? "white" : canvasColor(theme, spec.hue);
+    return wcagContrast(color, bg) >= rule.contrast.ratio;
+  };
+  while (l > base && !passes(l)) l = round(Math.max(base, l - 0.005), 3);
+  liftCache.set(key, l);
+  return l;
+};
+
 /**
  * Derives the CSS color for a role in a theme. Chroma is reduced to fit sRGB,
  * so every browser paints the same color.
@@ -194,12 +240,19 @@ export const deriveColor = (
   const rule = ROLE_RULES[theme][role];
   const hue = specHue(spec);
   const lightHue = isNeutral(spec) ? null : hue;
-  const l = roleLightness(role, theme, lightHue);
-  const chromaL = rule.fromFill ? roleLightness("fill", theme, lightHue) : l;
-  const color = clampChroma(
-    { mode: "oklch", l, c: rule.chroma(specChroma(spec, chromaL)), h: hue },
-    "oklch"
-  );
+  const colorAtL = (l: number) =>
+    clampChroma({ mode: "oklch", l, c: rule.chroma(specChroma(spec, l)), h: hue }, "oklch");
+  let color;
+  if (rule.fromFill) {
+    const l = roleLightness(role, theme, lightHue);
+    const chromaL = roleLightness("fill", theme, lightHue);
+    color = clampChroma(
+      { mode: "oklch", l, c: rule.chroma(specChroma(spec, chromaL)), h: hue },
+      "oklch"
+    );
+  } else {
+    color = colorAtL(liftedLightness(spec, role, theme));
+  }
   const outL = round(color.l, 4);
   const c = round(color.c ?? 0, 4);
   const h = round(color.h ?? hue, 2);
