@@ -10,6 +10,10 @@ export type TrackState = {
   isReady: boolean;
   /** The track failed to load. It counts as resolved but stays out of the mix. */
   failed: boolean;
+  /** Loading again after a failure ("Reintentar"): resolved for the player, silent. */
+  retrying: boolean;
+  /** Seconds, once loaded. */
+  duration: number;
   /** Slider position, 0–1. Mute and solo never touch it. */
   volume: number;
   muted: boolean;
@@ -40,11 +44,12 @@ export const DUCK_GAIN = 0.5;
  * is soloed) × Mi parte ducking. Playback, the mix download and sync all use it.
  */
 export function appliedGain(
-  track: Pick<TrackState, "id" | "volume" | "muted" | "soloed" | "failed">,
+  track: Pick<TrackState, "id" | "volume" | "muted" | "soloed" | "failed"> &
+    Partial<Pick<TrackState, "retrying">>,
   anySoloed: boolean,
   myPart?: MyPartState | null
 ): number {
-  if (track.failed || track.muted) return 0;
+  if (track.failed || track.retrying || track.muted) return 0;
   if (anySoloed && !track.soloed) return 0;
   const duck =
     myPart?.duckOthers && myPart.trackIds.length > 0 && !myPart.trackIds.includes(track.id)
@@ -58,6 +63,8 @@ function createTrackState(init: TrackInit): TrackState {
     id: init.id,
     isReady: false,
     failed: false,
+    retrying: false,
+    duration: 0,
     volume: 1,
     muted: false,
     soloed: false,
@@ -74,25 +81,33 @@ export function usePlayerState(
   const trackStates = ref<TrackState[]>(initialTracks.map(createTrackState));
   const playing = ref(false);
   const currentTime = ref(0);
-  const totalDuration = ref(0);
 
   const anySoloed = computed(() => trackStates.value.some((t) => t.soloed && !t.failed));
   const gains = computed(() =>
     trackStates.value.map((t) => appliedGain(t, anySoloed.value, options.myPart?.value))
   );
 
-  // A failed track counts as resolved; the player is ready once every track is
-  // resolved and at least one of them actually loaded.
+  // A failed (or retrying) track counts as resolved; the player is ready once every
+  // track is resolved and at least one of them actually loaded. Retrying one track
+  // mid-playback doesn't block the others.
   const isReady = computed(
     () =>
       trackStates.value.length > 0 &&
-      trackStates.value.every((t) => t.isReady || t.failed) &&
+      trackStates.value.every((t) => t.isReady || t.failed || t.retrying) &&
       trackStates.value.some((t) => t.isReady && !t.failed)
   );
 
   /** The first loaded track drives the clock; track 0 may have failed. */
   const referenceIndex = computed(() =>
     trackStates.value.findIndex((t) => t.isReady && !t.failed)
+  );
+
+  /**
+   * The length the player shows and seeks within: the reference track's. The clock
+   * follows that track, so a longer stem's tail could never actually be played.
+   */
+  const totalDuration = computed(
+    () => trackStates.value[referenceIndex.value]?.duration ?? 0
   );
 
   const trackIdsWithLyricsEnabled = computed(() =>
@@ -116,15 +131,20 @@ export function usePlayerState(
   const onReady = (trackIndex: number, duration: number) => {
     const track = trackStates.value[trackIndex];
     if (!track) return;
+    const wasRetrying = track.retrying;
     track.isReady = true;
     track.failed = false;
-    totalDuration.value = Math.max(totalDuration.value, duration);
+    track.retrying = false;
+    track.duration = duration;
+    // A track that came back mid-song joins at the current time, not from 0.
+    if (wasRetrying) callbacks?.onSeekTrack?.(trackIndex, currentTime.value);
   };
 
   const onTrackError = (trackIndex: number) => {
     const track = trackStates.value[trackIndex];
     if (!track) return;
     track.failed = true;
+    track.retrying = false;
     track.isReady = false;
   };
 
@@ -132,6 +152,7 @@ export function usePlayerState(
     const track = trackStates.value[trackIndex];
     if (!track) return;
     track.failed = false;
+    track.retrying = true;
     track.isReady = false;
   };
 
@@ -209,7 +230,6 @@ export function usePlayerState(
 
   const resetForNewSong = (newTracks: TrackInit[]) => {
     currentTime.value = 0;
-    totalDuration.value = 0;
     playing.value = false;
     trackStates.value = newTracks.map(createTrackState);
   };

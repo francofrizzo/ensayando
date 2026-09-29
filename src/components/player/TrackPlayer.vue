@@ -75,7 +75,9 @@ const handleTrackError = (error: Error, context: string) => {
 };
 
 const seekTo = (time: number) => {
-  if (!waveSurfer.value || !props.isReady) return;
+  // No isReady check: a retried track is seeked right when it loads, before the prop
+  // updates. The duration check below already guards against seeking an unloaded track.
+  if (!waveSurfer.value) return;
 
   try {
     // Check if waveSurfer is actually ready to accept setTime calls
