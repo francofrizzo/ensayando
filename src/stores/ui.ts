@@ -25,9 +25,33 @@ export const useUIStore = defineStore("ui", () => {
     }
   );
 
+  // Overlays shared by every screen (mounted once in App.vue)
+  const libraryOpen = ref(false);
+  const commandPaletteOpen = ref(false);
+  const openLibrary = () => {
+    commandPaletteOpen.value = false;
+    libraryOpen.value = true;
+  };
+  const closeLibrary = () => {
+    libraryOpen.value = false;
+  };
+  const openCommandPalette = () => {
+    libraryOpen.value = false;
+    commandPaletteOpen.value = true;
+  };
+  const closeCommandPalette = () => {
+    commandPaletteOpen.value = false;
+  };
+
   return {
     editMode,
     setEditMode,
-    toggleEditMode
+    toggleEditMode,
+    libraryOpen,
+    openLibrary,
+    closeLibrary,
+    commandPaletteOpen,
+    openCommandPalette,
+    closeCommandPalette
   };
 });
