@@ -89,7 +89,7 @@ watch(
         :class="{
           'cursor-pointer': !isDisabled && line.start_time,
           'cursor-default': isDisabled,
-          'gap-10 px-6 text-[19px] tracking-[0.02em] md:px-10 md:text-2xl': line.columns.length < 3,
+          'gap-10 px-6 text-xl tracking-[0.02em] md:px-10': line.columns.length < 3,
           'gap-4 px-4 text-base tracking-tight sm:gap-6 sm:px-6 sm:tracking-normal md:px-10 md:text-xl md:tracking-[0.02em]':
             line.columns.length >= 3,
           'text-sm sm:text-base': line.columns.length >= 4
