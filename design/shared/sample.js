@@ -2,11 +2,11 @@
 // Todo es inventado: colección, canciones y letras.
 (function () {
   const tracks = [
-    { key: "sop", title: "Soprano", hue: 350, intensity: "normal" },
-    { key: "alt", title: "Contralto", hue: 70, intensity: "normal" },
-    { key: "ten", title: "Tenor", hue: 195, intensity: "normal" },
-    { key: "baj", title: "Bajo", hue: 275, intensity: "normal" },
-    { key: "pno", title: "Piano", hue: 130, intensity: "normal" },
+    { key: "sop", title: "Soprano", hue: 350, intensity: "media" },
+    { key: "alt", title: "Contralto", hue: 70, intensity: "media" },
+    { key: "ten", title: "Tenor", hue: 195, intensity: "media" },
+    { key: "baj", title: "Bajo", hue: 275, intensity: "media" },
+    { key: "pno", title: "Piano", hue: 130, intensity: "media" },
   ];
   const songs = [
     { n: 1, title: "Canción del puerto", dur: "3:12", lyrics: true },

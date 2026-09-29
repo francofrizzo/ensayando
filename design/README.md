@@ -43,9 +43,9 @@ Ensayando es una sala de ensayo. El color de la colección es la luz del escenar
 - Etiquetas en mayúsculas: 11 px, 600, +0,1 em. Un solo estilo en toda la app.
 
 ### Paleta · ajuste
-- **Solo tonos.** De cada colección y de cada pista se guarda un **tono** (0 a 360) y una **intensidad** (suave, normal o intensa). Las pistas pueden además ser **neutras** (sin color, para una pista de mezcla o de clic). Todo lo demás se calcula por rol y tema, y el contraste está garantizado por construcción.
+- **Solo tonos.** De cada colección y de cada pista se guarda un **tono** (0 a 360) y una **intensidad** (suave, media o intensa). Las pistas pueden además ser **neutras** (sin color, para una pista de mezcla o de clic). Todo lo demás se calcula por rol y tema, y el contraste está garantizado por construcción.
 - **Claridad según el tono, dentro de un rango seguro por rol y tema.** Cada tono muestra más color cerca de su cúspide (los amarillos arriba, los azules abajo), así que la claridad la sigue: `0,23 + 0,65 × cúspide`, más un desplazamiento por rol, acotada al rango que mantiene el contraste. Letra y onda en oscuro: 0,60 a 0,86. Letra en claro: 0,40 a 0,48 (por eso los amarillos quedan ocre en claro). Rellenos: 0,42 a 0,50 en ambos temas, con texto blanco.
-- **Croma relativo al tono.** La intensidad es una parte del croma máximo que ese tono admite en sRGB a esa claridad: suave 50 %, normal 95 %, intensa 100 %, con topes 0,10 / 0,18 / 0,20 para que violetas y fucsias no se vuelvan fluo. Con un croma fijo, los rojos quedaban en el 75 % de lo posible al lado de cianes ya recortados.
+- **Croma relativo al tono.** La intensidad es una parte del croma máximo que ese tono admite en sRGB a esa claridad: suave 40 %, media 68 %, intensa 100 %, con topes 0,08 / 0,14 / 0,20 para que violetas y fucsias no se vuelvan fluo. Con un croma fijo, los rojos quedaban en el 75 % de lo posible al lado de cianes ya recortados.
 - **Mínimos de contraste**, en los 360 tonos, las tres intensidades y los dos temas: letra 5,69 en claro y 4,52 en oscuro, texto de la colección 5,95 y 4,60, blanco sobre relleno 5,60, ondas 3,54 y 4,52.
 - **Los colores de hoy se conservan.** Con intensidad intensa en oscuro, la onda y la letra quedan a ΔE OK 3,0 en promedio de los seis colores de la colección en producción (0,8 a 2,2 en índigo, rosa y naranja; cerca de 5 en amarillo y lima).
 - **Neutros teñidos.** Los grises dejan de ser zinc: toman el tono de la colección con croma muy bajo (0,004 a 0,016). Cada colección tiñe su sala.
@@ -136,6 +136,11 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - Aplicar las migraciones y revisar los colores convertidos en las colecciones reales.
 - Biblioteca: las canciones no llevan número. El indicador de "sonando" va a la derecha, junto a la duración.
 - Letra: el brillo del verso activo aparece y se apaga con la misma transición del verso.
+- Intensidades: Suave · Media · Intensa (antes "normal"; se renombró también el valor guardado). Media es 68 % del croma máximo del tono y suave 40 %, para que las tres se distingan; intensa sigue calibrada con los colores de la app de hoy.
+- Migración de colores: la intensidad se calcula con croma relativo (la parte del máximo que ese tono admite a esa claridad): 72 % o más, intensa; 45 % o más, media. Así los colores de la app de hoy, elegidos a toda saturación, quedan en intensa.
+- Texto del color de la colección (seleccionados, enlaces, iniciales, bordes de selección) usa siempre la tinta, nunca el relleno; en oscuro su claridad mínima es 0,76 para pasar 4,5:1 también sobre los fondos teñidos.
+- Ajustes de colección: se recortaron los textos de ayuda (subtítulos de sección, nota al pie, ayudas de portada y visibilidad) a lo mínimo.
+- El resumen de cambios de Colores muestra tono e intensidad (p. ej. "Tenor: 195° → 210°, media → intensa") y el paso a neutra.
 
 ## Estructura
 

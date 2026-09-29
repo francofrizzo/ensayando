@@ -31,8 +31,8 @@
      --c es el main_color tal como está en la base. El resto se deriva
      (ver palette): --c-ink para texto e íconos sobre la sala, --c-soft
      para fondos teñidos, --on-c para texto sobre relleno. */
-  --k: 0.18;       /* croma de la colección. En la app es relativo al tono: intensidad = parte del máximo que
-                      ese tono admite en sRGB a esa claridad (suave 50 %, normal 95 %, intensa 100 %; topes 0,10 / 0,18 / 0,20).
+  --k: 0.14;       /* croma de la colección. En la app es relativo al tono: intensidad = parte del máximo que
+                      ese tono admite en sRGB a esa claridad (suave 40 %, media 68 %, intensa 100 %; topes 0,08 / 0,14 / 0,20).
                       Acá lo fija nav.js por colección de ejemplo, ya calculado. */
   --fill-l: 0.5;   /* claridad de los rellenos. En la app depende del tono (0,42 a 0,50); el texto blanco pasa 4,5:1 */
   --c: oklch(var(--fill-l) var(--k) var(--h));

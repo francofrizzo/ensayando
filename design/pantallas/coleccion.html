@@ -321,7 +321,7 @@
 
   // ---------- Colores ----------
   const hc = (h, k = 0.15) => `oklch(0.6 ${k} ${h})`;
-  const pal = [["sop", "Soprano", 350, "normal", "1 pista · 38 versos"], ["alt", "Contralto", 70, "normal", "1 pista · 31 versos"], ["ten", "Tenor", 195, "normal", "1 pista · 27 versos"], ["baj", "Bajo", 207, "normal", "1 pista · 30 versos"], ["pno", "Piano", 130, "normal", "1 pista · sin versos"], ["clic", "Clic", null, "neutra", "1 pista · sin versos"]];
+  const pal = [["sop", "Soprano", 350, "media", "1 pista · 38 versos"], ["alt", "Contralto", 70, "media", "1 pista · 31 versos"], ["ten", "Tenor", 195, "media", "1 pista · 27 versos"], ["baj", "Bajo", 207, "media", "1 pista · 30 versos"], ["pno", "Piano", 130, "media", "1 pista · sin versos"], ["clic", "Clic", null, "neutra", "1 pista · sin versos"]];
   const lyrPrev = `<div class="lyr"><span class="v" style="--tc:var(--t-ten)">cada nota que se asoma</span><span class="v now" style="--tc:var(--t-baj)">vuelve al mismo corazón</span><span class="v multi" style="--tc:var(--t-ten);--tc2:var(--t-baj)">que el viento te va a llevar</span></div>
     <div class="wave" data-seed="4" data-bars="80" data-progress=".5" style="--tc:var(--t-ten)"></div><div class="wave" data-seed="7" data-bars="80" data-progress=".5" style="--tc:var(--t-baj)"></div>`;
   const ticks = pal.filter((p) => p[2] !== null && p[0] !== "baj").map(([k, n, h]) => `<span class="tick${Math.abs(h - 207) < 25 ? " near" : ""}" style="--x:${(h / 360) * 100}%"><span>${n}</span></span>`).join("");
@@ -343,7 +343,7 @@
           <div class="hue-row"><div class="huebar">${ticks}<span class="thumb" style="--x:${(207 / 360) * 100}%;--sw:${hc(207)}"></span></div><div class="in mono num">207°</div></div>
         </div>
         <div class="m-row" style="justify-content:space-between;flex-wrap:wrap">
-          <div class="field"><span class="lbl">Intensidad</span><span class="seg"><span>Suave</span><span class="on">Normal</span><span>Intensa</span></span></div>
+          <div class="field"><span class="lbl">Intensidad</span><span class="seg"><span>Suave</span><span class="on">Media</span><span>Intensa</span></span></div>
           <label class="m-row" style="gap:8px;font:600 13px/1 var(--ui);color:var(--muted);margin-top:18px"><span class="tgl"></span>Neutra (sin color)</label>
         </div>
         <div class="warn-line"><i data-ic="alert"></i><span>Tenor y Bajo están a 12° de tono: cuesta distinguirlos. <b>Probá 250°</b> (el lugar libre más cercano) o pasá una de las dos a intensidad suave.</span></div>

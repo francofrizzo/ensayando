@@ -11,14 +11,14 @@
 
 /* pistas del coro de ejemplo (track_colors) */
 .app, .tracks-demo {
-  /* de cada pista se guarda solo el tono (y la intensidad, normal por defecto);
+  /* de cada pista se guarda solo el tono (y la intensidad, media por defecto);
      la claridad la pone el rol: tinta (--lyr-l) u onda (--wav-l) */
-  /* croma de intensidad normal por tono (95 % del máximo sRGB, tope 0,19), como en la app */
-  --t-sop: oklch(0.6 0.19 350);   /* Soprano · magenta */
-  --t-alt: oklch(0.6 0.1 70);     /* Contralto · ámbar */
-  --t-ten: oklch(0.6 0.078 195);  /* Tenor · turquesa */
-  --t-baj: oklch(0.6 0.19 275);   /* Bajo · índigo */
-  --t-pno: oklch(0.6 0.12 130);   /* Piano · lima */
+  /* croma de intensidad media por tono (68 % del máximo sRGB, tope 0,14), como en la app */
+  --t-sop: oklch(0.6 0.14 350);   /* Soprano · magenta */
+  --t-alt: oklch(0.6 0.088 70);     /* Contralto · ámbar */
+  --t-ten: oklch(0.6 0.07 195);  /* Tenor · turquesa */
+  --t-baj: oklch(0.6 0.14 275);   /* Bajo · índigo */
+  --t-pno: oklch(0.6 0.11 130);   /* Piano · lima */
   --a2: var(--t-sop); --a3: var(--t-ten);
 }
 

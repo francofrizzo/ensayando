@@ -24,12 +24,12 @@
     { id: "plan", path: "plan/index.html", label: "Plan", note: "Datos, orden y preguntas" },
   ];
 
-  // Colecciones de ejemplo: tono (h) y croma (k) de intensidad normal, ya calculado como 95 % del
-  // máximo sRGB de ese tono a la claridad de su relleno (con tope 0,18), igual que src/utils/palette.ts.
+  // Colecciones de ejemplo: tono (h) y croma (k) de intensidad media, ya calculado como 68 % del
+  // máximo sRGB de ese tono a la claridad de su relleno (con tope 0,14), igual que src/utils/palette.ts.
   const COLLECTIONS = {
-    coro: { label: "Coro · violeta", h: 300, k: 0.18 },
-    taller: { label: "Taller · naranja", h: 45, k: 0.133 },
-    rock: { label: "Banda · verde", h: 150, k: 0.131 },
+    coro: { label: "Coro · violeta", h: 300, k: 0.14 },
+    taller: { label: "Taller · naranja", h: 45, k: 0.095 },
+    rock: { label: "Banda · verde", h: 150, k: 0.094 },
   };
 
   // ---------- tema: antes del primer pintado ----------
