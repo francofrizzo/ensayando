@@ -43,11 +43,11 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
     </div>
 
     <div
-      class="flex items-center gap-1.5 sm:gap-2.5"
+      class="flex items-center gap-1.5 sm:gap-2.5 md:gap-5"
       :class="
         props.compact
           ? ''
-          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%-0.75rem)]'
+          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:-translate-y-[calc(50%-0.125rem)]'
       "
     >
       <button
