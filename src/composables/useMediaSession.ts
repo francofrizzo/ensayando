@@ -12,6 +12,9 @@ export type MediaSessionEvents = {
   onPlay?: () => void;
   onPause?: () => void;
   onSeek?: (time: number) => void;
+  /** Headphone / lock-screen "previous" and "next": previous and next song. */
+  onPreviousTrack?: () => void;
+  onNextTrack?: () => void;
 };
 
 export function useMediaSession(
@@ -60,6 +63,13 @@ export function useMediaSession(
         currentTime.value = newTime;
         events.onSeek?.(newTime);
       });
+
+      if (events.onPreviousTrack) {
+        navigator.mediaSession.setActionHandler("previoustrack", () => events.onPreviousTrack?.());
+      }
+      if (events.onNextTrack) {
+        navigator.mediaSession.setActionHandler("nexttrack", () => events.onNextTrack?.());
+      }
     }
   };
 
@@ -110,6 +120,8 @@ export function useMediaSession(
         navigator.mediaSession.setActionHandler("seekto", null);
         navigator.mediaSession.setActionHandler("seekforward", null);
         navigator.mediaSession.setActionHandler("seekbackward", null);
+        navigator.mediaSession.setActionHandler("previoustrack", null);
+        navigator.mediaSession.setActionHandler("nexttrack", null);
 
         // Clear metadata
         navigator.mediaSession.metadata = null;

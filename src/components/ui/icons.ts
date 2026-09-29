@@ -88,5 +88,6 @@ export {
   IconCactus as IconEmpty,
   IconBubbleX as IconNoLyrics,
   IconCornerDownLeft as IconEnter,
-  IconArrowsUpDown as IconUpDown
+  IconArrowsUpDown as IconUpDown,
+  IconRotateClockwise as IconRetry
 } from "@tabler/icons-vue";

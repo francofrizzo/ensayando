@@ -1,28 +1,37 @@
 <script setup lang="ts">
-import { IconChevronDown, IconLyrics } from "@/components/ui/icons";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { isIOS } from "@/utils/platform";
+import { computed, nextTick, onMounted, onUnmounted, ref, toRef, watch } from "vue";
+import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
+import type WaveSurfer from "wavesurfer.js";
 
 import SongEditor from "@/components/editor/SongEditor.vue";
-import TimeCopier from "@/components/editor/TimeCopier.vue";
 import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
+import MyPartMenu from "@/components/player/MyPartMenu.vue";
 import PlayerControls from "@/components/player/PlayerControls.vue";
-import PlayerHeader from "@/components/player/PlayerHeader.vue";
-import RoomLight from "@/components/ui/RoomLight.vue";
+import PlayerShortcutsModal from "@/components/player/PlayerShortcutsModal.vue";
+import PlayerTopBar from "@/components/player/PlayerTopBar.vue";
+import ProgressBar from "@/components/player/ProgressBar.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
+import { IconChevronDown, IconChevronUp, IconLyrics, IconMixer } from "@/components/ui/icons";
 import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
-import { providePlayerState } from "@/composables/useCurrentTime";
+import RoomLight from "@/components/ui/RoomLight.vue";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentSong } from "@/composables/useCurrentSong";
+import { providePlayerState } from "@/composables/useCurrentTime";
 import { useMediaSession } from "@/composables/useMediaSession";
+import { useMyPart } from "@/composables/useMyPart";
 import { useNavigation } from "@/composables/useNavigation";
-import { usePlayerState, type TrackInit } from "@/composables/usePlayerState";
-import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
-import type WaveSurfer from "wavesurfer.js";
-import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
+import { type TrackInit, usePlayerState } from "@/composables/usePlayerState";
 import { artworkPlaybackUrl, audioPlaybackUrl } from "@/data/storage";
+import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
+import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
-import { mixAndEncodeMp3 } from "../../utils/mixdown";
+import { COMMAND_EVENT, type CommandEventDetail, dispatchPlayback } from "@/utils/appEvents";
+import { mixAndEncodeMp3 } from "@/utils/mixdown";
+import { myPartForSong } from "@/utils/myPart";
+import { isIOS } from "@/utils/platform";
+import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
+import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
 const props = defineProps<{
   collection: CollectionWithRole;
@@ -31,7 +40,12 @@ const props = defineProps<{
 }>();
 
 const uiStore = useUIStore();
+const collectionsStore = useCollectionsStore();
+const router = useRouter();
 const { prevSong, nextSong } = useCurrentSong();
+
+const canEdit = computed(() => collectionsStore.canEditCurrentCollection);
+const isAdmin = computed(() => props.collection.user_role === "admin");
 const { navigateToSong } = useNavigation();
 
 // General state
@@ -63,11 +77,24 @@ const buildTrackInits = (): TrackInit[] =>
     hasLyrics: tracksIdsWithLyrics.value.includes(track.id)
   }));
 
-const state = usePlayerState(buildTrackInits(), {
-  onSeekTrack: (trackIndex, time) => {
-    trackPlayers.value[trackIndex]?.seekTo(time);
-  }
-});
+// "Mi parte": remembered per collection; only this song's tracks count here.
+const myPartStore = useMyPart(computed(() => props.collection.id));
+const myPart = computed(() =>
+  myPartForSong(
+    myPartStore.part.value,
+    sortedTracks.value.map((track) => track.id)
+  )
+);
+
+const state = usePlayerState(
+  buildTrackInits(),
+  {
+    onSeekTrack: (trackIndex, time) => {
+      trackPlayers.value[trackIndex]?.seekTo(time);
+    }
+  },
+  { myPart }
+);
 
 const { isReady, trackIdsWithLyricsEnabled } = state;
 
@@ -146,6 +173,8 @@ const onReady = (trackIndex: number, duration: number) => {
 };
 
 const onTrackError = (trackIndex: number) => {
+  // A failed track counts as resolved: the rest of the song still plays.
+  state.onTrackError(trackIndex);
   // On iOS, continue sequential decode even if a track fails
   if (isIOS) {
     const nextIndex = trackIndex + 1;
@@ -157,6 +186,11 @@ const onTrackError = (trackIndex: number) => {
       }
     }
   }
+};
+
+const onTrackRetry = (trackIndex: number) => {
+  state.onTrackRetry(trackIndex);
+  trackPlayers.value[trackIndex]?.retry();
 };
 
 const onPlayPause = async (forcePlay?: boolean) => {
@@ -200,6 +234,40 @@ const onSeekToTime = (time: number) => {
   seekAllTracks(time);
 };
 
+const stanzaStarts = computed(() => stanzaStartTimes(props.lyrics));
+
+const goToSong = (song: Song | null) => {
+  if (song) navigateToSong(props.collection, song);
+};
+
+const showShortcuts = ref(false);
+
+const openSettings = () => {
+  router.push(`/${props.collection.slug}/ajustes/general`);
+};
+
+// Commands from the library and ⌘K (src/utils/appEvents.ts).
+const songEditorRef = ref<InstanceType<typeof SongEditor> | null>(null);
+
+const onCommand = async (event: Event) => {
+  const { id } = (event as CustomEvent<CommandEventDetail>).detail;
+  if (id === "download-mix") {
+    void onDownloadMix();
+  } else if ((id === "edit-song" || id === "new-song") && canEdit.value) {
+    uiStore.setEditMode(true);
+    if (id === "new-song") {
+      await nextTick();
+      await songEditorRef.value?.startNewSong();
+    }
+  }
+};
+
+// Let the library animate its "now playing" bars.
+watch(
+  () => state.playing.value,
+  (playing) => dispatchPlayback(playing)
+);
+
 const keydownHandler = (event: KeyboardEvent) => {
   // Check if the event originates from an capturing element
   const target = event.target as HTMLElement;
@@ -207,6 +275,8 @@ const keydownHandler = (event: KeyboardEvent) => {
     target &&
     (target.closest(".jse-modal") || target.closest("input") || target.closest("textarea")) &&
     !event.ctrlKey;
+  const isTyping = !!target?.closest("input, textarea, [contenteditable='true'], .jse-modal");
+  const hasCommandModifier = event.metaKey || event.ctrlKey;
 
   if (event.key === " " && (!isInCapturingElement || event.ctrlKey)) {
     event.preventDefault();
@@ -222,18 +292,47 @@ const keydownHandler = (event: KeyboardEvent) => {
     const newTime = Math.min(state.totalDuration.value, state.currentTime.value + step);
     onSeekToTime(newTime);
   } else if (
-    event.key === "e" &&
-    (event.metaKey || event.ctrlKey) &&
+    event.key.toLowerCase() === "e" &&
+    hasCommandModifier &&
     event.shiftKey &&
     !isInCapturingElement
   ) {
     event.preventDefault();
     onDownloadMix();
+  } else if (isTyping || hasCommandModifier || uiStore.editMode) {
+    // Everything below is a plain key; the editor owns the keyboard while editing.
+    return;
+  } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
+    event.preventDefault();
+    goToSong(event.key === "ArrowUp" ? prevSong.value : nextSong.value);
+  } else if (event.key === "ArrowUp" && !event.altKey) {
+    event.preventDefault();
+    onSeekToTime(previousStanzaTime(stanzaStarts.value, state.currentTime.value));
+  } else if (event.key === "ArrowDown" && !event.altKey) {
+    const next = nextStanzaTime(stanzaStarts.value, state.currentTime.value);
+    event.preventDefault();
+    if (next !== null) onSeekToTime(next);
+  } else if (/^Digit[1-9]$/.test(event.code)) {
+    // event.code: on a Mac, ⌥+digit types another character.
+    const index = Number(event.code.slice(5)) - 1;
+    if (index >= sortedTracks.value.length) return;
+    event.preventDefault();
+    if (event.altKey) state.onSoloTrack(index);
+    else state.onToggleTrackMuted(index, event.shiftKey);
+  } else if (event.key.toLowerCase() === "e" && !event.altKey && canEdit.value) {
+    event.preventDefault();
+    uiStore.toggleEditMode();
+  } else if (event.key === "?") {
+    event.preventDefault();
+    showShortcuts.value = !showShortcuts.value;
+  } else if (event.key === "Escape" && showShortcuts.value) {
+    showShortcuts.value = false;
   }
 };
 
 onMounted(() => {
   window.addEventListener("keydown", keydownHandler);
+  window.addEventListener(COMMAND_EVENT, onCommand);
   initMediaSession();
   // Kick off sequential decode on iOS: use nextTick so template refs are populated
   if (isIOS) {
@@ -253,6 +352,8 @@ onMounted(() => {
 onUnmounted(async () => {
   try {
     window.removeEventListener("keydown", keydownHandler);
+    window.removeEventListener(COMMAND_EVENT, onCommand);
+    dispatchPlayback(false);
   } catch (error) {
     handleAudioError(error as Error, "removeEventListener");
   }
@@ -305,10 +406,20 @@ onUnmounted(async () => {
 });
 
 // UI/Visual related state
-const tracksVisible = ref(true);
+// Phone: the dock is a sheet that starts closed. Desktop: the mixer starts open.
+const phoneQuery = window.matchMedia("(max-width: 767px)");
+const isPhone = ref(phoneQuery.matches);
+const onPhoneQueryChange = (event: MediaQueryListEvent) => {
+  isPhone.value = event.matches;
+};
+phoneQuery.addEventListener("change", onPhoneQueryChange);
+onUnmounted(() => phoneQuery.removeEventListener("change", onPhoneQueryChange));
+const mixerOpen = ref(!isPhone.value);
 
-// PWA detection
-const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+const { trackColor } = useCollectionPalette(toRef(props, "collection"));
+const progress = computed(() =>
+  state.totalDuration.value > 0 ? state.currentTime.value / state.totalDuration.value : 0
+);
 
 // Audio playing trickery
 const trackPlayers = ref<InstanceType<typeof TrackPlayer>[]>([]);
@@ -338,11 +449,14 @@ const onDownloadMix = async () => {
   if (!isReady.value || exporting.value) return;
   exporting.value = true;
 
-  const toastId = toast.loading("Generando audio para descargar...");
+  const toastId = toast.loading("Preparando la mezcla…");
 
   try {
-    const urls = sortedTracks.value.map((track) => audioPlaybackUrl(track) || null);
-    const gains = state.trackStates.value.map((s) => Math.max(0, Math.min(1, s.volume ?? 0)));
+    // The mix uses what you hear: volume, mute, solo and Mi parte. Failed tracks stay out.
+    const urls = sortedTracks.value.map((track, i) =>
+      state.trackStates.value[i]?.failed ? null : audioPlaybackUrl(track) || null
+    );
+    const gains = state.gains.value.slice();
     const sampleRate = audioContext.value?.sampleRate ?? 44100;
     const duration = state.totalDuration.value;
 
@@ -389,9 +503,9 @@ const onDownloadMix = async () => {
     });
   } catch (error) {
     handleAudioError(error as Error, "onDownloadMix");
-    toast.error("Error al generar mezcla", {
+    toast.error("No se pudo preparar la mezcla", {
       id: toastId,
-      description: "Revisa la consola para más detalles"
+      description: "Probá de nuevo en un momento."
     });
   } finally {
     exporting.value = false;
@@ -402,7 +516,8 @@ const checkAndCorrectSync = () => {
   if (!state.playing.value || !isReady.value) return;
   if (audioContext.value?.state !== "running") return;
 
-  const referenceTrack = trackPlayers.value[0];
+  const referenceIndex = state.referenceIndex.value;
+  const referenceTrack = trackPlayers.value[referenceIndex];
   if (!referenceTrack?.waveSurfer) return;
 
   try {
@@ -412,8 +527,8 @@ const checkAndCorrectSync = () => {
     if (referenceTime < 0) return;
 
     trackPlayers.value.forEach((player, index) => {
-      if (!player?.waveSurfer || index === 0) return; // Skip reference track
-      if (state.trackStates.value[index]?.volume === 0) return; // Skip muted tracks
+      if (!player?.waveSurfer || index === referenceIndex) return; // Skip reference track
+      if (state.gains.value[index] === 0) return; // Silent tracks re-seek when they become audible
 
       try {
         const time = player.waveSurfer.getCurrentTime?.() ?? 0;
@@ -474,7 +589,7 @@ watch(
       }
 
       // Fallback: derive context from first wavesurfer instance if we didn't create one
-      const firstTrack = trackPlayers.value[0];
+      const firstTrack = trackPlayers.value[state.referenceIndex.value];
       if (firstTrack?.waveSurfer) {
         const ws = firstTrack.waveSurfer as WaveSurfer & {
           backend?: { audioContext?: AudioContext };
@@ -505,7 +620,9 @@ const {
 } = useMediaSession(mediaSessionOptions, {
   onPlay: () => onPlayPause(true),
   onPause: () => onPlayPause(false),
-  onSeek: (time) => onSeekToTime(time)
+  onSeek: (time) => onSeekToTime(time),
+  onPreviousTrack: () => goToSong(prevSong.value),
+  onNextTrack: () => goToSong(nextSong.value)
 });
 
 const isUpdatingFromMediaSession = ref(false);
@@ -680,42 +797,46 @@ const initializeAudioContext = async () => {
 
     <div class="drawer-content">
       <div
-        class="bg-base-200 relative isolate flex h-dvh min-w-0 flex-col overflow-hidden select-none md:gap-3 md:p-3 lg:gap-4 lg:p-4"
+        class="bg-base-200 relative isolate flex h-dvh min-w-0 flex-col overflow-hidden select-none"
       >
         <RoomLight :collection="collection" :playing="state.playing.value" />
-        <div
-          class="glass-1 rounded-box relative z-10 m-2 flex items-center justify-between gap-3 p-2 pl-2.5 md:m-0"
-        >
-          <PlayerHeader
-            :collection="collection"
-            :song="song"
-            @toggle-edit="uiStore.toggleEditMode"
-          />
-          <PlayerControls
-            :current-time="state.currentTime.value"
-            :total-duration="state.totalDuration.value"
-            :is-playing="state.playing.value"
-            :is-ready="isReady"
-            :prev-song="prevSong"
-            :next-song="nextSong"
-            @play-pause="onPlayPause"
-            @skip-prev="prevSong && navigateToSong(collection, prevSong)"
-            @skip-next="nextSong && navigateToSong(collection, nextSong)"
-          />
-          <div class="absolute top-2 left-1/2 flex -translate-x-1/2 items-center justify-end">
-            <TimeCopier :current-time="state.currentTime.value" />
-          </div>
-        </div>
 
         <div
+          class="relative z-10 px-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] md:px-3.5 md:pt-3.5"
+        >
+          <PlayerTopBar
+            :collection="collection"
+            :song="song"
+            :song-count="collectionsStore.songs.length"
+            :tracks="sortedTracks"
+            :my-part="myPart"
+            :can-edit="canEdit"
+            :is-admin="isAdmin"
+            :edit-mode="uiStore.editMode"
+            :exporting="exporting"
+            :can-download="isReady"
+            @library="uiStore.openLibrary()"
+            @search="uiStore.openCommandPalette()"
+            @edit="uiStore.toggleEditMode()"
+            @download="onDownloadMix"
+            @shortcuts="showShortcuts = true"
+            @settings="openSettings"
+            @my-part-toggle="myPartStore.toggleTrack"
+            @my-part-duck="myPartStore.setDuckOthers"
+            @my-part-clear="myPartStore.clear"
+          />
+        </div>
+
+        <!-- Stage: the lyrics. Never inside glass (gradient text vanishes under backdrop-filter). -->
+        <div
           v-if="lyrics.length > 0"
-          class="relative flex-grow-1 snap-y overflow-auto py-8"
+          class="relative min-h-0 flex-grow-1 snap-y overflow-auto py-10"
           style="
             animation: fade-in 300ms ease-out 100ms both;
             mask-image: linear-gradient(
               transparent,
-              #000 32px,
-              #000 calc(100% - 32px),
+              #000 48px,
+              #000 calc(100% - 48px),
               transparent
             );
           "
@@ -726,10 +847,11 @@ const initializeAudioContext = async () => {
             :is-disabled="!isReady"
             :collection="collection"
             :enabled-track-ids="trackIdsWithLyricsEnabled"
+            :my-part="myPart"
             @seek="onSeekToTime"
           />
         </div>
-        <div v-else class="flex flex-grow-1 flex-col items-center justify-center gap-4 p-10">
+        <div v-else class="flex min-h-0 flex-grow-1 flex-col items-center justify-center gap-4 p-10">
           <IconLyrics
             class="empty-state-enter-active mb-4 size-22 opacity-50"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 0ms"
@@ -748,15 +870,118 @@ const initializeAudioContext = async () => {
           </p>
         </div>
 
+        <!-- Dock (desktop) / sheet (phone) -->
         <div
-          class="glass-2 md:rounded-box relative transition-[max-height] duration-300"
-          :class="{ 'max-h-[45%]': tracksVisible, [isPWA ? 'max-h-6' : 'max-h-2']: !tracksVisible }"
+          class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
+          data-testid="player-dock"
         >
-          <div
-            class="md:rounded-box h-full overflow-y-auto transition-all duration-300"
-            :class="{ 'opacity-0': !tracksVisible }"
+          <button
+            class="bg-base-content/20 mx-auto h-[5px] w-[38px] shrink-0 rounded-full md:hidden"
+            :aria-label="mixerOpen ? 'Cerrar las pistas' : 'Abrir las pistas'"
+            @click="mixerOpen = !mixerOpen"
+          />
+
+          <ProgressBar
+            class="md:hidden"
+            :current-time="state.currentTime.value"
+            :total-duration="state.totalDuration.value"
+            :disabled="!isReady"
+            @seek="onSeekToTime"
+          />
+
+          <PlayerControls
+            class="md:h-[58px]"
+            :compact="isPhone"
+            :current-time="state.currentTime.value"
+            :total-duration="state.totalDuration.value"
+            :is-playing="state.playing.value"
+            :is-ready="isReady"
+            :prev-song="prevSong"
+            :next-song="nextSong"
+            @play-pause="onPlayPause"
+            @skip-prev="goToSong(prevSong)"
+            @skip-next="goToSong(nextSong)"
           >
-            <div class="overflow-hidden">
+            <button
+              class="btn btn-sm btn-ghost text-base-content/60 hidden gap-1.5 rounded-full font-semibold md:inline-flex"
+              data-testid="toggle-mixer"
+              @click="mixerOpen = !mixerOpen"
+            >
+              <component :is="mixerOpen ? IconChevronDown : IconChevronUp" class="size-4" />
+              {{ mixerOpen ? "Ocultar pistas" : "Mostrar pistas" }}
+            </button>
+            <button
+              class="btn btn-circle btn-ghost md:hidden"
+              :class="{ 'bg-collection-soft text-collection-ink': mixerOpen }"
+              :aria-label="mixerOpen ? 'Cerrar las pistas' : 'Abrir las pistas'"
+              @click="mixerOpen = !mixerOpen"
+            >
+              <IconMixer class="size-5" />
+            </button>
+          </PlayerControls>
+
+          <ProgressBar
+            v-if="!mixerOpen"
+            class="hidden md:flex"
+            :current-time="state.currentTime.value"
+            :total-duration="state.totalDuration.value"
+            :disabled="!isReady"
+            @seek="onSeekToTime"
+          />
+
+          <!-- Phone, sheet closed: tracks as chips; a tap mutes -->
+          <div
+            v-if="!mixerOpen"
+            class="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] md:hidden"
+            style="mask-image: linear-gradient(90deg, #000 85%, transparent)"
+          >
+            <button
+              v-for="(track, index) in sortedTracks"
+              :key="track.id"
+              class="bg-base-content/6 flex shrink-0 items-center gap-1.5 rounded-full py-[7px] pr-2.5 pl-[9px] text-[12.5px] font-semibold whitespace-nowrap"
+              :class="{ 'text-base-content/40 line-through': state.gains.value[index] === 0 }"
+              :aria-pressed="!state.trackStates.value[index]?.muted"
+              @click="state.onToggleTrackMuted(index)"
+            >
+              <span
+                class="size-2 rounded-full"
+                :style="{
+                  background:
+                    state.gains.value[index] === 0
+                      ? 'var(--color-base-content)'
+                      : trackColor(track.color_key, 'wave'),
+                  opacity: state.gains.value[index] === 0 ? 0.35 : 1
+                }"
+              />
+              {{ track.title }}
+            </button>
+          </div>
+
+          <!-- Mixer: always mounted (the tracks are the audio); collapsed with height -->
+          <div
+            class="relative -mx-4 overflow-y-auto overscroll-contain px-4 transition-[max-height,opacity] duration-300 md:-mx-[18px] md:pr-[18px] md:pl-8"
+            :class="
+              mixerOpen
+                ? 'max-h-[55dvh] opacity-100 md:max-h-[42dvh]'
+                : 'pointer-events-none max-h-0 opacity-0'
+            "
+            :aria-hidden="!mixerOpen || undefined"
+            data-testid="mixer"
+          >
+            <div v-if="sortedTracks.length > 1" class="flex items-center justify-between pb-2 md:hidden">
+              <span class="text-base-content/50 text-[11px] font-semibold tracking-[0.1em] uppercase"
+                >Pistas</span
+              >
+              <MyPartMenu
+                :collection="collection"
+                :tracks="sortedTracks"
+                :part="myPart"
+                @toggle-track="myPartStore.toggleTrack"
+                @set-duck="myPartStore.setDuckOthers"
+                @clear="myPartStore.clear"
+              />
+            </div>
+            <div class="relative flex flex-col md:py-1">
               <TrackPlayer
                 v-for="(track, index) in sortedTracks"
                 :key="index"
@@ -765,7 +990,6 @@ const initializeAudioContext = async () => {
                     if (el) trackPlayers[index] = el as InstanceType<typeof TrackPlayer>;
                   }
                 "
-                class="pl-4 first:pt-2 last:pb-2"
                 :style="
                   isReady
                     ? {
@@ -776,9 +1000,14 @@ const initializeAudioContext = async () => {
                 "
                 :track="track"
                 :collection="collection"
+                :position="index < 9 ? index + 1 : undefined"
                 :is-playing="state.playing.value"
                 :is-ready="state.trackStates.value[index]!.isReady"
+                :failed="state.trackStates.value[index]!.failed"
                 :volume="state.trackStates.value[index]!.volume"
+                :gain="state.gains.value[index] ?? 0"
+                :muted="state.trackStates.value[index]!.muted"
+                :soloed="state.trackStates.value[index]!.soloed"
                 :has-lyrics="state.trackStates.value[index]!.hasLyrics"
                 :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
                 :edit-mode="uiStore.editMode"
@@ -796,37 +1025,36 @@ const initializeAudioContext = async () => {
                 @seek="onSeekToTime"
                 @finish="state.onFinish(index)"
                 @error="onTrackError(index)"
+                @retry="onTrackRetry(index)"
+              />
+              <!-- Playhead across every wave (name column 198px + 16px gap) -->
+              <span
+                v-if="isReady"
+                class="bg-base-content pointer-events-none absolute inset-y-0 hidden w-0.5 rounded-full md:block"
+                :style="{ left: `calc(214px + (100% - 214px) * ${progress})` }"
               />
             </div>
-          </div>
 
-          <div
-            class="pointer-events-none absolute inset-x-0 top-0 z-10 -mt-6 flex h-6 cursor-pointer justify-center"
-          >
-            <button
-              class="glass-2 text-base-content/50 rounded-t-box pointer-events-auto flex w-16 cursor-pointer items-center justify-center p-2 shadow-none"
-              @click="tracksVisible = !tracksVisible"
-            >
-              <IconChevronDown
-                class="h-7 w-7 transition-transform duration-300"
-                :class="{ 'rotate-180': !tracksVisible }"
-              />
-            </button>
-          </div>
-
-          <div
-            v-if="!isReady && tracksVisible"
-            class="bg-base-100/80 md:rounded-box absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px] select-none"
-          >
             <div
-              class="text-base-content/35 flex flex-col items-center gap-4"
-              style="animation: pulse-subtle 3s ease-in-out infinite"
+              v-if="!isReady && mixerOpen"
+              class="absolute inset-0 z-10 flex items-center justify-center select-none"
             >
-              <LoadingWaveform size="lg" :bar-count="12" />
-              <span class="text-sm tracking-wide">Cargando...</span>
+              <div
+                class="text-base-content/45 flex flex-col items-center gap-4"
+                style="animation: pulse-subtle 3s ease-in-out infinite"
+              >
+                <LoadingWaveform size="lg" :bar-count="12" />
+                <span class="text-sm tracking-wide">Cargando...</span>
+              </div>
             </div>
           </div>
         </div>
+
+        <PlayerShortcutsModal
+          :show="showShortcuts"
+          :can-edit="canEdit"
+          @close="showShortcuts = false"
+        />
       </div>
     </div>
 
@@ -835,7 +1063,11 @@ const initializeAudioContext = async () => {
       <div
         class="bg-base-100 min-h-full w-full shadow-lg sm:w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] lg:w-[50vw]"
       >
-        <SongEditor v-if="uiStore.editMode" @toggle-edit="uiStore.toggleEditMode" />
+        <SongEditor
+          v-if="uiStore.editMode"
+          ref="songEditorRef"
+          @toggle-edit="uiStore.toggleEditMode"
+        />
       </div>
     </div>
   </div>
