@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 
+import AccountMenu from "@/components/navigation/AccountMenu.vue";
 import SettingsColors from "@/components/settings/SettingsColors.vue";
 import SettingsDanger from "@/components/settings/SettingsDanger.vue";
 import SettingsGeneral from "@/components/settings/SettingsGeneral.vue";
@@ -23,9 +24,7 @@ import { useCollectionTheme } from "@/composables/useCollectionTheme";
 import { provideSettingsGuard } from "@/composables/useSettingsGuard";
 import { fetchCollectionMembers } from "@/data/admin";
 import type { Collection, CollectionMember } from "@/data/types";
-import { useAuthStore } from "@/stores/auth";
 import { useCollectionsStore } from "@/stores/collections";
-import { initials } from "@/utils/collectionSettings";
 
 // Ajustes de colección (design/pantallas/coleccion.html): everything that used to be
 // done with SQL through the admin skill. Only the collection's admins get here.
@@ -34,7 +33,6 @@ type Section = "general" | "pistas" | "canciones" | "miembros" | "peligro";
 const route = useRoute();
 const router = useRouter();
 const collectionsStore = useCollectionsStore();
-const authStore = useAuthStore();
 
 const collection = computed(() => collectionsStore.currentCollection);
 useCollectionTheme(collection);
@@ -138,7 +136,6 @@ const songsLoaded = computed(
     !collectionsStore.isLoading
 );
 
-const userInitials = computed(() => initials(authStore.username ?? "?"));
 </script>
 
 <template>
@@ -181,10 +178,7 @@ const userInitials = computed(() => initials(authStore.username ?? "?"));
           }}</span>
         </div>
         <div class="flex-1" />
-        <span
-          class="bg-collection-soft text-collection-ink grid size-8 place-items-center rounded-full text-xs font-bold"
-          >{{ userInitials }}</span
-        >
+        <AccountMenu />
       </header>
 
       <!-- phone: tabs -->

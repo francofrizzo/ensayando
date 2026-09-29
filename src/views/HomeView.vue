@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { IconGlobe, IconLink, IconLock, IconPlus, IconSearch } from "@/components/ui/icons";
+import { IconGlobe, IconLibrary, IconLink, IconLock, IconPlus, IconSearch } from "@/components/ui/icons";
 import { computed, onMounted, ref } from "vue";
 
+import AccountMenu from "@/components/navigation/AccountMenu.vue";
 import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
@@ -61,7 +62,6 @@ const banner = (collection: CollectionWithRole) =>
 
 const count = (collection: CollectionWithRole) => songIndex.countByCollection.get(collection.id);
 
-const initials = computed(() => (authStore.username ?? "").slice(0, 2).toUpperCase() || "?");
 </script>
 
 <template>
@@ -75,6 +75,15 @@ const initials = computed(() => (authStore.username ?? "").slice(0, 2).toUpperCa
     <header
       class="glass-1 fixed inset-x-2.5 top-[max(10px,env(safe-area-inset-top))] z-10 flex h-14 items-center gap-3 rounded-[18px] pr-2.5 pl-3 sm:inset-x-3.5 sm:top-3.5 sm:h-[60px]"
     >
+      <button
+        type="button"
+        class="btn btn-circle btn-ghost btn-sm -mr-1"
+        aria-label="Abrir biblioteca"
+        :aria-expanded="uiStore.libraryOpen"
+        @click="uiStore.openLibrary()"
+      >
+        <IconLibrary class="size-[18px]" />
+      </button>
       <img src="/pwa-192x192.png" alt="" class="size-[34px] rounded-[9px]" />
       <span class="font-display text-lg font-bold">Ensayando</span>
       <span class="flex-1" />
@@ -87,14 +96,7 @@ const initials = computed(() => (authStore.username ?? "").slice(0, 2).toUpperCa
       >
         <IconSearch class="size-[18px]" />
       </button>
-      <button
-        type="button"
-        class="bg-primary/15 text-base-content grid size-[30px] place-items-center rounded-full text-xs font-bold"
-        aria-label="Abrir biblioteca y cuenta"
-        @click="uiStore.openLibrary()"
-      >
-        {{ initials }}
-      </button>
+      <AccountMenu />
     </header>
 
     <main

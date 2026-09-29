@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import AccountMenu from "@/components/player/AccountMenu.vue";
+import AccountMenu from "@/components/navigation/AccountMenu.vue";
 import SongActionsMenu from "@/components/player/SongActionsMenu.vue";
 import { IconEdit, IconLibrary, IconSearch, IconSelector } from "@/components/ui/icons";
 import { artworkPlaybackUrl } from "@/data/storage";
