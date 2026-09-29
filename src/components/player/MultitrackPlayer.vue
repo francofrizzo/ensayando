@@ -19,7 +19,13 @@ import PlayerShortcutsModal from "@/components/player/PlayerShortcutsModal.vue";
 import PlayerTopBar from "@/components/player/PlayerTopBar.vue";
 import ProgressBar from "@/components/player/ProgressBar.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
-import { IconChevronDown, IconChevronUp, IconLyrics, IconMixer } from "@/components/ui/icons";
+import {
+  IconChevronDown,
+  IconChevronUp,
+  IconEdit,
+  IconLyrics,
+  IconMixer
+} from "@/components/ui/icons";
 import LoadingWaveform from "@/components/ui/LoadingWaveform.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
@@ -898,14 +904,32 @@ const initializeAudioContext = async () => {
       />
     </div>
 
-    <!-- Edit mode: the editor takes the stage; the dock below keeps playing. -->
+    <!-- Edit mode: the editor takes the stage; the dock below keeps playing.
+         "Vista previa" hides it (kept mounted, so nothing is lost) and shows the stage. -->
     <div
       v-if="uiStore.editMode"
+      v-show="!uiStore.editorPreview"
       class="relative z-10 flex min-h-0 flex-1 flex-col px-2.5 py-2.5 md:px-3.5 md:py-3"
     >
       <EditorPanels :tab="uiStore.editTab ?? 'cancion'" />
     </div>
 
+    <div
+      v-if="uiStore.editMode && uiStore.editorPreview"
+      class="pointer-events-none absolute inset-x-0 top-[88px] z-20 flex justify-center md:top-[96px]"
+    >
+      <button
+        class="glass-3 btn btn-sm pointer-events-auto gap-2 rounded-full border-0 font-semibold"
+        data-testid="exit-preview"
+        @click="uiStore.setEditorPreview(false)"
+      >
+        <IconEdit class="size-4" />
+        Vista previa · Volver a editar
+        <kbd class="kbd kbd-xs">P</kbd>
+      </button>
+    </div>
+
+    <template v-if="uiStore.editMode && !uiStore.editorPreview" />
     <!-- Stage: the lyrics. Never inside glass (gradient text vanishes under backdrop-filter). -->
     <div
       v-else-if="lyrics.length > 0"

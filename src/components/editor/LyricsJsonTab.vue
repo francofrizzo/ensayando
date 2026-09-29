@@ -11,12 +11,23 @@ import {
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import JsonEditor from "@/components/editor/JsonEditor.vue";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
+import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useEditorTab } from "@/composables/useEditorSession";
 import lyricSchema from "@/data/lyric-schema.json";
 import { useCollectionsStore } from "@/stores/collections";
 
 const store = useCollectionsStore();
 const { updateLocalLyrics } = store;
+const { currentCollection } = useCurrentCollection();
+const { trackColor } = useCollectionPalette(currentCollection);
+
+// audio_track_ids uses these numbers, and they no longer show in the mixer.
+const trackLegend = computed(() =>
+  [...(store.currentSong?.audio_tracks ?? [])]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((track) => ({ id: track.id, title: track.title, ink: trackColor(track.color_key, "lyric") }))
+);
 
 const hasValidationErrors = ref(false);
 const editorRef = ref<{ get: () => Content; set: (content: Content) => void } | null>(null);
@@ -101,6 +112,20 @@ defineExpose({
 
 <template>
   <div class="flex h-full flex-col">
+    <div
+      v-if="trackLegend.length"
+      class="border-base-content/8 flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-2 text-[12.5px]"
+      data-testid="json-track-legend"
+    >
+      <span class="text-base-content/50 text-[11px] font-semibold tracking-[0.1em] uppercase">
+        Pistas
+      </span>
+      <span v-for="track in trackLegend" :key="track.id" class="flex items-center gap-1.5">
+        <span class="size-2 rounded-full" :style="{ background: track.ink }" />
+        <span class="font-mono font-semibold">#{{ track.id }}</span>
+        <span class="text-base-content/70">{{ track.title }}</span>
+      </span>
+    </div>
     <JsonEditor
       ref="editorRef"
       :content="initialContent"

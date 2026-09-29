@@ -89,5 +89,8 @@ export {
   IconBubbleX as IconNoLyrics,
   IconCornerDownLeft as IconEnter,
   IconArrowsUpDown as IconUpDown,
-  IconRotateClockwise as IconRetry
+  IconRotateClockwise as IconRetry,
+  IconFocus2 as IconFollowPlayback,
+  IconPresentation as IconPreview,
+  IconArrowRight as IconGoTo
 } from "@tabler/icons-vue";
