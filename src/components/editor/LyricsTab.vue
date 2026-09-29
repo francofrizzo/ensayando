@@ -18,6 +18,8 @@ import { useUIStore } from "@/stores/ui";
 import { isTypingTarget } from "@/utils/keys";
 import {
   activeVerseKeys,
+  copyColorsAndTracks,
+  createEmptyLyrics,
   adjacentPosition,
   getVerseAt,
   moveItemTo,
@@ -48,10 +50,9 @@ const handleSave = () => {
   void session.save();
 };
 
-const EMPTY_LYRICS: LyricStanza[] = [[{ text: "", start_time: undefined, end_time: undefined }]];
-
+// A fresh empty verse each time the lyrics become empty (the editor writes into it).
 const lyricsToDisplay = computed<LyricStanza[]>(() =>
-  store.localLyrics.value.length === 0 ? EMPTY_LYRICS : store.localLyrics.value
+  store.localLyrics.value.length === 0 ? createEmptyLyrics() : store.localLyrics.value
 );
 
 const {
@@ -171,6 +172,17 @@ const onToggleTrack = (id: number) =>
   apply(toggleTrackInVerses(lyricsToDisplay.value, effectiveSelection.value, id));
 const onSetComment = (comment: string | undefined) =>
   apply(setCommentInVerses(lyricsToDisplay.value, effectiveSelection.value, comment));
+// "Copiar de este verso": the focused verse is the source.
+const copyAnchor = computed(() => {
+  const focus = currentFocus.value;
+  const selected = effectiveSelection.value;
+  if (focus && selected.some((p) => positionKey(p) === positionKey(focus))) return focus;
+  return selected[0] ?? null;
+});
+const onCopyFromAnchor = () => {
+  if (!copyAnchor.value) return;
+  apply(copyColorsAndTracks(lyricsToDisplay.value, copyAnchor.value, effectiveSelection.value));
+};
 const onSetTime = (which: "start" | "end", value: number | undefined) =>
   apply(
     updateVerses(lyricsToDisplay.value, effectiveSelection.value.slice(0, 1), (verse) => {
@@ -447,10 +459,12 @@ defineExpose({
       :tracks="availableAudioTracks"
       :track-ink="trackInk"
       :command-registry="commandRegistry"
+      :anchor="copyAnchor"
       @toggle-color="onToggleColor"
       @toggle-track="onToggleTrack"
       @set-comment="onSetComment"
       @set-time="onSetTime"
+      @copy-from-anchor="onCopyFromAnchor"
     />
 
     <Transition name="sheet">
@@ -468,10 +482,12 @@ defineExpose({
           :tracks="availableAudioTracks"
           :track-ink="trackInk"
           :command-registry="commandRegistry"
+          :anchor="copyAnchor"
           @toggle-color="onToggleColor"
           @toggle-track="onToggleTrack"
           @set-comment="onSetComment"
           @set-time="onSetTime"
+          @copy-from-anchor="onCopyFromAnchor"
           @close="inspectorSheetOpen = false"
         />
       </div>

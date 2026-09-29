@@ -24,6 +24,8 @@ const props = defineProps<{
   tracks: AudioTrack[];
   trackInk: (colorKey: string) => string;
   commandRegistry: CommandRegistry;
+  /** The verse "Copiar de este verso" copies from (the focused one). */
+  anchor?: FocusPosition | null;
   /** Phone: shown as a bottom sheet with a close button. */
   sheet?: boolean;
 }>();
@@ -33,8 +35,14 @@ const emit = defineEmits<{
   "toggle-track": [id: number];
   "set-comment": [comment: string | undefined];
   "set-time": [which: "start" | "end", value: number | undefined];
+  "copy-from-anchor": [];
   close: [];
 }>();
+
+const anchorText = computed(() => {
+  if (props.selection.length < 2 || !props.anchor) return null;
+  return getVerseAt(props.lyrics, props.anchor)?.text.trim() || "(sin texto)";
+});
 
 const single = computed(() => (props.selection.length === 1 ? props.selection[0]! : null));
 const verse = computed(() => (single.value ? getVerseAt(props.lyrics, single.value) : null));
@@ -140,6 +148,16 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
         >
           Los cambios se aplican a todos. ⇧+clic amplía, ⌘+clic suma o quita.
         </p>
+        <button
+          v-if="anchorText"
+          class="btn btn-soft btn-xs mt-2 max-w-full justify-start rounded-full"
+          data-testid="inspector-copy-from-anchor"
+          :title="`Todos quedan con los colores y pistas de “${anchorText}”`"
+          @click="emit('copy-from-anchor')"
+        >
+          <IconCopy class="size-3.5 shrink-0" />
+          <span class="truncate">Copiar colores y pistas de “{{ anchorText }}”</span>
+        </button>
         <p v-else-if="single" class="text-base-content/55 mt-1 truncate text-[12.5px]">
           {{ where }}
         </p>
