@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
+/* themes: false — only our own light and dark below. DaisyUI's built-in ones were also
+   emitted, and in the production build its light theme's selector (minified into a
+   high-specificity :is()) beat ours, so an explicit light theme showed its violet. */
 @plugin "daisyui" {
+  themes: false;
   exclude: rootscrollgutter;
 }
 
