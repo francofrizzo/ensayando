@@ -220,7 +220,7 @@ track_colors
       <div class="note"><span class="tag refine">Límite</span><b>Entran unos 8 a 10 colores</b><p>Con claridad y croma fijos, dos pistas se distinguen solo por tono. A partir de unos 25° de distancia se separan bien; por debajo, el editor avisa. Para coros grandes, alcanza combinando tono con intensidad (una voz suave y otra intensa del mismo tono) o dejando neutras las pistas de referencia.</p></div>
       <div class="note"><span class="tag refine">Límite</span><b>Amarillos que tiran a ocre</b><p>A la claridad de la letra en claro, un amarillo no puede ser brillante: queda ocre o mostaza. Es el precio de que se lea sobre blanco. En oscuro vuelve a ser amarillo.</p></div>
       <div class="note"><span class="tag refine">Límite</span><b>Fuera de gama</b><p id="gamut-note">…</p></div>
-      <div class="note"><span class="tag moved">Migración</span><b>De colores a tonos</b><p>Un script con <span class="mono">culori</span> (ya es dependencia) lee <span class="mono">main_color</span> y cada valor de <span class="mono">track_colors</span>, sea <span class="mono">oklch(…)</span> o hex, y guarda su tono. El croma se lleva a la intensidad más cercana: menos de 0,04 pasa a neutra, hasta 0,115 a suave, hasta 0,18 a normal, y más, a intensa. Las columnas viejas se dejan hasta confirmar que nada se ve peor.</p></div>
+      <div class="note"><span class="tag moved">Migración</span><b>De colores a tonos</b><p>La misma migración de SQL que agrega <span class="mono">hue</span> e <span class="mono">intensity</span> convierte los datos: lee <span class="mono">main_color</span> y cada valor de <span class="mono">track_colors</span>, sea <span class="mono">oklch(…)</span> o hex, guarda su tono y lleva el croma a la intensidad más cercana (menos de 0,04 neutra, hasta 0,115 suave, hasta 0,18 normal, y más, intensa). Después borra <span class="mono">main_color</span>; los valores de <span class="mono">track_colors</span> se reemplazan en el lugar. Todo cambia junto en un solo despliegue: no hay columnas viejas ni clientes viejos que cuidar. La lógica se repite en TypeScript, con los mismos ejemplos en los tests.</p></div>
     </div>
   </section>
 
@@ -329,7 +329,7 @@ function renderRoles() {
     ["Relleno", "botones, reproducir, lo seleccionado", [L.fill, k, h], [D.fill, k, h]],
     ["Texto de la colección", "íconos y enlaces sobre la sala", [L.ci, Math.min(k, L.cic), h], [D.ci, Math.min(k, D.cic), h]],
     ["Letra de pista", "tinta de los versos", [L.lyr, k, h], [D.lyr, k, h]],
-    ["Onda y punto", "ondas, puntos, línea de tiempo", [L.wav, k, h], [D.wav, k, h]],
+    ["Onda y punto", "ondas, puntos, barra de progreso", [L.wav, k, h], [D.wav, k, h]],
     ["Fondo suave", "Mi parte, pestaña activa", [L.csl, k * L.csk, h], [D.csl, k * D.csk, h]],
     ["Borde", "lo seleccionado sin relleno", [L.cll, k * L.clk, h], [D.cll, k * D.clk, h]],
   ];

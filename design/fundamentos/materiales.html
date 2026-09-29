@@ -106,8 +106,10 @@
     </div>
     <div class="grid-3">
       <div class="note"><b>Tres manchas</b><p>Colección arriba a la izquierda, primera pista arriba a la derecha, segunda pista abajo. Intensidad 16 % en claro y 24 % en oscuro: se nota como clima, no como color (<span class="mono">--amb-o</span>).</p></div>
-      <div class="note"><b>Portada</b><p>Solo si la colección tiene portada. La portada a 80 px de desenfoque y saturada 1,6. Da la misma sensación que las manchas, pero con la identidad visual de cada obra.</p></div>
-      <div class="note"><b>Costo</b><p>Es una capa fija con degradés; no se recalcula por cuadro. La respiración anima solo <span class="mono">transform</span> y <span class="mono">opacity</span>, que no fuerzan repintado en el teléfono.</p></div>
+      <div class="note"><b>Portada</b><p>Solo si la colección tiene portada y el interruptor "Usar la portada como luz de sala" está activo en General. La portada a 80 px de desenfoque y saturada 1,6. Da la misma sensación que las manchas, pero con la identidad visual de cada obra.</p></div>
+      <div class="note"><b>Costo</b><p>Es una capa fija con degradés; no se recalcula por cuadro. En el teléfono y con movimiento reducido queda quieta. En escritorio respira mientras suena, animando solo <span class="mono">transform</span> y <span class="mono">opacity</span> en su propia capa. Antes de activarla hay que medirla en un iPhone: animar debajo de dos vidrios obliga a recalcular el desenfoque.</p></div>
+      <div class="note"><b>Letra fuera del vidrio</b><p>La letra con degradé entre dos pistas nunca vive dentro de un contenedor con <span class="mono">backdrop-filter</span>: en Chromium el texto recortado sobre el fondo desaparece. El escenario no es vidrio; el vidrio son las barras, el dock y los menús.</p></div>
+      <div class="note"><b>Colores calculados en la app</b><p>El deck usa la sintaxis relativa de CSS (<span class="mono">oklch(from …)</span>) como maqueta. En la app, que se usa mucho en iPhone, los colores se calculan en JavaScript con <span class="mono">culori</span>, ajustados a la gama de la pantalla, y se inyectan como variables con valores finales.</p></div>
     </div>
   </section>
 
@@ -176,7 +178,7 @@
   </section>
 
   <section class="sec">
-    <div class="sec-h"><h2 class="d">Íconos</h2><p>Tabler, como hoy, siempre a través de <span class="mono">icons.ts</span> con nombres por significado. Trazo 1,75 (hoy 2) para que acompañen a Bricolage sin engordar. Rellenos solo en el transporte. Estos son los que usa la propuesta:</p></div>
+    <div class="sec-h"><h2 class="d">Íconos</h2><p>Tabler, como hoy, siempre a través de <span class="mono">icons.ts</span> con nombres por significado. Trazo 1,75 (hoy 2) para que acompañen a Bricolage sin engordar. Rellenos solo en el transporte. Estos son los principales:</p></div>
     <div class="icgrid" id="icgrid"></div>
   </section>
 

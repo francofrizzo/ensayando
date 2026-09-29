@@ -81,7 +81,7 @@
 .srow .ttl span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .srow .info { display: flex; gap: 6px; }
 .srow .dur { font: 500 12.5px/1 var(--mono); color: var(--muted); }
-.srow.drag { background: var(--raised); box-shadow: 0 0 0 1.5px var(--c-ink), var(--shadow-float); transform: translateX(8px) rotate(-0.4deg); position: relative; z-index: 2; }
+.srow.drag { background: var(--raised); box-shadow: 0 0 0 1.5px var(--c-ink), var(--shadow-float); transform: translateX(3px) rotate(-0.4deg); width: calc(100% - 8px); position: relative; z-index: 2; }
 .srow.ghost { background: repeating-linear-gradient(135deg, var(--c-soft) 0 8px, transparent 8px 16px); box-shadow: inset 0 0 0 1.5px dashed var(--c-line); height: 46px; }
 .srow.hid .ttl { color: var(--muted); }
 
@@ -162,7 +162,7 @@
       <li><span><b>Secciones en vidrio</b>Menú fijo a la izquierda. La zona de peligro va aparte, en rojo, al final.</span></li>
       <li><span><b>Dirección con aviso</b>Cambiar la dirección rompe los enlaces viejos. Se avisa antes de guardar, no después.</span></li>
       <li><span><b>Visibilidad en tarjetas</b>Tres opciones con lo que significa cada una, en lugar de las palabras de la base.</span></li>
-      <li><span><b>Portada</b>Se sube arrastrando. Se usa en la biblioteca y como luz de sala del reproductor.</span></li>
+      <li><span><b>Portada</b>Se sube arrastrando; solo admins de la colección (hoy también pueden editores). Se recorta en el banner de inicio, se usa en la pantalla de bloqueo y, si el interruptor está activo, como luz de sala.</span></li>
       <li><span><b>Barra de guardado</b>Aparece solo con cambios. Dice cuántos son y permite descartarlos.</span></li>
     </ol>
   </section>
@@ -307,8 +307,9 @@
       </div>
     </div>
     <div class="card sheet">
-      <div class="m-col" style="gap:12px"><h4>Portada</h4><p class="help" style="margin:0">Opcional. Cuadrada, al menos 1000 × 1000 px. Si la cargás, se ve en la biblioteca y, desenfocada, como luz de fondo del reproductor. Sin portada no hay reemplazo ni espacio reservado.</p>
+      <div class="m-col" style="gap:12px"><h4>Portada</h4><p class="help" style="margin:0">Opcional. Cuadrada, al menos 1000 × 1000 px. Si la cargás, se ve en la biblioteca, recortada en el banner de inicio, en la pantalla de bloqueo del teléfono y, desenfocada, como luz de fondo del reproductor. Sin portada no hay reemplazo ni espacio reservado (en inicio se usa el banner generado).</p>
         <div class="drop"><i data-ic="photo"></i><span>Esta colección no tiene portada. Arrastrá una imagen o <b style="color:var(--c-ink)">elegí un archivo</b>. JPG, PNG o WebP.</span></div>
+        <div class="m-row" style="justify-content:space-between;gap:12px"><span class="sm">Usar la portada como luz de sala</span><span class="tgl on"></span></div>
       </div>
     </div>
     <div class="savebar g3"><span class="msg"><i class="dotc"></i>2 cambios sin guardar</span><div class="m-grow"></div><span class="b sm">Descartar</span><span class="b sm fill"><i data-ic="check"></i>Guardar</span></div>

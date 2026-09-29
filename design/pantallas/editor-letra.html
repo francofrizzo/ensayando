@@ -150,10 +150,11 @@
     <div class="sec-h"><h2 class="d">Qué cambia</h2></div>
     <div class="grid-3">
       <div class="note"><span class="tag new">Nuevo</span><b>Inspector del verso</b><p>Colores, pistas, comentario y tiempos del verso seleccionado, en un panel a la derecha con etiquetas y valores. Hoy son dos selectores desplegables y un botón de comentario dentro de la barra.</p></div>
-      <div class="note"><span class="tag refine">Ajuste</span><b>Selección múltiple en lugar de “copiar propiedades”</b><p>Hoy <kbd>⌘</kbd><kbd>K</kbd> entra a un modo donde cada clic copia colores y pistas a otro verso, y se sale con <kbd>Esc</kbd>. Con <kbd>⇧</kbd>+clic se seleccionan varios versos y el inspector los edita juntos. El atajo sigue existiendo y ahora selecciona.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Selección múltiple en lugar de “copiar propiedades”</b><p>Hoy <kbd>⌘</kbd><kbd>K</kbd> entra a un modo donde cada clic copia colores y pistas a otro verso, y se sale con <kbd>Esc</kbd>. Con <kbd>⇧</kbd>+clic se seleccionan varios versos y el inspector los edita juntos. Ese modo se quita y pierde su atajo: <kbd>⌘</kbd><kbd>K</kbd> abre la búsqueda global, también en el editor.</p></div>
       <div class="note"><span class="tag refine">Ajuste</span><b>Barra corta y con palabras</b><p>Deshacer y Rehacer como íconos; el resto agrupado en dos menús con texto y atajo: Insertar y Estructura. Mostrar tiempos pasa a un interruptor con nombre.</p></div>
       <div class="note"><span class="tag new">Nuevo</span><b>Pestaña Sincronizar</b><p>Marcar tiempos tiene su propio modo: verso actual grande, la onda con cada verso como región que se arrastra, el botón Marcar y la corrección por reacción a la vista. Hoy es un rango escondido en un desplegable de 10 px.</p></div>
-      <div class="note"><span class="tag keep">Se mantiene</span><b>Todos los atajos</b><p>Los 33 comandos de hoy conservan su tecla. La hoja de ayuda se agrupa en seis bloques y se puede buscar.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Casi todos los atajos</b><p>Los comandos de hoy conservan su tecla, salvo copiar propiedades (se reemplaza por la selección múltiple; <kbd>⌘</kbd><kbd>K</kbd> pasa a ser la búsqueda global). La hoja de ayuda se agrupa en seis bloques y se puede buscar.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Ver la letra mientras suena</b><p>Hoy, en escritorio, el editor se abre al lado del reproductor y se ve el verso activo en tiempo real. En la hoja de Letra, el verso que está sonando se resalta; con <b>Seguir reproducción</b> la hoja lo acompaña sola. <b>Vista previa</b> (<kbd>P</kbd>) vuelve al escenario con los cambios sin guardar, sin salir del modo edición.</p></div>
       <div class="note"><span class="tag moved">Pasa al menú</span><b>JSON</b><p>La pestaña “Letra (JSON)” pasa a ⋯ &gt; Editar como JSON (avanzado). Sigue disponible y con la misma validación contra el esquema.</p></div>
     </div>
   </section>
@@ -181,7 +182,7 @@
           <div class="tbar">
             <div class="grp"><span class="b sm icon"><i data-ic="undo"></i></span><span class="b sm icon"><i data-ic="redo"></i></span></div>
             <div class="grp"><span class="b sm"><i data-ic="plus"></i>Insertar<i data-ic="chevDown"></i></span><span class="b sm"><i data-ic="columns"></i>Estructura<i data-ic="chevDown"></i></span></div>
-            <div class="grp"><span class="m-row" style="gap:8px;padding:0 8px;font:600 13px/1 var(--ui)"><span class="tgl on"></span>Mostrar tiempos</span></div>
+            <div class="grp"><span class="m-row" style="gap:8px;padding:0 8px;font:600 13px/1 var(--ui)"><span class="tgl on"></span>Tiempos</span><span class="m-row" style="gap:8px;padding:0 8px;font:600 13px/1 var(--ui);white-space:nowrap"><span class="tgl"></span>Seguir</span><span class="b sm soft" title="Vista previa"><i data-ic="eye"></i>Vista previa</span></div>
             <div class="m-grow"></div>
             <span class="b sm muted"><i data-ic="keyboard"></i>Atajos<kbd>F1</kbd></span>
           </div>
@@ -263,8 +264,8 @@
           <li>Verso antes/después, duplicar: Insertar.</li>
           <li>Columnas: Estructura.</li>
           <li>Colores, pistas, comentario: inspector.</li>
-          <li>Copiar propiedades: selección múltiple.</li>
-          <li>Mostrar tiempos: interruptor.</li>
+          <li>Copiar propiedades: selección múltiple. Pierde <kbd>⌘</kbd><kbd>K</kbd>, que pasa a la búsqueda global.</li>
+          <li>Mostrar tiempos: interruptor "Tiempos". Al lado, "Seguir" (seguir reproducción) y Vista previa.</li>
           <li>Marcar inicio, fin, limpiar, corrección: Sincronizar y el inspector.</li>
         </ul>
       </div>
@@ -328,10 +329,10 @@
       </div>
     </div></div>
     <ol class="legend">
-      <li><span><b>Verso a marcar</b>El que suena ahora, en grande, con el anterior y el siguiente. Los versos en columnas se marcan juntos.</span></li>
+      <li><span><b>Verso a marcar</b>El que suena ahora, en grande, con el anterior y el siguiente. Los versos en columnas se marcan juntos: comportamiento nuevo, con su test (hoy cada columna se marca aparte).</span></li>
       <li><span><b>Lista de versos</b>Con su inicio o “sin tiempo”. Clic en un verso lo elige como punto de partida y salta a su tiempo (<kbd>⌘</kbd><kbd>G</kbd>).</span></li>
-      <li><span><b>Marcar</b>El botón más grande de la pantalla. <kbd>↓</kbd> marca el inicio, resta la corrección y avanza. <kbd>⌘</kbd><kbd>,</kbd> y <kbd>⌘</kbd><kbd>.</kbd> siguen marcando inicio o fin sin avanzar.</span></li>
-      <li><span><b>Corrección por reacción</b>La de hoy, a la vista y en décimas. Se recuerda por persona. Se resta a cada marca.</span></li>
+      <li><span><b>Marcar</b>El botón más grande de la pantalla. En Sincronizar no hay cursor de texto, así que <kbd>↓</kbd> solo alcanza: marca el inicio, resta la corrección y avanza. En Letra sigue siendo <kbd>⌘</kbd><kbd>↓</kbd>. Mientras se edita, los atajos del reproductor para saltar de estrofa (<kbd>↑</kbd><kbd>↓</kbd>) se desactivan. <kbd>⌘</kbd><kbd>,</kbd> y <kbd>⌘</kbd><kbd>.</kbd> siguen marcando inicio o fin sin avanzar.</span></li>
+      <li><span><b>Corrección por reacción</b>La de hoy, a la vista y en décimas. Se resta a cada marca. <span class="tag new" style="margin:2px 0">Nuevo</span> Se recuerda en el dispositivo (hoy se pierde al recargar).</span></li>
       <li><span><b>Regiones</b>Cada verso marcado es una región en la tinta de su pista. Se arrastran los bordes; con uno seleccionado, <kbd>←</kbd> <kbd>→</kbd> lo mueven 0,1 s.</span></li>
       <li><span><b>Ondas por pista</b>Las mismas de la mezcladora, finas. Ayudan a ver dónde entra cada voz.</span></li>
     </ol>
@@ -383,7 +384,7 @@
       </div>
       <div class="stack">
         <div class="note"><span class="tag new">Nuevo</span><b>Pegar letra desde texto</b><p>Cada línea es un verso y cada línea en blanco separa estrofas. Una línea entre corchetes, como <span class="mono">[Coro]</span>, se vuelve el comentario del verso siguiente. Es la manera más rápida de empezar una canción nueva; hoy se hace verso por verso o escribiendo JSON.</p></div>
-        <div class="note"><span class="tag moved">Pasa al menú</span><b>Editar como JSON</b><p>Abre el editor JSON de hoy en una hoja completa, con la validación del esquema de <span class="mono">lyric-schema.json</span>. Al volver, los cambios se integran al historial de Deshacer.</p></div>
+        <div class="note"><span class="tag moved">Pasa al menú</span><b>Editar como JSON</b><p>Abre el editor JSON de hoy en una hoja completa, con la validación del esquema de <span class="mono">lyric-schema.json</span>. Al volver, los cambios se integran al historial de Deshacer. Arriba muestra la referencia de pistas (<span class="mono">#12 Soprano</span>, <span class="mono">#13 Contralto</span>…), porque <span class="mono">audio_track_ids</span> usa esos números y el número ya no aparece en la mezcladora.</p></div>
         <div class="note"><span class="tag drop">Se quita</span><b>Copiador de tiempos del reproductor</b><p><kbd>⌘</kbd><kbd>,</kbd> y <kbd>⌘</kbd><kbd>.</kbd> fuera del editor copiaban un fragmento de JSON al portapapeles. Adentro del editor esas teclas ya marcan el tiempo directamente.</p></div>
       </div>
     </div>
@@ -528,8 +529,8 @@
     ["Moverse", [["Verso anterior o siguiente", ["↑", "↓"]], ["Dentro del texto o entre columnas", ["←", "→"]], ["Ir al tiempo del verso", ["⌘", "G"]]]],
     ["Versos", [["Verso después", ["↵"]], ["Verso antes", ["⌥", "↵"]], ["Verso fuera de columnas", ["⇧", "↵"]], ["Duplicar verso", ["⌘", "D"]], ["Eliminar verso", ["⌘", "⌫"]], ["Borrar verso vacío", ["⌫"]], ["Mover verso", ["⌘", "⇧", "↑↓"]]]],
     ["Columnas y estrofas", [["Convertir en columnas", ["⌘", "]"]], ["Columna a la derecha", ["⌘", "]"]], ["Columna a la izquierda", ["⌘", "["]], ["Estrofa nueva", ["⌘", "↵"]], ["Dividir estrofa", ["⌘", "⇧", "↵"]], ["Unir con la anterior", ["⌘", "⇧", "⌫"]]]],
-    ["Tiempos", [["Marcar inicio y avanzar", ["⌘", "↓"]], ["Marcar inicio", ["⌘", ","]], ["Marcar fin", ["⌘", "."]], ["Limpiar inicio", ["⌘", "⇧", ","]], ["Limpiar fin", ["⌘", "⇧", "."]], ["Limpiar ambos", ["⌘", "/"]], ["Limpiar la estrofa", ["⌘", "⇧", "/"]]]],
-    ["Selección y propiedades", [["Extender selección", ["⇧", "clic"]], ["Sumar un verso", ["⌘", "clic"]], ["Seleccionar para copiar propiedades", ["⌘", "K"]], ["Soltar la selección", ["Esc"]]]],
+    ["Tiempos", [["Marcar inicio y avanzar (en Letra)", ["⌘", "↓"]], ["Marcar inicio y avanzar (en Sincronizar)", ["↓"]], ["Marcar inicio", ["⌘", ","]], ["Marcar fin", ["⌘", "."]], ["Limpiar inicio", ["⌘", "⇧", ","]], ["Limpiar fin", ["⌘", "⇧", "."]], ["Limpiar ambos", ["⌘", "/"]], ["Limpiar la estrofa", ["⌘", "⇧", "/"]]]],
+    ["Selección y propiedades", [["Extender selección", ["⇧", "clic"]], ["Sumar un verso", ["⌘", "clic"]], ["Soltar la selección", ["Esc"]]]],
     ["General", [["Deshacer", ["⌘", "Z"]], ["Rehacer", ["⌘", "⇧", "Z"]], ["Guardar", ["⌘", "S"]], ["Reproducir o pausar", ["⌃", "Espacio"]], ["Esta ayuda", ["F1"]]]],
   ];
   document.getElementById("kgrid").innerHTML = K.map(([g, items]) => `<div class="kgrp"><div class="mh" style="border:0">${g}</div>${items.map(([d, ks]) => `<div><span>${d}</span><span>${ks.map((k) => `<kbd>${k}</kbd>`).join("")}</span></div>`).join("")}</div>`).join("");

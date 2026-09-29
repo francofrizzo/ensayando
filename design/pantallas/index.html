@@ -191,7 +191,7 @@
       <table class="spec">
         <thead><tr><th>Ruta</th><th>Hoy</th><th>Propuesta</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>/</code></td><td>Redirige a la primera colección.</td><td>Con dos o más colecciones, Inicio con la grilla. Con una, redirige como hoy.</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td><code>/</code></td><td>Redirige a la primera colección.</td><td>Sigue pidiendo sesión. Con dos o más colecciones de las que la persona es miembro, Inicio con la grilla; con una, redirige como hoy. Las públicas de las que no es miembro no cuentan para esa regla ni aparecen en la grilla: siguen en "Otras colecciones" de la biblioteca, como hoy.</td><td><span class="tag new">Nuevo</span></td></tr>
           <tr><td><code>/:colección</code></td><td>Redirige a la primera canción.</td><td>Igual. Si la colección no tiene canciones, vacío con "Crear canción" para editores.</td><td><span class="tag keep">Se mantiene</span></td></tr>
           <tr><td><code>/:colección/:canción</code></td><td>Reproductor.</td><td>Reproductor.</td><td><span class="tag keep">Se mantiene</span></td></tr>
           <tr><td><code>…/:canción?editar=cancion</code><br><code>?editar=letra</code> · <code>?editar=sincronizar</code></td><td>Cajón del editor, sin dirección propia.</td><td>Modo edición en la pestaña indicada. Sin permiso de edición, se ignora el parámetro.</td><td><span class="tag new">Nuevo</span></td></tr>
@@ -203,7 +203,7 @@
         </tbody>
       </table>
     </div>
-    <p class="sm muted">Una dirección de colección que choque con <code class="mono">nueva-coleccion</code>, <code class="mono">login</code> o <code class="mono">404</code> se rechaza al crearla o renombrarla.</p>
+    <p class="sm muted">Una dirección de colección que choque con <code class="mono">nueva-coleccion</code>, <code class="mono">login</code> o <code class="mono">404</code> se rechaza al crearla o renombrarla. Lo mismo para canciones que se llamen <code class="mono">nueva</code>, <code class="mono">ajustes</code> o <code class="mono">editar</code>: se valida en el formulario y en la base, y las que ya existan se renombran en la migración.</p>
   </section>
 
   <section class="sec">
@@ -216,14 +216,14 @@
     </div>
     <div class="scroll-x">
       <table class="spec perm">
-        <thead><tr><th>Acción</th><th>Público</th><th>Lectura</th><th>Editor</th><th>Admin de colección</th><th>Admin de la app</th></tr></thead>
+        <thead><tr><th>Acción</th><th>Público</th><th>Lector</th><th>Editor</th><th>Admin de colección</th><th>Admin de la app</th></tr></thead>
         <tbody id="perm"></tbody>
       </table>
     </div>
     <div class="grid-3">
       <div class="note"><b>Público</b><p>Cualquiera con el link de una colección pública o no listada, sin sesión. Solo escucha. Mi parte funciona porque vive en el dispositivo.</p></div>
       <div class="note"><b>Admin de colección</b><p>Maneja todo lo de su colección, incluidos los miembros. Puede sumar personas que ya tienen cuenta; crear cuentas nuevas queda a decidir.</p></div>
-      <div class="note"><b>Admin de la app</b><p>Una lista corta de personas (hoy, quien corre la skill). Es admin de todas las colecciones sin figurar como miembro, y crea colecciones y cuentas.</p></div>
+      <div class="note"><b>Admin de la app</b><p>Una lista corta de personas (hoy, quien corre la skill). Crea colecciones y cuentas. No ve todas las colecciones automáticamente: al crear una queda como su admin, igual que cualquier otro miembro. Así las políticas de acceso no cambian.</p></div>
     </div>
   </section>
 </div>
@@ -245,14 +245,15 @@
     ["Sincronizar la letra", "- - n n n"],
     ["Crear canción", "- - h h h"],
     ["Ocultar o mostrar canción", "- - h h h"],
-    ["Ordenar canciones", "- - q s s"],
+    ["Ordenar canciones", "- - - s s"],
     ["Eliminar canciones", "- - - s s"],
     ["Colores y portada", "- - - s s"],
     ["Nombre, dirección y visibilidad", "- - - s s"],
     ["Sumar y quitar miembros, cambiar roles", "- - - s s"],
     ["Restablecer contraseña de una cuenta administrada", "- - - q s"],
     ["Crear cuentas", "- - - q s"],
-    ["Crear y eliminar colecciones", "- - - - s"],
+    ["Eliminar la colección", "- - - s s"],
+    ["Crear colecciones", "- - - - s"],
   ];
   const CELL = { h: '<span class="yes">✓</span>', n: '<span class="yes new">✓</span>', s: '<span class="yes sql">✓</span>', q: '<span class="q">?</span>', "-": '<span class="no">·</span>' };
   document.getElementById("perm").innerHTML = ROWS.map(([a, v]) => `<tr><td>${a}</td>${v.split(" ").map((x) => `<td>${CELL[x]}</td>`).join("")}</tr>`).join("");

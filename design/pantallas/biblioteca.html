@@ -61,6 +61,7 @@
 
 /* ---------- inicio ---------- */
 .home { position: absolute; inset: 0; overflow: hidden; }
+.app.desk#home-desk { height: 480px; }
 .home-bar { position: absolute; left: 14px; right: 14px; top: 14px; height: 60px; border-radius: 18px; display: flex; align-items: center; gap: 12px; padding: 0 14px 0 12px; }
 .home-bar img { width: 34px; height: 34px; border-radius: 9px; }
 .home-bar b { font: 700 18px/1 var(--ui); letter-spacing: -0.01em; }
@@ -112,9 +113,10 @@
     <div class="grid-3">
       <div class="note"><span class="tag refine">Ajuste</span><b>Del menú a la biblioteca</b><p>Se abre desde el nombre de la colección en la barra superior, no desde un botón de menú de color pleno. Muestra la colección con su estado (y su portada, solo si tiene una), y cada canción con número, duración y si tiene letra.</p></div>
       <div class="note"><span class="tag new">Nuevo</span><b>Búsqueda y paleta de comandos</b><p>Un campo arriba de la lista filtra las canciones. <kbd>⌘</kbd><kbd>K</kbd> abre una búsqueda global que encuentra canciones de cualquier colección y acciones como Descargar mezcla o Cambiar tema.</p></div>
-      <div class="note"><span class="tag new">Nuevo</span><b>Inicio con colecciones</b><p>Con dos o más colecciones, <span class="mono">/</span> muestra una grilla de colecciones, cada una con su banner. Con una sola, se entra directo a ella, como hoy.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Inicio con colecciones</b><p>Con dos o más colecciones de las que sos miembro, <span class="mono">/</span> muestra una grilla de colecciones, cada una con su banner (la portada recortada si tiene, o el banner generado con sus iniciales y su color). Con una sola, se entra directo a ella, como hoy.</p></div>
       <div class="note"><span class="tag keep">Se mantiene</span><b>Íconos de visibilidad</b><p>Mundo para pública, cadena para no listada y candado para privada, al lado del nombre. Hoy el candado no aparece; se agrega para que la visibilidad siempre se lea igual.</p></div>
       <div class="note"><span class="tag moved">Sale del SQL</span><b>Crear y ordenar canciones</b><p>"Nueva canción" deja de estar escondida adentro del editor de otra canción: vive al pie de la lista. Ordenar y eliminar se hacen desde Ajustes de colección, al que se llega con el engranaje.</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Duración</b><p>Cada canción muestra su duración y la colección el total. Sale de una columna nueva, <span class="mono">songs.duration</span>, que se completa al subir el audio; las canciones de hoy la toman de su forma de onda guardada. Sin ese dato, no se muestra.</p></div>
       <div class="note"><span class="tag refine">Ajuste</span><b>Canciones ocultas</b><p>Solo las ven editores y admins, con candado y la etiqueta Oculta. Hoy el candado va en el color de la colección y se confunde con la canción actual.</p></div>
     </div>
   </section>
@@ -174,11 +176,11 @@
 
         <span class="annot solo" data-n="1" style="left:262px;top:30px"></span>
         <span class="annot solo" data-n="2" style="left:344px;top:60px"></span>
-        <span class="annot solo" data-n="3" style="left:398px;top:166px"></span>
-        <span class="annot solo" data-n="4" style="left:398px;top:246px"></span>
-        <span class="annot solo" data-n="5" style="left:398px;top:420px"></span>
-        <span class="annot solo" data-n="6" style="left:398px;top:556px"></span>
-        <span class="annot solo" data-n="7" style="left:398px;top:730px"></span>
+        <span class="annot solo" data-n="3" style="left:344px;top:132px"></span>
+        <span class="annot solo" data-n="4" style="left:196px;top:218px"></span>
+        <span class="annot solo" data-n="5" style="left:290px;top:397px"></span>
+        <span class="annot solo" data-n="6" style="left:272px;top:598px"></span>
+        <span class="annot solo" data-n="7" style="left:268px;top:726px"></span>
       </div>
     </div></div>
     <ol class="legend">
@@ -209,7 +211,7 @@
         </div></div>
       </div>
       <div class="col phone">
-        <div class="cap"><b>Lectura</b><span>viewer</span></div>
+        <div class="cap"><b>Lector</b><span>viewer</span></div>
         <div class="frame" data-w="390"><div class="fit">
           <div class="app phone">
             <div class="amb"></div>
@@ -263,7 +265,7 @@
       </div>
       <div class="col grow">
         <div class="note"><span class="tag keep">Se mantiene</span><b>Una sola colección: directo</b><p>Si la persona tiene una sola colección visible, <span class="mono">/</span> redirige a ella y la barra no muestra un camino de vuelta al inicio. Es el caso más común hoy.</p></div>
-        <div class="note"><span class="tag new">Nuevo</span><b>Orden de las tarjetas</b><p>Primero la última colección abierta en el dispositivo, después el resto por nombre. Las públicas a las que no pertenecés no aparecen acá: se llega a ellas por link.</p></div>
+        <div class="note"><span class="tag new">Nuevo</span><b>Orden de las tarjetas</b><p>Primero la última colección abierta en el dispositivo, después el resto por nombre. Las públicas a las que no pertenecés no aparecen acá: siguen listadas en "Otras colecciones" de la biblioteca, como hoy. Inicio sigue pidiendo sesión.</p></div>
         <div class="note"><span class="tag refine">Ajuste</span><b>Colecciones no listadas</b><p>Si entrás por link a una colección no listada, aparece en "Otras colecciones" de la biblioteca mientras dure la visita, con el ícono de cadena. No se agrega a tu inicio.</p></div>
       </div>
     </div>
@@ -349,7 +351,7 @@
         <div class="top">
           <div style="min-width:0;flex:1">
             <h3>Coro del Puerto · 2026</h3>
-            <div class="badges"><span class="badge">${ic("lock")}Privada</span><span class="badge c">${editor ? ic("crown") + "Admin" : ic("eye") + "Lectura"}</span></div>
+            <div class="badges"><span class="badge">${ic("lock")}Privada</span><span class="badge c">${editor ? ic("crown") + "Admin" : ic("eye") + "Lector"}</span></div>
           </div>
           ${editor ? `<div class="acts"><span class="b icon sm">${ic("settings")}</span></div>` : ""}
         </div>
@@ -372,7 +374,7 @@
   const CARDS = [
     { t: "Coro del Puerto · 2026", i: "CP", c: "oklch(0.5 0.15 300)", a2: "oklch(62% 0.22 350)", n: 7, role: ["crown", "Admin"], vis: ["lock", "Privada"], last: "Vidala del viento" },
     { t: "Taller de musicales", i: "TM", c: "oklch(0.5 0.15 45)", a2: "oklch(62% 0.2 20)", n: 12, role: ["pencil", "Editor"], vis: ["link", "No listada"], last: "La vida en borrador" },
-    { t: "Ensamble vocal abierto", i: "EV", c: "oklch(0.5 0.15 150)", a2: "oklch(65% 0.13 200)", n: 5, role: ["eye", "Lectura"], vis: ["globe", "Pública"], last: null },
+    { t: "Ensamble vocal abierto", i: "EV", c: "oklch(0.5 0.15 150)", a2: "oklch(65% 0.13 200)", n: 5, role: ["eye", "Lector"], vis: ["globe", "Pública"], last: null },
   ];
   function cards(phone) {
     return CARDS.map((k) => `<div class="ccard g2"><span class="art" data-initials="${k.i}" style="--c:${k.c};--a2:${k.a2}"></span>

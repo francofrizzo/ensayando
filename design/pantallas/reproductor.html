@@ -42,7 +42,8 @@
 .p-stage .lyr { gap: 24px; padding: 0 22px; }
 .p-sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 30px; padding: 8px 16px 26px; z-index: 3; display: flex; flex-direction: column; gap: 10px; }
 .grab { width: 38px; height: 5px; border-radius: 3px; background: oklch(from var(--ink) l c h / 0.2); align-self: center; }
-.p-chips { display: flex; gap: 6px; overflow: hidden; }
+.p-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.p-chips::-webkit-scrollbar { display: none; }
 .p-chips > span { --tc: var(--c); display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px 7px 9px; border-radius: 999px; font: 600 12.5px/1 var(--ui); background: oklch(from var(--ink) l c h / 0.06); white-space: nowrap; }
 .p-chips > span.m { color: var(--faint); text-decoration: line-through; }
 .p-chips > span.m .dot { background: var(--faint); box-shadow: none; }
@@ -91,7 +92,8 @@
       <div class="note"><span class="tag new">Nuevo</span><b>Dock de vidrio</b><p>Transporte, tiempo y pistas en una sola pieza flotante. Con las pistas a la vista, las ondas son la línea de tiempo: se toca cualquiera para saltar. Solo donde no hay ondas (dock compacto, teléfono) aparece una barra de progreso simple.</p></div>
       <div class="note"><span class="tag new">Nuevo</span><b>Mi parte</b><p>Cada persona marca sus pistas (por ejemplo, Contralto). Sus versos quedan a pleno y el resto se atenúa. Se recuerda por colección y por dispositivo.</p></div>
       <div class="note"><span class="tag refine">Ajuste</span><b>Solo, silencio y letra visibles</b><p>Hoy el solo es una pulsación larga y el "solo letra" otra, en un botón distinto. Pasan a tres botones chicos por pista: <b>M</b>, <b>S</b> y letra. La pulsación larga queda como atajo, no como único camino.</p></div>
-      <div class="note"><span class="tag moved">Sale de un atajo</span><b>Descargar mezcla</b><p>Hoy existe solo como <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. Pasa al menú de la canción, respeta el volumen de cada pista y muestra el progreso en un aviso.</p></div>
+      <div class="note"><span class="tag refine">Ajuste de comportamiento</span><b>Solo y silencio dejan de tocar el volumen</b><p>Hoy el solo es exclusivo y funciona bajando a cero las demás pistas; al salir, todas vuelven al 100 % y se pierden los volúmenes elegidos. Pasan a ser estados propios de cada pista: puede haber varias en solo y los volúmenes no se reinician. Lo que suena es volumen × no silenciada × (sin solos o en solo). Esa misma ganancia usan la reproducción, la descarga de la mezcla y la sincronización entre pistas.</p></div>
+      <div class="note"><span class="tag moved">Sale de un atajo</span><b>Descargar mezcla</b><p>Hoy existe solo como <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd>. Pasa al menú de la canción, usa la ganancia que está sonando (volumen, silencio, solo y Mi parte), normaliza a −1 dB como hoy y muestra el progreso en un aviso.</p></div>
       <div class="note"><span class="tag drop">Se quita</span><b>Copiador de tiempos</b><p>El aviso que copia <span class="mono">"start_time": 12.40</span> con <kbd>⌘</kbd><kbd>,</kbd> es de cuando la letra se editaba a mano en JSON. Lo reemplaza el modo Sincronizar del editor.</p></div>
     </div>
   </section>
@@ -152,10 +154,10 @@
 
         <span class="annot" data-n="1" style="left:22px;top:84px">Biblioteca</span>
         <span class="annot solo" data-n="2" style="left:748px;top:24px"></span>
-        <span class="annot solo" data-n="3" style="left:870px;top:84px"></span>
+        <span class="annot solo" data-n="3" style="left:1050px;top:24px"></span>
         <span class="annot solo" data-n="4" style="left:392px;top:236px"></span>
         <span class="annot solo" data-n="5" style="left:140px;top:478px"></span>
-                <span class="annot solo" data-n="6" style="left:250px;top:586px"></span>
+                <span class="annot solo" data-n="6" style="left:20px;top:596px"></span>
       </div>
     </div></div>
     <ol class="legend">
@@ -270,8 +272,8 @@
     <div class="zoom sheet tracks-demo" style="position:relative" id="zoom"></div>
     <div class="callouts">
       <div class="note"><b><span class="kbd">M</span> Silenciar</b><p>Toque: silencia o activa la pista. La onda pasa a gris y la fila se apaga. Con <kbd>⇧</kbd>: también oculta su letra (se mantiene el comportamiento de hoy).</p></div>
-      <div class="note"><b><span class="kbd">S</span> Solo</b><p>Toque: deja sonar solo esta pista. Varias pistas pueden estar en solo a la vez. Hoy es una pulsación larga sobre el parlante.</p></div>
-      <div class="note"><b><i data-ic="lyrics"></i> Letra</b><p>Toque: muestra u oculta los versos de la pista. Pulsación larga o <kbd>⌥</kbd>+clic: solo la letra de esta pista. Pintado con la tinta de la pista cuando está activo.</p></div>
+      <div class="note"><b><span class="kbd">S</span> Solo</b><p>Toque: deja sonar solo esta pista. Varias pistas pueden estar en solo a la vez y los volúmenes se conservan. Hoy es una pulsación larga (o <kbd>⌘</kbd>+clic) sobre el parlante; <kbd>⌘</kbd>+clic sobre M sigue haciendo solo.</p></div>
+      <div class="note"><b><i data-ic="lyrics"></i> Letra</b><p>Toque: muestra u oculta los versos de la pista. Pulsación larga o <kbd>⌘</kbd>+clic: solo la letra de esta pista (como hoy). Pintado con la tinta de la pista cuando está activo.</p></div>
       <div class="note"><b><i data-ic="vol"></i> Volumen</b><p>Deslizador en la tinta de la pista. Doble clic vuelve al 100 %. Llevarlo a cero equivale a silenciar.</p></div>
     </div>
   </section>
@@ -353,7 +355,22 @@
     </div>
     <div class="grid-2">
       <div class="note"><span class="tag new">Nuevo</span><b>Selector de tema</b><p>Hoy la app sigue siempre al sistema. Se agrega Sistema, Claro y Oscuro en el menú, recordado en el dispositivo. En ensayo, con poca luz, el oscuro es el que más se usa.</p></div>
-      <div class="note"><span class="tag keep">Se mantiene</span><b>Descarga como MP3</b><p>La mezcla se arma en el navegador con los volúmenes actuales, como hoy. Mientras se codifica, un aviso de vidrio muestra "Preparando la mezcla…" y al terminar la descarga empieza sola.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Descarga como MP3</b><p>La mezcla se arma en el navegador con la ganancia que está sonando y se normaliza a −1 dB, como hoy. Mientras se codifica, un aviso de vidrio muestra "Preparando la mezcla…" y al terminar la descarga empieza sola.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2 class="d">Lo que no se ve y se mantiene</h2>
+      <p>Comportamientos de hoy que el rediseño no toca, o mejora sin cambiar la idea.</p>
+    </div>
+    <div class="grid-3">
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Tocar un verso salta a su tiempo</b><p>Y la letra se centra sola en el verso activo mientras suena.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Carga en iOS</b><p>En iPhone las pistas se cargan una por una, con decodificación diferida y el desbloqueo de audio al primer toque. No se toca: es lo que hace que suene en Safari.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>Una pista que falla no frena la canción</b><p>Hoy, si una pista no carga, Reproducir no se habilita nunca. La pista que falla cuenta como resuelta, queda fuera de la mezcla y no es la referencia de tiempo (hoy se asume la primera).</p></div>
+      <div class="note"><span class="tag new">Nuevo</span><b>Anterior y siguiente en los auriculares</b><p>La sesión multimedia de hoy tiene reproducir, pausar y saltos de 10 s. Se suman canción anterior y siguiente, igual que en el dock.</p></div>
+      <div class="note"><span class="tag keep">Se mantiene</span><b>Portada en la pantalla de bloqueo</b><p>Si la colección tiene portada, se usa como arte en la pantalla de bloqueo, como hoy.</p></div>
+      <div class="note"><span class="tag refine">Ajuste</span><b>App instalada</b><p>Instalada como app, la hoja del teléfono suma el margen inferior del sistema (<span class="mono">safe-area-inset-bottom</span>), como hoy hace el panel colapsado.</p></div>
     </div>
   </section>
 
@@ -366,9 +383,9 @@
       <div><span>Reproducir o pausar</span><span><kbd>Espacio</kbd></span></div>
       <div><span>Retroceder o avanzar 0,1 s</span><span><kbd>←</kbd><kbd>→</kbd></span></div>
       <div><span>Retroceder o avanzar 3 s</span><span><kbd>⇧</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
-      <div><span>Estrofa anterior o siguiente <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>↑</kbd><kbd>↓</kbd></span></div>
+      <div><span>Estrofa anterior o siguiente, fuera del modo edición <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>↑</kbd><kbd>↓</kbd></span></div>
       <div><span>Canción anterior o siguiente <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>⇧</kbd><kbd>↑</kbd><kbd>↓</kbd></span></div>
-      <div><span>Silenciar o solo de la pista 1 a 9 <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>1</kbd>…<kbd>9</kbd> · <kbd>⌥</kbd><kbd>1</kbd></span></div>
+      <div><span>Silenciar o solo de la pista 1 a 9 (se detecta la tecla física, así <kbd>⌥</kbd> no cambia el carácter en Mac) <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>1</kbd>…<kbd>9</kbd> · <kbd>⌥</kbd><kbd>1</kbd></span></div>
       <div><span>Buscar canción o acción <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>⌘</kbd><kbd>K</kbd></span></div>
       <div><span>Editar canción <span class="tag new" style="margin-left:6px">Nuevo</span></span><span><kbd>E</kbd></span></div>
       <div><span>Descargar mezcla</span><span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd></span></div>
