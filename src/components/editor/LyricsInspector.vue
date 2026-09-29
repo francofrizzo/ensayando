@@ -168,7 +168,6 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
       <section class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-2">
           <h4 class="text-[12.5px] font-semibold">Colores</h4>
-          <span class="text-base-content/45 text-[11.5px]">el degradé sigue este orden</span>
         </div>
         <div v-if="colors.length" class="flex flex-wrap gap-1.5">
           <button
@@ -199,7 +198,6 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
       <section class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-2">
           <h4 class="text-[12.5px] font-semibold">Pistas</h4>
-          <span class="text-base-content/45 text-[11.5px]">su letra se oculta con la pista</span>
         </div>
         <div v-if="tracks.length" class="flex flex-col">
           <label
