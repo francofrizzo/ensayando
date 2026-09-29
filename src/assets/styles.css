@@ -203,6 +203,19 @@
   }
 }
 
+/* Fields: one focus ring in the collection's ink (DaisyUI's offset outline read as a
+   heavy double ring over glass). */
+@utility field-focus {
+  &:focus,
+  &:focus-within {
+    outline: none;
+    border-color: transparent;
+    box-shadow:
+      inset 0 0 0 1.5px var(--collection-ink),
+      0 0 0 4px color-mix(in oklab, var(--color-primary) 15%, transparent);
+  }
+}
+
 /* Titles: Bricolage at its display optical size, with light negative tracking. */
 @utility font-display {
   font-family: var(--font-bricolage);

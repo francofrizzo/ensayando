@@ -234,7 +234,7 @@ const signIn = () => {
             </div>
             <label
               v-if="allSongs.length > 0"
-              class="input input-sm focus-within:shadow-[inset_0_0_0_1.5px_var(--collection-ink),0_0_0_4px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] w-full rounded-full focus-within:outline-none"
+              class="input input-sm field-focus w-full rounded-full"
             >
               <IconSearch class="size-4 opacity-50" />
               <input

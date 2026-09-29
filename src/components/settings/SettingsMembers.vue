@@ -127,7 +127,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
     </template>
 
     <label
-      class="input focus-within:shadow-[inset_0_0_0_1.5px_var(--collection-ink),0_0_0_4px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] w-full max-w-sm focus-within:outline-none"
+      class="input field-focus w-full max-w-sm"
     >
       <IconSearch class="size-4 opacity-60" />
       <input v-model="filter" class="grow" placeholder="Buscar por nombre, usuario o email" />
@@ -173,7 +173,7 @@ const ROLES: CollectionRole[] = ["admin", "editor", "viewer"];
             </td>
             <td>
               <select
-                class="select select-sm w-28"
+                class="select select-sm w-28 field-focus"
                 :value="m.role"
                 :disabled="roleLocked(m) || busyId === m.user_id"
                 :title="roleLocked(m) ? 'No podés cambiar tu propio rol ni dejar la colección sin admin' : ''"

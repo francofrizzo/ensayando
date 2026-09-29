@@ -166,7 +166,7 @@ watch(username, () => {
 
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
           <label
-            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered w-full field-focus"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 180ms"
           >
             <IconUser class="size-4" />
@@ -183,7 +183,7 @@ watch(username, () => {
           </label>
 
           <label
-            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered w-full field-focus"
             style="animation: empty-stagger 400ms ease-out both; animation-delay: 240ms"
           >
             <IconKey class="size-4" />

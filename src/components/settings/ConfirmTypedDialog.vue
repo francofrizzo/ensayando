@@ -42,7 +42,7 @@ const matches = computed(() => confirmationMatches(typed.value, props.expected))
         </span>
         <input
           v-model="typed"
-          class="input w-full font-mono"
+          class="input w-full font-mono field-focus"
           autocomplete="off"
           autocapitalize="none"
           spellcheck="false"

@@ -82,7 +82,7 @@ const handleSubmit = async () => {
 
         <form v-else class="flex flex-col gap-4" @submit.prevent="handleSubmit">
           <label
-            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered w-full field-focus"
           >
             <IconKey class="size-4" />
             <span>Contraseña nueva</span>
@@ -96,7 +96,7 @@ const handleSubmit = async () => {
           </label>
 
           <label
-            class="floating-label input input-bordered focus-within:border-primary w-full transition-shadow duration-200 focus-within:shadow-[0_0_0_2px_oklch(var(--color-primary)/0.15)]"
+            class="floating-label input input-bordered w-full field-focus"
           >
             <IconKey class="size-4" />
             <span>Repetir contraseña</span>

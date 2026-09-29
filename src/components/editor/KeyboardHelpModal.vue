@@ -121,7 +121,7 @@ onUnmounted(() => document.removeEventListener("keydown", handleKeydown, true));
         </div>
 
         <div class="px-5 pb-3">
-          <label class="input input-sm flex w-full items-center gap-2 rounded-[10px]">
+          <label class="input input-sm flex w-full items-center gap-2 rounded-[10px] field-focus">
             <IconSearch class="size-4 opacity-50" />
             <input
               ref="searchRef"
