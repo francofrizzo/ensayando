@@ -14,7 +14,7 @@ const collectionsStore = useCollectionsStore();
 const { collectionSlug } = useRouteParams();
 const { currentCollection } = useCurrentCollection();
 const { currentSong } = useCurrentSong();
-const { themeVariables } = useCollectionTheme(currentCollection);
+useCollectionTheme(currentCollection);
 
 const isLoading = computed(() => collectionsStore.isLoading);
 
@@ -28,7 +28,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div :style="themeVariables">
+  <div>
     <LoadingScreen v-if="isLoading" />
 
     <ErrorMessage

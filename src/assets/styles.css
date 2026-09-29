@@ -13,33 +13,55 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ------------------------------------------------------------------
+   "Luz de sala" tokens (design/shared/ds.css, design/README.md).
+
+   Neutrals are tinted with the collection hue at very low chroma, and the
+   primary is the collection's fill: oklch(0.50 <chroma> <hue>), which always
+   takes white text. useCollectionTheme sets --collection-hue/--collection-chroma
+   on <html>; without a collection they fall back to the brand violet.
+
+   DaisyUI mapping (the app already uses base-200 as the page and base-100 for
+   panels on top of it):
+     base-200     canvas (page background)
+     base-100     surface (panels, cards, inputs)
+     base-300     sunken (wells, dividers, subtle borders)
+     base-content ink
+   secondary/accent are unused by the design; they alias primary so any stray
+   usage stays on-brand.
+   ------------------------------------------------------------------ */
+:root {
+  --collection-hue: 314;
+  --collection-chroma: 0.15;
+}
+
 @plugin "daisyui/theme" {
   name: "light";
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(100% 0 0);
-  --color-base-300: oklch(95% 0 0);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(0.43 0.1803 314.25);
-  --color-primary-content: oklch(93% 0.034 272.788);
-  --color-secondary: oklch(0.93 0.1823 105.04);
-  --color-secondary-content: oklch(14% 0.005 285.823);
-  --color-accent: oklch(77% 0.152 181.912);
-  --color-accent-content: oklch(38% 0.063 188.416);
-  --color-neutral: oklch(14% 0.005 285.823);
-  --color-neutral-content: oklch(92% 0.004 286.32);
-  --color-info: oklch(74% 0.16 232.661);
-  --color-info-content: oklch(29% 0.066 243.157);
-  --color-success: oklch(76% 0.177 163.223);
-  --color-success-content: oklch(37% 0.077 168.94);
-  --color-warning: oklch(82% 0.189 84.429);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(71% 0.194 13.428);
-  --color-error-content: oklch(27% 0.105 12.094);
+  --color-base-100: oklch(99.4% 0.003 var(--collection-hue));
+  --color-base-200: oklch(97.4% 0.006 var(--collection-hue));
+  --color-base-300: oklch(94.2% 0.009 var(--collection-hue));
+  --color-base-content: oklch(21% 0.014 var(--collection-hue));
+  --color-primary: oklch(0.5 var(--collection-chroma) var(--collection-hue));
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(0.5 var(--collection-chroma) var(--collection-hue));
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(0.5 var(--collection-chroma) var(--collection-hue));
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(21% 0.014 var(--collection-hue));
+  --color-neutral-content: oklch(96.5% 0.006 var(--collection-hue));
+  --color-info: oklch(52% 0.13 240);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(52% 0.13 158);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(55% 0.13 70);
+  --color-warning-content: oklch(100% 0 0);
+  --color-error: oklch(55% 0.19 25);
+  --color-error-content: oklch(100% 0 0);
   --radius-selector: 0.5rem;
-  --radius-field: 0.5rem;
+  --radius-field: 0.625rem;
   --radius-box: 1rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -53,34 +75,106 @@
   default: false;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(27% 0.006 286.033);
-  --color-base-200: oklch(21% 0.006 285.885);
-  --color-base-300: oklch(14% 0.005 285.823);
-  --color-base-content: oklch(98% 0 0);
-  --color-primary: oklch(0.5 0.1969 314.36);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-secondary: oklch(0.93 0.1823 105.04);
-  --color-secondary-content: oklch(14% 0.005 285.823);
-  --color-accent: oklch(77% 0.152 181.912);
-  --color-accent-content: oklch(38% 0.063 188.416);
-  --color-neutral: oklch(14% 0.005 285.823);
-  --color-neutral-content: oklch(92% 0.004 286.32);
-  --color-info: oklch(74% 0.16 232.661);
-  --color-info-content: oklch(29% 0.066 243.157);
-  --color-success: oklch(76% 0.177 163.223);
-  --color-success-content: oklch(37% 0.077 168.94);
-  --color-warning: oklch(82% 0.189 84.429);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(71% 0.194 13.428);
-  --color-error-content: oklch(27% 0.105 12.094);
+  --color-base-100: oklch(20% 0.014 var(--collection-hue));
+  --color-base-200: oklch(15.5% 0.012 var(--collection-hue));
+  --color-base-300: oklch(13% 0.01 var(--collection-hue));
+  --color-base-content: oklch(96.5% 0.006 var(--collection-hue));
+  --color-primary: oklch(0.5 var(--collection-chroma) var(--collection-hue));
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(0.5 var(--collection-chroma) var(--collection-hue));
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(0.5 var(--collection-chroma) var(--collection-hue));
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(24.5% 0.016 var(--collection-hue));
+  --color-neutral-content: oklch(96.5% 0.006 var(--collection-hue));
+  --color-info: oklch(76% 0.11 240);
+  --color-info-content: oklch(20% 0.03 240);
+  --color-success: oklch(78% 0.14 158);
+  --color-success-content: oklch(20% 0.03 158);
+  --color-warning: oklch(82% 0.13 80);
+  --color-warning-content: oklch(20% 0.03 80);
+  --color-error: oklch(72% 0.16 25);
+  --color-error-content: oklch(20% 0.03 25);
   --radius-selector: 0.5rem;
-  --radius-field: 0.5rem;
+  --radius-field: 0.625rem;
   --radius-box: 1rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
   --depth: 1;
   --noise: 0;
+}
+
+/* ------------------------------------------------------------------
+   Materials: three glass tiers (design/fundamentos/materiales.html).
+     glass-1  veil   bars on top of the stage
+     glass-2  panel  dock, sidebar, drawers
+     glass-3  pop    menus, dropdowns, tooltips
+   Never put glass behind text inputs: forms stay on opaque base-100.
+   ------------------------------------------------------------------ */
+:root {
+  --glass-1: oklch(99% 0.004 var(--collection-hue) / 0.52);
+  --glass-2: oklch(99% 0.004 var(--collection-hue) / 0.7);
+  --glass-3: oklch(99.5% 0.003 var(--collection-hue) / 0.86);
+  --glass-edge: oklch(22% 0.03 var(--collection-hue) / 0.09);
+  --glass-edge-hi: oklch(100% 0 0 / 0.75);
+  --shadow-float:
+    0 24px 48px -20px oklch(25% 0.08 var(--collection-hue) / 0.3),
+    0 2px 6px oklch(25% 0.05 var(--collection-hue) / 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass-1: oklch(22% 0.016 var(--collection-hue) / 0.46);
+    --glass-2: oklch(21% 0.016 var(--collection-hue) / 0.62);
+    --glass-3: oklch(23% 0.016 var(--collection-hue) / 0.84);
+    --glass-edge: oklch(100% 0 0 / 0.08);
+    --glass-edge-hi: oklch(100% 0 0 / 0.11);
+    --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --glass-1: oklch(22% 0.016 var(--collection-hue) / 0.46);
+  --glass-2: oklch(21% 0.016 var(--collection-hue) / 0.62);
+  --glass-3: oklch(23% 0.016 var(--collection-hue) / 0.84);
+  --glass-edge: oklch(100% 0 0 / 0.08);
+  --glass-edge-hi: oklch(100% 0 0 / 0.11);
+  --shadow-float: 0 28px 56px -18px oklch(0% 0 0 / 0.65), 0 2px 6px oklch(0% 0 0 / 0.35);
+}
+
+@utility glass-1 {
+  background-color: var(--glass-1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge-hi),
+    0 0 0 1px var(--glass-edge);
+}
+
+@utility glass-2 {
+  background-color: var(--glass-2);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(28px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge-hi),
+    0 0 0 1px var(--glass-edge),
+    var(--shadow-float);
+}
+
+@utility glass-3 {
+  background-color: var(--glass-3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge-hi),
+    0 0 0 1px var(--glass-edge),
+    var(--shadow-float);
+}
+
+/* Titles: Bricolage at its display optical size, with light negative tracking. */
+@utility font-display {
+  font-family: var(--font-bricolage);
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.0125em;
 }
 
 @import "./json-editor.css";
@@ -153,6 +247,22 @@
   }
   50% {
     opacity: 0.6;
+  }
+}
+
+/* Room light: slow drift while a song plays (RoomLight.vue). */
+@keyframes room-light-drift {
+  from {
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    transform: scale(1.08) translate(-2%, 2%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .room-light-drift {
+    animation: room-light-drift 40s ease-in-out infinite alternate;
   }
 }
 

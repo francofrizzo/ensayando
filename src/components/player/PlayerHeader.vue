@@ -20,7 +20,7 @@ const emit = defineEmits<{
       <div :key="props.song.id" class="flex min-w-0 flex-col gap-1 tracking-wide">
         <span
           data-testid="song-title"
-          class="line-clamp-2 text-lg leading-tight font-semibold tracking-tight text-ellipsis"
+          class="font-display line-clamp-2 text-lg leading-tight font-bold text-ellipsis"
           >{{ props.song.title }}</span
         >
         <span
