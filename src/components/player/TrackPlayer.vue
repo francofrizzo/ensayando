@@ -203,13 +203,13 @@ onUnmounted(() => {
 });
 
 const buttonBase =
-  "grid h-[22px] w-[26px] place-items-center rounded-[7px] font-mono text-[10.5px] font-bold transition-colors disabled:opacity-40 max-md:h-[30px] max-md:w-[34px] max-md:rounded-[9px] max-md:text-xs";
+  "grid h-[22px] w-[26px] place-items-center rounded-[7px] font-mono text-[10.5px] font-bold transition-colors disabled:opacity-40 max-md:h-7 max-md:w-[30px] max-md:rounded-[9px] max-md:text-xs";
 const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content/12";
 </script>
 
 <template>
   <div
-    class="relative grid w-full grid-cols-1 items-center gap-x-4 max-md:border-base-content/10 max-md:border-t max-md:py-2.5 md:h-[46px] md:grid-cols-[198px_minmax(0,1fr)]"
+    class="relative grid w-full grid-cols-1 items-center gap-x-4 max-md:border-base-content/10 max-md:border-t max-md:py-2 md:h-[46px] md:grid-cols-[198px_minmax(0,1fr)]"
     :data-testid="`track-${track.title}`"
     :data-muted="muted || undefined"
     :data-soloed="soloed || undefined"
@@ -221,7 +221,11 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
       :style="{ background: `linear-gradient(90deg, ${glowColor}, transparent)` }"
     />
 
-    <div class="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-[3px]">
+    <!-- Phone: name, a slim volume and the buttons on one line; the wave below.
+         Desktop: name and buttons over the volume; the wave to the right. -->
+    <div
+      class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 gap-y-[3px] md:grid-cols-[minmax(0,1fr)_auto]"
+    >
       <span class="flex min-w-0 items-center gap-2 text-[13.5px] leading-none font-semibold max-md:text-sm">
         <span
           class="size-2.5 shrink-0 rounded-full"
@@ -235,7 +239,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
         </span>
       </span>
 
-      <span v-if="!failed" class="flex gap-[3px] max-md:gap-1.5">
+      <span v-if="!failed" class="flex gap-[3px] max-md:col-start-3 max-md:row-start-1 max-md:gap-1">
         <button
           :disabled="!isReady"
           :class="[buttonBase, muted ? 'bg-error/15 text-error' : buttonIdle]"
@@ -291,7 +295,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
         max="1"
         step="0.01"
         :aria-label="`Volumen de ${track.title}`"
-        class="track-volume col-span-2"
+        class="track-volume max-md:col-start-2 max-md:row-start-1 max-md:w-[72px] md:col-span-2"
         :style="{ '--fill': `${volume * 100}%`, '--track-color': dotColor }"
         @input="onVolumeInput"
         @dblclick="emit('volume-change', 1)"
@@ -299,7 +303,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
     </div>
 
     <div
-      class="relative min-w-0 max-md:pointer-events-none max-md:invisible max-md:absolute max-md:h-0 max-md:overflow-hidden"
+      class="relative min-w-0 max-md:mt-1"
       :class="{ 'opacity-40': isSilent && !failed }"
     >
       <div
@@ -376,17 +380,15 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
     0 0 0 1px var(--glass-edge),
     0 1px 3px oklch(0% 0 0 / 0.3);
 }
+/* Phone: same slim slider, with a taller touch target and a slightly larger thumb. */
 @media (max-width: 767px) {
   .track-volume {
-    height: 22px;
-  }
-  .track-volume::-webkit-slider-runnable-track {
-    height: 5px;
+    height: 28px;
   }
   .track-volume::-webkit-slider-thumb {
-    width: 18px;
-    height: 18px;
-    margin-top: -6.5px;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
   }
 }
 </style>
