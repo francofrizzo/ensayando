@@ -1,4 +1,4 @@
-import { oklch, wcagContrast } from "culori";
+import { displayable, oklch, wcagContrast } from "culori";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,6 +7,8 @@ import {
   chromaToSpec,
   collectionThemeVars,
   deriveColor,
+  INTENSITY_RULES,
+  maxChroma,
   type ColorSpec,
   type Intensity,
   resolveCollectionPalette,
@@ -25,19 +27,46 @@ describe("deriveColor", () => {
     const spec: ColorSpec = { hue: 300, intensity: "normal" };
     expect(deriveColor(spec, "fill", "light")).toMatch(/^oklch\(0\.5 /);
     expect(deriveColor(spec, "lyric", "light")).toMatch(/^oklch\(0\.48 /);
-    expect(deriveColor(spec, "lyric", "dark")).toMatch(/^oklch\(0\.8 /);
+    expect(deriveColor(spec, "lyric", "dark")).toMatch(/^oklch\(0\.76 /);
     expect(deriveColor(spec, "wave", "light")).toMatch(/^oklch\(0\.59 /);
     expect(deriveColor(spec, "wave", "dark")).toMatch(/^oklch\(0\.7 /);
     expect(deriveColor(spec, "ink", "light")).toMatch(/^oklch\(0\.47 /);
   });
 
-  it("keeps the hue and maps intensity to chroma", () => {
-    expect(deriveColor({ hue: 300, intensity: "suave" }, "fill", "light")).toBe(
-      "oklch(0.5 0.08 300)"
-    );
-    expect(deriveColor({ hue: 300, intensity: "normal" }, "fill", "light")).toBe(
-      "oklch(0.5 0.15 300)"
-    );
+  it("keeps the hue and gives each intensity a share of the hue's maximum chroma", () => {
+    const chroma = (hue: number, intensity: Intensity) =>
+      Number(deriveColor({ hue, intensity }, "fill", "light").split(" ")[1]);
+    // Cyan can show little chroma at L 0.5, so every intensity stays within its maximum.
+    expect(chroma(195, "suave")).toBeCloseTo(0.5 * maxChroma(0.5, 195), 3);
+    expect(chroma(195, "normal")).toBeCloseTo(0.95 * maxChroma(0.5, 195), 3);
+    expect(chroma(195, "intensa")).toBeCloseTo(maxChroma(0.5, 195), 3);
+    expect(deriveColor({ hue: 195, intensity: "normal" }, "fill", "light")).toMatch(/ 195\)$/);
+  });
+
+  it("gives reds more chroma than the old fixed 0.15", () => {
+    for (const hue of [0, 15, 25, 30, 345]) {
+      const c = Number(deriveColor({ hue, intensity: "normal" }, "fill", "light").split(" ")[1]);
+      expect(c).toBeGreaterThan(0.17);
+    }
+  });
+
+  it("caps chroma per intensity so violets don't go neon", () => {
+    for (let hue = 0; hue < 360; hue += 5) {
+      for (const intensity of INTENSITIES) {
+        const c = Number(deriveColor({ hue, intensity }, "fill", "light").split(" ")[1]);
+        expect(c).toBeLessThanOrEqual(INTENSITY_RULES[intensity].cap + 1e-4);
+      }
+    }
+  });
+
+  it("orders intensities for every hue", () => {
+    for (let hue = 0; hue < 360; hue += 5) {
+      const [s, n, i] = INTENSITIES.map((intensity) =>
+        Number(deriveColor({ hue, intensity }, "lyric", "light").split(" ")[1])
+      );
+      expect(s).toBeLessThan(n!);
+      expect(n).toBeLessThanOrEqual(i!);
+    }
   });
 
   it("caps collection ink chroma in dark", () => {
@@ -47,7 +76,7 @@ describe("deriveColor", () => {
   });
 
   it("paints neutral specs without chroma", () => {
-    expect(deriveColor({ neutral: true }, "lyric", "dark")).toBe("oklch(0.8 0 0)");
+    expect(deriveColor({ neutral: true }, "lyric", "dark")).toBe("oklch(0.76 0 0)");
   });
 
   it("appends alpha when given", () => {
@@ -136,15 +165,39 @@ describe("resolveCollectionPalette", () => {
   });
 });
 
+describe("maxChroma", () => {
+  it("finds the sRGB edge for a hue and lightness", () => {
+    for (const [l, h] of [
+      [0.5, 25],
+      [0.5, 195],
+      [0.8, 25],
+      [0.48, 285]
+    ] as const) {
+      const c = maxChroma(l, h);
+      expect(displayable({ mode: "oklch", l, c, h })).toBe(true);
+      expect(displayable({ mode: "oklch", l, c: c + 0.005, h })).toBe(false);
+    }
+  });
+});
+
 describe("collectionThemeVars", () => {
-  it("exposes hue and chroma", () => {
-    expect(collectionThemeVars({ hue: 48, intensity: "intensa" })).toEqual({
+  it("exposes the hue and the derived colors per theme", () => {
+    const spec: ColorSpec = { hue: 48, intensity: "intensa" };
+    expect(collectionThemeVars(spec)).toEqual({
       "--collection-hue": "48",
-      "--collection-chroma": "0.21"
+      "--collection-fill": deriveColor(spec, "fill", "light"),
+      "--collection-ink-light": deriveColor(spec, "ink", "light"),
+      "--collection-ink-dark": deriveColor(spec, "ink", "dark"),
+      "--collection-soft-light": deriveColor(spec, "soft", "light"),
+      "--collection-soft-dark": deriveColor(spec, "soft", "dark")
     });
-    expect(collectionThemeVars({ neutral: true })).toEqual({
-      "--collection-hue": "0",
-      "--collection-chroma": "0"
+    expect(collectionThemeVars({ neutral: true })["--collection-fill"]).toBe("oklch(0.5 0 0)");
+  });
+
+  it("matches the brand defaults in styles.css", () => {
+    expect(collectionThemeVars(BRAND_SPEC)).toMatchObject({
+      "--collection-fill": "oklch(0.5 0.19 314)",
+      "--collection-ink-dark": "oklch(0.8 0.1384 314)"
     });
   });
 });

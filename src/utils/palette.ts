@@ -2,27 +2,55 @@
 //
 // Collections and tracks only store a hue (0–359) and an intensity. Every
 // color the UI paints is derived here: lightness is fixed per role and theme,
-// chroma comes from the intensity. That keeps every hue legible in both themes
-// (see palette.test.ts for the contrast sweep).
+// and chroma is a share of the most that hue can show in sRGB at that
+// lightness (capped per intensity). Reds and magentas can carry far more chroma
+// than cyans or yellows, so a fixed chroma left them dull; a relative one gives
+// every hue the same "fullness". Fixed lightness keeps every hue legible in both
+// themes (see palette.test.ts for the contrast sweep).
 //
 // Kept free of "@/" imports so scripts/ can use it too.
-import { clampChroma } from "culori";
+import { clampChroma, displayable } from "culori";
 
 export type Intensity = "suave" | "normal" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
 export type ColorRole = "fill" | "ink" | "lyric" | "wave" | "soft" | "line";
 export type Theme = "light" | "dark";
 
-export const INTENSITY_CHROMA: Record<Intensity, number> = {
-  suave: 0.08,
-  normal: 0.15,
-  intensa: 0.21
+/**
+ * Intensity = share of the hue's maximum sRGB chroma at the role's lightness,
+ * with an absolute cap so violets and pinks (which reach ~0.29) don't go neon.
+ */
+export const INTENSITY_RULES: Record<Intensity, { share: number; cap: number }> = {
+  suave: { share: 0.5, cap: 0.1 },
+  normal: { share: 0.95, cap: 0.19 },
+  intensa: { share: 1, cap: 0.25 }
+};
+
+const maxChromaCache = new Map<string, number>();
+
+/** Largest chroma displayable in sRGB at lightness `l` and hue `h` (binary search, memoized). */
+export const maxChroma = (l: number, h: number): number => {
+  const hue = Math.round(h) % 360;
+  const key = `${l}|${hue}`;
+  const cached = maxChromaCache.get(key);
+  if (cached !== undefined) return cached;
+  let lo = 0;
+  let hi = 0.4;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (displayable({ mode: "oklch", l, c: mid, h: hue })) lo = mid;
+    else hi = mid;
+  }
+  maxChromaCache.set(key, lo);
+  return lo;
 };
 
 /** Hue used when there is no collection (login, home, errors): "violeta Ensayando". */
 export const BRAND_SPEC: ColorSpec = { hue: 314, intensity: "normal" };
 
-type RoleRule = { l: number; chroma: (c: number) => number };
+// `chromaL` is the lightness the base chroma is measured at. Tinted backgrounds
+// and borders take a fraction of the fill's chroma rather than their own maximum.
+type RoleRule = { l: number; chromaL?: number; chroma: (c: number) => number };
 
 // Values mirror design/shared/ds.css and design/shared/mock.css.
 export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
@@ -31,16 +59,16 @@ export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
     ink: { l: 0.47, chroma: (c) => Math.min(c, 0.4) },
     lyric: { l: 0.48, chroma: (c) => c },
     wave: { l: 0.59, chroma: (c) => c },
-    soft: { l: 0.93, chroma: (c) => c * 0.3 },
-    line: { l: 0.8, chroma: (c) => c * 0.5 }
+    soft: { l: 0.93, chromaL: 0.5, chroma: (c) => c * 0.3 },
+    line: { l: 0.8, chromaL: 0.5, chroma: (c) => c * 0.5 }
   },
   dark: {
     fill: { l: 0.5, chroma: (c) => c },
     ink: { l: 0.8, chroma: (c) => Math.min(c, 0.17) },
-    lyric: { l: 0.8, chroma: (c) => c },
+    lyric: { l: 0.76, chroma: (c) => c },
     wave: { l: 0.7, chroma: (c) => c },
-    soft: { l: 0.3, chroma: (c) => c * 0.45 },
-    line: { l: 0.45, chroma: (c) => c * 0.6 }
+    soft: { l: 0.3, chromaL: 0.5, chroma: (c) => c * 0.45 },
+    line: { l: 0.45, chromaL: 0.5, chroma: (c) => c * 0.6 }
   }
 };
 
@@ -51,8 +79,12 @@ export const canvasColor = (theme: Theme, hue: number = BRAND_SPEC.hue) =>
 export const isNeutral = (spec: ColorSpec): spec is { neutral: true } =>
   "neutral" in spec && spec.neutral === true;
 
-export const specChroma = (spec: ColorSpec) =>
-  isNeutral(spec) ? 0 : INTENSITY_CHROMA[spec.intensity];
+/** Chroma a spec takes at lightness `l`: its intensity's share of that hue's maximum, capped. */
+export const specChroma = (spec: ColorSpec, l: number) => {
+  if (isNeutral(spec)) return 0;
+  const { share, cap } = INTENSITY_RULES[spec.intensity];
+  return Math.min(cap, share * maxChroma(l, spec.hue));
+};
 
 export const specHue = (spec: ColorSpec) => (isNeutral(spec) ? 0 : spec.hue);
 
@@ -70,7 +102,7 @@ export const deriveColor = (
 ): string => {
   const rule = ROLE_RULES[theme][role];
   const color = clampChroma(
-    { mode: "oklch", l: rule.l, c: rule.chroma(specChroma(spec)), h: specHue(spec) },
+    { mode: "oklch", l: rule.l, c: rule.chroma(specChroma(spec, rule.chromaL ?? rule.l)), h: specHue(spec) },
     "oklch"
   );
   const l = round(color.l, 4);
@@ -201,8 +233,24 @@ export const resolveCollectionPalette = (
   return { main, tracks };
 };
 
-/** CSS custom properties that drive the DaisyUI theme (see styles.css). */
+/** A spec's color at an arbitrary lightness (generated banners, glows). */
+export const colorAt = (spec: ColorSpec, l: number, hueShift = 0) => {
+  const h = (specHue(spec) + hueShift + 360) % 360;
+  const shifted: ColorSpec = isNeutral(spec) ? spec : { ...spec, hue: h };
+  const c = round(specChroma(shifted, l), 4);
+  return `oklch(${l} ${c} ${round(h, 2)})`;
+};
+
+/**
+ * CSS custom properties that drive the DaisyUI theme (see styles.css). Chroma
+ * depends on hue and lightness, so the final colors are computed here; CSS only
+ * picks the light or dark variant.
+ */
 export const collectionThemeVars = (spec: ColorSpec) => ({
   "--collection-hue": String(specHue(spec)),
-  "--collection-chroma": String(specChroma(spec))
+  "--collection-fill": deriveColor(spec, "fill", "light"),
+  "--collection-ink-light": deriveColor(spec, "ink", "light"),
+  "--collection-ink-dark": deriveColor(spec, "ink", "dark"),
+  "--collection-soft-light": deriveColor(spec, "soft", "light"),
+  "--collection-soft-dark": deriveColor(spec, "soft", "dark")
 });
