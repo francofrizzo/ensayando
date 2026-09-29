@@ -24,11 +24,12 @@
     { id: "plan", path: "plan/index.html", label: "Plan", note: "Datos, orden y preguntas" },
   ];
 
-  // Colecciones de ejemplo: solo tono (h) e intensidad (k); el color se deriva en ds.css.
+  // Colecciones de ejemplo: tono (h) y croma (k) de intensidad normal, ya calculado como 95 % del
+  // máximo sRGB de ese tono a la claridad de su relleno (con tope 0,18), igual que src/utils/palette.ts.
   const COLLECTIONS = {
-    coro: { label: "Coro · violeta", h: 300, k: 0.15 },
-    taller: { label: "Taller · naranja", h: 45, k: 0.15 },
-    rock: { label: "Banda · verde", h: 150, k: 0.15 },
+    coro: { label: "Coro · violeta", h: 300, k: 0.18 },
+    taller: { label: "Taller · naranja", h: 45, k: 0.133 },
+    rock: { label: "Banda · verde", h: 150, k: 0.131 },
   };
 
   // ---------- tema: antes del primer pintado ----------

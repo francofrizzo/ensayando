@@ -43,15 +43,17 @@ Ensayando es una sala de ensayo. El color de la colección es la luz del escenar
 - Etiquetas en mayúsculas: 11 px, 600, +0,1 em. Un solo estilo en toda la app.
 
 ### Paleta · ajuste
-- **Solo tonos.** De cada colección y de cada pista se guarda un **tono** (0 a 360) y una **intensidad** (suave, normal o intensa). Las pistas pueden además ser **neutras** (sin color, para una pista de mezcla o de clic). Todo lo demás se calcula: claridad fija por rol y tema, croma según la intensidad. Así todas las colecciones quedan igual de bien, las pistas armonizan entre sí y el contraste está garantizado por construcción.
-- **Rellenos** (botones, reproducir) a 50 % de claridad en ambos temas: el texto blanco pasa 4,5:1 en todos los tonos e intensidades.
-- **Tintas:** letra a 48 % en claro y 80 % en oscuro; ondas a 59 % y 70 %; texto e íconos del color de la colección a 47 % y 80 %.
+- **Solo tonos.** De cada colección y de cada pista se guarda un **tono** (0 a 360) y una **intensidad** (suave, normal o intensa). Las pistas pueden además ser **neutras** (sin color, para una pista de mezcla o de clic). Todo lo demás se calcula por rol y tema, y el contraste está garantizado por construcción.
+- **Claridad según el tono, dentro de un rango seguro por rol y tema.** Cada tono muestra más color cerca de su cúspide (los amarillos arriba, los azules abajo), así que la claridad la sigue: `0,23 + 0,65 × cúspide`, más un desplazamiento por rol, acotada al rango que mantiene el contraste. Letra y onda en oscuro: 0,60 a 0,86. Letra en claro: 0,40 a 0,48 (por eso los amarillos quedan ocre en claro). Rellenos: 0,42 a 0,50 en ambos temas, con texto blanco.
+- **Croma relativo al tono.** La intensidad es una parte del croma máximo que ese tono admite en sRGB a esa claridad: suave 50 %, normal 95 %, intensa 100 %, con topes 0,10 / 0,18 / 0,20 para que violetas y fucsias no se vuelvan fluo. Con un croma fijo, los rojos quedaban en el 75 % de lo posible al lado de cianes ya recortados.
+- **Mínimos de contraste**, en los 360 tonos, las tres intensidades y los dos temas: letra 5,69 en claro y 4,52 en oscuro, texto de la colección 5,95 y 4,60, blanco sobre relleno 5,60, ondas 3,54 y 4,52.
+- **Los colores de hoy se conservan.** Con intensidad intensa en oscuro, la onda y la letra quedan a ΔE OK 3,0 en promedio de los seis colores de la colección en producción (0,8 a 2,2 en índigo, rosa y naranja; cerca de 5 en amarillo y lima).
 - **Neutros teñidos.** Los grises dejan de ser zinc: toman el tono de la colección con croma muy bajo (0,004 a 0,016). Cada colección tiñe su sala.
 - **Oscuro más profundo.** El fondo oscuro baja de 27 % a 15,5 % de claridad para que la luz y el vidrio se lean.
 - **Versos cantados** en el color de texto al 30 %, no en zinc.
 - **Se quitan** `secondary` (amarillo) y `accent` (turquesa) del tema: no se usan. El amarillo del logo queda solo en el logo.
 - **Violeta Ensayando** (tono 314) es el color cuando no hay colección: ingreso, inicio y errores.
-- **Límites:** con tono solo, entran unos 8 a 10 colores bien distinguibles por colección; el editor avisa cuando dos pistas quedan a menos de 25° de tono. Los amarillos a claridad media tienden a ocre; es el precio de que se lean sobre blanco.
+- **Límites:** con tono solo, entran unos 8 a 10 colores bien distinguibles por colección; el editor avisa cuando dos pistas quedan a menos de 25° de tono.
 
 ### Materiales · nuevo
 - **Luz de sala:** detrás de todo, tres manchas de luz tenues (16 % en claro, 24 % en oscuro) del color de la colección y dos pistas, con grano fino. Si la colección tiene portada, la portada desenfocada reemplaza a las manchas; sin portada quedan las manchas.
@@ -101,6 +103,7 @@ Lo que se resolvió distinto de los mocks, o se agregó, durante la implementaci
 - **Colores de la colección.** Las pistas no tienen un nombre editable en Colores: el nombre que se ve sale de los títulos de las pistas y solo se renombra la clave. "Nueva colección" elige el color con muestras y "Otro" (tono libre), no con la barra completa.
 - **Cuentas administradas.** Al crear una, se pide solo el usuario: la contraseña la genera el servidor y se muestra una vez. Los admins de colección pueden restablecer contraseñas solo de cuentas administradas que estén únicamente en colecciones que administran, y nunca las de otros admins ni de admins de la app. El usuario de una cuenta administrada se guarda donde la persona no lo puede cambiar (metadatos de la app), y la búsqueda de cuentas no usa nombres elegidos por cada uno.
 - **Admins de la app.** Tabla `app_admins`. No ven todas las colecciones: al crear una, quedan como su admin. Los primeros se cargan a mano (la skill tiene los comandos).
+- **Color según el tono.** Después de probar la app: los rojos se veían apagados y el amarillo y el índigo no se parecían a los colores de hoy. La claridad pasó de fija por rol a seguir la cúspide de cada tono (dentro de un rango seguro por rol y tema), y el croma a ser una parte del máximo que admite ese tono. Intensa en oscuro reproduce los colores actuales de la colección en producción (ΔE OK 3,0 en promedio). La letra en oscuro ya no está en 0,80 fija: va de 0,60 a 0,86 según el tono.
 - **Tema.** El selector Sistema/Claro/Oscuro vive en el menú de la canción y en el pie de la biblioteca.
 - **Solo y silencio.** Estado separado por pista; varias pistas pueden estar en solo; nunca se reinician los volúmenes. La mezcla descargada usa la misma ganancia aplicada.
 - **Modo edición.** Es un parámetro de la dirección (`?editar=cancion|letra|sincronizar`); "Nueva canción" es `/:colección/nueva`. "Vista previa" (<kbd>P</kbd>) muestra el escenario sin salir de la edición, con un botón para volver.
