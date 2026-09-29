@@ -45,7 +45,7 @@ const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value
 const GLOW_WINDOW = 1.5; // seconds before a verse starts and after it ends
 const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) => {
   const styles: Record<string, string | undefined> = {
-    ...getVerseStyles(verse, props.collection, verse.status)
+    ...getVerseStyles(verse, props.collection, verse.status, "stage")
   };
   if (resolvedTheme.value !== "dark") return styles;
 

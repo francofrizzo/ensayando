@@ -19,7 +19,10 @@ export type Intensity = "suave" | "media" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
 /** A stored track color: its spec plus an optional name ("Voz 1", "Pista"). */
 export type TrackColor = ColorSpec & { name?: string };
-export type ColorRole = "fill" | "ink" | "lyric" | "wave" | "soft" | "line";
+// "stage" is the player's lyrics: large display text (20–24 px caps), held to the
+// 3:1 large-text contrast, so light-theme yellows and greens stay lively. "lyric"
+// is for lyrics at text size (editor) and keeps 4.5:1.
+export type ColorRole = "fill" | "ink" | "lyric" | "stage" | "wave" | "soft" | "line";
 export type Theme = "light" | "dark";
 
 /**
@@ -112,6 +115,7 @@ export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
     fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
     ink: { offset: -0.2, min: 0.4, max: 0.47, chroma: (c) => Math.min(c, 0.4) },
     lyric: { offset: -0.2, min: 0.4, max: 0.48, chroma: (c) => c },
+    stage: { offset: -0.08, min: 0.45, max: 0.62, chroma: (c) => c },
     wave: { offset: -0.1, min: 0.5, max: 0.59, chroma: (c) => c },
     soft: { offset: 0, min: 0.93, max: 0.93, fromFill: true, chroma: (c) => c * 0.3 },
     line: { offset: 0, min: 0.8, max: 0.8, fromFill: true, chroma: (c) => c * 0.5 }
@@ -120,6 +124,7 @@ export const ROLE_RULES: Record<Theme, Record<ColorRole, RoleRule>> = {
     fill: { offset: -0.2, min: 0.42, max: 0.5, chroma: (c) => c },
     ink: { offset: 0, min: 0.76, max: 0.86, chroma: (c) => Math.min(c, 0.17) },
     lyric: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
+    stage: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
     wave: { offset: 0, min: 0.6, max: 0.86, chroma: (c) => c },
     soft: { offset: 0, min: 0.3, max: 0.3, fromFill: true, chroma: (c) => c * 0.45 },
     line: { offset: 0, min: 0.45, max: 0.45, fromFill: true, chroma: (c) => c * 0.6 }

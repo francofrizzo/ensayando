@@ -1,6 +1,6 @@
 import { useTheme } from "@/composables/useTheme";
 import type { CollectionWithRole, LyricVerse } from "@/data/types";
-import { deriveColor, resolveCollectionPalette } from "@/utils/palette";
+import { type ColorRole, deriveColor, resolveCollectionPalette } from "@/utils/palette";
 
 export type LyricVerseStatus = "active" | "past" | "future";
 
@@ -13,7 +13,8 @@ export function useLyricsColoring() {
   const getVerseStyles = (
     verse: LyricVerse,
     collection: CollectionWithRole | null,
-    status?: LyricVerseStatus
+    status?: LyricVerseStatus,
+    role: Extract<ColorRole, "lyric" | "stage"> = "lyric"
   ) => {
     if (!collection) return {};
 
@@ -21,7 +22,7 @@ export function useLyricsColoring() {
     const ink = (colorKey?: string) =>
       deriveColor(
         (colorKey ? palette.tracks[colorKey] : undefined) ?? palette.main,
-        "lyric",
+        role,
         resolvedTheme.value
       );
 

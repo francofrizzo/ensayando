@@ -332,3 +332,24 @@ describe("track color names", () => {
     expect(palette.names).toEqual({ v1: "Voz 1" });
   });
 });
+
+describe("stage lyrics (player)", () => {
+  it("holds 3:1 against the canvas for every hue and intensity, both themes", () => {
+    let worst = Infinity;
+    for (const theme of ["light", "dark"] as const) {
+      const canvas = canvasColor(theme, 300);
+      for (let hue = 0; hue < 360; hue++) {
+        for (const intensity of ["suave", "media", "intensa"] as const) {
+          worst = Math.min(worst, wcagContrast(deriveColor({ hue, intensity }, "stage", theme), canvas));
+        }
+      }
+    }
+    expect(worst).toBeGreaterThanOrEqual(3);
+  });
+
+  it("is lighter than text-size lyrics in light theme for yellows and greens", () => {
+    for (const hue of [90, 110, 130, 150]) {
+      expect(roleLightness("stage", "light", hue)).toBeGreaterThan(roleLightness("lyric", "light", hue));
+    }
+  });
+});
