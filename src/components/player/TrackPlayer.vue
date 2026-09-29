@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
 import { IconHash, IconLyrics, IconVolumeOn, IconVolumeOff } from "@/components/ui/icons";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, toRef, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 import type { WaveSurferOptions } from "wavesurfer.js";
 
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
 import { audioPlaybackUrl } from "@/data/storage";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useLongPress } from "@/composables/useLongPress";
-import { darken, lighten } from "@/utils/color-utils";
+import { type ColorSpec, deriveColor } from "@/utils/palette";
 import { isIOS } from "@/utils/platform";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
@@ -95,30 +96,24 @@ defineExpose({
   }
 });
 
-const trackColor = computed(() => {
-  return props.collection.track_colors[props.track.color_key] ?? props.collection.main_color;
-});
-const disabledColor = ref(
-  getComputedStyle(document.documentElement).getPropertyValue("--color-zinc-500").trim() ||
-    "oklch(0.552 0.016 286)"
+// Colors come from the collection palette (hue + intensity), per theme. A muted
+// track turns neutral; its unplayed wave is the same color at low alpha.
+const { trackSpec, resolvedTheme } = useCollectionPalette(toRef(props, "collection"));
+const NEUTRAL: ColorSpec = { neutral: true };
+const spec = computed(() => (isMuted.value ? NEUTRAL : trackSpec(props.track.color_key)));
+const color = computed(() => deriveColor(spec.value, "lyric", resolvedTheme.value));
+const lyricsButtonColor = computed(() =>
+  deriveColor(
+    props.lyricsEnabled ? trackSpec(props.track.color_key) : NEUTRAL,
+    "lyric",
+    resolvedTheme.value
+  )
 );
-const color = computed(() => {
-  return isMuted.value ? disabledColor.value : trackColor.value;
-});
-const lyricsButtonColor = computed(() => {
-  return props.lyricsEnabled ? trackColor.value : disabledColor.value;
-});
 
-const isDarkMode = ref(window.matchMedia("(prefers-color-scheme: dark)").matches);
-let darkModeMediaQuery: MediaQueryList | null = null;
-let darkModeListener: ((e: MediaQueryListEvent) => void) | null = null;
-
-const waveSurferColorScheme = computed(() => {
-  return {
-    waveColor: isDarkMode.value ? darken(color.value, 0.3) : lighten(color.value, 0.4),
-    progressColor: color.value
-  };
-});
+const waveSurferColorScheme = computed(() => ({
+  waveColor: deriveColor(spec.value, "wave", resolvedTheme.value, 0.3),
+  progressColor: deriveColor(spec.value, "wave", resolvedTheme.value)
+}));
 
 const waveSurferOptions = computed<Partial<Omit<WaveSurferOptions, "container">>>(() => {
   const options = {
@@ -138,22 +133,6 @@ const waveSurferOptions = computed<Partial<Omit<WaveSurferOptions, "container">>
   return options;
 });
 
-onMounted(() => {
-  // Cache getComputedStyle once
-  disabledColor.value = getComputedStyle(document.documentElement)
-    .getPropertyValue("--color-zinc-500")
-    .trim();
-
-  // Reactively track dark mode changes
-  darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  darkModeListener = (e: MediaQueryListEvent) => {
-    isDarkMode.value = e.matches;
-    // Update waveform colors when dark mode changes
-    waveSurfer.value?.setOptions({ ...waveSurferColorScheme.value });
-  };
-  darkModeMediaQuery.addEventListener("change", darkModeListener);
-});
-
 watch(
   () => props.isPlaying,
   (newIsPlaying) => {
@@ -170,14 +149,10 @@ watch(
   }
 );
 
-watch(
-  () => isMuted.value,
-  () => {
-    waveSurfer.value?.setOptions({
-      ...waveSurferColorScheme.value
-    });
-  }
-);
+// Mute and theme changes repaint the wave.
+watch(waveSurferColorScheme, (scheme) => {
+  waveSurfer.value?.setOptions({ ...scheme });
+});
 
 watch(
   () => props.volume,
@@ -201,13 +176,6 @@ watch(
 );
 
 onUnmounted(() => {
-  // Clean up dark mode listener
-  if (darkModeMediaQuery && darkModeListener) {
-    darkModeMediaQuery.removeEventListener("change", darkModeListener);
-    darkModeMediaQuery = null;
-    darkModeListener = null;
-  }
-
   const ws = waveSurfer.value;
   waveSurfer.value = null;
   void cleanupWaveSurfer(ws).catch((error: unknown) => {

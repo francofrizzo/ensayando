@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { AudioTrack } from "@/data/types";
-import { selectMostContrasting } from "@/utils/color-utils";
 import { IconLyrics, IconClose } from "@/components/ui/icons";
 import { computed } from "vue";
 
@@ -70,22 +69,19 @@ const sortedTracks = computed(() => {
   return [...props.availableTracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 });
 
-const getTrackButtonStyle = (track: AudioTrack, isSelected: boolean) => {
-  if (!isSelected || !track.color_key) return {};
+// Swatches are fill colors, which always take white text.
+const colorValueFor = (colorKey: string) =>
+  props.availableColors.find((c) => c.key === colorKey)?.value;
 
-  return {
-    backgroundColor: track.color_key,
-    borderColor: track.color_key
-    // color: selectMostContrasting(track.color_key, ["white", "black"])
-  };
+const getTrackButtonStyle = (track: AudioTrack, isSelected: boolean) => {
+  const colorValue = isSelected ? colorValueFor(track.color_key) : undefined;
+  if (!colorValue) return {};
+  return { backgroundColor: colorValue, borderColor: colorValue, color: "white" };
 };
 
 const getColorStyle = (colorKey: string) => {
-  const colorValue = props.availableColors.find((c) => c.key === colorKey)?.value;
-  return {
-    backgroundColor: colorValue,
-    color: colorValue ? selectMostContrasting(colorValue, ["#ffffff", "#000000"]) : undefined
-  };
+  const colorValue = colorValueFor(colorKey);
+  return { backgroundColor: colorValue, color: colorValue ? "white" : undefined };
 };
 </script>
 

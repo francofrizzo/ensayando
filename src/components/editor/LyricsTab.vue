@@ -6,6 +6,7 @@ import { IconHelp, IconDiscard, IconSave } from "@/components/ui/icons";
 
 import LyricsTimestamps from "@/components/editor/LyricsTimestamps.vue";
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { usePlayerState } from "@/composables/useCurrentTime";
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
@@ -153,12 +154,8 @@ const onInputFocus = (position: FocusPosition) => {
 // Color functionality
 const currentVerseColors = computed(() => getCurrentVerseColors());
 
-const availableColors = computed(() =>
-  Object.entries(currentCollection.value?.track_colors ?? {}).map(([key, value]) => ({
-    key,
-    value
-  }))
-);
+// Swatches derived from the collection palette for the current theme.
+const { colorOptions: availableColors } = useCollectionPalette(currentCollection);
 
 const handleColorsChange = (colors: string[]) => {
   setCurrentVerseColors(colors);

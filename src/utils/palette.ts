@@ -6,7 +6,7 @@
 // (see palette.test.ts for the contrast sweep).
 //
 // Kept free of "@/" imports so scripts/ can use it too.
-import { clampChroma, oklch, parse } from "culori";
+import { clampChroma } from "culori";
 
 export type Intensity = "suave" | "normal" | "intensa";
 export type ColorSpec = { hue: number; intensity: Intensity } | { neutral: true };
@@ -94,36 +94,69 @@ export const chromaToSpec = (hue: number, chroma: number): ColorSpec => {
   return { hue: normalizeHue(hue), intensity: "intensa" };
 };
 
-/**
- * Accepts a stored value in any shape: the new `{hue, intensity}` / `{neutral}`
- * objects, or a legacy CSS color string (hex, oklch, named…).
- */
+/** Validates a stored spec (track_colors values are jsonb, so trust nothing). */
 export const toColorSpec = (value: unknown): ColorSpec | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    if (obj.neutral === true) return { neutral: true };
-    if (typeof obj.hue === "number" && Number.isFinite(obj.hue)) {
-      return {
-        hue: normalizeHue(obj.hue),
-        intensity: isIntensity(obj.intensity) ? obj.intensity : "normal"
-      };
-    }
-    return null;
+  if (value === null || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+  if (obj.neutral === true) return { neutral: true };
+  if (typeof obj.hue === "number" && Number.isFinite(obj.hue)) {
+    return {
+      hue: normalizeHue(obj.hue),
+      intensity: isIntensity(obj.intensity) ? obj.intensity : "normal"
+    };
   }
-  if (typeof value !== "string") return null;
-  const parsed = parse(value.trim());
-  if (!parsed) return null;
-  const color = oklch(parsed);
-  if (!color) return null;
-  return chromaToSpec(color.h ?? 0, color.c ?? 0);
+  return null;
+};
+
+/** Converts OKLab a/b to chroma and hue (degrees 0–360). */
+const labToChromaHue = (a: number, b: number) => ({
+  chroma: Math.sqrt(a * a + b * b),
+  hue: ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360
+});
+
+/** sRGB hex (#rrggbb or #rgb) to OKLab chroma and hue. Same math as the SQL migration. */
+const hexToChromaHue = (hex: string) => {
+  const digits = hex.length === 4 ? [...hex.slice(1)].map((d) => d + d).join("") : hex.slice(1);
+  const toLinear = (channel: number) => {
+    const c = channel / 255;
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  const [r, g, b] = [0, 2, 4].map((i) => toLinear(parseInt(digits.slice(i, i + 2), 16))) as [
+    number,
+    number,
+    number
+  ];
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return labToChromaHue(
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
+  );
+};
+
+const OKLCH_RE = /^\s*oklch\(\s*[0-9.]+%?\s+([0-9.]+)\s+([0-9.]+)(?:deg)?\s*(?:\/[^)]*)?\)\s*$/i;
+const HEX_RE = /^\s*#([0-9a-f]{3}|[0-9a-f]{6})\s*$/i;
+
+/**
+ * Parses a pre-migration color string (the formats the database used: oklch()
+ * and hex). Mirrors color_to_spec() in the hue migration, and is tested with the
+ * same fixtures, so both agree. Returns null for anything else.
+ */
+export const parseLegacyColor = (value: string): ColorSpec | null => {
+  const oklchMatch = OKLCH_RE.exec(value);
+  if (oklchMatch) return chromaToSpec(Number(oklchMatch[2]), Number(oklchMatch[1]));
+  if (HEX_RE.test(value)) {
+    const { chroma, hue } = hexToChromaHue(value.trim().toLowerCase());
+    return chromaToSpec(hue, chroma);
+  }
+  return null;
 };
 
 export type PaletteSource = {
-  hue?: number | null;
-  intensity?: string | null;
-  main_color?: string | null;
-  track_colors?: Record<string, unknown> | null;
+  hue: number;
+  intensity: Intensity;
+  track_colors: Record<string, unknown>;
 };
 
 export type CollectionPalette = {
@@ -131,17 +164,13 @@ export type CollectionPalette = {
   tracks: Record<string, ColorSpec>;
 };
 
-/** Resolves a collection's palette, preferring the new fields and falling back to legacy strings. */
+/** Resolves a collection's palette; without a collection, the brand color. */
 export const resolveCollectionPalette = (source: PaletteSource | null | undefined): CollectionPalette => {
   if (!source) return { main: BRAND_SPEC, tracks: {} };
-  let main: ColorSpec | null = null;
-  if (typeof source.hue === "number") {
-    main = {
-      hue: normalizeHue(source.hue),
-      intensity: isIntensity(source.intensity) ? source.intensity : "normal"
-    };
-  }
-  main = main ?? toColorSpec(source.main_color) ?? BRAND_SPEC;
+  const main: ColorSpec = {
+    hue: normalizeHue(source.hue),
+    intensity: isIntensity(source.intensity) ? source.intensity : "normal"
+  };
   const tracks: Record<string, ColorSpec> = {};
   for (const [key, value] of Object.entries(source.track_colors ?? {})) {
     const spec = toColorSpec(value);
@@ -155,4 +184,3 @@ export const collectionThemeVars = (spec: ColorSpec) => ({
   "--collection-hue": String(specHue(spec)),
   "--collection-chroma": String(specChroma(spec))
 });
-

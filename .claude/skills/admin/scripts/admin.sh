@@ -58,8 +58,6 @@ collections:
                                          private=members only; unlisted=link-only (hidden
                                          from sidebar); public=listed for everyone
   delete-collection <slug> --yes         cascades to songs/tracks; no storage cleanup
-  edit-palette <slug>                    open browser oklch editor; prints new palette JSON on save
-  apply-palette <slug> <json>            UPDATE main_color + track_colors (payload from edit-palette)
 
 songs:
   list-songs <collection-slug>           inspect current ordering
@@ -214,37 +212,6 @@ cmd_delete_collection() {
   run_sql "DELETE FROM public.collections WHERE slug = '$s' RETURNING id, slug;"
 }
 
-cmd_edit_palette() {
-  need_args $# 1 "edit-palette <slug>"
-  node "$(dirname "$0")/palette-editor.mjs" "$1"
-}
-
-cmd_apply_palette() {
-  need_args $# 2 "apply-palette <slug> <json>"
-  local s j main tracks
-  s=$(sqlq "$1")
-  j="$2"
-  # Validate + extract fields with node to avoid shell-quoting the JSON.
-  main=$(node -e '
-    const p = JSON.parse(process.argv[1]);
-    if (typeof p.main_color !== "string") { process.stderr.write("missing main_color\n"); process.exit(2); }
-    if (!p.track_colors || typeof p.track_colors !== "object") { process.stderr.write("missing track_colors\n"); process.exit(2); }
-    process.stdout.write(p.main_color);
-  ' "$j")
-  tracks=$(node -e '
-    const p = JSON.parse(process.argv[1]);
-    process.stdout.write(JSON.stringify(p.track_colors));
-  ' "$j")
-  local main_q tracks_q
-  main_q=$(sqlq "$main")
-  tracks_q=$(sqlq "$tracks")
-  run_sql "UPDATE public.collections
-SET main_color = '$main_q',
-    track_colors = '$tracks_q'::jsonb
-WHERE slug = '$s'
-RETURNING id, slug, main_color, track_colors;"
-}
-
 cmd_list_songs() {
   need_args $# 1 "list-songs <collection-slug>"
   local s; s=$(sqlq "$1")
@@ -279,8 +246,6 @@ case "$sub" in
   list-user-collections)  cmd_list_user_collections "$@" ;;
   set-visibility)         cmd_set_visibility "$@" ;;
   delete-collection)      cmd_delete_collection "$@" ;;
-  edit-palette)           cmd_edit_palette "$@" ;;
-  apply-palette)          cmd_apply_palette "$@" ;;
   list-songs)             cmd_list_songs "$@" ;;
   delete-song)            cmd_delete_song "$@" ;;
   ""|-h|--help|help)      usage ;;

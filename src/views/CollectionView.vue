@@ -14,7 +14,7 @@ const route = useRoute();
 const collectionsStore = useCollectionsStore();
 const { currentCollection } = useCurrentCollection();
 const { replaceToSong } = useNavigation();
-const { themeVariables } = useCollectionTheme(currentCollection);
+useCollectionTheme(currentCollection);
 
 const showEditor = ref(false);
 
@@ -60,7 +60,7 @@ watch(
 </script>
 
 <template>
-  <div :style="themeVariables">
+  <div>
     <LoadingScreen v-if="isLoading" />
 
     <ErrorMessage

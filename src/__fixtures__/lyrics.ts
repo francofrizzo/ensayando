@@ -104,11 +104,12 @@ export const mockCollection: CollectionWithRole = {
   id: 1,
   slug: "test-collection",
   title: "Test Collection",
-  main_color: "#3b82f6",
+  hue: 260,
+  intensity: "normal",
   track_colors: {
-    red: "#ef4444",
-    blue: "#3b82f6",
-    green: "#22c55e"
+    red: { hue: 25, intensity: "intensa" },
+    blue: { hue: 260, intensity: "intensa" },
+    green: { hue: 150, intensity: "intensa" }
   },
   artwork_file_url: null,
   visibility: "private",

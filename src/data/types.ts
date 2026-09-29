@@ -1,3 +1,5 @@
+import type { ColorSpec, Intensity } from "@/utils/palette";
+
 // "private": only members (via user_collections) can read it.
 // "unlisted": anyone with the link can read it, but it's hidden from sidebar listings.
 // "public": anyone can read it and it shows up in every sidebar.
@@ -7,8 +9,11 @@ export type Collection = {
   id: number;
   slug: string;
   title: string;
-  main_color: string;
-  track_colors: Record<string, string>;
+  // Palette: a hue (0–359) and an intensity; every color is derived from them
+  // (utils/palette.ts). Tracks point at a key in track_colors via color_key.
+  hue: number;
+  intensity: Intensity;
+  track_colors: Record<string, ColorSpec>;
   artwork_file_url: string | null;
   artwork_file_key?: string | null;
   artwork_playback_url?: string;

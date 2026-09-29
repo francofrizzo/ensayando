@@ -1,4 +1,4 @@
-import { wcagContrast } from "culori";
+import { oklch, wcagContrast } from "culori";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -11,8 +11,11 @@ import {
   type Intensity,
   resolveCollectionPalette,
   type Theme,
+  parseLegacyColor,
   toColorSpec
 } from "@/utils/palette";
+
+import legacyColors from "@/__fixtures__/legacy-colors.json";
 
 const THEMES: Theme[] = ["light", "dark"];
 const INTENSITIES: Intensity[] = ["suave", "normal", "intensa"];
@@ -72,36 +75,32 @@ describe("contrast sweep over every hue", () => {
 });
 
 describe("toColorSpec", () => {
-  it("reads the new object shapes", () => {
+  it("reads stored specs", () => {
     expect(toColorSpec({ hue: 195, intensity: "normal" })).toEqual({ hue: 195, intensity: "normal" });
     expect(toColorSpec({ hue: 370 })).toEqual({ hue: 10, intensity: "normal" });
     expect(toColorSpec({ neutral: true })).toEqual({ neutral: true });
   });
 
-  it("maps legacy OKLCH strings to hue and intensity", () => {
-    expect(toColorSpec("oklch(60.6% 0.25 292.717)")).toEqual({ hue: 293, intensity: "intensa" });
-    expect(toColorSpec("oklch(76.8% 0.233 130.85)")).toEqual({ hue: 131, intensity: "intensa" });
-    expect(toColorSpec("oklch(0.72 0.13 190)")).toEqual({ hue: 190, intensity: "normal" });
-    expect(toColorSpec("oklch(0.7 0.09 40)")).toEqual({ hue: 40, intensity: "suave" });
-  });
-
-  it("maps legacy hex strings", () => {
-    const blue = toColorSpec("#3b82f6");
-    expect(blue).toMatchObject({ intensity: "intensa" });
-    expect((blue as { hue: number }).hue).toBeGreaterThan(255);
-    expect((blue as { hue: number }).hue).toBeLessThan(265);
-    expect(toColorSpec("#ef4444")).toMatchObject({ intensity: "intensa" });
-  });
-
-  it("treats low chroma as neutral", () => {
-    expect(toColorSpec("#808080")).toEqual({ neutral: true });
-    expect(toColorSpec("oklch(0.5 0.02 200)")).toEqual({ neutral: true });
-  });
-
-  it("returns null for unusable values", () => {
+  it("rejects anything else", () => {
     expect(toColorSpec(null)).toBeNull();
-    expect(toColorSpec("not a color")).toBeNull();
+    expect(toColorSpec("#3b82f6")).toBeNull();
     expect(toColorSpec({ foo: 1 })).toBeNull();
+  });
+});
+
+describe("parseLegacyColor", () => {
+  // Same fixtures as the SQL conversion in the hue migration (tests/db/hue-migration.check.ts).
+  for (const { input, expected } of legacyColors) {
+    it(`${input} → ${JSON.stringify(expected)}`, () => {
+      expect(parseLegacyColor(input)).toEqual(expected);
+    });
+  }
+
+  it("agrees with culori on hex hues", () => {
+    for (const hex of ["#3b82f6", "#ef4444", "#22c55e", "#a855f7", "#eab308", "#14b8a6"]) {
+      const spec = parseLegacyColor(hex) as { hue: number };
+      expect(Math.abs(spec.hue - Math.round(oklch(hex)!.h!))).toBeLessThanOrEqual(1);
+    }
   });
 
   it("uses the migration thresholds", () => {
@@ -113,25 +112,19 @@ describe("toColorSpec", () => {
 });
 
 describe("resolveCollectionPalette", () => {
-  it("prefers the new fields", () => {
+  it("reads hue, intensity and track specs", () => {
     const palette = resolveCollectionPalette({
       hue: 45,
       intensity: "suave",
-      main_color: "#3b82f6",
-      track_colors: { a: { hue: 10, intensity: "normal" }, b: "#22c55e", c: { neutral: true } }
+      track_colors: { a: { hue: 10, intensity: "normal" }, c: { neutral: true }, broken: "#fff" }
     });
     expect(palette.main).toEqual({ hue: 45, intensity: "suave" });
     expect(palette.tracks.a).toEqual({ hue: 10, intensity: "normal" });
-    expect(palette.tracks.b).toMatchObject({ intensity: "intensa" });
     expect(palette.tracks.c).toEqual({ neutral: true });
+    expect(palette.tracks.broken).toBeUndefined();
   });
 
-  it("falls back to the legacy main color, then to the brand", () => {
-    expect(resolveCollectionPalette({ main_color: "oklch(0.55 0.15 150)" }).main).toEqual({
-      hue: 150,
-      intensity: "normal"
-    });
-    expect(resolveCollectionPalette({ main_color: "nope" }).main).toEqual(BRAND_SPEC);
+  it("falls back to the brand without a collection", () => {
     expect(resolveCollectionPalette(null).main).toEqual(BRAND_SPEC);
   });
 });

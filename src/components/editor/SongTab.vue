@@ -21,6 +21,7 @@ import AudioTrackUploader from "@/components/editor/AudioTrackUploader.vue";
 import ColorPicker from "@/components/editor/ColorPicker.vue";
 // PeaksUploader removed; peaks are generated client-side
 import SafeTeleport from "@/components/ui/SafeTeleport.vue";
+import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useCurrentCollection } from "@/composables/useCurrentCollection";
 import { useCurrentSong } from "@/composables/useCurrentSong";
 import { useNavigation } from "@/composables/useNavigation";
@@ -552,12 +553,8 @@ watch(
 );
 
 // Computed properties
-const colorOptions = computed(() =>
-  Object.entries(currentCollection.value?.track_colors ?? {}).map(([key, value]) => ({
-    key,
-    value
-  }))
-);
+// Swatches derived from the collection palette for the current theme.
+const { colorOptions: colorOptions } = useCollectionPalette(currentCollection);
 
 const canSave = computed(
   () =>
