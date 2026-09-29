@@ -52,7 +52,10 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </button>
       <button
         class="btn btn-circle btn-primary play-glow border-0"
-        :class="[props.compact ? 'size-11' : 'size-14', !props.isReady && 'cursor-default']"
+        :class="[
+          props.compact ? 'size-11' : 'size-14 md:size-16 md:-translate-y-7',
+          !props.isReady && 'cursor-default'
+        ]"
         aria-label="Play/Pause"
         @click="props.isReady && emit('play-pause')"
       >
@@ -61,13 +64,13 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
           <IconPause
             v-if="props.isPlaying"
             key="pause"
-            :class="props.compact ? 'size-5' : 'size-6'"
+            :class="props.compact ? 'size-5' : 'size-6 md:size-7'"
           />
           <IconPlay
             v-else
             key="play"
             class="translate-x-[1px]"
-            :class="props.compact ? 'size-5' : 'size-6'"
+            :class="props.compact ? 'size-5' : 'size-6 md:size-7'"
           />
         </Transition>
       </button>
