@@ -16,11 +16,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" ? vitePluginVueDevtools() : null,
     mode === "development" ? devApi(loadEnv(mode, process.cwd(), "")) : null,
     VitePWA({
-      registerType: "autoUpdate",
-      devOptions: {
-        enabled: true
-      },
-      injectRegister: "auto",
+      injectRegister: false,
+      selfDestroying: true,
       manifest: {
         name: "Ensayando",
         short_name: "Ensayando",
@@ -47,33 +44,6 @@ export default defineConfig(({ mode }) => ({
             sizes: "192x192",
             type: "image/png",
             purpose: "maskable"
-          }
-        ]
-      },
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "gstatic-fonts-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
-              }
-            }
           }
         ]
       }
