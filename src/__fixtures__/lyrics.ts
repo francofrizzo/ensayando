@@ -111,7 +111,6 @@ export const mockCollection: CollectionWithRole = {
     blue: { hue: 260, intensity: "intensa" },
     green: { hue: 150, intensity: "intensa" }
   },
-  artwork_file_url: null,
   visibility: "private",
   created_at: "2025-01-01T00:00:00Z",
   user_role: "admin"

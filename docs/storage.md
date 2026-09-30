@@ -70,26 +70,6 @@ R2_BROWSER_TEST=1 pnpm test:e2e tests/e2e/r2-cors.spec.ts
 pnpm storage:smoke                # _smoke probe, then delete
 ```
 
-## Migration
-
-Deploy and verify the dual-read code before copying production objects.
-
-```bash
-pnpm storage:migrate              # dry-run; prints counts only
-pnpm storage:migrate -- --execute # copy, size/hash verify, transactional key update
-pnpm storage:migrate -- --verify  # verify all migrated rows again
-```
-
-The migration inventories both source stores, including unreferenced objects, and preserves those
-objects under `legacy/`. It is deterministic, resumable, and never deletes source files. It
-preserves source content type/disposition, checks every object size, hashes up to ten distributed
-samples, and only then calls `apply_storage_key_migration` to set all matching database keys in one
-transaction. Legacy URL columns remain populated for audit purposes, but their source objects have
-been deleted and they are no longer a usable fallback.
-
-The source cleanup has completed. Do not rerun the copy after deleting the source stores. Remove
-the migration RPC in a future schema-cleanup migration.
-
 ## Production migration record
 
 The production copy completed on 2026-09-28:
@@ -111,3 +91,8 @@ Following explicit owner approval on 2026-09-28, all 264 Supabase Storage object
 bytes) and all 142 Vercel Blob objects (287,988,728 bytes) were deleted through their storage APIs.
 Both sources report zero objects and zero bytes. R2 still reports the expected 406 objects and
 1,273,789,962 bytes, and production playback was rechecked after source deletion.
+
+On 2026-09-30, migration `20260930135033_remove_legacy_migration_data.sql` removed the one-shot
+copy RPC and color backup, cleared the migrated `audio_file_url` values, and removed
+`artwork_file_url`. External audio URLs remain supported for tracks without an R2 key, enforced by
+the `audio_tracks_exactly_one_audio_source` constraint.

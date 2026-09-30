@@ -14,7 +14,6 @@ export type Collection = {
   hue: number;
   intensity: Intensity;
   track_colors: Record<string, TrackColor>;
-  artwork_file_url: string | null;
   artwork_file_key?: string | null;
   artwork_playback_url?: string;
   visibility: CollectionVisibility;

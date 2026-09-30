@@ -117,7 +117,7 @@
 
 .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--c-soft); color: var(--c-ink); display: grid; place-items: center; font: 700 12px/1 var(--ui); flex: none; }
 
-/* portada de colección de ejemplo (en la app es artwork_file_url) */
+/* portada de colección de ejemplo (en la app se referencia con artwork_file_key) */
 .art { border-radius: 10px; flex: none; position: relative; overflow: hidden;
   background:
     radial-gradient(80% 70% at 25% 20%, oklch(from var(--c) calc(l + 0.18) c h), transparent 60%),

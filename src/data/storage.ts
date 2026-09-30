@@ -161,7 +161,7 @@ export function audioPlaybackUrl(track: AudioTrack): string {
 }
 
 export function artworkPlaybackUrl(collection: Collection): string {
-  return collection.artwork_playback_url || collection.artwork_file_url || "";
+  return collection.artwork_playback_url || "";
 }
 
 export async function deleteAudioFile(key: string): Promise<void> {

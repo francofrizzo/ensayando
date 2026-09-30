@@ -14,7 +14,6 @@ const collection = (id: number, hue: number): CollectionWithRole =>
     hue,
     intensity: "media",
     track_colors: {},
-    artwork_file_url: null,
     visibility: "private",
     created_at: "",
     user_role: "admin"

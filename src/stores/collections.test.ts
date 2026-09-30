@@ -330,7 +330,6 @@ describe("collections store — ensureCollectionLoaded", () => {
     hue: 293,
     intensity: "intensa" as const,
     track_colors: {},
-    artwork_file_url: null,
     visibility: "unlisted" as const,
     created_at: "2026-01-01T00:00:00Z"
   };

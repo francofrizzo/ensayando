@@ -25,7 +25,6 @@ const collection = (
   hue: 300,
   intensity: "media",
   track_colors: {},
-  artwork_file_url: null,
   visibility: "private",
   created_by: null,
   created_at: "2026-01-01",

@@ -70,22 +70,10 @@ does, these were missing and are fixed in `20260929100000_schema_integrity.sql` 
    dump could predate manual changes). Run `npx supabase db diff --linked` and review
    it before `db push`. In particular check for duplicate slugs or memberships: the
    unique indexes fail to build if production has duplicates.
-2. **Inventory the current colors** before the hue migration drops `main_color`. It
-   converts `oklch()`, hex and `rgb()`; anything else (hsl, named colors, malformed
-   values) falls back to the brand hue or a neutral track, with a `NOTICE`. The original
-   values stay in `public.collections_color_backup` (not exposed through the API). Check
-   what production has:
-
-   ```sql
-   select main_color, count(*) from public.collections group by 1 order by 2 desc;
-   select value, count(*) from public.collections, jsonb_each_text(track_colors)
-   group by 1 order by 2 desc;
-   ```
-
-3. **Check reserved collection slugs:** collections whose slug is `login`,
+2. **Check reserved collection slugs:** collections whose slug is `login`,
    `reset-password`, `nueva-coleccion`, `404`, `api` or `assets` get `-coleccion`
    appended (their links change).
-4. **Set `SUPABASE_SERVICE_ROLE_KEY` and `APP_URL`** in the Vercel project (production
+3. **Set `SUPABASE_SERVICE_ROLE_KEY` and `APP_URL`** in the Vercel project (production
    and preview). `/api/members` needs the key to create accounts, reset passwords and
    send invitations. In production `APP_URL` (e.g. `https://ensayando.com.ar`) is
    required for the links in those emails: without it the actions fail instead of

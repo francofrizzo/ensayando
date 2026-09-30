@@ -27,9 +27,7 @@ const emit = defineEmits<{
   settings: [];
 }>();
 
-const artwork = computed(() =>
-  props.collection.artwork_file_url ? artworkPlaybackUrl(props.collection) : undefined
-);
+const artwork = computed(() => artworkPlaybackUrl(props.collection) || undefined);
 </script>
 
 <template>

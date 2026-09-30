@@ -11,12 +11,13 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 import {
+  artworkPlaybackUrl,
   deleteAudioFile,
   resolveAudioTrackUrls,
   uploadArtworkFile,
   uploadAudioFile
 } from "@/data/storage";
-import type { AudioTrack } from "@/data/types";
+import type { AudioTrack, Collection } from "@/data/types";
 
 const response = (body: unknown, status = 200) =>
   new Response(status === 204 ? null : JSON.stringify(body), {
@@ -94,7 +95,7 @@ describe("R2 browser storage adapter", () => {
     });
   });
 
-  it("uses signed playback URLs while preserving legacy URL fallback", async () => {
+  it("uses signed playback URLs while preserving external URL tracks", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       response({ urls: { "1": "https://signed.example/track" } })
     );
@@ -102,16 +103,25 @@ describe("R2 browser storage adapter", () => {
       {
         id: 1,
         audio_file_key: "audio/7/track.mp3",
-        audio_file_url: "https://legacy.example/track.mp3"
+        audio_file_url: ""
       },
-      { id: 2, audio_file_key: null, audio_file_url: "https://legacy.example/other.mp3" }
+      { id: 2, audio_file_key: null, audio_file_url: "https://external.example/other.mp3" }
     ] as AudioTrack[];
 
     const resolved = await resolveAudioTrackUrls(tracks);
 
     expect(resolved[0]?.playback_url).toBe("https://signed.example/track");
-    expect(resolved[1]?.playback_url).toBe("https://legacy.example/other.mp3");
-    expect(resolved[1]?.audio_file_url).toBe("https://legacy.example/other.mp3");
+    expect(resolved[1]?.playback_url).toBe("https://external.example/other.mp3");
+    expect(resolved[1]?.audio_file_url).toBe("https://external.example/other.mp3");
+  });
+
+  it("uses only the resolved R2 URL for collection artwork", () => {
+    expect(
+      artworkPlaybackUrl({ artwork_file_key: "artwork/7/cover.webp" } as Collection)
+    ).toBe("");
+    expect(
+      artworkPlaybackUrl({ artwork_playback_url: "https://signed.example/cover" } as Collection)
+    ).toBe("https://signed.example/cover");
   });
 
   it("deletes an R2 key through the authenticated API", async () => {

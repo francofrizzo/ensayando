@@ -114,8 +114,7 @@ async function uploadArtwork(file: File | undefined) {
     const uploaded = await uploadArtworkFile(file, props.collection.id);
     uploadedKey = uploaded.key;
     const updated = await updateCollection(props.collection.id, {
-      artwork_file_key: uploaded.key,
-      artwork_file_url: null
+      artwork_file_key: uploaded.key
     });
     uploadedKey = null;
     emit("updated", { ...props.collection, ...updated, artwork_playback_url: uploaded.url });
@@ -134,8 +133,7 @@ async function removeArtwork() {
   const key = props.collection.artwork_file_key;
   try {
     const updated = await updateCollection(props.collection.id, {
-      artwork_file_key: null,
-      artwork_file_url: null
+      artwork_file_key: null
     });
     emit("updated", { ...props.collection, ...updated, artwork_playback_url: undefined });
     if (key) await deleteArtworkFile(key).catch(() => undefined);
