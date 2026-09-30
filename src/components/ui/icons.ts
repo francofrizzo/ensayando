@@ -93,5 +93,7 @@ export {
   IconPresentation as IconPreview,
   IconArrowRight as IconGoTo,
   IconMinus as IconMinus,
-  IconClipboardText as IconPasteText
+  IconClipboardText as IconPasteText,
+  IconDeviceMobile as IconMobile,
+  IconShare as IconShare
 } from "@tabler/icons-vue";

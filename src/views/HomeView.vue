@@ -10,6 +10,7 @@ import {
 import { computed, onMounted, ref } from "vue";
 
 import AccountMenu from "@/components/navigation/AccountMenu.vue";
+import InstallAppCard from "@/components/navigation/InstallAppCard.vue";
 import ErrorMessage from "@/components/ui/ErrorMessage.vue";
 import LoadingScreen from "@/components/ui/LoadingScreen.vue";
 import RoomLight from "@/components/ui/RoomLight.vue";
@@ -120,6 +121,7 @@ const count = (collection: CollectionWithRole) => songIndex.countByCollection.ge
       <main
         class="mx-auto grid max-w-[1180px] grid-cols-1 gap-3 px-4 pt-[calc(max(10px,env(safe-area-inset-top))+72px)] pb-8 sm:grid-cols-2 sm:gap-5 sm:px-10 sm:pt-[108px] lg:grid-cols-3 lg:px-16"
       >
+        <InstallAppCard />
         <RouterLink
           v-for="(collection, index) in cards"
           :key="collection.id"

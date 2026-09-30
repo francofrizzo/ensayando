@@ -5,6 +5,7 @@ import { Toaster } from "vue-sonner";
 import "vue-sonner/style.css";
 
 import CommandPalette from "@/components/navigation/CommandPalette.vue";
+import InstallAppDialog from "@/components/navigation/InstallAppDialog.vue";
 import LibraryPanel from "@/components/navigation/LibraryPanel.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useUIStore } from "@/stores/ui";
@@ -34,4 +35,5 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown, true));
   </RouterView>
   <LibraryPanel />
   <CommandPalette />
+  <InstallAppDialog />
 </template>

@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
 import {
+  IconDownload,
   IconLogIn,
   IconLogOut,
   IconThemeDark,
@@ -11,6 +12,7 @@ import {
   IconThemeSystem
 } from "@/components/ui/icons";
 import { type ThemeMode, useTheme } from "@/composables/useTheme";
+import { usePwaInstall } from "@/composables/usePwaInstall";
 import { useAuthStore } from "@/stores/auth";
 
 // The avatar's menu: who is signed in, the theme, and signing out. Every avatar
@@ -19,6 +21,12 @@ import { useAuthStore } from "@/stores/auth";
 const authStore = useAuthStore();
 const router = useRouter();
 const { mode: themeMode, setMode: setThemeMode } = useTheme();
+const { available: installAvailable, install } = usePwaInstall();
+
+const installApp = () => {
+  (document.activeElement as HTMLElement | null)?.blur();
+  void install();
+};
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: typeof IconThemeSystem }[] = [
   { mode: "system", label: "Tema del sistema", icon: IconThemeSystem },
@@ -89,6 +97,12 @@ const signOut = async () => {
         </button>
       </div>
       <ul class="menu w-full p-0 pt-1">
+        <li v-if="installAvailable">
+          <button @click="installApp">
+            <IconDownload class="size-[17px] opacity-70" />
+            Instalar app
+          </button>
+        </li>
         <li>
           <button @click="signOut">
             <IconLogOut class="size-[17px] opacity-70" />
