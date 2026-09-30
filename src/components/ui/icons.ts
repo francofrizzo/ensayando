@@ -95,5 +95,5 @@ export {
   IconMinus as IconMinus,
   IconClipboardText as IconPasteText,
   IconDeviceMobile as IconMobile,
-  IconShare as IconShare
+  IconShare2 as IconShare
 } from "@tabler/icons-vue";
