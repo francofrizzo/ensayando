@@ -13,6 +13,7 @@ import EditBar from "@/components/editor/EditBar.vue";
 import EditorPanels from "@/components/editor/EditorPanels.vue";
 import UnsavedChangesDialog from "@/components/editor/UnsavedChangesDialog.vue";
 import LyricsViewer from "@/components/lyrics/LyricsViewer.vue";
+import IOSPlaybackNotice from "@/components/player/IOSPlaybackNotice.vue";
 import PlayerControls from "@/components/player/PlayerControls.vue";
 import PlayerShortcutsModal from "@/components/player/PlayerShortcutsModal.vue";
 import PlayerTopBar from "@/components/player/PlayerTopBar.vue";
@@ -247,6 +248,18 @@ const goToSong = (song: Song | null) => {
   if (song) navigateToSong(props.collection, song);
 };
 
+const IOS_AUDIO_NOTICE_STORAGE_KEY = "ens-ios-audio-notice-v1";
+const showIOSAudioNotice = ref(false);
+
+const dismissIOSAudioNotice = () => {
+  try {
+    window.localStorage.setItem(IOS_AUDIO_NOTICE_STORAGE_KEY, "1");
+  } catch {
+    // The notice can still be dismissed when storage is unavailable.
+  }
+  showIOSAudioNotice.value = false;
+};
+
 const showShortcuts = ref(false);
 
 const openSettings = () => {
@@ -322,6 +335,8 @@ watch(
 );
 
 const keydownHandler = (event: KeyboardEvent) => {
+  if (showIOSAudioNotice.value) return;
+
   // Check if the event originates from an capturing element
   const target = event.target as HTMLElement;
   const isInCapturingElement =
@@ -389,6 +404,14 @@ onMounted(() => {
   window.addEventListener("beforeunload", onBeforeUnload);
   window.addEventListener(COMMAND_EVENT, onCommand);
   initMediaSession();
+  if (isIOS && sortedTracks.value.length > 0) {
+    try {
+      showIOSAudioNotice.value =
+        window.localStorage.getItem(IOS_AUDIO_NOTICE_STORAGE_KEY) !== "1";
+    } catch {
+      showIOSAudioNotice.value = true;
+    }
+  }
   // Kick off sequential decode on iOS: use nextTick so template refs are populated
   if (isIOS) {
     nextTick(() => {
@@ -1184,5 +1207,7 @@ const initializeAudioContext = async () => {
       :can-edit="canEdit"
       @close="showShortcuts = false"
     />
+
+    <IOSPlaybackNotice :show="showIOSAudioNotice" @dismiss="dismissIOSAudioNotice" />
   </div>
 </template>
