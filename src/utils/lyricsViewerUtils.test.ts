@@ -9,7 +9,12 @@ import {
   regularizeLyrics,
   type LyricVerseWithStatus
 } from "@/utils/lyricsViewerUtils";
-import { overlappingTimedLyrics, timedLyrics, trackFilterLyrics } from "@/__fixtures__/lyrics";
+import {
+  overlappingTimedLyrics,
+  timedLyrics,
+  timedVerse,
+  trackFilterLyrics
+} from "@/__fixtures__/lyrics";
 
 // --- getVerseStatus ---
 
@@ -198,6 +203,17 @@ describe("regularizeLyrics", () => {
     expect(result[0].length).toBe(2); // 2 lines
     expect(result[0][0].columns.length).toBe(2); // first line: 2 columns (merged)
     expect(result[0][1].columns.length).toBe(1); // second line: 1 column (solo)
+  });
+
+  it("merges overlapping verses when the first starts at 0", () => {
+    const withStatus = addStatusToLyrics(
+      [[timedVerse(0, 5, "Voice A"), timedVerse(1, 5, "Voice B")]],
+      0
+    );
+    const result = regularizeLyrics(withStatus);
+
+    expect(result[0]).toHaveLength(1);
+    expect(result[0][0].columns).toHaveLength(2);
   });
 
   it("does not merge non-overlapping verses", () => {

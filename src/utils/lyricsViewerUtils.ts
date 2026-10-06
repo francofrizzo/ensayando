@@ -142,10 +142,10 @@ export const regularizeLyrics = (stanzas: LyricStanzaWithStatus[]): RegularizedL
         const previousLine = lines[lines.length - 1];
         if (
           previousLine &&
-          item.start_time &&
-          item.end_time &&
-          previousLine.start_time &&
-          previousLine.end_time
+          item.start_time !== undefined &&
+          item.end_time !== undefined &&
+          previousLine.start_time !== undefined &&
+          previousLine.end_time !== undefined
         ) {
           const overlap = calculateOverlap(
             item.start_time,

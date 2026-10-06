@@ -79,4 +79,20 @@ describe("LyricsViewer", () => {
     expect(wrapper.emitted("seek")).toBeTruthy();
     expect(wrapper.emitted("seek")![0]).toEqual([5]);
   });
+
+  it("treats start_time 0 as clickable and seeks to it", async () => {
+    const wrapper = mountViewer([[timedVerse(0, 5, "From the start")]]);
+    const line = wrapper.findAll("div").find(
+      (element) =>
+        element.text().includes("From the start") && element.classes().includes("justify-evenly")
+    );
+    const verse = wrapper.findAll("div").find(
+      (element) =>
+        element.text().includes("From the start") && element.classes().includes("snap-center")
+    );
+
+    expect(line?.classes()).toContain("cursor-pointer");
+    await verse?.trigger("click");
+    expect(wrapper.emitted("seek")).toEqual([[0]]);
+  });
 });
