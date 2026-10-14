@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type ObjectDirective } from "vue";
 
 import { useLyricsColoring } from "@/composables/useLyricsColoring";
 import type { CollectionWithRole, LyricStanza, LyricVerse } from "@/data/types";
@@ -33,6 +33,40 @@ const regularizedLyrics = computed(() => regularizeLyrics(lyricsWithStatus.value
 
 const verseStyles = (verse: LyricVerse & { status?: "active" | "past" | "future" }) =>
   getVerseStyles(verse, props.collection, verse.status, "stage");
+
+// Balanced wrapping leaves unused space in the block. Size the single gradient
+// to the union of the rendered text lines, not to that available layout width.
+const gradientObservers = new WeakMap<HTMLElement, { update: () => void; stop: () => void }>();
+const vTextGradient: ObjectDirective<HTMLElement> = {
+  mounted(element) {
+    const update = () => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const blockWidth = element.getBoundingClientRect().width;
+      if (blockWidth === 0) return;
+      // Both rectangles include the active verse's scale, so the ratio does not.
+      element.style.backgroundSize = `${(range.getBoundingClientRect().width / blockWidth) * 100}% 100%`;
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    document.fonts?.addEventListener("loadingdone", update);
+    gradientObservers.set(element, {
+      update,
+      stop: () => {
+        observer.disconnect();
+        document.fonts?.removeEventListener("loadingdone", update);
+      }
+    });
+    update();
+  },
+  updated(element) {
+    gradientObservers.get(element)?.update();
+  },
+  unmounted(element) {
+    gradientObservers.get(element)?.stop();
+    gradientObservers.delete(element);
+  }
+};
 
 const currentVerseElement = ref<Element | null>(null);
 
@@ -99,10 +133,11 @@ watch(
                     }
                   }
                 "
+                v-text-gradient
                 :data-active="verse.status === 'active' || undefined"
                 :style="verseStyles(verse)"
                 :class="verse.status === 'active' ? 'font-bold' : 'font-medium'"
-                class="block text-center leading-tight text-balance uppercase transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                class="block bg-center bg-no-repeat text-center leading-tight text-balance uppercase transition-colors duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
                 >{{ verse.text }}</span
               >
             </div>

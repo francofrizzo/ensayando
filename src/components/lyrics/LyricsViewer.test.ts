@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 
 import LyricsViewer from "./LyricsViewer.vue";
@@ -18,6 +18,34 @@ function mountViewer(lyrics: LyricStanza[], currentTime = 0, enabledTrackIds: nu
 }
 
 describe("LyricsViewer", () => {
+  it("fits the gradient to wrapped text rather than the available block width", async () => {
+    // Geometry supplied by the browser: a 300px block with 240px of centered
+    // text. Active scaling affects both measurements, not the gradient ratio.
+    const blockRect = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue(new DOMRect(0, 0, 300, 50));
+    const textRect = vi
+      .spyOn(Range.prototype, "getBoundingClientRect")
+      .mockReturnValue(new DOMRect(30, 0, 240, 50));
+    let wrapper: ReturnType<typeof mountViewer> | undefined;
+    try {
+      wrapper = mountViewer([[timedVerse(1, 5, "Una frase que ocupa dos líneas")]]);
+      const verse = wrapper.find("span").element;
+      expect(verse.style.backgroundSize).toBe("80% 100%");
+      expect(wrapper.find("span").classes()).toContain("bg-center");
+      expect(wrapper.find("span").classes()).toContain("bg-no-repeat");
+
+      blockRect.mockReturnValue(new DOMRect(0, 0, 342, 57));
+      textRect.mockReturnValue(new DOMRect(34.2, 0, 273.6, 57));
+      await wrapper.setProps({ currentTime: 3 });
+      expect(parseFloat(verse.style.backgroundSize)).toBeCloseTo(80);
+    } finally {
+      wrapper?.unmount();
+      blockRect.mockRestore();
+      textRect.mockRestore();
+    }
+  });
+
   it("renders correct number of verses", () => {
     const lyrics: LyricStanza[] = [
       [{ text: "Line 1" }, { text: "Line 2" }],
