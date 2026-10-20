@@ -10,8 +10,8 @@ Applied to production on 2026-10-20 after reviewing the schema and rehearsing lo
   integer `order`. Parent cycles are rejected. No inheritance is inferred or applied.
   Read access follows the collections table's RLS; only collection admins can write.
 - Tracks: `kind` is `voice | instrumental | unclassified` (default unclassified),
-  `part_ids uuid[]` defaults empty, `parts_reviewed` defaults false. Instrumental
-  tracks cannot associate parts. Unclassified tracks can carry provisional mappings.
+  `part_ids uuid[]` defaults empty. Instrumental tracks cannot associate parts.
+  Unclassified tracks can carry mappings.
   Every part must belong to the song's collection. Chosen `color_key` is independent
   of mappings; a shared Solistas track keeps its chosen principal-soloist color.
 - Verses: `part_ids` is a UUID array in presentation order. `audio_override` and
@@ -90,6 +90,11 @@ fixtures and cleans them up; ordinary unit runs skip it. The one-time backfill m
 also be rehearsed against pre-migration fixtures/a local database snapshot.
 
 ## Rollout order
+
+`20261020140000_remove_parts_reviewed.sql` removes the import-review flag from tracks.
+Publish the frontend that no longer writes it before applying this cleanup. The
+original migration below remains unchanged as a record of the initial rollout;
+review status is not part of the current application contract.
 
 Production rollout is a separate, explicitly approved action. Back up collections,
 tracks and lyrics first, then apply the database migration **before** publishing the

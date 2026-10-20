@@ -505,12 +505,7 @@ useSettingsSection({
             </div>
           </div>
         </div>
-        <div
-          v-else
-          class="max-h-64 overflow-y-auto p-2 pt-0"
-          role="group"
-          aria-label="Colores de la colección"
-        >
+        <div v-else class="p-2 pt-0" role="group" aria-label="Colores de la colección">
           <button
             v-for="color in colors"
             :key="color.key"

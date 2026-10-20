@@ -30,11 +30,12 @@ export function useCollectionPalette(collection: MaybeCollection) {
   const mainColor = (role: ColorRole, alpha?: number) =>
     deriveColor(palette.value.main, role, resolvedTheme.value, alpha);
 
-  /** Options for color pickers: key plus the swatch (fill) color, which always takes white text. */
+  /** Swatches match the lyrics on stage in the current theme. */
   const colorOptions = computed(() =>
     Object.keys(palette.value.tracks).map((key) => ({
       key,
-      value: deriveColor(palette.value.tracks[key]!, "fill", resolvedTheme.value)
+      name: palette.value.names[key],
+      value: deriveColor(palette.value.tracks[key]!, "stage", resolvedTheme.value)
     }))
   );
 

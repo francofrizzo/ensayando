@@ -119,11 +119,7 @@ describe("songFormChanges", () => {
   });
 
   it("keeps metadata-only edits dirty so they can be saved", () => {
-    for (const patch of [
-      { kind: "instrumental" as const },
-      { part_ids: ["eliza"] },
-      { parts_reviewed: true }
-    ]) {
+    for (const patch of [{ kind: "instrumental" as const }, { part_ids: ["eliza"] }]) {
       expect(
         songFormChanges({ ...saved, audio_tracks: [track(1, patch), track(2)] }, saved)
       ).toEqual(["track-details"]);

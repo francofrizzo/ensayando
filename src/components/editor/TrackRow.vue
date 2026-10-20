@@ -21,11 +21,11 @@ const props = defineProps<{
   track: AudioTrack;
   index: number;
   total: number;
-  /** Swatch (fill) color of the track's color key. */
-  fill: string;
+  /** The track's lyric color in the current theme. */
+  stage: string;
   /** Wave color (ink of the track, per theme). */
   wave: string;
-  colorOptions: { key: string; value: string }[];
+  colorOptions: { key: string; name?: string; value: string }[];
   parts?: CollectionPart[];
   upload?: TrackUploadState | null;
   /** Name and size of a file uploaded in this session (not stored). */
@@ -42,7 +42,6 @@ const emit = defineEmits<{
   color: [key: string];
   kind: [value: AudioTrackKind];
   parts: [ids: string[]];
-  reviewed: [value: boolean];
   replace: [file: File];
   remove: [];
   retry: [];
@@ -184,41 +183,42 @@ function togglePart(id: string) {
       </button>
 
       <!-- Display color stays independent of the track's contained parts. -->
-      <div class="relative shrink-0">
+      <div class="relative shrink-0" @keydown.esc="colorOpen = false">
         <button
           type="button"
-          class="grid h-8 min-w-11 place-items-center rounded-lg px-2 font-mono text-xs font-semibold text-white"
-          :style="{ background: props.fill }"
+          class="btn btn-sm btn-ghost gap-1.5 px-2 font-mono text-xs"
           :aria-label="`Color de la pista: ${props.track.color_key}`"
           :aria-expanded="colorOpen"
           data-testid="track-color"
           @click="colorOpen = !colorOpen"
         >
+          <span class="size-4 shrink-0 rounded-full" :style="{ background: props.stage }" />
           {{ props.track.color_key }}
         </button>
         <div
           v-if="colorOpen"
           class="glass-3 rounded-box absolute top-full left-0 z-30 mt-2 flex w-64 flex-col gap-2.5 p-3"
-          @keydown.esc="colorOpen = false"
         >
           <span class="text-base-content/60 text-[11px] font-semibold tracking-[0.1em] uppercase">
             Color de la pista
           </span>
-          <div class="flex flex-wrap gap-1.5">
+          <div class="flex max-h-72 flex-col gap-1 overflow-y-auto">
             <button
               v-for="option in props.colorOptions"
               :key="option.key"
               type="button"
-              class="flex h-8 min-w-11 items-center justify-center gap-1 rounded-lg px-2 font-mono text-xs font-semibold text-white"
-              :class="{
-                'ring-base-content ring-2 ring-offset-2 ring-offset-transparent':
-                  option.key === props.track.color_key
-              }"
-              :style="{ background: option.value }"
+              class="hover:bg-base-content/10 flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2 text-left text-sm"
+              :aria-pressed="option.key === props.track.color_key"
               @click="pickColor(option.key)"
             >
-              <IconCheck v-if="option.key === props.track.color_key" class="size-3.5" />
-              {{ option.key }}
+              <span class="size-4 shrink-0 rounded-full" :style="{ background: option.value }" />
+              <span class="min-w-0 flex-1 truncate">{{ option.name || option.key }}</span>
+              <span v-if="option.name" class="text-base-content/50 font-mono text-xs">{{
+                option.key
+              }}</span>
+              <span class="size-3.5 shrink-0">
+                <IconCheck v-if="option.key === props.track.color_key" class="size-3.5" />
+              </span>
             </button>
           </div>
         </div>
@@ -289,15 +289,6 @@ function togglePart(id: string) {
             </p>
           </div>
         </details>
-        <label class="text-base-content/60 mt-2 flex items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            class="checkbox checkbox-xs"
-            :checked="track.parts_reviewed ?? false"
-            @change="emit('reviewed', ($event.target as HTMLInputElement).checked)"
-          />
-          Contenido revisado
-        </label>
       </div>
     </div>
 

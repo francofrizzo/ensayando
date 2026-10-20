@@ -105,7 +105,6 @@ const TRACK_FIELDS = [
   "color_key",
   "kind",
   "part_ids",
-  "parts_reviewed",
   "audio_file_url",
   "audio_file_key",
   "order",

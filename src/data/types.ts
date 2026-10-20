@@ -65,8 +65,6 @@ export type AudioTrack = {
   /** Independent of title, musical identity, and the chosen display color. */
   kind?: AudioTrackKind;
   part_ids?: string[];
-  /** Imported associations are suggestions until an editor confirms them. */
-  parts_reviewed?: boolean;
   audio_file_url: string;
   audio_file_key?: string | null;
   playback_url?: string;

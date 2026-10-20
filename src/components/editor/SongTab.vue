@@ -165,7 +165,6 @@ const createTrack = (title = ""): AudioTrack => {
     peaks: null,
     kind: "unclassified",
     part_ids: [],
-    parts_reviewed: false,
     order: formData.audio_tracks.length + 1,
     created_at: new Date().toISOString()
   };
@@ -446,7 +445,6 @@ const trackRow = (track: AudioTrack) => ({
   color_key: track.color_key,
   kind: track.kind ?? "unclassified",
   part_ids: track.part_ids ?? [],
-  parts_reviewed: track.parts_reviewed ?? false,
   audio_file_url: track.audio_file_url,
   audio_file_key: track.audio_file_key ?? null,
   peaks: track.peaks ?? null,
@@ -792,7 +790,7 @@ defineExpose({ isDirty, enterCreateMode });
             :track="track"
             :index="index"
             :total="formData.audio_tracks.length"
-            :fill="trackColor(track.color_key, 'fill')"
+            :stage="trackColor(track.color_key, 'stage')"
             :wave="trackColor(track.color_key, 'wave')"
             :color-options="colorOptions"
             :parts="currentCollection?.parts ?? []"
@@ -808,11 +806,10 @@ defineExpose({ isDirty, enterCreateMode });
               (kind) =>
                 updateTrack(track.id, {
                   kind,
-                  ...(kind === 'instrumental' ? { part_ids: [], parts_reviewed: true } : {})
+                  ...(kind === 'instrumental' ? { part_ids: [] } : {})
                 })
             "
-            @parts="(part_ids) => updateTrack(track.id, { part_ids, parts_reviewed: true })"
-            @reviewed="(parts_reviewed) => updateTrack(track.id, { parts_reviewed })"
+            @parts="(part_ids) => updateTrack(track.id, { part_ids })"
             @replace="(file: File) => uploadInto(track.id, file)"
             @retry="retryUpload(track.id)"
             @remove="removeTrack(index)"
