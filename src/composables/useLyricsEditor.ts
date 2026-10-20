@@ -1,5 +1,6 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
+import { verseAssignments } from "@/utils/parts";
 import { type Ref } from "vue";
 import { useLyricsCommands, type LyricsCommandActions } from "./useLyricsCommands";
 import { useLyricsNavigation } from "./useLyricsNavigation";
@@ -85,14 +86,8 @@ export function useLyricsEditor(
   const insertLineWithInheritance = (before: boolean = false) => {
     if (!currentFocus.value) return;
 
-    const colorsToInherit = properties.getColorsForInheritance(currentFocus.value);
-    const trackIdsToInherit = properties.getAudioTrackIdsForInheritance(currentFocus.value);
-
-    const initialProps: Record<string, unknown> = {};
-    if (colorsToInherit.length > 0) initialProps.color_keys = colorsToInherit;
-    if (trackIdsToInherit.length > 0) initialProps.audio_track_ids = trackIdsToInherit;
-
-    operations.insertLine(currentFocus.value, before, initialProps);
+    const verse = getCurrentVerse(currentFocus.value);
+    operations.insertLine(currentFocus.value, before, verse ? verseAssignments(verse) : {});
   };
 
   const duplicateLineWithInheritance = () => {
@@ -113,14 +108,8 @@ export function useLyricsEditor(
   const insertStanzaWithInheritance = () => {
     if (!currentFocus.value) return;
 
-    const colorsToInherit = properties.getColorsForInheritance(currentFocus.value);
-    const trackIdsToInherit = properties.getAudioTrackIdsForInheritance(currentFocus.value);
-
-    const initialProps: Record<string, unknown> = {};
-    if (colorsToInherit.length > 0) initialProps.color_keys = colorsToInherit;
-    if (trackIdsToInherit.length > 0) initialProps.audio_track_ids = trackIdsToInherit;
-
-    operations.insertStanza(currentFocus.value, initialProps);
+    const verse = getCurrentVerse(currentFocus.value);
+    operations.insertStanza(currentFocus.value, verse ? verseAssignments(verse) : {});
   };
 
   // Stamp and advance: set start time then move to next verse
@@ -197,7 +186,12 @@ export function useLyricsEditor(
   };
 
   // Initialize commands composable
-  const commands = useLyricsCommands(() => currentFocus.value, isColumnContext, commandActions, onSave);
+  const commands = useLyricsCommands(
+    () => currentFocus.value,
+    isColumnContext,
+    commandActions,
+    onSave
+  );
 
   // Return the public API
   return {

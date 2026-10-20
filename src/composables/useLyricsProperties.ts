@@ -5,18 +5,6 @@ export function useLyricsProperties(
   getCurrentVerse?: (position: FocusPosition) => LyricVerse | null,
   updateCurrentVerse?: (position: FocusPosition, updater: (verse: LyricVerse) => void) => boolean
 ) {
-  const getColorsForInheritance = (currentFocus: FocusPosition | null): string[] => {
-    if (!currentFocus || !getCurrentVerse) return [];
-    const verse = getCurrentVerse(currentFocus);
-    return verse?.color_keys || [];
-  };
-
-  const getAudioTrackIdsForInheritance = (currentFocus: FocusPosition | null): number[] => {
-    if (!currentFocus || !getCurrentVerse) return [];
-    const verse = getCurrentVerse(currentFocus);
-    return verse?.audio_track_ids || [];
-  };
-
   const getCurrentVerseColors = (currentFocus: FocusPosition | null): string[] => {
     if (!currentFocus || !getCurrentVerse) return [];
     const verse = getCurrentVerse(currentFocus);
@@ -27,6 +15,7 @@ export function useLyricsProperties(
     if (!currentFocus || !updateCurrentVerse) return;
 
     updateCurrentVerse(currentFocus, (verse) => {
+      if (verse.part_ids !== undefined) verse.color_override = true;
       if (colors.length === 0) {
         delete verse.color_keys;
       } else {
@@ -45,6 +34,7 @@ export function useLyricsProperties(
     if (!currentFocus || !updateCurrentVerse) return;
 
     updateCurrentVerse(currentFocus, (verse) => {
+      if (verse.part_ids !== undefined) verse.audio_override = true;
       if (trackIds.length === 0) {
         delete verse.audio_track_ids;
       } else {
@@ -74,8 +64,6 @@ export function useLyricsProperties(
   };
 
   return {
-    getColorsForInheritance,
-    getAudioTrackIdsForInheritance,
     getCurrentVerseColors,
     setCurrentVerseColors,
     getCurrentVerseAudioTrackIds,

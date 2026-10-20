@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 
 import { IconClose, IconCopy, IconGoTo, IconMarkTime, IconTrash } from "@/components/ui/icons";
 import type { CommandRegistry } from "@/composables/useCommands";
-import type { AudioTrack, LyricStanza } from "@/data/types";
+import type { AudioTrack, CollectionPart, LyricStanza } from "@/data/types";
 import { prettyKeyParts } from "@/utils/keys";
 import {
   formatVerseTime,
@@ -15,13 +15,14 @@ import {
 } from "@/utils/lyricsSelection";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
 
-type ColorOption = { key: string; ink: string };
+type ColorOption = { key: string; name?: string; ink: string };
 
 const props = defineProps<{
   lyrics: LyricStanza[];
   selection: FocusPosition[];
   colors: ColorOption[];
   tracks: AudioTrack[];
+  parts: CollectionPart[];
   trackInk: (colorKey: string) => string;
   commandRegistry: CommandRegistry;
   /** The verse "Copiar de este verso" copies from (the focused one). */
@@ -33,6 +34,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   "toggle-color": [key: string];
   "toggle-track": [id: number];
+  "toggle-part": [id: string];
+  "use-part-defaults": [field: "audio" | "color"];
   "set-comment": [comment: string | undefined];
   "set-time": [which: "start" | "end", value: number | undefined];
   "copy-from-anchor": [];
@@ -52,8 +55,23 @@ const summary = computed(() =>
     props.lyrics,
     props.selection,
     props.colors.map((c) => c.key),
-    props.tracks.map((t) => t.id)
+    props.tracks.map((t) => t.id),
+    props.parts.map((p) => p.id)
   )
+);
+
+const selectedVerses = computed(() =>
+  props.selection.flatMap((position) => {
+    const verse = getVerseAt(props.lyrics, position);
+    return verse ? [verse] : [];
+  })
+);
+const hasParts = computed(() => selectedVerses.value.some((v) => v.part_ids?.length));
+const hasExceptions = computed(() =>
+  selectedVerses.value.some((v) => v.part_ids === undefined || v.audio_override || v.color_override)
+);
+const associatedTracks = computed(() =>
+  props.tracks.filter((t) => summary.value.tracks[t.id] !== "none")
 );
 
 /** The selected verse's own text, as the panel title. */
@@ -139,11 +157,11 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
           v-if="anchorText"
           class="btn btn-soft btn-xs mt-2 max-w-full justify-start rounded-full"
           data-testid="inspector-copy-from-anchor"
-          :title="`Todos quedan con los colores y pistas de “${anchorText}”`"
+          :title="`Todos quedan con las partes y excepciones de “${anchorText}”`"
           @click="emit('copy-from-anchor')"
         >
           <IconCopy class="size-3.5 shrink-0" />
-          <span class="truncate">Copiar colores y pistas de “{{ anchorText }}”</span>
+          <span class="truncate">Copiar asignaciones de “{{ anchorText }}”</span>
         </button>
       </div>
       <button
@@ -160,78 +178,155 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
       v-if="selection.length === 0"
       class="text-base-content/50 flex flex-1 items-center justify-center px-6 pb-8 text-center text-sm"
     >
-      Elegí un verso para ver sus colores, pistas y tiempos.
+      Seleccioná un verso.
     </div>
 
     <div v-else class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
-      <!-- Colores -->
-      <section class="flex flex-col gap-2">
-        <div class="flex items-baseline justify-between gap-2">
-          <h4 class="text-[12.5px] font-semibold">Colores</h4>
-        </div>
-        <div v-if="colors.length" class="flex flex-wrap gap-1.5">
+      <section class="flex flex-col gap-2" aria-label="Quién canta">
+        <h4 class="text-[12.5px] font-semibold">Quién canta</h4>
+        <div v-if="parts.length" class="flex flex-wrap gap-1.5">
           <button
-            v-for="color in colors"
-            :key="color.key"
-            class="relative inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 font-mono text-[12px] font-semibold transition"
-            :class="chipClass(summary.colors[color.key])"
-            :style="{ color: color.ink }"
-            :aria-pressed="summary.colors[color.key] === 'all'"
-            :data-testid="`inspector-color-${color.key}`"
-            @click="emit('toggle-color', color.key)"
+            v-for="part in parts"
+            :key="part.id"
+            class="inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold"
+            :class="chipClass(summary.parts[part.id])"
+            :style="{ color: trackInk(part.color_key) }"
+            :aria-pressed="summary.parts[part.id] === 'all'"
+            :data-testid="`inspector-part-${part.id}`"
+            @click="emit('toggle-part', part.id)"
           >
-            <span class="size-2.5 rounded-full" :style="{ background: color.ink }" />
-            <span>{{ color.key }}</span>
-            <span
-              v-if="colorOrder(color.key)"
-              class="bg-base-content text-base-100 -mr-1 grid size-4 place-items-center rounded-full text-[10px]"
-              >{{ colorOrder(color.key) }}</span
-            >
+            <span class="size-2.5 rounded-full" :style="{ background: trackInk(part.color_key) }" />
+            {{ part.name }}
           </button>
         </div>
-        <p v-else class="text-base-content/50 text-[12.5px]">
-          La colección no tiene colores de pista.
+        <p v-else class="text-base-content/55 text-xs">
+          Sin partes. Agregalas en Ajustes → Partes y colores.
         </p>
       </section>
 
-      <!-- Pistas -->
-      <section class="flex flex-col gap-2">
-        <div class="flex items-baseline justify-between gap-2">
-          <h4 class="text-[12.5px] font-semibold">Pistas</h4>
-        </div>
-        <div v-if="tracks.length" class="flex flex-col">
-          <label
-            v-for="track in tracks"
-            :key="track.id"
-            class="hover:bg-base-content/5 -mx-2 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm"
+      <section
+        class="bg-base-content/3 flex flex-col gap-2 rounded-lg p-3 text-xs"
+        aria-label="Asignaciones del verso"
+      >
+        <p v-if="hasExceptions" class="font-semibold">Asignaciones personalizadas</p>
+        <p>
+          <span class="font-semibold">Audio: </span>
+          {{
+            associatedTracks
+              .map(
+                (track) =>
+                  track.title + (summary.tracks[track.id] === "some" ? " (algunos versos)" : "")
+              )
+              .join(", ") || "Sin asociación a un audio vocal"
+          }}
+        </p>
+        <p class="flex flex-wrap items-center gap-1.5">
+          <span class="font-semibold">Color:</span>
+          <span
+            v-for="color in colors.filter((color) => summary.colors[color.key] !== 'none')"
+            :key="color.key"
+            :style="{ color: color.ink }"
           >
-            <input
-              type="checkbox"
-              class="checkbox checkbox-xs"
-              :checked="summary.tracks[track.id] === 'all'"
-              :indeterminate="summary.tracks[track.id] === 'some'"
-              :data-testid="`inspector-track-${track.id}`"
-              @change="emit('toggle-track', track.id)"
-            />
-            <span
-              class="size-2.5 rounded-full"
-              :style="{ background: trackInk(track.color_key) }"
-            />
-            <span class="min-w-0 flex-1 truncate font-medium">{{ track.title }}</span>
-            <span class="text-base-content/35 font-mono text-[11px]">#{{ track.id }}</span>
-          </label>
-        </div>
-        <p v-else class="text-base-content/50 text-[12.5px]">La canción no tiene pistas.</p>
+            {{ color.name || color.key
+            }}{{ summary.colors[color.key] === "some" ? " (algunos versos)" : "" }}
+          </span>
+          <span v-if="!colors.some((color) => summary.colors[color.key] !== 'none')"
+            >Sin color</span
+          >
+        </p>
       </section>
+
+      <details :open="!parts.length" class="group" data-testid="inspector-exceptions">
+        <summary class="cursor-pointer text-[12.5px] font-semibold">
+          Excepciones de este verso
+        </summary>
+        <div class="mt-3 flex flex-col gap-4">
+          <!-- Colores -->
+          <section class="flex flex-col gap-2">
+            <div class="flex items-baseline justify-between gap-2">
+              <h4 class="text-[12.5px] font-semibold">Colores personalizados</h4>
+              <button
+                v-if="hasParts"
+                class="btn btn-ghost btn-xs"
+                @click="emit('use-part-defaults', 'color')"
+              >
+                Usar partes
+              </button>
+            </div>
+            <div v-if="colors.length" class="flex flex-wrap gap-1.5">
+              <button
+                v-for="color in colors"
+                :key="color.key"
+                class="relative inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 font-mono text-[12px] font-semibold transition"
+                :class="chipClass(summary.colors[color.key])"
+                :style="{ color: color.ink }"
+                :aria-pressed="summary.colors[color.key] === 'all'"
+                :data-testid="`inspector-color-${color.key}`"
+                @click="emit('toggle-color', color.key)"
+              >
+                <span class="size-2.5 rounded-full" :style="{ background: color.ink }" />
+                <span>{{ color.name ?? color.key }}</span>
+                <span
+                  v-if="colorOrder(color.key)"
+                  class="bg-base-content text-base-100 -mr-1 grid size-4 place-items-center rounded-full text-[10px]"
+                  >{{ colorOrder(color.key) }}</span
+                >
+              </button>
+            </div>
+            <p v-else class="text-base-content/50 text-[12.5px]">
+              La colección no tiene colores de pista.
+            </p>
+          </section>
+
+          <!-- Pistas -->
+          <section class="flex flex-col gap-2">
+            <div class="flex items-baseline justify-between gap-2">
+              <h4 class="text-[12.5px] font-semibold">Audios personalizados</h4>
+              <button
+                v-if="hasParts"
+                class="btn btn-ghost btn-xs"
+                @click="emit('use-part-defaults', 'audio')"
+              >
+                Usar partes
+              </button>
+            </div>
+            <div v-if="tracks.length" class="flex flex-col">
+              <label
+                v-for="track in tracks"
+                :key="track.id"
+                class="hover:bg-base-content/5 -mx-2 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-xs"
+                  :checked="summary.tracks[track.id] === 'all'"
+                  :indeterminate="summary.tracks[track.id] === 'some'"
+                  :data-testid="`inspector-track-${track.id}`"
+                  @change="emit('toggle-track', track.id)"
+                />
+                <span
+                  class="size-2.5 rounded-full"
+                  :style="{ background: trackInk(track.color_key) }"
+                />
+                <span class="min-w-0 flex-1 truncate font-medium">{{ track.title }}</span>
+                <span class="text-base-content/35 font-mono text-[11px]">#{{ track.id }}</span>
+              </label>
+            </div>
+            <p v-else class="text-base-content/50 text-[12.5px]">La canción no tiene pistas.</p>
+          </section>
+        </div>
+      </details>
 
       <!-- Comentario -->
       <section class="flex flex-col gap-2">
         <h4 class="text-[12.5px] font-semibold">Comentario</h4>
         <input
           type="text"
-          class="input input-sm w-full rounded-[10px] field-focus"
+          class="input input-sm field-focus w-full rounded-[10px]"
           :value="commentDraft"
-          :placeholder="summary.comment.mixed ? 'Varios comentarios distintos' : 'Coro, Solo soprano…'"
+          :placeholder="
+            summary.comment.mixed ? 'Varios comentarios distintos' : 'Coro, Solo soprano…'
+          "
           data-testid="inspector-comment"
           @keydown.stop
           @input="onCommentInput"
@@ -243,7 +338,11 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
         <h4 class="text-[12.5px] font-semibold">Tiempos</h4>
         <template v-if="single && verse">
           <div class="grid grid-cols-2 gap-2">
-            <div v-for="which in ['start', 'end'] as const" :key="which" class="flex flex-col gap-1">
+            <div
+              v-for="which in ['start', 'end'] as const"
+              :key="which"
+              class="flex flex-col gap-1"
+            >
               <span class="text-base-content/55 text-[11.5px]">
                 {{ which === "start" ? "Inicio" : "Fin" }}
               </span>
@@ -257,7 +356,7 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
                 </button>
                 <input
                   v-model="timeDrafts[which]"
-                  class="input input-sm join-item w-full min-w-0 text-center font-mono tabular-nums field-focus"
+                  class="input input-sm join-item field-focus w-full min-w-0 text-center font-mono tabular-nums"
                   placeholder="sin tiempo"
                   :data-testid="`inspector-${which}`"
                   @keydown.stop

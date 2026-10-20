@@ -5,6 +5,17 @@ import type { Intensity, TrackColor } from "@/utils/palette";
 // "public": anyone can read it and it shows up in every sidebar.
 export type CollectionVisibility = "private" | "unlisted" | "public";
 
+export type CollectionPart = {
+  id: string;
+  collection_id: number;
+  name: string;
+  color_key: string;
+  parent_id: string | null;
+  order: number;
+};
+
+export type AudioTrackKind = "voice" | "instrumental" | "unclassified";
+
 export type Collection = {
   id: number;
   slug: string;
@@ -14,6 +25,8 @@ export type Collection = {
   hue: number;
   intensity: Intensity;
   track_colors: Record<string, TrackColor>;
+  /** Musical identities; their IDs do not change when a name or color changes. */
+  parts?: CollectionPart[];
   artwork_file_key?: string | null;
   artwork_playback_url?: string;
   visibility: CollectionVisibility;
@@ -49,6 +62,11 @@ export type AudioTrack = {
   song_id: number;
   title: string;
   color_key: string;
+  /** Independent of title, musical identity, and the chosen display color. */
+  kind?: AudioTrackKind;
+  part_ids?: string[];
+  /** Imported associations are suggestions until an editor confirms them. */
+  parts_reviewed?: boolean;
   audio_file_url: string;
   audio_file_key?: string | null;
   playback_url?: string;
@@ -65,6 +83,10 @@ export type LyricVerse = {
   end_time?: number;
   text: string;
   comment?: string;
+  part_ids?: string[];
+  /** Legacy associations remain explicit exceptions until deliberately reset. */
+  audio_override?: boolean;
+  color_override?: boolean;
   audio_track_ids?: number[];
   color_keys?: string[];
 };

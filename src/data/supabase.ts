@@ -69,7 +69,10 @@ export const updatePassword = async (newPassword: string) => {
 // Fetch collections that should appear in the sidebar listing (no auth required).
 // Only "public" collections are listed; "unlisted" ones are reachable by link but hidden here.
 export const fetchListedCollections = async (): Promise<PostgrestSingleResponse<Collection[]>> => {
-  return await supabase.from("collections").select("*").eq("visibility", "public");
+  return await supabase
+    .from("collections")
+    .select("*, parts:collection_parts(*)")
+    .eq("visibility", "public");
 };
 
 // Fetch a single collection by slug. RLS decides visibility: anyone can read "public" and
@@ -78,7 +81,11 @@ export const fetchListedCollections = async (): Promise<PostgrestSingleResponse<
 export const fetchCollectionBySlug = async (
   slug: string
 ): Promise<PostgrestSingleResponse<Collection | null>> => {
-  return await supabase.from("collections").select("*").eq("slug", slug).maybeSingle();
+  return await supabase
+    .from("collections")
+    .select("*, parts:collection_parts(*)")
+    .eq("slug", slug)
+    .maybeSingle();
 };
 
 // Fetch collections available to the current user along with their role in each collection
@@ -112,7 +119,10 @@ export const fetchCollections = async (): Promise<
 
   // Authenticated: fetch user's own collections + listed (public) collections, merge
   const [userResponse, publicResponse] = await Promise.all([
-    supabase.from("user_collections").select("role, collections(*)").eq("user_id", user.id),
+    supabase
+      .from("user_collections")
+      .select("role, collections(*, parts:collection_parts(*))")
+      .eq("user_id", user.id),
     fetchListedCollections()
   ]);
 
@@ -201,8 +211,8 @@ export const insertSong = async (songData: {
 export const updateSongLyrics = async (
   songId: number,
   lyrics: LyricStanza[]
-): Promise<PostgrestSingleResponse<null>> => {
-  return await supabase.from("songs").update({ lyrics }).eq("id", songId);
+): Promise<PostgrestSingleResponse<Pick<Song, "lyrics">>> => {
+  return await supabase.from("songs").update({ lyrics }).eq("id", songId).select("lyrics").single();
 };
 
 export const insertAudioTrack = async (
@@ -216,7 +226,15 @@ export const updateAudioTrack = async (
   updates: Partial<
     Pick<
       AudioTrack,
-      "title" | "color_key" | "audio_file_url" | "audio_file_key" | "order" | "peaks"
+      | "title"
+      | "color_key"
+      | "kind"
+      | "part_ids"
+      | "parts_reviewed"
+      | "audio_file_url"
+      | "audio_file_key"
+      | "order"
+      | "peaks"
     >
   >
 ): Promise<PostgrestSingleResponse<AudioTrack[]>> => {

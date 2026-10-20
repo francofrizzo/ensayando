@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { LyricStanza } from "@/data/types";
+import type { AudioTrack, CollectionPart, LyricStanza } from "@/data/types";
 import { addStatusToLyrics } from "@/utils/lyricsViewerUtils";
 
 import {
@@ -21,6 +21,7 @@ import {
   setCommentInVerses,
   summarizeSelection,
   toggleColorInVerses,
+  togglePartInVerses,
   togglePosition,
   toggleTrackInVerses
 } from "./lyricsSelection";
@@ -314,5 +315,112 @@ describe("copyColorsAndTracks", () => {
     const before = JSON.stringify(lyrics);
     copyColorsAndTracks(lyrics, at(0), [at(1)]);
     expect(JSON.stringify(lyrics)).toBe(before);
+  });
+
+  it("copies part identities and exceptions without retaining the target's old assignments", () => {
+    const source = {
+      text: "a",
+      part_ids: ["eliza"],
+      color_override: true,
+      audio_override: false,
+      color_keys: ["washington"]
+    };
+    const next = copyColorsAndTracks(
+      [
+        [
+          source,
+          {
+            text: "b",
+            part_ids: ["hamilton"],
+            audio_track_ids: [8],
+            audio_override: true,
+            start_time: 12
+          }
+        ]
+      ],
+      at(0),
+      [at(1)]
+    );
+    expect(next[0]![1]).toEqual({ ...source, text: "b", start_time: 12 });
+  });
+});
+
+describe("part assignments", () => {
+  const parts: CollectionPart[] = ["eliza", "hamilton", "sin-audio"].map((id, order) => ({
+    id,
+    name: id,
+    collection_id: 1,
+    color_key: `color-${id}`,
+    parent_id: null,
+    order
+  }));
+  const tracks: AudioTrack[] = [
+    {
+      id: 7,
+      title: "Solistas",
+      song_id: 1,
+      color_key: "principal",
+      kind: "voice",
+      part_ids: ["eliza", "hamilton"],
+      audio_file_url: "audio",
+      order: 1,
+      created_at: ""
+    },
+    {
+      id: 9,
+      title: "Instrumental",
+      song_id: 1,
+      color_key: "base",
+      kind: "instrumental",
+      part_ids: [],
+      audio_file_url: "base",
+      order: 2,
+      created_at: ""
+    }
+  ];
+  it("derives colors and shared audio once, replacing imported exceptions only on explicit selection", () => {
+    const original: LyricStanza[] = [
+      [
+        {
+          text: "a",
+          part_ids: ["eliza"],
+          audio_override: true,
+          color_override: true,
+          audio_track_ids: [9],
+          color_keys: ["old"]
+        }
+      ]
+    ];
+    const next = togglePartInVerses(original, [p(0, 0)], "hamilton", parts, tracks);
+    expect(next).toEqual([
+      [
+        {
+          text: "a",
+          part_ids: ["eliza", "hamilton"],
+          audio_override: false,
+          color_override: false,
+          audio_track_ids: [7],
+          color_keys: ["color-eliza", "color-hamilton"]
+        }
+      ]
+    ]);
+    expect(getVerseAt(original, p(0, 0))?.audio_track_ids).toEqual([9]);
+    expect(tracks[0]!.color_key).toBe("principal");
+  });
+  it("keeps a part without a recording visible instead of assigning an empty audio filter", () => {
+    const next = togglePartInVerses(
+      [[{ text: "a", audio_track_ids: [7] }]],
+      [p(0, 0)],
+      "sin-audio",
+      parts,
+      tracks
+    );
+    expect(getVerseAt(next, p(0, 0))).toEqual({
+      text: "a",
+      part_ids: ["sin-audio"],
+      color_keys: ["color-sin-audio"],
+      audio_override: false,
+      color_override: false
+    });
   });
 });

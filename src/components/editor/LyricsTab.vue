@@ -31,11 +31,13 @@ import {
   setCommentInVerses,
   toggleColorInVerses,
   togglePosition,
+  togglePartInVerses,
   toggleTrackInVerses,
   updateVerses,
   type DropTarget
 } from "@/utils/lyricsSelection";
 import { addStatusToLyrics } from "@/utils/lyricsViewerUtils";
+import { resolveVerseParts } from "@/utils/parts";
 
 import KeyboardHelpModal from "./KeyboardHelpModal.vue";
 
@@ -154,9 +156,16 @@ const collapseSelection = () => {
 const apply = (next: LyricStanza[]) => updateLyrics(next);
 
 const colorOptions = computed(() =>
-  Object.keys(palette.value.tracks).map((key) => ({ key, ink: trackColor(key, "lyric") }))
+  Object.keys(palette.value.tracks).map((key) => ({
+    key,
+    name: palette.value.names[key] ?? key,
+    ink: trackColor(key, "lyric")
+  }))
 );
 const trackInk = (colorKey: string) => trackColor(colorKey, "lyric");
+const availableParts = computed(() =>
+  [...(currentCollection.value?.parts ?? [])].sort((a, b) => a.order - b.order)
+);
 
 const availableAudioTracks = computed(() => {
   const song = store.currentSong;
@@ -168,6 +177,27 @@ const onToggleColor = (key: string) =>
   apply(toggleColorInVerses(lyricsToDisplay.value, effectiveSelection.value, key));
 const onToggleTrack = (id: number) =>
   apply(toggleTrackInVerses(lyricsToDisplay.value, effectiveSelection.value, id));
+const onTogglePart = (id: string) =>
+  apply(
+    togglePartInVerses(
+      lyricsToDisplay.value,
+      effectiveSelection.value,
+      id,
+      availableParts.value,
+      availableAudioTracks.value
+    )
+  );
+const onUsePartDefaults = (field: "audio" | "color") =>
+  apply(
+    updateVerses(lyricsToDisplay.value, effectiveSelection.value, (verse) => {
+      if (!verse.part_ids?.length) return;
+      if (field === "audio") verse.audio_override = false;
+      else verse.color_override = false;
+      const next = resolveVerseParts(verse, availableParts.value, availableAudioTracks.value);
+      delete verse.audio_track_ids;
+      Object.assign(verse, next);
+    })
+  );
 const onSetComment = (comment: string | undefined) =>
   apply(setCommentInVerses(lyricsToDisplay.value, effectiveSelection.value, comment));
 // "Copiar de este verso": the focused verse is the source.
@@ -546,11 +576,14 @@ defineExpose({
       :selection="effectiveSelection"
       :colors="colorOptions"
       :tracks="availableAudioTracks"
+      :parts="availableParts"
       :track-ink="trackInk"
       :command-registry="commandRegistry"
       :anchor="copyAnchor"
       @toggle-color="onToggleColor"
       @toggle-track="onToggleTrack"
+      @toggle-part="onTogglePart"
+      @use-part-defaults="onUsePartDefaults"
       @set-comment="onSetComment"
       @set-time="onSetTime"
       @copy-from-anchor="onCopyFromAnchor"
@@ -569,11 +602,14 @@ defineExpose({
           :selection="effectiveSelection"
           :colors="colorOptions"
           :tracks="availableAudioTracks"
+          :parts="availableParts"
           :track-ink="trackInk"
           :command-registry="commandRegistry"
           :anchor="copyAnchor"
           @toggle-color="onToggleColor"
           @toggle-track="onToggleTrack"
+          @toggle-part="onTogglePart"
+          @use-part-defaults="onUsePartDefaults"
           @set-comment="onSetComment"
           @set-time="onSetTime"
           @copy-from-anchor="onCopyFromAnchor"

@@ -112,7 +112,9 @@ describe("collections store — saving and refreshing", () => {
 
   it("saves the snapshot taken before the request and keeps later edits dirty", async () => {
     let resolveSave: (value: unknown) => void = () => {};
-    updateLyricsMock.mockReturnValueOnce(new Promise((resolve) => (resolveSave = resolve)) as never);
+    updateLyricsMock.mockReturnValueOnce(
+      new Promise((resolve) => (resolveSave = resolve)) as never
+    );
 
     await store.updateLocalLyrics([verse("first")]);
     const saving = store.saveLyrics();
@@ -134,6 +136,29 @@ describe("collections store — saving and refreshing", () => {
     await expect(store.saveLyrics()).rejects.toThrow("boom");
     expect(store.localLyrics.isSaving).toBe(false);
     expect(store.localLyrics.isDirty).toBe(true);
+  });
+
+  it("keeps server-derived part assignments as the saved and editable version", async () => {
+    const normalized: LyricStanza[] = [
+      [
+        {
+          text: "solo",
+          part_ids: ["eliza"],
+          color_keys: ["red"],
+          audio_track_ids: [7],
+          audio_override: false,
+          color_override: false
+        }
+      ]
+    ];
+    updateLyricsMock.mockResolvedValueOnce({ data: { lyrics: normalized }, error: null } as never);
+    await store.updateLocalLyrics([[{ text: "solo", part_ids: ["eliza"] }]]);
+    await store.saveLyrics();
+    await flush();
+    expect(store.savedLyrics).toEqual(normalized);
+    expect(store.localLyrics.value).toEqual(normalized);
+    expect(store.currentSong?.lyrics).toEqual(normalized);
+    expect(store.localLyrics.isDirty).toBe(false);
   });
 
   it("keeps the renamed song resolving under its old address", async () => {

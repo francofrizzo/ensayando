@@ -3,10 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 
 import AccountMenu from "@/components/navigation/AccountMenu.vue";
-import SettingsColors from "@/components/settings/SettingsColors.vue";
 import SettingsDanger from "@/components/settings/SettingsDanger.vue";
 import SettingsGeneral from "@/components/settings/SettingsGeneral.vue";
 import SettingsMembers from "@/components/settings/SettingsMembers.vue";
+import SettingsParts from "@/components/settings/SettingsParts.vue";
 import SettingsSongs from "@/components/settings/SettingsSongs.vue";
 import {
   IconBack,
@@ -28,7 +28,7 @@ import { useCollectionsStore } from "@/stores/collections";
 
 // Ajustes de colección (design/pantallas/coleccion.html): everything that used to be
 // done with SQL through the admin skill. Only the collection's admins get here.
-type Section = "general" | "pistas" | "canciones" | "miembros" | "peligro";
+type Section = "general" | "partes" | "canciones" | "miembros" | "peligro";
 
 const route = useRoute();
 const router = useRouter();
@@ -42,7 +42,8 @@ const section = computed<Section>(() => (route.params.section as Section) || "ge
 // Unsaved changes in a section: switching sections, going back or closing the tab asks first.
 const guard = provideSettingsGuard();
 onBeforeRouteUpdate((to, from) =>
-  to.params.section !== from.params.section || to.params.collectionSlug !== from.params.collectionSlug
+  to.params.section !== from.params.section ||
+  to.params.collectionSlug !== from.params.collectionSlug
     ? guard.confirmLeave()
     : true
 );
@@ -84,7 +85,7 @@ watch(
 
 const NAV: { id: Section; label: string; icon: typeof IconSettings }[] = [
   { id: "general", label: "General", icon: IconSettings },
-  { id: "pistas", label: "Pistas", icon: IconPalette },
+  { id: "partes", label: "Partes y colores", icon: IconPalette },
   { id: "canciones", label: "Canciones", icon: IconLibrary },
   { id: "miembros", label: "Miembros", icon: IconMembers }
 ];
@@ -135,7 +136,6 @@ const songsLoaded = computed(
     collectionsStore.songsCollectionId === collection.value.id &&
     !collectionsStore.isLoading
 );
-
 </script>
 
 <template>
@@ -156,9 +156,7 @@ const songsLoaded = computed(
     >
       <IconLock class="size-16 opacity-40" />
       <h1 class="font-display text-2xl font-bold">No podés ver estos ajustes</h1>
-      <p class="text-base-content/60 max-w-sm">
-        Solo los admins de la colección.
-      </p>
+      <p class="text-base-content/60 max-w-sm">Solo los admins de la colección.</p>
       <button class="btn btn-primary" @click="goBack">Volver</button>
     </div>
 
@@ -168,7 +166,11 @@ const songsLoaded = computed(
         <button class="btn btn-ghost btn-sm hidden sm:inline-flex" @click="goBack">
           <IconBack class="size-4" /> Volver a la canción
         </button>
-        <button class="btn btn-ghost btn-sm btn-square sm:hidden" aria-label="Volver" @click="goBack">
+        <button
+          class="btn btn-ghost btn-sm btn-square sm:hidden"
+          aria-label="Volver"
+          @click="goBack"
+        >
           <IconBack class="size-4" />
         </button>
         <div class="flex min-w-0 flex-col">
@@ -190,9 +192,7 @@ const songsLoaded = computed(
             :to="sectionTo(item.id)"
             replace
             class="rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap"
-            :class="
-              section === item.id ? 'bg-base-100 shadow-sm' : 'text-base-content/60'
-            "
+            :class="section === item.id ? 'bg-base-100 shadow-sm' : 'text-base-content/60'"
             >{{ item.label }}</RouterLink
           >
           <RouterLink
@@ -216,7 +216,7 @@ const songsLoaded = computed(
             :key="item.id"
             :to="sectionTo(item.id)"
             replace
-            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collection-ink"
+            class="focus-visible:outline-collection-ink flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
             :class="
               section === item.id
                 ? 'bg-collection-soft text-collection-ink'
@@ -233,7 +233,7 @@ const songsLoaded = computed(
           <RouterLink
             :to="sectionTo('peligro')"
             replace
-            class="text-error flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collection-ink"
+            class="text-error focus-visible:outline-collection-ink flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
             :class="section === 'peligro' ? 'bg-error/10' : 'hover:bg-error/5'"
           >
             <IconWarning class="size-4.5" /> Zona de peligro
@@ -248,14 +248,16 @@ const songsLoaded = computed(
             :collection="collection"
             @updated="onCollectionUpdated"
           />
-          <SettingsColors
-            v-else-if="section === 'pistas'"
-            :key="`colors-${collection.id}`"
+          <SettingsParts
+            v-else-if="section === 'partes'"
+            :key="`parts-${collection.id}`"
             :collection="collection"
             :songs="collectionsStore.songs"
             :songs-loaded="songsLoaded"
             @updated="onCollectionUpdated"
-            @songs-changed="collectionsStore.fetchSongsByCollectionId(collection.id, { background: true })"
+            @songs-changed="
+              collectionsStore.fetchSongsByCollectionId(collection.id, { background: true })
+            "
           />
           <SettingsSongs
             v-else-if="section === 'canciones'"

@@ -72,17 +72,17 @@ const router = createRouter({
       props: true
     },
     {
-      // "Colores" was renamed "Pistas"; old links keep working.
-      path: "/:collectionSlug/ajustes/colores",
+      // Preserve both historical palette links.
+      path: "/:collectionSlug/ajustes/:legacy(colores|pistas)",
       redirect: (to) => ({
         name: "collection-settings",
-        params: { collectionSlug: to.params.collectionSlug, section: "pistas" }
+        params: { collectionSlug: to.params.collectionSlug, section: "partes" }
       })
     },
     {
       // Declared before the song route so "ajustes" is never read as a song slug
       // (songs can't use it either: RESERVED_SONG_SLUGS).
-      path: "/:collectionSlug/ajustes/:section(general|pistas|canciones|miembros|peligro)?",
+      path: "/:collectionSlug/ajustes/:section(general|partes|canciones|miembros|peligro)?",
       name: "collection-settings",
       component: () => import("@/views/CollectionSettingsView.vue"),
       meta: {

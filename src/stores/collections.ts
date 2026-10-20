@@ -316,14 +316,18 @@ export const useCollectionsStore = defineStore("collections", () => {
     const snapshot = cloneLyrics(toRaw(localLyrics.value.value));
     localLyrics.isSaving.value = true;
     try {
-      const { error } = await supabase.updateSongLyrics(song.id, snapshot);
+      const { data, error } = await supabase.updateSongLyrics(song.id, snapshot);
       if (error) throw error;
-      savedLyricsSnapshot.value = JSON.stringify(snapshot);
+      const saved = data?.lyrics ?? snapshot;
+      if (JSON.stringify(toRaw(localLyrics.value.value)) === JSON.stringify(snapshot)) {
+        localLyrics.value.value = cloneLyrics(saved);
+      }
+      savedLyricsSnapshot.value = JSON.stringify(saved);
       localLyrics.isDirty.value =
         JSON.stringify(toRaw(localLyrics.value.value)) !== savedLyricsSnapshot.value;
       // Keep the loaded song in sync so a later refresh or song switch doesn't bring back
       // the old lyrics.
-      patchSong(song.id, { lyrics: snapshot });
+      patchSong(song.id, { lyrics: saved });
     } finally {
       localLyrics.isSaving.value = false;
     }

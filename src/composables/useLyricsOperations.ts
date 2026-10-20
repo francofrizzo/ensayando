@@ -1,4 +1,5 @@
 import type { LyricStanza, LyricVerse } from "@/data/types";
+import { verseAssignments } from "@/utils/parts";
 import {
   type FocusPosition,
   getItemAtPosition,
@@ -22,8 +23,7 @@ export function useLyricsOperations(
     text: "",
     start_time: undefined,
     end_time: undefined,
-    color_keys: sourceVerse.color_keys ? [...sourceVerse.color_keys] : undefined,
-    audio_track_ids: sourceVerse.audio_track_ids ? [...sourceVerse.audio_track_ids] : undefined,
+    ...verseAssignments(sourceVerse),
     comment: undefined
   });
 

@@ -40,6 +40,20 @@
           "type": "string",
           "description": "Optional comment about this verse"
         },
+        "part_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "uniqueItems": true,
+          "description": "Collection parts in presentation order"
+        },
+        "audio_override": {
+          "type": "boolean",
+          "description": "Keep explicit audio associations instead of deriving them from parts"
+        },
+        "color_override": {
+          "type": "boolean",
+          "description": "Keep explicit colors instead of deriving them from parts"
+        },
         "audio_track_ids": {
           "type": "array",
           "items": {

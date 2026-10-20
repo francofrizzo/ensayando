@@ -1,5 +1,6 @@
-import type { LyricStanza, LyricVerse } from "@/data/types";
+import type { AudioTrack, CollectionPart, LyricStanza, LyricVerse } from "@/data/types";
 import type { FocusPosition } from "@/utils/lyricsPositionUtils";
+import { resolveVerseParts, verseAssignments } from "@/utils/parts";
 
 /** "stanza-item" or "stanza-item-column-line": the same key the textareas use. */
 export const positionKey = (position: FocusPosition): string =>
@@ -89,6 +90,7 @@ export type SelectionSummary = {
   count: number;
   colors: Record<string, Presence>;
   tracks: Record<number, Presence>;
+  parts: Record<string, Presence>;
   /** The shared comment, or null when the verses differ. */
   comment: { value: string | undefined; mixed: boolean };
 };
@@ -101,7 +103,8 @@ export const summarizeSelection = (
   lyrics: LyricStanza[],
   selection: FocusPosition[],
   colorKeys: string[],
-  trackIds: number[]
+  trackIds: number[],
+  partIds: string[] = []
 ): SelectionSummary => {
   const verses = selection
     .map((position) => getVerseAt(lyrics, position))
@@ -117,13 +120,19 @@ export const summarizeSelection = (
     tracks[id] = presence(verses.filter((v) => v.audio_track_ids?.includes(id)).length, total);
   }
 
+  const parts = Object.fromEntries(
+    partIds.map((id) => [
+      id,
+      presence(verses.filter((v) => v.part_ids?.includes(id)).length, total)
+    ])
+  );
   const comments = new Set(verses.map((v) => v.comment));
   const comment =
     comments.size <= 1
       ? { value: verses[0]?.comment, mixed: false }
       : { value: undefined, mixed: true };
 
-  return { count: total, colors, tracks, comment };
+  return { count: total, colors, tracks, parts, comment };
 };
 
 // Lyrics from the store can be reactive proxies; a JSON copy is plain and matches the schema.
@@ -165,6 +174,7 @@ export const toggleColorInVerses = (
         : [...current, colorKey];
     if (next.length === 0) delete verse.color_keys;
     else verse.color_keys = next;
+    if (verse.part_ids !== undefined) verse.color_override = true;
   });
 };
 
@@ -185,8 +195,30 @@ export const toggleTrackInVerses = (
         : [...current, trackId];
     if (next.length === 0) delete verse.audio_track_ids;
     else verse.audio_track_ids = next;
+    if (verse.part_ids !== undefined) verse.audio_override = true;
   });
 };
+
+/** Choosing who sings deliberately replaces legacy exceptions with part defaults. */
+export function togglePartInVerses(
+  lyrics: LyricStanza[],
+  selection: FocusPosition[],
+  id: string,
+  parts: CollectionPart[],
+  tracks: AudioTrack[]
+): LyricStanza[] {
+  const summary = summarizeSelection(lyrics, selection, [], [], [id]);
+  const remove = summary.parts[id] === "all";
+  return updateVerses(lyrics, selection, (verse) => {
+    const ids = verse.part_ids ?? [];
+    verse.part_ids = remove ? ids.filter((part) => part !== id) : [...new Set([...ids, id])];
+    verse.audio_override = false;
+    verse.color_override = false;
+    const next = resolveVerseParts(verse, parts, tracks);
+    delete verse.audio_track_ids;
+    Object.assign(verse, next);
+  });
+}
 
 /** Sets (or, with undefined, removes) the comment of every selected verse. */
 export const setCommentInVerses = (
@@ -382,8 +414,8 @@ export function createEmptyLyrics(): LyricStanza[] {
 }
 
 /**
- * "Copiar de este verso": gives every selected verse exactly the colors and tracks
- * of the source verse (order included). Comments and times are left alone.
+ * "Copiar de este verso": copies parts, exceptions, colors and tracks (order included).
+ * Comments and times are left alone.
  */
 export const copyColorsAndTracks = (
   lyrics: LyricStanza[],
@@ -392,12 +424,12 @@ export const copyColorsAndTracks = (
 ): LyricStanza[] => {
   const from = getVerseAt(lyrics, source);
   if (!from) return lyrics;
-  const colorKeys = from.color_keys?.length ? [...from.color_keys] : undefined;
-  const trackIds = from.audio_track_ids?.length ? [...from.audio_track_ids] : undefined;
   return updateVerses(lyrics, targets, (verse) => {
-    if (colorKeys) verse.color_keys = [...colorKeys];
-    else delete verse.color_keys;
-    if (trackIds) verse.audio_track_ids = [...trackIds];
-    else delete verse.audio_track_ids;
+    delete verse.part_ids;
+    delete verse.audio_override;
+    delete verse.color_override;
+    delete verse.color_keys;
+    delete verse.audio_track_ids;
+    Object.assign(verse, verseAssignments(from));
   });
 };

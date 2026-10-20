@@ -117,6 +117,18 @@ describe("songFormChanges", () => {
       songFormChanges({ ...saved, audio_tracks: [track(1, { title: "Voz" }), track(2)] }, saved)
     ).toEqual(["track-details"]);
   });
+
+  it("keeps metadata-only edits dirty so they can be saved", () => {
+    for (const patch of [
+      { kind: "instrumental" as const },
+      { part_ids: ["eliza"] },
+      { parts_reviewed: true }
+    ]) {
+      expect(
+        songFormChanges({ ...saved, audio_tracks: [track(1, patch), track(2)] }, saved)
+      ).toEqual(["track-details"]);
+    }
+  });
 });
 
 describe("tracksWithoutAudio", () => {

@@ -9,7 +9,7 @@ import {
   IconTrash,
   IconUpload
 } from "@/components/ui/icons";
-import type { AudioTrack } from "@/data/types";
+import type { AudioTrack, AudioTrackKind, CollectionPart } from "@/data/types";
 import { formatBytes, formatDuration, storedFileName } from "@/utils/songForm";
 
 export type TrackUploadState =
@@ -26,6 +26,7 @@ const props = defineProps<{
   /** Wave color (ink of the track, per theme). */
   wave: string;
   colorOptions: { key: string; value: string }[];
+  parts?: CollectionPart[];
   upload?: TrackUploadState | null;
   /** Name and size of a file uploaded in this session (not stored). */
   fileInfo?: { name: string; size: number } | null;
@@ -39,6 +40,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   title: [value: string];
   color: [key: string];
+  kind: [value: AudioTrackKind];
+  parts: [ids: string[]];
+  reviewed: [value: boolean];
   replace: [file: File];
   remove: [];
   retry: [];
@@ -134,6 +138,16 @@ const pickColor = (key: string) => {
   emit("color", key);
   colorOpen.value = false;
 };
+const availableParts = computed(() => props.parts ?? []);
+const containedNames = computed(() =>
+  availableParts.value
+    .filter((part) => props.track.part_ids?.includes(part.id))
+    .map((part) => part.name)
+);
+function togglePart(id: string) {
+  const ids = props.track.part_ids ?? [];
+  emit("parts", ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]);
+}
 </script>
 
 <template>
@@ -169,7 +183,7 @@ const pickColor = (key: string) => {
         <IconDragHandle class="size-[18px]" />
       </button>
 
-      <!-- Color -->
+      <!-- Display color stays independent of the track's contained parts. -->
       <div class="relative shrink-0">
         <button
           type="button"
@@ -207,9 +221,6 @@ const pickColor = (key: string) => {
               {{ option.key }}
             </button>
           </div>
-          <p class="text-base-content/60 text-xs">
-            Los colores son los de la colección. Se cambian en Ajustes de la colección.
-          </p>
         </div>
         <div v-if="colorOpen" class="fixed inset-0 z-20" @click="colorOpen = false" />
       </div>
@@ -219,7 +230,7 @@ const pickColor = (key: string) => {
         type="text"
         placeholder="Nombre de la pista"
         aria-label="Nombre de la pista"
-        class="input input-sm min-w-0 flex-1 font-semibold field-focus"
+        class="input input-sm field-focus min-w-0 flex-1 font-semibold"
         :class="{ 'input-error': props.titleError }"
         data-testid="track-title"
         @input="emit('title', ($event.target as HTMLInputElement).value)"
@@ -235,6 +246,59 @@ const pickColor = (key: string) => {
       >
         <IconTrash class="size-[17px]" />
       </button>
+    </div>
+
+    <div class="flex flex-wrap items-start gap-3">
+      <label class="flex min-w-40 flex-col gap-1 text-xs font-semibold">
+        Tipo de audio
+        <select
+          class="select select-sm"
+          :value="track.kind ?? 'unclassified'"
+          data-testid="track-kind"
+          @change="emit('kind', ($event.target as HTMLSelectElement).value as AudioTrackKind)"
+        >
+          <option value="unclassified">Sin clasificar</option>
+          <option value="voice">Voz</option>
+          <option value="instrumental">Instrumental</option>
+        </select>
+      </label>
+      <div v-if="track.kind !== 'instrumental'" class="min-w-0 flex-1">
+        <details
+          class="border-base-content/10 rounded-lg border px-3 py-2"
+          data-testid="track-parts"
+        >
+          <summary class="cursor-pointer text-xs font-semibold">
+            Contiene: {{ containedNames.join(", ") || "sin partes asignadas" }}
+          </summary>
+          <div class="mt-3 grid gap-2 sm:grid-cols-2">
+            <label
+              v-for="part in availableParts"
+              :key="part.id"
+              class="flex items-center gap-2 text-sm"
+            >
+              <input
+                type="checkbox"
+                class="checkbox checkbox-xs"
+                :checked="track.part_ids?.includes(part.id) ?? false"
+                @change="togglePart(part.id)"
+              />
+              {{ part.name }}
+            </label>
+            <p v-if="!availableParts.length" class="text-base-content/55 text-xs">
+              Sin partes. Agregalas en Ajustes → Partes y colores.
+            </p>
+          </div>
+        </details>
+        <label class="text-base-content/60 mt-2 flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-xs"
+            :checked="track.parts_reviewed ?? false"
+            @change="emit('reviewed', ($event.target as HTMLInputElement).checked)"
+          />
+          Contenido revisado
+        </label>
+      </div>
     </div>
 
     <!-- The audio -->
@@ -347,7 +411,7 @@ const pickColor = (key: string) => {
           :value="props.track.audio_file_url"
           type="url"
           placeholder="https://…"
-          class="input input-sm w-full font-mono text-xs field-focus"
+          class="input input-sm field-focus w-full font-mono text-xs"
           @change="emit('url', ($event.target as HTMLInputElement).value)"
         />
         <span class="text-base-content/50 text-xs">

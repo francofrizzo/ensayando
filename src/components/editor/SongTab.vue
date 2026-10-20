@@ -163,6 +163,9 @@ const createTrack = (title = ""): AudioTrack => {
     audio_file_url: "",
     audio_file_key: null,
     peaks: null,
+    kind: "unclassified",
+    part_ids: [],
+    parts_reviewed: false,
     order: formData.audio_tracks.length + 1,
     created_at: new Date().toISOString()
   };
@@ -441,6 +444,9 @@ const validateForm = () => {
 const trackRow = (track: AudioTrack) => ({
   title: track.title,
   color_key: track.color_key,
+  kind: track.kind ?? "unclassified",
+  part_ids: track.part_ids ?? [],
+  parts_reviewed: track.parts_reviewed ?? false,
   audio_file_url: track.audio_file_url,
   audio_file_key: track.audio_file_key ?? null,
   peaks: track.peaks ?? null,
@@ -484,7 +490,15 @@ const updateExistingTracks = async () => {
   await insertNewTracks(song.id);
 };
 
-const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const errorText = (error: unknown) => {
+  const message =
+    error && typeof error === "object" && "message" in error
+      ? String(error.message)
+      : String(error);
+  return message.includes("TRACK_IN_USE")
+    ? "La letra usa una pista que intentaste eliminar. Reasigná esos versos y guardá la letra antes de quitar la pista."
+    : message;
+};
 
 const createSong = async () => {
   const collection = currentCollection.value;
@@ -680,7 +694,7 @@ defineExpose({ isDirty, enterCreateMode });
             :value="formData.title"
             type="text"
             placeholder="Título de la canción"
-            class="input font-display w-full text-lg font-bold field-focus"
+            class="input font-display field-focus w-full text-lg font-bold"
             :class="{ 'input-error': errors.title }"
             data-testid="song-title-input"
             @input="onTitleInput(($event.target as HTMLInputElement).value)"
@@ -702,7 +716,7 @@ defineExpose({ isDirty, enterCreateMode });
               </button>
             </span>
             <span
-              class="input flex w-full items-center gap-0 font-mono text-[13px] field-focus"
+              class="input field-focus flex w-full items-center gap-0 font-mono text-[13px]"
               :class="{ 'input-error': errors.slug }"
             >
               <span class="text-base-content/45 hidden shrink-0 sm:inline"
@@ -781,6 +795,7 @@ defineExpose({ isDirty, enterCreateMode });
             :fill="trackColor(track.color_key, 'fill')"
             :wave="trackColor(track.color_key, 'wave')"
             :color-options="colorOptions"
+            :parts="currentCollection?.parts ?? []"
             :upload="uploads.get(track.id) ?? null"
             :file-info="fileInfo.get(track.id) ?? null"
             :show-advanced="showAdvanced"
@@ -789,6 +804,15 @@ defineExpose({ isDirty, enterCreateMode });
             :title-error="!!errors.audio_tracks && !track.title"
             @title="(value: string) => updateTrack(track.id, { title: value })"
             @color="(key: string) => updateTrack(track.id, { color_key: key })"
+            @kind="
+              (kind) =>
+                updateTrack(track.id, {
+                  kind,
+                  ...(kind === 'instrumental' ? { part_ids: [], parts_reviewed: true } : {})
+                })
+            "
+            @parts="(part_ids) => updateTrack(track.id, { part_ids, parts_reviewed: true })"
+            @reviewed="(parts_reviewed) => updateTrack(track.id, { parts_reviewed })"
             @replace="(file: File) => uploadInto(track.id, file)"
             @retry="retryUpload(track.id)"
             @remove="removeTrack(index)"
