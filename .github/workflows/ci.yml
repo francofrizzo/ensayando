@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -52,11 +52,7 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install chromium --with-deps
 
-      # Start Supabase in background — runs during checks, ready by E2E time
-      - name: Start Supabase (background)
-        run: supabase start --exclude realtime,edge-runtime,logflare,vector,studio,imgproxy,supavisor &
-
-      # --- Checks (Supabase starts in parallel) ---
+      # --- Checks ---
       - run: pnpm run type-check
       - run: pnpm run lint
       - run: pnpm test
@@ -67,25 +63,21 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
 
-      - name: Wait for Supabase
+      - name: Start Supabase and verify E2E services
+        timeout-minutes: 10
+        env:
+          # Official mirror: avoid ECR's shared anonymous download quota.
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
         run: |
-          for i in $(seq 1 30); do
-            supabase status &>/dev/null && break
-            echo "Waiting for Supabase CLI... ($i)"
-            sleep 2
-          done
+          # Keep this in the foreground so pull, migration and health failures fail CI.
+          supabase start --exclude realtime,edge-runtime,logflare,vector,studio,imgproxy,supavisor
           supabase status
-          echo "Waiting for Auth service..."
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:54321/auth/v1/health && break
-            echo "Auth not ready yet... ($i)"
-            sleep 2
-          done
-          echo "Waiting for Storage service..."
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:54321/storage/v1/status && break
-            echo "Storage not ready yet... ($i)"
-            sleep 2
+          for endpoint in auth/v1/health storage/v1/status; do
+            echo "Waiting for $endpoint..."
+            curl --fail --silent --show-error \
+              --retry 29 --retry-all-errors --retry-delay 2 \
+              --connect-timeout 2 --max-time 5 --retry-max-time 90 \
+              "http://localhost:54321/$endpoint"
           done
 
       - run: pnpm exec tsx tests/e2e/seed.ts

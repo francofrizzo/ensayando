@@ -1,4 +1,6 @@
 -- Stage 1: roles are metadata; playback still consumes materialized verse fields.
+BEGIN;
+
 LOCK TABLE public.collections, public.songs, public.audio_tracks IN SHARE ROW EXCLUSIVE MODE;
 -- Private recovery snapshot. Deliberately retained after production validation.
 CREATE SCHEMA IF NOT EXISTS migration_backups;
@@ -348,3 +350,5 @@ REVOKE ALL ON FUNCTION public.part_verses(jsonb), public.normalize_part_lyrics(j
   public.parts_guard(),public.resync_part_lyrics(),public.prevent_part_dangling(),public.check_part_palette(),
   public.remap_part_lyric_colors(jsonb,jsonb) FROM PUBLIC,anon,authenticated;
 NOTIFY pgrst, 'reload schema';
+
+COMMIT;
