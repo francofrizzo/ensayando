@@ -27,7 +27,7 @@ const themes = computed(() =>
     label: theme === "light" ? "Claro" : "Oscuro",
     background: canvasColor(theme, props.collectionHue),
     muted: theme === "light" ? "oklch(0.47 0.02 0)" : "oklch(0.73 0.02 0)",
-    lyric: deriveColor(props.spec, "lyric", theme),
+    lyric: deriveColor(props.spec, "stage", theme),
     wave: deriveColor(props.spec, "wave", theme),
     waveDim: deriveColor(props.spec, "wave", theme, 0.3)
   }))

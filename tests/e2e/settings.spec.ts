@@ -53,3 +53,24 @@ test("settings are only for the collection's admins", async ({ page }) => {
   await page.goto("/coleccion-que-no-existe/ajustes");
   await expect(page.getByText("No podés ver estos ajustes")).toBeVisible();
 });
+
+test("palette swatches match the lyrics preview in each theme without a modal", async ({
+  page
+}) => {
+  await page.goto("/test-collection/ajustes/partes");
+  for (const mode of ["light", "dark"] as const) {
+    await page.evaluate((theme) => localStorage.setItem("ens-theme", theme), mode);
+    await page.reload();
+    await page.getByRole("radio", { name: "Colores", exact: true }).click();
+    const palette = page.getByRole("group", { name: "Colores de la colección" });
+    await palette.getByRole("button").first().click();
+    await expect(page.getByRole("textbox", { name: "Nombre de color" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const lyric = page.locator(`.rounded-box[data-theme="${mode}"] .font-lyrics span`).first();
+    const swatch = palette.locator('[aria-pressed="true"] span').first();
+    const expected = await lyric.evaluate((element) => getComputedStyle(element).color);
+    await expect
+      .poll(() => swatch.evaluate((element) => getComputedStyle(element).backgroundColor))
+      .toBe(expected);
+  }
+});

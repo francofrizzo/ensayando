@@ -90,7 +90,10 @@ describe("SettingsParts", () => {
     await openColor(wrapper);
     await wrapper.get('[aria-label="Clave de color"]').setValue("voces");
     await wrapper.get('[aria-label="Nombre de color"]').setValue("Voces");
-    await wrapper.get('[aria-label="Cerrar color"]').trigger("click");
+    await wrapper
+      .get('[aria-label="Editar partes o colores"]')
+      .findAll("button")[0]!
+      .trigger("click");
     expect(wrapper.get('[data-testid="part-row-b"]').text()).toContain("Tenores");
     await save(wrapper);
     await flushPromises();
@@ -103,6 +106,39 @@ describe("SettingsParts", () => {
     expect((wrapper.get('[aria-label="Nombre de parte"]').element as HTMLInputElement).value).toBe(
       "Coro"
     );
+  });
+
+  it("edits successive colors inline and adds a palette color without reassigning parts", async () => {
+    const wrapper = render();
+    await flushPromises();
+    const switcher = wrapper.get('[aria-label="Editar partes o colores"]');
+    await switcher.findAll("button")[1]!.trigger("click");
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    await wrapper.get('[aria-label="Nombre de color"]').setValue("Verde");
+    const palette = wrapper.get('[aria-label="Colores de la colección"]');
+    await palette.findAll("button")[1]!.trigger("click");
+    await wrapper.get('[aria-label="Nombre de color"]').setValue("Azul");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Agregar color")!
+      .trigger("click");
+    await wrapper.get('[aria-label="Nombre de color"]').setValue("Rosa");
+    await switcher.findAll("button")[0]!.trigger("click");
+    await wrapper.get('[aria-label="Nombre de parte"]').setValue("Voces");
+    await save(wrapper);
+    await flushPromises();
+    const [, savedParts, savedPalette] = vi.mocked(updateCollectionMusic).mock.calls[0]!;
+    expect(savedParts.map((part) => part.color_key)).toEqual(["voz", "voz", "otra"]);
+    expect(savedPalette.trackColors).toMatchObject({
+      voz: { name: "Verde" },
+      otra: { name: "Azul" }
+    });
+    expect(Object.keys(savedPalette.trackColors)).toHaveLength(4);
+    expect(Object.values(savedPalette.trackColors)).toContainEqual(
+      expect.objectContaining({ name: "Rosa" })
+    );
+    expect(savedParts[0]!.name).toBe("Voces");
+    expect(savedPalette.keyMap).toEqual({});
   });
 
   it("changes a removed color's replacement without reassigning unrelated parts", async () => {

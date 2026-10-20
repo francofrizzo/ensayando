@@ -11,8 +11,8 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronRight,
-  IconClose,
   IconEdit,
+  IconGoTo,
   IconMore,
   IconPlus,
   IconTrash
@@ -67,15 +67,7 @@ const colorEditor = ref<string | null>(null);
 const chooser = ref<HTMLDetailsElement | null>(null);
 const parentInput = ref<HTMLSelectElement | null>(null);
 const nameInput = ref<HTMLInputElement | null>(null);
-const colorDialog = ref<HTMLElement | null>(null);
 const removeDialog = ref<HTMLElement | null>(null);
-useDialogFocus({
-  open: computed(() => colorEditor.value !== null),
-  container: colorDialog,
-  onClose: () => {
-    colorEditor.value = null;
-  }
-});
 useDialogFocus({
   open: computed(() => removing.value !== null),
   container: removeDialog,
@@ -110,26 +102,11 @@ const sharedUsage = computed(() => {
     .join(" · ");
 });
 const themeSpec = computed<ColorSpec>(() => ({ hue: hue.value, intensity: intensity.value }));
-const swatch = (spec: ColorSpec) => deriveColor(spec, "fill", resolvedTheme.value);
+const swatch = (spec: ColorSpec) => deriveColor(spec, "stage", resolvedTheme.value);
 const resolvedKey = (key: string) =>
   removedColors.value.find((color) => color.key === key)?.replacement ?? key;
 const colorFor = (key: string) => colors.value.find((color) => color.key === resolvedKey(key));
-const trackLabels = computed(() => {
-  const counts: Record<string, Record<string, number>> = {};
-  for (const song of props.songs ?? [])
-    for (const track of song.audio_tracks ?? []) {
-      counts[track.color_key] ??= {};
-      counts[track.color_key]![track.title] = (counts[track.color_key]![track.title] ?? 0) + 1;
-    }
-  return Object.fromEntries(
-    Object.entries(counts).map(([key, titles]) => [
-      key,
-      Object.entries(titles).sort((a, b) => b[1] - a[1])[0]![0]
-    ])
-  );
-});
-const colorName = (color: PaletteRow) =>
-  color.name.trim() || trackLabels.value[color.originalKey ?? color.key] || color.key;
+const colorName = (color: PaletteRow) => color.name.trim() || color.key;
 const colorStyle = (key: string) => {
   const color = colorFor(key);
   return color ? { background: swatch(color.spec) } : {};
@@ -242,6 +219,7 @@ async function add(parentId: string | null = null) {
   rows.value.push(part);
   if (parentId) collapsed.value.delete(parentId);
   selectedId.value = part.id;
+  colorEditor.value = null;
   menuId.value = null;
   await nextTick();
   nameInput.value?.focus();
@@ -270,7 +248,7 @@ function editColor(key: string) {
   colorEditor.value = `color:${resolvedKey(key)}`;
   if (chooser.value) chooser.value.open = false;
 }
-function addColor() {
+function addColor(assignToPart = false) {
   const key = colorKeyFromName(
     "color",
     colors.value.map((color) => color.key)
@@ -287,7 +265,7 @@ function addColor() {
     name: "",
     spec: { hue: freeHue, intensity: "media" }
   });
-  if (selected.value) selected.value.color_key = key;
+  if (assignToPart && selected.value) selected.value.color_key = key;
   editColor(key);
 }
 function setHue(value: number) {
@@ -327,7 +305,7 @@ function removeColor() {
     if (part.color_key === color.key) part.color_key = color.originalKey ?? replacement;
   if (color.originalKey) removedColors.value.push({ key: color.originalKey, replacement });
   colors.value = colors.value.filter((other) => other !== color);
-  colorEditor.value = null;
+  editColor(replacement);
 }
 function discard() {
   if (saving.value || !loaded.value) return;
@@ -404,6 +382,15 @@ useSettingsSection({
   <SettingsSection title="Partes y colores" @click="menuId = null" @keydown.esc="menuId = null">
     <template #actions>
       <button
+        v-if="colorEditor"
+        class="btn btn-soft btn-sm"
+        :disabled="!loaded || saving"
+        @click="addColor()"
+      >
+        <IconPlus class="size-4" /> Agregar color
+      </button>
+      <button
+        v-else
         class="btn btn-soft btn-sm"
         data-testid="add-part"
         :disabled="!loaded || saving || !colors.length"
@@ -416,10 +403,25 @@ useSettingsSection({
     <fieldset
       v-else
       :disabled="saving || !loaded"
-      class="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]"
+      class="grid min-w-0 items-start gap-3 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]"
     >
       <div class="bg-base-100 border-base-content/10 rounded-box flex min-w-0 flex-col border">
-        <div class="p-2" role="group" aria-label="Partes musicales">
+        <div class="p-3">
+          <SegmentedControl
+            :model-value="colorEditor ? 'colors' : 'parts'"
+            :options="[
+              { value: 'parts', label: 'Partes' },
+              { value: 'colors', label: 'Colores' }
+            ]"
+            label="Editar partes o colores"
+            stretch
+            @update:model-value="
+              colorEditor =
+                $event === 'parts' ? null : colors[0] ? `color:${colors[0].key}` : 'theme'
+            "
+          />
+        </div>
+        <div v-if="!colorEditor" class="p-2 pt-0" role="group" aria-label="Partes musicales">
           <p v-if="!rows.length" class="text-base-content/60 p-3 text-sm">Todavía no hay partes.</p>
           <div
             v-for="entry in tree"
@@ -484,7 +486,9 @@ useSettingsSection({
                     <IconPlus class="size-4" /> Agregar subdivisión
                   </button>
                 </li>
-                <li><button @click="move(entry.part)">Mover</button></li>
+                <li>
+                  <button @click="move(entry.part)"><IconGoTo class="size-4" /> Mover</button>
+                </li>
                 <li>
                   <button
                     class="text-error"
@@ -501,6 +505,28 @@ useSettingsSection({
             </div>
           </div>
         </div>
+        <div
+          v-else
+          class="max-h-64 overflow-y-auto p-2 pt-0"
+          role="group"
+          aria-label="Colores de la colección"
+        >
+          <button
+            v-for="color in colors"
+            :key="color.key"
+            class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm"
+            :class="editedColor === color ? 'bg-collection-soft' : 'hover:bg-base-content/5'"
+            :aria-pressed="editedColor === color"
+            @click="editColor(color.key)"
+          >
+            <span
+              class="size-5 shrink-0 rounded-full"
+              :style="{ background: swatch(color.spec) }"
+            />
+            <span class="min-w-0 flex-1 truncate font-semibold">{{ colorName(color) }}</span>
+            <span class="text-base-content/60 font-mono text-xs">{{ color.key }}</span>
+          </button>
+        </div>
         <div class="border-base-content/10 mt-auto flex items-center gap-3 border-t p-4">
           <span class="size-5 shrink-0 rounded-full" :style="{ background: swatch(themeSpec) }" />
           <span class="flex-1 text-sm font-semibold">Color de colección</span>
@@ -516,7 +542,7 @@ useSettingsSection({
       <div
         class="bg-base-100 border-base-content/10 rounded-box flex min-w-0 flex-col gap-5 border p-5"
       >
-        <template v-if="selected">
+        <template v-if="!colorEditor && selected">
           <label class="flex flex-col gap-1.5 text-sm font-semibold"
             >Nombre<input
               ref="nameInput"
@@ -581,7 +607,7 @@ useSettingsSection({
                   <button
                     class="btn btn-ghost btn-sm justify-start"
                     data-testid="add-color"
-                    @click="addColor"
+                    @click="addColor(true)"
                   >
                     <IconPlus class="size-4" /> Nuevo color
                   </button>
@@ -590,22 +616,98 @@ useSettingsSection({
             </details>
           </div>
         </template>
-        <template v-else>
-          <button class="btn btn-soft btn-sm self-start" @click="addColor">
-            <IconPlus class="size-4" /> Nuevo color
-          </button>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="color in colors"
-              :key="color.key"
-              class="btn btn-ghost btn-sm"
-              @click="editColor(color.key)"
+        <template v-if="colorEditor">
+          <h2 v-if="colorEditor === 'theme'" class="font-display text-xl font-bold">
+            Color de colección
+          </h2>
+          <label v-if="editedColor" class="flex flex-col gap-1 text-sm font-semibold"
+            >Nombre<input
+              v-model="editedColor.name"
+              class="input field-focus w-full"
+              :maxlength="TRACK_COLOR_NAME_MAX"
+              aria-label="Nombre de color"
+          /></label>
+          <p v-if="sharedUsage" class="text-base-content/60 text-xs">{{ sharedUsage }}</p>
+          <template v-if="colorEditor === 'theme' || editedColor">
+            <div class="flex items-center gap-3">
+              <div class="min-w-0 flex-1">
+                <span class="mb-1 block text-sm font-semibold">Tono</span
+                ><HueSlider
+                  :model-value="
+                    colorEditor === 'theme'
+                      ? hue
+                      : isNeutral(editedColor!.spec)
+                        ? 0
+                        : editedColor!.spec.hue
+                  "
+                  :intensity="
+                    colorEditor === 'theme'
+                      ? intensity
+                      : isNeutral(editedColor!.spec)
+                        ? 'media'
+                        : editedColor!.spec.intensity
+                  "
+                  :marks="colorEditor === 'theme' ? [] : marks"
+                  :disabled="!!editedColor && isNeutral(editedColor.spec)"
+                  @update:model-value="setHue"
+                />
+              </div>
+              <input
+                class="input input-sm field-focus w-20 font-mono"
+                type="number"
+                aria-label="Tono en grados"
+                :value="
+                  colorEditor === 'theme'
+                    ? hue
+                    : isNeutral(editedColor!.spec)
+                      ? ''
+                      : editedColor!.spec.hue
+                "
+                :disabled="!!editedColor && isNeutral(editedColor.spec)"
+                @change="setHue(Number(($event.target as HTMLInputElement).value))"
+              />
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <SegmentedControl
+                :model-value="
+                  colorEditor === 'theme'
+                    ? intensity
+                    : isNeutral(editedColor!.spec)
+                      ? 'media'
+                      : editedColor!.spec.intensity
+                "
+                :options="INTENSITIES"
+                label="Intensidad"
+                :disabled="!!editedColor && isNeutral(editedColor.spec)"
+                @update:model-value="setIntensity"
+              /><label v-if="editedColor" class="flex items-center gap-2 text-sm"
+                ><input
+                  type="checkbox"
+                  class="toggle toggle-sm"
+                  :checked="isNeutral(editedColor.spec)"
+                  @change="setNeutral(($event.target as HTMLInputElement).checked)"
+                />Neutro</label
+              >
+            </div>
+            <p v-if="colorConflict" class="text-warning text-sm">Parecido a {{ conflictName }}.</p>
+            <ColorPreview :spec="editedColor?.spec ?? themeSpec" :collection-hue="hue" />
+          </template>
+          <details v-if="editedColor" class="text-sm">
+            <summary class="text-base-content/60 cursor-pointer">Avanzado</summary>
+            <label class="mt-3 flex flex-col gap-1"
+              >Clave<input
+                :value="editedColor.key"
+                aria-label="Clave de color"
+                class="input input-sm field-focus font-mono"
+                @input="renameColor" /></label
+            ><button
+              class="btn btn-ghost btn-sm text-error mt-2"
+              :disabled="colors.length < 2 || !props.songsLoaded"
+              @click="removeColor"
             >
-              <span class="size-4 rounded-full" :style="{ background: swatch(color.spec) }" />{{
-                colorName(color)
-              }}
+              <IconTrash class="size-4" />Eliminar color
             </button>
-          </div>
+          </details>
         </template>
       </div>
     </fieldset>
@@ -658,121 +760,6 @@ useSettingsSection({
         </div>
       </div>
       <button class="modal-backdrop" aria-label="Cancelar" @click="removing = null" />
-    </div>
-    <div
-      v-if="colorEditor"
-      class="modal modal-open"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Editar color"
-      @keydown.esc="colorEditor = null"
-    >
-      <div ref="colorDialog" class="modal-box flex max-w-lg flex-col gap-5">
-        <header class="flex items-center justify-between gap-2">
-          <h2 class="font-display text-xl font-bold">
-            {{ colorEditor === "theme" ? "Color de colección" : "Editar color" }}
-          </h2>
-          <button
-            class="btn btn-ghost btn-sm btn-square"
-            aria-label="Cerrar color"
-            @click="colorEditor = null"
-          >
-            <IconClose class="size-4" />
-          </button>
-        </header>
-        <label v-if="editedColor" class="flex flex-col gap-1 text-sm font-semibold"
-          >Nombre<input
-            v-model="editedColor.name"
-            class="input field-focus w-full"
-            :maxlength="TRACK_COLOR_NAME_MAX"
-            aria-label="Nombre de color"
-        /></label>
-        <p v-if="sharedUsage" class="text-base-content/60 text-xs">{{ sharedUsage }}</p>
-        <template v-if="colorEditor === 'theme' || editedColor">
-          <div class="flex items-center gap-3">
-            <div class="min-w-0 flex-1">
-              <span class="mb-1 block text-sm font-semibold">Tono</span
-              ><HueSlider
-                :model-value="
-                  colorEditor === 'theme'
-                    ? hue
-                    : isNeutral(editedColor!.spec)
-                      ? 0
-                      : editedColor!.spec.hue
-                "
-                :intensity="
-                  colorEditor === 'theme'
-                    ? intensity
-                    : isNeutral(editedColor!.spec)
-                      ? 'media'
-                      : editedColor!.spec.intensity
-                "
-                :marks="colorEditor === 'theme' ? [] : marks"
-                :disabled="!!editedColor && isNeutral(editedColor.spec)"
-                @update:model-value="setHue"
-              />
-            </div>
-            <input
-              class="input input-sm field-focus w-20 font-mono"
-              type="number"
-              aria-label="Tono en grados"
-              :value="
-                colorEditor === 'theme'
-                  ? hue
-                  : isNeutral(editedColor!.spec)
-                    ? ''
-                    : editedColor!.spec.hue
-              "
-              :disabled="!!editedColor && isNeutral(editedColor.spec)"
-              @change="setHue(Number(($event.target as HTMLInputElement).value))"
-            />
-          </div>
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <SegmentedControl
-              :model-value="
-                colorEditor === 'theme'
-                  ? intensity
-                  : isNeutral(editedColor!.spec)
-                    ? 'media'
-                    : editedColor!.spec.intensity
-              "
-              :options="INTENSITIES"
-              label="Intensidad"
-              :disabled="!!editedColor && isNeutral(editedColor.spec)"
-              @update:model-value="setIntensity"
-            /><label v-if="editedColor" class="flex items-center gap-2 text-sm"
-              ><input
-                type="checkbox"
-                class="toggle toggle-sm"
-                :checked="isNeutral(editedColor.spec)"
-                @change="setNeutral(($event.target as HTMLInputElement).checked)"
-              />Neutro</label
-            >
-          </div>
-          <p v-if="colorConflict" class="text-warning text-sm">Parecido a {{ conflictName }}.</p>
-          <ColorPreview :spec="editedColor?.spec ?? themeSpec" :collection-hue="hue" />
-        </template>
-        <details v-if="editedColor" class="text-sm">
-          <summary class="text-base-content/60 cursor-pointer">Avanzado</summary>
-          <label class="mt-3 flex flex-col gap-1"
-            >Clave<input
-              :value="editedColor.key"
-              aria-label="Clave de color"
-              class="input input-sm field-focus font-mono"
-              @input="renameColor" /></label
-          ><button
-            class="btn btn-ghost btn-sm text-error mt-2"
-            :disabled="colors.length < 2 || !props.songsLoaded"
-            @click="removeColor"
-          >
-            <IconTrash class="size-4" />Eliminar color
-          </button>
-        </details>
-        <div class="flex justify-end">
-          <button class="btn btn-soft" @click="colorEditor = null">Listo</button>
-        </div>
-      </div>
-      <button class="modal-backdrop" aria-label="Cerrar color" @click="colorEditor = null" />
     </div>
   </SettingsSection>
 </template>
