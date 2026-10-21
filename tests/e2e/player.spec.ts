@@ -145,6 +145,12 @@ test("instrumentals have no Solo or lyric assignment and stay audible during voi
   page
 }) => {
   test.setTimeout(45000);
+  await page.route("**/rest/v1/audio_tracks*", async (route) => {
+    if (route.request().method() === "PATCH") {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    await route.continue();
+  });
   await openTestSong(page);
   await page.goto("/test-collection/test-song?editar=cancion");
   const kind = page.getByTestId("track-row-0").getByRole("combobox", { name: "Tipo de audio" });
@@ -152,6 +158,7 @@ test("instrumentals have no Solo or lyric assignment and stay audible during voi
   try {
     await kind.selectOption("instrumental");
     await page.getByTestId("save-changes").click();
+    await expect(page.getByTestId("save-status")).toContainText("Guardado");
     await expect(page.getByTestId("save-changes")).toBeDisabled();
     await page.getByRole("button", { name: "Salir del modo edición" }).click();
     await expect(trackSoloButton(page, "Guitar")).toHaveCount(0);
@@ -178,6 +185,7 @@ test("instrumentals have no Solo or lyric assignment and stay audible during voi
       await restoredKind.selectOption(previous);
       await expect(page.getByTestId("save-changes")).toBeEnabled();
       await page.getByTestId("save-changes").click();
+      await expect(page.getByTestId("save-status")).toContainText("Guardado");
     }
     await expect(page.getByTestId("save-changes")).toBeDisabled();
   }
