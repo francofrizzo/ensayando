@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import SilenceRegions from "@/components/player/SilenceRegions.vue";
+import type { SilenceSkip } from "@/utils/silence-skips";
+
 // Plain progress bar, only where the waveforms aren't visible (compact dock, phone).
 const props = defineProps<{
   currentTime: number;
   totalDuration: number;
   disabled?: boolean;
+  silenceSkips?: SilenceSkip[];
 }>();
 
 const emit = defineEmits<{ seek: [time: number] }>();
@@ -58,6 +62,9 @@ const onKeydown = (event: KeyboardEvent) => {
     @keydown="onKeydown"
   >
     <div class="bg-base-content/12 absolute inset-x-0 h-[5px] rounded-full" />
+    <div v-if="silenceSkips?.length" class="pointer-events-none absolute inset-x-0 h-[9px]">
+      <SilenceRegions :intervals="silenceSkips" :duration="totalDuration" />
+    </div>
     <div
       class="bg-primary absolute left-0 h-[5px] rounded-full"
       :style="{ width: `${progress * 100}%` }"

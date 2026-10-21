@@ -10,12 +10,14 @@ import {
   IconThemeSystem
 } from "@/components/ui/icons";
 import { type ThemeMode, useTheme } from "@/composables/useTheme";
+import { useUIStore } from "@/stores/ui";
 
 const props = defineProps<{
   canEdit: boolean;
   isAdmin: boolean;
   exporting: boolean;
   canDownload: boolean;
+  canSkipSilences?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -26,6 +28,7 @@ const emit = defineEmits<{
 }>();
 
 const { mode, setMode } = useTheme();
+const uiStore = useUIStore();
 
 const THEMES: { value: ThemeMode; label: string; icon: typeof IconThemeSystem }[] = [
   { value: "system", label: "Sistema", icon: IconThemeSystem },
@@ -51,11 +54,29 @@ const run = (action: () => void) => {
       <IconMore class="size-[18px]" />
     </div>
     <ul tabindex="0" class="dropdown-content menu glass-3 rounded-box z-50 mt-2 w-72 gap-0.5 p-1.5">
+      <li>
+        <label
+          :title="!props.canSkipSilences ? 'Sin picos válidos para las voces activas' : undefined"
+        >
+          Saltar silencios
+          <input
+            v-model="uiStore.skipSilencesEnabled"
+            type="checkbox"
+            class="toggle toggle-sm ml-auto"
+            aria-label="Saltar silencios"
+            :disabled="!props.canSkipSilences && !uiStore.skipSilencesEnabled"
+          />
+        </label>
+      </li>
+      <div class="bg-base-content/10 mx-1 my-1 h-px" />
       <li :class="{ 'menu-disabled': !props.canDownload || props.exporting }">
         <button @click="run(() => emit('download'))">
           <IconDownload class="size-[17px] opacity-70" />
           {{ props.exporting ? "Preparando la mezcla…" : "Descargar mezcla" }}
-          <span class="ml-auto flex gap-0.5"><kbd class="kbd kbd-xs">⌘</kbd><kbd class="kbd kbd-xs">⇧</kbd><kbd class="kbd kbd-xs">E</kbd></span>
+          <span class="ml-auto flex gap-0.5"
+            ><kbd class="kbd kbd-xs">⌘</kbd><kbd class="kbd kbd-xs">⇧</kbd
+            ><kbd class="kbd kbd-xs">E</kbd></span
+          >
         </button>
       </li>
       <li v-if="props.canEdit">
@@ -75,7 +96,11 @@ const run = (action: () => void) => {
       <div class="bg-base-content/10 mx-1 my-1 h-px" />
       <li class="menu-title text-[11px] tracking-[0.1em] uppercase">Tema</li>
       <div class="px-1.5 pb-1.5">
-        <div class="bg-base-content/7 flex gap-0.5 rounded-full p-[3px]" role="group" aria-label="Tema">
+        <div
+          class="bg-base-content/7 flex gap-0.5 rounded-full p-[3px]"
+          role="group"
+          aria-label="Tema"
+        >
           <button
             v-for="theme in THEMES"
             :key="theme.value"

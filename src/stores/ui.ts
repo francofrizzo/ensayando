@@ -57,6 +57,7 @@ export const useUIStore = defineStore("ui", () => {
   // Rehearsal session only: reloading or opening a link never starts audio.
   const autoplayEnabled = ref(false);
   const autoplaySongId = ref<number | null>(null);
+  const skipSilencesEnabled = ref(false);
 
   // Overlays shared by every screen (mounted once in App.vue)
   const libraryOpen = ref(false);
@@ -88,6 +89,7 @@ export const useUIStore = defineStore("ui", () => {
     setEditorPreview,
     autoplayEnabled,
     autoplaySongId,
+    skipSilencesEnabled,
     libraryOpen,
     openLibrary,
     closeLibrary,

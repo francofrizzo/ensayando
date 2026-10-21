@@ -5,6 +5,7 @@ import type WaveSurfer from "wavesurfer.js";
 import type { WaveSurferOptions } from "wavesurfer.js";
 import WebAudioPlayer from "wavesurfer.js/dist/webaudio.js";
 
+import SilenceRegions from "@/components/player/SilenceRegions.vue";
 import { IconHash, IconLyrics, IconRetry, IconWarning } from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
 import { useLongPress } from "@/composables/useLongPress";
@@ -12,6 +13,7 @@ import { audioPlaybackUrl } from "@/data/storage";
 import type { AudioTrack, CollectionWithRole } from "@/data/types";
 import { type ColorSpec, deriveColor, specHue, unplayedWaveColor } from "@/utils/palette";
 import { isIOS } from "@/utils/platform";
+import type { SilenceSkip } from "@/utils/silence-skips";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
 const props = defineProps<{
@@ -31,6 +33,7 @@ const props = defineProps<{
   editMode?: boolean;
   audioContext: AudioContext;
   prefetchedAudio?: Promise<Blob | null>;
+  silenceSkips?: SilenceSkip[];
   deferLoad?: boolean;
   /** 1–9: the digit shortcut for this track. */
   position?: number;
@@ -335,6 +338,11 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
           @ready="(duration: number) => emit('ready', duration)"
           @timeupdate="onTimeUpdate"
           @finish="emit('finish')"
+        />
+        <SilenceRegions
+          v-if="waveSurfer && silenceSkips?.length"
+          :intervals="silenceSkips"
+          :duration="waveSurfer.getDuration()"
         />
       </div>
     </div>

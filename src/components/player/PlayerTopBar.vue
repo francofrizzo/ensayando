@@ -16,6 +16,7 @@ const props = defineProps<{
   editMode: boolean;
   exporting: boolean;
   canDownload: boolean;
+  canSkipSilences?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -31,7 +32,9 @@ const artwork = computed(() => artworkPlaybackUrl(props.collection) || undefined
 </script>
 
 <template>
-  <header class="glass-1 relative flex h-14 items-center gap-2 rounded-[18px] px-1.5 md:h-[60px] md:gap-3 md:px-2.5">
+  <header
+    class="glass-1 relative flex h-14 items-center gap-2 rounded-[18px] px-1.5 md:h-[60px] md:gap-3 md:px-2.5"
+  >
     <!-- Library: collection name (and cover, only when there is one) -->
     <button
       class="hover:bg-base-content/6 flex min-w-0 shrink-0 items-center gap-2.5 rounded-[14px] py-1 pr-1 pl-1 text-left transition-colors md:pr-3"
@@ -97,6 +100,7 @@ const artwork = computed(() => artworkPlaybackUrl(props.collection) || undefined
         :is-admin="props.isAdmin"
         :exporting="props.exporting"
         :can-download="props.canDownload"
+        :can-skip-silences="props.canSkipSilences"
         @download="emit('download')"
         @edit="emit('edit')"
         @shortcuts="emit('shortcuts')"

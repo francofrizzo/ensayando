@@ -53,6 +53,7 @@ import {
 } from "@/utils/audio-prefetch";
 import { mixAndEncodeMp3 } from "@/utils/mixdown";
 import { isIOS } from "@/utils/platform";
+import { silenceSkips, type SilenceSkip } from "@/utils/silence-skips";
 import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
 import { cleanupWaveSurfer } from "@/utils/wavesurfer-cleanup";
 
@@ -255,9 +256,44 @@ const onPlayPause = async (forcePlay?: boolean) => {
   }
 };
 
+const availableSilenceSkips = computed(() => {
+  if (!isReady.value || uiStore.editMode) return null;
+  const voices = sortedTracks.value.filter(
+    (track, index) => track.kind !== "instrumental" && (state.gains.value[index] ?? 0) > 0
+  );
+  if (voices.some((track) => track.kind !== "voice")) return null;
+  return (
+    silenceSkips(
+      voices.map((track) => ({
+        peaks: track.peaks,
+        duration: state.trackStates.value.find((item) => item.id === track.id)!.duration
+      }))
+    )?.filter((interval) => interval.end < state.totalDuration.value) ?? null
+  );
+});
+const activeSilenceSkips = computed(() =>
+  uiStore.skipSilencesEnabled ? (availableSilenceSkips.value ?? []) : []
+);
+// A deliberate seek into a pause lets the person listen to that pause.
+const manuallySelectedPause = ref<SilenceSkip | null>(null);
 const onSeekToTime = (time: number) => {
+  manuallySelectedPause.value =
+    activeSilenceSkips.value.find((interval) => time >= interval.start && time < interval.end) ??
+    null;
   seekAllTracks(time);
 };
+watch(
+  [state.currentTime, state.playing, activeSilenceSkips],
+  ([time, playing, intervals]) => {
+    const manual = manuallySelectedPause.value;
+    if (manual && time >= manual.start && time < manual.end) return;
+    manuallySelectedPause.value = null;
+    if (!playing) return;
+    const interval = intervals.find((item) => time >= item.start && time < item.end);
+    if (interval) seekAllTracks(interval.end);
+  },
+  { flush: "post" }
+);
 
 const stanzaStarts = computed(() => stanzaStartTimes(props.lyrics));
 
@@ -273,7 +309,14 @@ watch(
     () =>
       state.playing.value &&
       state.totalDuration.value > 0 &&
-      state.totalDuration.value - state.currentTime.value <= 30
+      state.totalDuration.value -
+        state.currentTime.value -
+        activeSilenceSkips.value.reduce(
+          (saved, interval) =>
+            saved + Math.max(0, interval.end - Math.max(interval.start, state.currentTime.value)),
+          0
+        ) <=
+        30
   ],
   ([enabled, editing, next, nearEnd]) => {
     if (!enabled || editing || !next) {
@@ -937,6 +980,7 @@ const initializeAudioContext = async () => {
         :edit-mode="uiStore.editMode"
         :exporting="exporting"
         :can-download="isReady"
+        :can-skip-silences="availableSilenceSkips !== null"
         @library="uiStore.openLibrary()"
         @search="uiStore.openCommandPalette()"
         @edit="uiStore.openEditor()"
@@ -1088,6 +1132,7 @@ const initializeAudioContext = async () => {
         class="md:hidden"
         :current-time="state.currentTime.value"
         :total-duration="state.totalDuration.value"
+        :silence-skips="activeSilenceSkips"
         :disabled="!isReady"
         @seek="onSeekToTime"
       />
@@ -1151,6 +1196,7 @@ const initializeAudioContext = async () => {
         class="hidden md:flex"
         :current-time="state.currentTime.value"
         :total-duration="state.totalDuration.value"
+        :silence-skips="activeSilenceSkips"
         :disabled="!isReady"
         @seek="onSeekToTime"
       />
@@ -1235,6 +1281,7 @@ const initializeAudioContext = async () => {
             :edit-mode="uiStore.editMode"
             :audio-context="audioContext"
             :prefetched-audio="prefetchedAudio?.files.get(audioPlaybackUrl(track))"
+            :silence-skips="activeSilenceSkips"
             :defer-load="isIOS"
             @ready="(duration: number) => onReady(index, duration)"
             @time-update="(time: number) => state.onTimeUpdate(index, time)"
