@@ -69,7 +69,7 @@ test.beforeAll(async () => {
           order: 1,
           kind: "voice",
           color_key: "voice",
-          audio_file_url: source!.audio_tracks[0]!.audio_file_url
+          audio_file_url: `${source!.audio_tracks[0]!.audio_file_url}?autoplay-song=${i}`
         },
         {
           song_id: song!.id,
@@ -77,7 +77,7 @@ test.beforeAll(async () => {
           order: 2,
           kind: "instrumental",
           color_key: "piano",
-          audio_file_url: source!.audio_tracks[0]!.audio_file_url
+          audio_file_url: `${source!.audio_tracks[0]!.audio_file_url}?autoplay-song=${i}`
         }
       ])
       .throwOnError();
@@ -98,6 +98,10 @@ test.afterAll(async () => {
     await service.from("collections").delete().eq("id", collectionId).throwOnError();
 });
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ens-ios-audio-notice-v1", "1"));
+});
+
 const play = (page: import("@playwright/test").Page) =>
   page.getByRole("button", { name: "Play/Pause" });
 const autoplay = (page: import("@playwright/test").Page) =>
@@ -107,20 +111,20 @@ test("autoplay advances once, restores the next mix, plays it, and stops at the 
   page
 }) => {
   test.setTimeout(45000);
-  await page.route("**/storage/v1/object/public/audio-files/test/*.mp3", async (route) => {
+  let nextDownloads = 0;
+  await page.route("**/storage/v1/object/public/audio-files/test/*.mp3*", async (route) => {
+    if (route.request().url().endsWith("autoplay-song=2")) nextDownloads++;
     await new Promise((resolve) => setTimeout(resolve, 2500));
     await route.continue();
   });
   await page.goto(`/${slug}/cancion-2`);
   await expect(play(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
-  if (await page.getByTestId("ios-playback-notice").isVisible()) {
-    await page.getByRole("button", { name: "Entendido", exact: true }).click();
-  }
   await page.getByRole("button", { name: "Solo de Voz", exact: true }).click();
   await page.getByRole("slider", { name: "Volumen de Piano" }).fill("0.41");
   await page.getByRole("button", { name: "Canción anterior", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${slug}/cancion-1$`));
   await expect(play(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
+  nextDownloads = 0;
   await autoplay(page).click();
   await play(page).click();
   await expect.poll(() => page.getByTestId("time-display").textContent()).not.toBe("0:00");
@@ -143,12 +147,90 @@ test("autoplay advances once, restores the next mix, plays it, and stops at the 
     "true"
   );
   await expect(page.getByRole("slider", { name: "Volumen de Piano" })).toHaveValue("0.41");
+  expect(nextDownloads).toBe(1); // Both tracks reuse the one prefetched file.
   await expect.poll(() => page.getByTestId("time-display").textContent()).not.toBe("0:00");
   await expect(play(page).locator("svg")).toHaveClass(/tabler-icon-player-play-filled/, {
     timeout: 10000
   });
   await expect(page).toHaveURL(new RegExp(`/${slug}/cancion-2$`));
 });
+
+for (const outcome of ["pending", "failed"] as const) {
+  test(`autoplay reuses a ${outcome} prefetch or falls back to normal loading`, async ({
+    page
+  }) => {
+    test.setTimeout(30000);
+    let downloads = 0;
+    await page.route("**/*autoplay-song=2", async (route) => {
+      downloads++;
+      if (downloads === 1) {
+        if (outcome === "failed") return route.abort();
+        await new Promise((resolve) => setTimeout(resolve, 7000));
+      }
+      await route.continue();
+    });
+    await page.goto(`/${slug}/cancion-1`);
+    await expect(play(page)).toHaveAttribute("data-ready", "true");
+    await autoplay(page).click();
+    await play(page).click();
+    await expect(page).toHaveURL(new RegExp(`/${slug}/cancion-2$`), { timeout: 15000 });
+    await expect(play(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
+    await expect.poll(() => page.getByTestId("time-display").textContent()).not.toBe("0:00");
+    if (outcome === "pending") expect(downloads).toBe(1);
+    else expect(downloads).toBeGreaterThan(1);
+  });
+}
+
+for (const action of ["disable", "edit", "navigate"] as const) {
+  test(`prefetch waits for the last 30 seconds and cancels on ${action}`, async ({ page }) => {
+    // A real 40-second PCM WAV, without a checked-in large audio fixture.
+    const wav = Buffer.alloc(44 + 40 * 8000 * 2);
+    wav.write("RIFF", 0);
+    wav.writeUInt32LE(wav.length - 8, 4);
+    wav.write("WAVEfmt ", 8);
+    wav.writeUInt32LE(16, 16);
+    wav.writeUInt16LE(1, 20);
+    wav.writeUInt16LE(1, 22);
+    wav.writeUInt32LE(8000, 24);
+    wav.writeUInt32LE(16000, 28);
+    wav.writeUInt16LE(2, 32);
+    wav.writeUInt16LE(16, 34);
+    wav.write("data", 36);
+    wav.writeUInt32LE(wav.length - 44, 40);
+    await page.route("**/*autoplay-song=1", (route) =>
+      route.fulfill({ body: wav, contentType: "audio/wav" })
+    );
+    let downloads = 0;
+    let cancelled = false;
+    page.on("requestfailed", (request) => {
+      if (request.url().endsWith("autoplay-song=2")) cancelled = true;
+    });
+    await page.route("**/*autoplay-song=2", async (route) => {
+      downloads++;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.continue().catch(() => {}); // The client may already have aborted.
+    });
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto(`/${slug}/cancion-1`);
+    await expect(play(page)).toHaveAttribute("data-ready", "true");
+    await autoplay(page).click();
+    await play(page).click();
+    await expect.poll(() => page.getByTestId("time-display").textContent()).not.toBe("0:00");
+    expect(downloads).toBe(0);
+    const position = page.getByRole("slider", { name: "Posición", exact: true });
+    await expect(position).toHaveAttribute("aria-valuemax", "40");
+    const box = (await position.boundingBox())!;
+    await position.click({ position: { x: box.width * 0.3, y: box.height / 2 } });
+    await expect.poll(() => downloads).toBe(1);
+    if (action === "disable") await autoplay(page).click();
+    else if (action === "edit") await page.keyboard.press("e");
+    else {
+      await page.getByRole("button", { name: "Abrir la biblioteca", exact: true }).click();
+      await page.getByRole("link", { name: /^Test Collection/ }).click();
+    }
+    await expect.poll(() => cancelled).toBe(true);
+  });
+}
 
 for (const mode of ["off", "disabled", "editing"] as const) {
   test(`finishing does not advance when autoplay is ${mode}`, async ({ page }) => {

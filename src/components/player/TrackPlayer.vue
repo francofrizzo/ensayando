@@ -30,6 +30,7 @@ const props = defineProps<{
   lyricsEnabled: boolean;
   editMode?: boolean;
   audioContext: AudioContext;
+  prefetchedAudio?: Promise<Blob | null>;
   deferLoad?: boolean;
   /** 1–9: the digit shortcut for this track. */
   position?: number;
@@ -53,10 +54,6 @@ const emit = defineEmits<{
 const waveSurfer = ref<WaveSurfer | null>(null);
 const media = new WebAudioPlayer(props.audioContext);
 const hasBegunLoad = ref(false);
-const currentUrl = ref<string | null>(null);
-if (!props.deferLoad) {
-  currentUrl.value = audioPlaybackUrl(props.track);
-}
 
 const isInstrumental = computed(() => props.track.kind === "instrumental");
 
@@ -98,11 +95,18 @@ const onVolumeInput = (event: Event) => {
   emit("volume-change", Math.max(0, Math.min(1, value)));
 };
 
-const load = () => {
-  const url = audioPlaybackUrl(props.track);
-  currentUrl.value = url;
-  // WaveSurferPlayer doesn't watch for option changes, so we must call load() explicitly
-  waveSurfer.value?.load(url)?.catch(() => emit("error"));
+const load = async (usePrefetch = true) => {
+  const ws = waveSurfer.value;
+  if (!ws) return;
+  const blob = usePrefetch ? await props.prefetchedAudio : null;
+  if (waveSurfer.value !== ws) return;
+  try {
+    // Without a duration override, ready still waits for actual playback decoding.
+    if (blob) await ws.loadBlob(blob, props.track.peaks?.channels);
+    else await ws.load(audioPlaybackUrl(props.track), props.track.peaks?.channels);
+  } catch {
+    if (waveSurfer.value === ws) emit("error");
+  }
 };
 
 // WaveSurfer 7 emits a stray timeupdate(0) right after pause() (its media position
@@ -122,7 +126,7 @@ defineExpose({
   },
   retry: () => {
     hasBegunLoad.value = true;
-    load();
+    void load(false);
   }
 });
 
@@ -154,9 +158,7 @@ const waveSurferOptions = computed<Partial<Omit<WaveSurferOptions, "container">>
   cursorWidth: 0,
   dragToSeek: !isIOS,
   backend: "WebAudio" as const,
-  url: currentUrl.value ?? undefined,
   media: media as unknown as HTMLMediaElement,
-  peaks: props.track.peaks?.channels,
   ...waveSurferColorScheme.value
 }));
 
@@ -326,6 +328,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
             (ws: WaveSurfer) => {
               waveSurfer = ws;
               ws.on('error', () => emit('error'));
+              if (!deferLoad) void load();
             }
           "
           @interaction="(time: number) => emit('seek', time)"

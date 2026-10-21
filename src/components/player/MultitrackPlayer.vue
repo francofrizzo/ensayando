@@ -46,6 +46,11 @@ import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
 import { COMMAND_EVENT, type CommandEventDetail, dispatchPlayback } from "@/utils/appEvents";
 import { getPlaybackAudioContext } from "@/utils/audio-context";
+import {
+  cancelAudioPrefetch,
+  prefetchSongAudio,
+  takePrefetchedAudio
+} from "@/utils/audio-prefetch";
 import { mixAndEncodeMp3 } from "@/utils/mixdown";
 import { isIOS } from "@/utils/platform";
 import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
@@ -61,6 +66,8 @@ const uiStore = useUIStore();
 const collectionsStore = useCollectionsStore();
 const router = useRouter();
 const { prevSong, nextSong } = useCurrentSong();
+const prefetchedAudio = takePrefetchedAudio(props.song.id);
+let advancingWithAutoplay = false;
 
 const canEdit = computed(() => collectionsStore.canEditCurrentCollection);
 const isAdmin = computed(() => props.collection.user_role === "admin");
@@ -258,12 +265,32 @@ const goToSong = (song: Song | null) => {
   if (song) navigateToSong(props.collection, song);
 };
 
+watch(
+  [
+    () => uiStore.autoplayEnabled,
+    () => uiStore.editMode,
+    nextSong,
+    () =>
+      state.playing.value &&
+      state.totalDuration.value > 0 &&
+      state.totalDuration.value - state.currentTime.value <= 30
+  ],
+  ([enabled, editing, next, nearEnd]) => {
+    if (!enabled || editing || !next) {
+      cancelAudioPrefetch();
+    } else if (nearEnd) {
+      prefetchSongAudio(next.id, next.audio_tracks.map(audioPlaybackUrl));
+    }
+  }
+);
+
 const onFinish = (trackIndex: number) => {
   const wasPlaying = state.playing.value;
   state.onFinish(trackIndex);
   if (!wasPlaying || state.playing.value || !uiStore.autoplayEnabled || uiStore.editMode) return;
   const next = nextSong.value;
   if (!next) return;
+  advancingWithAutoplay = true;
   uiStore.autoplaySongId = next.id;
   goToSong(next);
 };
@@ -467,6 +494,8 @@ onMounted(() => {
 });
 
 onUnmounted(async () => {
+  prefetchedAudio?.controller.abort();
+  if (!advancingWithAutoplay) cancelAudioPrefetch();
   try {
     window.removeEventListener("keydown", keydownHandler);
     window.removeEventListener("keydown", onSaveShortcut, true);
@@ -1205,6 +1234,7 @@ const initializeAudioContext = async () => {
             :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
             :edit-mode="uiStore.editMode"
             :audio-context="audioContext"
+            :prefetched-audio="prefetchedAudio?.files.get(audioPlaybackUrl(track))"
             :defer-load="isIOS"
             @ready="(duration: number) => onReady(index, duration)"
             @time-update="(time: number) => state.onTimeUpdate(index, time)"

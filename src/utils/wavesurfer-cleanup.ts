@@ -1,4 +1,5 @@
 type WebAudioMedia = {
+  src?: string;
   audioContext?: { close: () => Promise<void> };
   getGainNode?: () => { disconnect: () => void };
   removeAttribute?: (attribute: string) => void;
@@ -27,6 +28,7 @@ export async function cleanupWaveSurfer(
   }
 
   const media = (ws.getMediaElement?.() ?? null) as unknown as WebAudioMedia | null;
+  const source = media?.src;
 
   try {
     ws.destroy();
@@ -38,6 +40,7 @@ export async function cleanupWaveSurfer(
   try {
     media?.getGainNode?.().disconnect();
     media?.removeAttribute?.("src");
+    if (source?.startsWith("blob:")) URL.revokeObjectURL(source);
   } catch {
     /* ignore cleanup errors */
   }
