@@ -186,14 +186,13 @@ function togglePart(id: string) {
       <div class="relative shrink-0" @keydown.esc="colorOpen = false">
         <button
           type="button"
-          class="btn btn-sm btn-ghost gap-1.5 px-2 font-mono text-xs"
-          :aria-label="`Color de la pista: ${props.track.color_key}`"
+          class="btn btn-sm btn-ghost px-2"
+          aria-label="Color de la pista"
           :aria-expanded="colorOpen"
           data-testid="track-color"
           @click="colorOpen = !colorOpen"
         >
           <span class="size-4 shrink-0 rounded-full" :style="{ background: props.stage }" />
-          {{ props.track.color_key }}
         </button>
         <div
           v-if="colorOpen"
@@ -212,10 +211,7 @@ function togglePart(id: string) {
               @click="pickColor(option.key)"
             >
               <span class="size-4 shrink-0 rounded-full" :style="{ background: option.value }" />
-              <span class="min-w-0 flex-1 truncate">{{ option.name || option.key }}</span>
-              <span v-if="option.name" class="text-base-content/50 font-mono text-xs">{{
-                option.key
-              }}</span>
+              <span class="min-w-0 flex-1 truncate">{{ option.name || "Sin nombre" }}</span>
               <span class="size-3.5 shrink-0">
                 <IconCheck v-if="option.key === props.track.color_key" class="size-3.5" />
               </span>

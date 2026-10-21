@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { AudioTrackKind } from "@/data/types";
 
@@ -60,10 +60,58 @@ function createTrackState(init: TrackInit): TrackState {
   };
 }
 
-export function usePlayerState(initialTracks: TrackInit[], callbacks?: PlayerStateCallbacks) {
-  const trackStates = ref<TrackState[]>(initialTracks.map(createTrackState));
+export function usePlayerState(
+  initialTracks: TrackInit[],
+  callbacks?: PlayerStateCallbacks,
+  songId?: number
+) {
+  let currentSongId = songId;
+  const storageKey = () => `ens-rehearsal-mix-${currentSongId}`;
+  const restoreTracks = (inits: TrackInit[]) => {
+    const tracks = inits.map(createTrackState);
+    if (currentSongId === undefined) return tracks;
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem(storageKey()) ?? "null");
+      if (!saved || typeof saved !== "object") return tracks;
+      for (const track of tracks) {
+        const mix: unknown = (saved as Record<string, unknown>)[track.id];
+        if (!mix || typeof mix !== "object") continue;
+        const values = mix as Record<string, unknown>;
+        if (typeof values.volume === "number" && Number.isFinite(values.volume)) {
+          track.volume = Math.max(0, Math.min(1, values.volume));
+        }
+        track.muted = values.muted === true;
+        track.soloed = track.kind !== "instrumental" && values.soloed === true;
+      }
+    } catch {
+      // Storage may be blocked or contain an invalid preference. Playback still works.
+    }
+    return tracks;
+  };
+  const trackStates = ref<TrackState[]>(restoreTracks(initialTracks));
   const playing = ref(false);
   const currentTime = ref(0);
+
+  const hasCustomMix = computed(() =>
+    trackStates.value.some((track) => track.volume !== 1 || track.muted || track.soloed)
+  );
+  watch(
+    () => trackStates.value.map(({ id, volume, muted, soloed }) => ({ id, volume, muted, soloed })),
+    (tracks) => {
+      if (currentSongId === undefined) return;
+      try {
+        if (!hasCustomMix.value) localStorage.removeItem(storageKey());
+        else
+          localStorage.setItem(
+            storageKey(),
+            JSON.stringify(Object.fromEntries(tracks.map(({ id, ...mix }) => [id, mix])))
+          );
+      } catch {
+        // A full or unavailable storage must not interrupt rehearsal.
+      }
+    },
+    { flush: "sync" }
+  );
 
   const anySoloed = computed(() => trackStates.value.some((t) => t.soloed && !t.failed));
   const gains = computed(() => trackStates.value.map((t) => appliedGain(t, anySoloed.value)));
@@ -149,6 +197,16 @@ export function usePlayerState(initialTracks: TrackInit[], callbacks?: PlayerSta
 
   // --- Volume, mute and solo ---
 
+  const resetMix = () =>
+    withAudibilityCheck(() => {
+      trackStates.value = trackStates.value.map((track) => ({
+        ...track,
+        volume: 1,
+        muted: false,
+        soloed: false
+      }));
+    });
+
   const onTrackKindChange = (trackIndex: number, kind: AudioTrackKind) => {
     const track = trackStates.value[trackIndex];
     if (!track || track.kind === kind) return;
@@ -216,10 +274,11 @@ export function usePlayerState(initialTracks: TrackInit[], callbacks?: PlayerSta
 
   // --- Song change ---
 
-  const resetForNewSong = (newTracks: TrackInit[]) => {
+  const resetForNewSong = (newTracks: TrackInit[], newSongId?: number) => {
     currentTime.value = 0;
     playing.value = false;
-    trackStates.value = newTracks.map(createTrackState);
+    currentSongId = newSongId;
+    trackStates.value = restoreTracks(newTracks);
   };
 
   return {
@@ -244,6 +303,8 @@ export function usePlayerState(initialTracks: TrackInit[], callbacks?: PlayerSta
     onFinish,
 
     // Volume, mute and solo
+    hasCustomMix,
+    resetMix,
     onTrackKindChange,
     onVolumeChange,
     onToggleTrackMuted,

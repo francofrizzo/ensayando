@@ -27,6 +27,35 @@ function trackSoloButton(page: import("@playwright/test").Page, trackName: strin
   return page.getByTestId(`track-${trackName}`).getByTestId("solo-button");
 }
 
+test("rehearsal mix survives reload and can be reset without stopping playback", async ({
+  page
+}) => {
+  test.setTimeout(45000);
+  await openTestSong(page);
+  const volume = page.getByTestId("track-Guitar").getByRole("slider");
+  await volume.fill("0.37");
+  await trackMuteButton(page, "Drums").click();
+  await trackSoloButton(page, "Vocals").click();
+  await page.reload();
+  await expect(playPauseButton(page)).toHaveAttribute("data-ready", "true");
+  await expect(volume).toHaveValue("0.37");
+  await expect(trackMuteButton(page, "Drums")).toHaveAttribute("aria-pressed", "true");
+  await expect(trackSoloButton(page, "Vocals")).toHaveAttribute("aria-pressed", "true");
+  await playPauseButton(page).click();
+  await expect.poll(() => getCurrentTimeText(page)).not.toBe("0:00");
+  await page.getByRole("button", { name: "Restablecer mezcla", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Restablecer mezcla", exact: true })).toHaveCount(
+    0
+  );
+  await expect(playPauseButton(page).locator("svg")).toHaveClass(/tabler-icon-player-pause/);
+  await expect(volume).toHaveValue("1");
+  await page.reload();
+  await expect(playPauseButton(page)).toHaveAttribute("data-ready", "true");
+  await expect(volume).toHaveValue("1");
+  await expect(trackMuteButton(page, "Drums")).toHaveAttribute("aria-pressed", "false");
+  await expect(trackSoloButton(page, "Vocals")).toHaveAttribute("aria-pressed", "false");
+});
+
 // --- Navigation ---
 
 test("collection auto-redirects to first song", async ({ page }) => {

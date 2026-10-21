@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appliedGain, usePlayerState, type TrackInit } from "./usePlayerState";
 
@@ -375,6 +375,99 @@ describe("song reset", () => {
 });
 
 // --- Edge cases ---
+
+describe("rehearsal mix", () => {
+  beforeEach(() => {
+    const items = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => items.set(key, value),
+      removeItem: (key: string) => items.delete(key)
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("remembers each song independently, follows track IDs rather than order, and defaults new tracks", () => {
+    const state = usePlayerState(threeTracks, undefined, 101);
+    state.onVolumeChange(0, 0.37);
+    state.onSoloTrack(0);
+    state.onToggleTrackMuted(2);
+    state.resetForNewSong(twoTracks, 102);
+    expect(state.gains.value).toEqual([1, 1]);
+    state.onVolumeChange(1, 0.62);
+    state.resetForNewSong([threeTracks[2]!, threeTracks[0]!, { id: 40, hasLyrics: false }], 101);
+    expect(state.trackStates.value).toMatchObject([
+      { id: 30, muted: true, soloed: false, volume: 1 },
+      { id: 10, muted: false, soloed: true, volume: 0.37 },
+      { id: 40, muted: false, soloed: false, volume: 1 }
+    ]);
+    const reopened = usePlayerState(twoTracks, undefined, 102);
+    expect(reopened.gains.value).toEqual([1, 0.62]);
+    expect(reopened.playing.value).toBe(false);
+    expect(reopened.currentTime.value).toBe(0);
+  });
+
+  it("restores safe values and never solos a track reclassified as instrumental", () => {
+    localStorage.setItem(
+      "ens-rehearsal-mix-103",
+      JSON.stringify({
+        10: { volume: -0.3, muted: "true", soloed: true },
+        20: { volume: 3, muted: true, soloed: true },
+        30: { volume: "0.2", muted: false, soloed: false }
+      })
+    );
+    const state = usePlayerState(
+      [{ ...threeTracks[0]!, kind: "instrumental" }, threeTracks[1]!, threeTracks[2]!],
+      undefined,
+      103
+    );
+    expect(state.trackStates.value).toMatchObject([
+      { volume: 0, muted: false, soloed: false },
+      { volume: 1, muted: true, soloed: true },
+      { volume: 1, muted: false, soloed: false }
+    ]);
+  });
+
+  it("resets only the mix, preserving playback and removing the saved preference", () => {
+    const state = usePlayerState(threeTracks, undefined, 104);
+    allReady(state);
+    state.playing.value = true;
+    state.onTimeUpdate(0, 42);
+    state.onVolumeChange(0, 0.2);
+    state.onToggleTrackMuted(1);
+    state.onSoloTrack(2);
+    expect(state.hasCustomMix.value).toBe(true);
+    state.resetMix();
+    expect(state.gains.value).toEqual([1, 1, 1]);
+    expect(state.hasCustomMix.value).toBe(false);
+    expect(state.playing.value).toBe(true);
+    expect(state.currentTime.value).toBe(42);
+    expect(state.isReady.value).toBe(true);
+    expect(localStorage.getItem("ens-rehearsal-mix-104")).toBeNull();
+    expect(usePlayerState(threeTracks, undefined, 104).gains.value).toEqual([1, 1, 1]);
+  });
+
+  it("keeps playback usable with corrupt or unavailable storage", () => {
+    localStorage.setItem("ens-rehearsal-mix-105", "{broken");
+    expect(usePlayerState(twoTracks, undefined, 105).gains.value).toEqual([1, 1]);
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("full");
+      },
+      removeItem: () => {
+        throw new Error("blocked");
+      }
+    });
+    const state = usePlayerState(twoTracks, undefined, 105);
+    state.onVolumeChange(0, 0.4);
+    expect(state.gains.value).toEqual([0.4, 1]);
+    state.resetMix();
+    expect(state.gains.value).toEqual([1, 1]);
+  });
+});
 
 describe("edge cases", () => {
   it("operations on out-of-bounds track index are safe", () => {

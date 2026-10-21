@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import TrackRow from "@/components/editor/TrackRow.vue";
 
 describe("track display color", () => {
-  it("shows color names and codes but saves the selected key independently of parts", async () => {
+  it("shows color names without codes and saves the selected key independently of parts", async () => {
     const wrapper = mount(TrackRow, {
       props: {
         track: {
@@ -29,11 +29,12 @@ describe("track display color", () => {
         showAdvanced: false
       }
     });
+    expect(wrapper.get('[data-testid="track-color"]').text()).toBe("");
     await wrapper.get('[data-testid="track-color"]').trigger("click");
     expect(wrapper.get('[aria-pressed="true"]').text()).toContain("Azul");
     const red = wrapper.get('[aria-pressed="false"]');
     expect(red.text()).toContain("Rojo");
-    expect(red.text()).toContain("a");
+    expect(red.text()).toBe("Rojo");
     await red.trigger("click");
     expect(wrapper.emitted("color")).toEqual([["a"]]);
     expect(wrapper.emitted("parts")).toBeUndefined();

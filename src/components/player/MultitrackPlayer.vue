@@ -22,6 +22,7 @@ import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import {
   IconChevronDown,
   IconChevronUp,
+  IconDiscard,
   IconEdit,
   IconLyrics,
   IconMixer,
@@ -93,11 +94,15 @@ const buildTrackInits = (): TrackInit[] =>
     hasLyrics: tracksIdsWithLyrics.value.includes(track.id)
   }));
 
-const state = usePlayerState(buildTrackInits(), {
-  onSeekTrack: (trackIndex, time) => {
-    trackPlayers.value[trackIndex]?.seekTo(time);
-  }
-});
+const state = usePlayerState(
+  buildTrackInits(),
+  {
+    onSeekTrack: (trackIndex, time) => {
+      trackPlayers.value[trackIndex]?.seekTo(time);
+    }
+  },
+  props.song.id
+);
 
 const { isReady, trackIdsWithLyricsEnabled } = state;
 
@@ -131,7 +136,7 @@ watch(
     }
 
     // Reset state for new song
-    state.resetForNewSong(buildTrackInits());
+    state.resetForNewSong(buildTrackInits(), props.song.id);
 
     // Start first decode on iOS for new song (nextTick so template refs are populated)
     if (isIOS) {
@@ -1076,6 +1081,15 @@ const initializeAudioContext = async () => {
         @skip-prev="goToSong(prevSong)"
         @skip-next="goToSong(nextSong)"
       >
+        <button
+          v-if="state.hasCustomMix.value"
+          class="btn btn-circle btn-sm btn-ghost text-base-content/60"
+          aria-label="Restablecer mezcla"
+          title="Restablecer mezcla"
+          @click="state.resetMix"
+        >
+          <IconDiscard class="size-4" />
+        </button>
         <button
           class="btn btn-sm btn-ghost text-base-content/60 hidden gap-1.5 rounded-full font-semibold md:inline-flex"
           data-testid="toggle-mixer"
