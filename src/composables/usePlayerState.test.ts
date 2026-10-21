@@ -306,14 +306,17 @@ describe("finish", () => {
     expect(state.playing.value).toBe(false);
   });
 
-  it("a silent non-reference track finishing does NOT stop playback", () => {
-    const state = usePlayerState(threeTracks);
-    allReady(state);
-    state.playing.value = true;
-    state.onToggleTrackMuted(1);
-    state.onFinish(1);
-    expect(state.playing.value).toBe(true);
-  });
+  it.each([false, true])(
+    "a shorter non-reference track (muted=%s) does not end the song",
+    (muted) => {
+      const state = usePlayerState(threeTracks);
+      allReady(state);
+      state.playing.value = true;
+      if (muted) state.onToggleTrackMuted(1);
+      state.onFinish(1);
+      expect(state.playing.value).toBe(true);
+    }
+  );
 });
 
 // --- Lyrics visibility ---

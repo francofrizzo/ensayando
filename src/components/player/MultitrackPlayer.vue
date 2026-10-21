@@ -20,6 +20,7 @@ import PlayerTopBar from "@/components/player/PlayerTopBar.vue";
 import ProgressBar from "@/components/player/ProgressBar.vue";
 import TrackPlayer from "@/components/player/TrackPlayer.vue";
 import {
+  IconAutoplay,
   IconChevronDown,
   IconChevronUp,
   IconDiscard,
@@ -255,6 +256,36 @@ const stanzaStarts = computed(() => stanzaStartTimes(props.lyrics));
 const goToSong = (song: Song | null) => {
   if (song) navigateToSong(props.collection, song);
 };
+
+const onFinish = (trackIndex: number) => {
+  const wasPlaying = state.playing.value;
+  state.onFinish(trackIndex);
+  if (!wasPlaying || state.playing.value || !uiStore.autoplayEnabled || uiStore.editMode) return;
+  const next = nextSong.value;
+  if (!next) return;
+  uiStore.autoplaySongId = next.id;
+  goToSong(next);
+};
+
+// SongView remounts the player for each song. Carry only the intended next ID,
+// not a general "play on mount" flag that could start a different song later.
+let autoplayOnReady = uiStore.autoplaySongId === props.song.id;
+uiStore.autoplaySongId = null;
+watch(
+  () => [uiStore.autoplayEnabled, uiStore.editMode],
+  ([enabled, editing]) => {
+    if (!enabled || editing) autoplayOnReady = false;
+  }
+);
+watch(
+  isReady,
+  (ready) => {
+    if (!ready || !autoplayOnReady) return;
+    autoplayOnReady = false;
+    if (uiStore.autoplayEnabled && !uiStore.editMode) void onPlayPause(true);
+  },
+  { flush: "post" }
+);
 
 const IOS_AUDIO_NOTICE_STORAGE_KEY = "ens-ios-audio-notice-v1";
 const showIOSAudioNotice = ref(false);
@@ -1083,12 +1114,26 @@ const initializeAudioContext = async () => {
       >
         <button
           v-if="state.hasCustomMix.value"
-          class="btn btn-circle btn-sm btn-ghost text-base-content/60"
+          class="btn btn-circle btn-sm btn-ghost text-base-content/60 hidden md:inline-flex"
           aria-label="Restablecer mezcla"
           title="Restablecer mezcla"
           @click="state.resetMix"
         >
           <IconDiscard class="size-4" />
+        </button>
+        <button
+          class="btn btn-circle btn-sm btn-ghost"
+          :class="
+            uiStore.autoplayEnabled
+              ? 'bg-collection-soft text-collection-ink'
+              : 'text-base-content/60'
+          "
+          :aria-pressed="uiStore.autoplayEnabled"
+          aria-label="Reproducción continua"
+          title="Reproducción continua"
+          @click="uiStore.autoplayEnabled = !uiStore.autoplayEnabled"
+        >
+          <IconAutoplay class="size-4" />
         </button>
         <button
           class="btn btn-sm btn-ghost text-base-content/60 hidden gap-1.5 rounded-full font-semibold md:inline-flex"
@@ -1157,6 +1202,15 @@ const initializeAudioContext = async () => {
         data-testid="mixer"
       >
         <div class="relative flex flex-col md:py-1">
+          <div v-if="state.hasCustomMix.value" class="flex justify-end pb-1 md:hidden">
+            <button
+              class="btn btn-sm btn-ghost text-base-content/60 gap-1.5 rounded-full"
+              @click="state.resetMix"
+            >
+              <IconDiscard class="size-4" />
+              Restablecer mezcla
+            </button>
+          </div>
           <TrackPlayer
             v-for="(track, index) in sortedTracks"
             :key="index"
@@ -1196,7 +1250,7 @@ const initializeAudioContext = async () => {
             @toggle-lyrics="() => state.onToggleTrackLyrics(track.id)"
             @solo-lyrics="() => state.onSoloTrackLyrics(track.id)"
             @seek="onSeekToTime"
-            @finish="state.onFinish(index)"
+            @finish="onFinish(index)"
             @error="onTrackError(index)"
             @retry="onTrackRetry(index)"
           />

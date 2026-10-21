@@ -190,7 +190,9 @@ export function usePlayerState(
   };
 
   const onFinish = (trackIndex: number) => {
-    if (trackIndex === referenceIndex.value || (gains.value[trackIndex] ?? 0) > 0) {
+    // The same track owns both the clock and the end of the song. Shorter stems
+    // can finish first without cutting off the rest of the mix.
+    if (trackIndex === referenceIndex.value) {
       playing.value = false;
     }
   };

@@ -171,11 +171,12 @@ test("instrumentals have no Solo or lyric assignment and stay audible during voi
     await expect(audioOptions.getByText("Guitar", { exact: true })).toHaveCount(0);
   } finally {
     await page.goto("/test-collection/test-song?editar=cancion");
-    await page
+    const restoredKind = page
       .getByTestId("track-row-0")
-      .getByRole("combobox", { name: "Tipo de audio" })
-      .selectOption(previous);
-    if (await page.getByTestId("save-changes").isEnabled()) {
+      .getByRole("combobox", { name: "Tipo de audio" });
+    if ((await restoredKind.inputValue()) !== previous) {
+      await restoredKind.selectOption(previous);
+      await expect(page.getByTestId("save-changes")).toBeEnabled();
       await page.getByTestId("save-changes").click();
     }
     await expect(page.getByTestId("save-changes")).toBeDisabled();

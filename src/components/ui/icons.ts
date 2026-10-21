@@ -13,6 +13,7 @@ export {
   IconPlayerPauseFilled as IconPause,
   IconPlayerSkipBackFilled as IconSkipPrev,
   IconPlayerSkipForwardFilled as IconSkipNext,
+  IconPlayerTrackNext as IconAutoplay,
   IconVolume as IconVolumeOn,
   IconVolumeOff as IconVolumeOff,
   IconBubbleText as IconLyrics,

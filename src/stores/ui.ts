@@ -54,6 +54,10 @@ export const useUIStore = defineStore("ui", () => {
     value ? openEditor(editTab.value ?? "cancion") : closeEditor();
   const toggleEditMode = () => setEditMode(!editMode.value);
 
+  // Rehearsal session only: reloading or opening a link never starts audio.
+  const autoplayEnabled = ref(false);
+  const autoplaySongId = ref<number | null>(null);
+
   // Overlays shared by every screen (mounted once in App.vue)
   const libraryOpen = ref(false);
   const commandPaletteOpen = ref(false);
@@ -82,6 +86,8 @@ export const useUIStore = defineStore("ui", () => {
     toggleEditMode,
     editorPreview,
     setEditorPreview,
+    autoplayEnabled,
+    autoplaySongId,
     libraryOpen,
     openLibrary,
     closeLibrary,
