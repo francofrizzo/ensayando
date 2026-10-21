@@ -21,6 +21,10 @@ Applied to production on 2026-10-20 after reviewing the schema and rehearsing lo
   tracks, ordered by ID. No matching track means **absent** `audio_track_ids`, not `[]`.
   No `part_ids` means legacy behavior; same-song audio validation still applies.
 - Saves reject foreign/nonexistent parts and tracks, even in explicit exceptions.
+  `20261020193000_instrumental_lyrics.sql` also rejects instrumental audio in verses,
+  including legacy verses and explicit audio overrides. Classifying a referenced
+  voice as instrumental removes derived audio assignments, but rejects the change
+  if an explicit assignment would remain; remove that exception first.
   Text, timestamps, stanza/column structure, and unrelated fields are not rewritten.
   Tracks cannot move songs, parts cannot move collections, and songs cannot move
   collections (such moves would invalidate ownership of their children).
@@ -90,6 +94,12 @@ fixtures and cleans them up; ordinary unit runs skip it. The one-time backfill m
 also be rehearsed against pre-migration fixtures/a local database snapshot.
 
 ## Rollout order
+
+Solo filters vocal and unclassified tracks; instrumentals retain their own volume
+and mute state. They have no Solo control and are not offered in lyric assignments.
+The same gain feeds playback, mix downloads and synchronization. Classify existing
+audio with reviewed ad-hoc queries; track names are not runtime classification rules
+and collection-specific corrections must not be included in schema migrations.
 
 `20261020140000_remove_parts_reviewed.sql` removes the import-review flag from tracks.
 Publish the frontend that no longer writes it before applying this cleanup. The

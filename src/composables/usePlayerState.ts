@@ -1,12 +1,16 @@
 import { computed, ref } from "vue";
 
+import type { AudioTrackKind } from "@/data/types";
+
 export type TrackInit = {
   id: number;
   hasLyrics: boolean;
+  kind?: AudioTrackKind;
 };
 
 export type TrackState = {
   id: number;
+  kind: AudioTrackKind;
   isReady: boolean;
   /** The track failed to load. It counts as resolved but stays out of the mix. */
   failed: boolean;
@@ -27,22 +31,23 @@ export type PlayerStateCallbacks = {
 };
 
 /**
- * What a track actually sounds at: volume × not muted × (no solos, or this one
- * is soloed). Playback, the mix download and sync all use it.
+ * Solo filters voices, never instrumentals. Mute and volume apply to every track.
+ * Playback, the mix download and sync all use the same gain.
  */
 export function appliedGain(
   track: Pick<TrackState, "id" | "volume" | "muted" | "soloed" | "failed"> &
-    Partial<Pick<TrackState, "retrying">>,
+    Partial<Pick<TrackState, "retrying" | "kind">>,
   anySoloed: boolean
 ): number {
   if (track.failed || track.retrying || track.muted) return 0;
-  if (anySoloed && !track.soloed) return 0;
+  if (anySoloed && track.kind !== "instrumental" && !track.soloed) return 0;
   return Math.max(0, Math.min(1, track.volume));
 }
 
 function createTrackState(init: TrackInit): TrackState {
   return {
     id: init.id,
+    kind: init.kind ?? "unclassified",
     isReady: false,
     failed: false,
     retrying: false,
@@ -50,23 +55,18 @@ function createTrackState(init: TrackInit): TrackState {
     volume: 1,
     muted: false,
     soloed: false,
-    hasLyrics: init.hasLyrics,
+    hasLyrics: init.kind !== "instrumental" && init.hasLyrics,
     lyricsEnabled: true
   };
 }
 
-export function usePlayerState(
-  initialTracks: TrackInit[],
-  callbacks?: PlayerStateCallbacks
-) {
+export function usePlayerState(initialTracks: TrackInit[], callbacks?: PlayerStateCallbacks) {
   const trackStates = ref<TrackState[]>(initialTracks.map(createTrackState));
   const playing = ref(false);
   const currentTime = ref(0);
 
   const anySoloed = computed(() => trackStates.value.some((t) => t.soloed && !t.failed));
-  const gains = computed(() =>
-    trackStates.value.map((t) => appliedGain(t, anySoloed.value))
-  );
+  const gains = computed(() => trackStates.value.map((t) => appliedGain(t, anySoloed.value)));
 
   // A failed (or retrying) track counts as resolved; the player is ready once every
   // track is resolved and at least one of them actually loaded. Retrying one track
@@ -79,20 +79,18 @@ export function usePlayerState(
   );
 
   /** The first loaded track drives the clock; track 0 may have failed. */
-  const referenceIndex = computed(() =>
-    trackStates.value.findIndex((t) => t.isReady && !t.failed)
-  );
+  const referenceIndex = computed(() => trackStates.value.findIndex((t) => t.isReady && !t.failed));
 
   /**
    * The length the player shows and seeks within: the reference track's. The clock
    * follows that track, so a longer stem's tail could never actually be played.
    */
-  const totalDuration = computed(
-    () => trackStates.value[referenceIndex.value]?.duration ?? 0
-  );
+  const totalDuration = computed(() => trackStates.value[referenceIndex.value]?.duration ?? 0);
 
   const trackIdsWithLyricsEnabled = computed(() =>
-    trackStates.value.filter((track) => track.lyricsEnabled).map((track) => track.id)
+    trackStates.value
+      .filter((track) => track.kind !== "instrumental" && track.lyricsEnabled)
+      .map((track) => track.id)
   );
 
   // Tracks that go from silent to audible must jump to the current time,
@@ -151,6 +149,15 @@ export function usePlayerState(
 
   // --- Volume, mute and solo ---
 
+  const onTrackKindChange = (trackIndex: number, kind: AudioTrackKind) => {
+    const track = trackStates.value[trackIndex];
+    if (!track || track.kind === kind) return;
+    withAudibilityCheck(() => {
+      track.kind = kind;
+      if (kind === "instrumental") track.soloed = false;
+    });
+  };
+
   const setTrackLyricsEnabled = (trackId: number, enabled: boolean) => {
     const track = trackStates.value.find((t) => t.id === trackId);
     if (track) track.lyricsEnabled = enabled;
@@ -177,7 +184,7 @@ export function usePlayerState(
   /** Tap on S (or long press / ⌘+click on M). Several tracks can be soloed at once. */
   const onSoloTrack = (trackIndex: number, toggleLyrics = false) => {
     const track = trackStates.value[trackIndex];
-    if (!track) return;
+    if (!track || track.kind === "instrumental") return;
     withAudibilityCheck(() => {
       track.soloed = !track.soloed;
       if (toggleLyrics) {
@@ -237,6 +244,7 @@ export function usePlayerState(
     onFinish,
 
     // Volume, mute and solo
+    onTrackKindChange,
     onVolumeChange,
     onToggleTrackMuted,
     onSoloTrack,

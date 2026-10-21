@@ -89,17 +89,15 @@ const tracksIdsWithLyrics = computed(() => {
 const buildTrackInits = (): TrackInit[] =>
   sortedTracks.value.map((track) => ({
     id: track.id,
+    kind: track.kind,
     hasLyrics: tracksIdsWithLyrics.value.includes(track.id)
   }));
 
-const state = usePlayerState(
-  buildTrackInits(),
-  {
-    onSeekTrack: (trackIndex, time) => {
-      trackPlayers.value[trackIndex]?.seekTo(time);
-    }
+const state = usePlayerState(buildTrackInits(), {
+  onSeekTrack: (trackIndex, time) => {
+    trackPlayers.value[trackIndex]?.seekTo(time);
   }
-);
+});
 
 const { isReady, trackIdsWithLyricsEnabled } = state;
 
@@ -152,6 +150,11 @@ watch(
 );
 
 // Interactivity
+watch(
+  () => sortedTracks.value.map((track) => track.kind),
+  (kinds) => kinds.forEach((kind, index) => state.onTrackKindChange(index, kind ?? "unclassified"))
+);
+
 const seekAllTracks = (time: number) => {
   trackPlayers.value.forEach((player, index) => {
     if (player) {
@@ -406,8 +409,7 @@ onMounted(() => {
   initMediaSession();
   if (isIOS && sortedTracks.value.length > 0) {
     try {
-      showIOSAudioNotice.value =
-        window.localStorage.getItem(IOS_AUDIO_NOTICE_STORAGE_KEY) !== "1";
+      showIOSAudioNotice.value = window.localStorage.getItem(IOS_AUDIO_NOTICE_STORAGE_KEY) !== "1";
     } catch {
       showIOSAudioNotice.value = true;
     }
@@ -1011,7 +1013,11 @@ const initializeAudioContext = async () => {
       <div class="flex min-w-0 flex-1 flex-col">
         <span class="text-sm font-semibold">Esta canción todavía no tiene pistas</span>
         <span class="text-base-content/60 text-xs">
-          {{ canEdit ? "Subí los audios desde el editor para poder escucharla." : "Cuando alguien suba los audios, se van a poder escuchar acá." }}
+          {{
+            canEdit
+              ? "Subí los audios desde el editor para poder escucharla."
+              : "Cuando alguien suba los audios, se van a poder escuchar acá."
+          }}
         </span>
       </div>
       <button
@@ -1036,8 +1042,11 @@ const initializeAudioContext = async () => {
          (v-show: the track players inside must stay mounted to keep playing).
          On a phone the open sheet takes at most half the screen; the mixer scrolls inside. -->
     <div
-      v-show="!(uiStore.editMode && uiStore.editTab === 'sincronizar') && (sortedTracks.length > 0 || uiStore.editMode)"
-      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex max-h-[50dvh] flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:max-h-none md:mb-3.5 md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
+      v-show="
+        !(uiStore.editMode && uiStore.editTab === 'sincronizar') &&
+        (sortedTracks.length > 0 || uiStore.editMode)
+      "
+      class="glass-2 relative z-10 mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex max-h-[50dvh] flex-col gap-2.5 rounded-[28px] px-4 pt-2 pb-3 md:mx-3.5 md:mb-3.5 md:max-h-none md:gap-1.5 md:rounded-[22px] md:px-[18px] md:pt-3"
       data-testid="player-dock"
     >
       <button

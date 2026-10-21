@@ -250,6 +250,52 @@ describe.skipIf(!enabled)("collection parts database contract", () => {
       (await editor.from("audio_tracks").update({ kind: "instrumental" }).eq("id", track)).error
     ).not.toBeNull();
   });
+  it("excludes instrumentals from derived lyrics and rejects explicit assignments, including legacy verses", async () => {
+    const added = await editor
+      .from("audio_tracks")
+      .insert({
+        song_id: song,
+        title: "Piano",
+        audio_file_url: "x",
+        color_key: "chosen",
+        kind: "voice",
+        part_ids: [a]
+      })
+      .select("id")
+      .single();
+    expect(added.error).toBeNull();
+    const id = added.data!.id;
+    expect(
+      (await save([[{ text: "canonical", part_ids: [a], audio_override: false }]])).error
+    ).toBeNull();
+    expect((await lyrics())[0][0].audio_track_ids).toEqual([track, id].sort((x, y) => x - y));
+    expect(
+      (
+        await editor
+          .from("audio_tracks")
+          .update({ kind: "instrumental", part_ids: [] })
+          .eq("id", id)
+      ).error
+    ).toBeNull();
+    expect((await lyrics())[0][0].audio_track_ids).toEqual([track]);
+    for (const verse of [
+      { text: "legacy", audio_track_ids: [id] },
+      { text: "custom", part_ids: [a], audio_override: true, audio_track_ids: [id] }
+    ]) {
+      expect((await save([[[[verse]]]])).error?.message).toContain("pistas instrumentales");
+    }
+    expect(
+      (await editor.from("audio_tracks").update({ kind: "voice" }).eq("id", id)).error
+    ).toBeNull();
+    expect((await save([[{ text: "explicit", audio_track_ids: [id] }]])).error).toBeNull();
+    expect(
+      (await editor.from("audio_tracks").update({ kind: "instrumental" }).eq("id", id)).error
+        ?.message
+    ).toContain("pistas instrumentales");
+    expect((await save([])).error).toBeNull();
+    expect((await editor.from("audio_tracks").delete().eq("id", id)).error).toBeNull();
+  });
+
   it("materializes grouped audio once, in nested columns, without changing chosen track colors", async () => {
     expect(
       (

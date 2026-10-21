@@ -56,10 +56,12 @@ if (!props.deferLoad) {
   currentUrl.value = audioPlaybackUrl(props.track);
 }
 
-// M: tap mutes (Shift also hides the lyrics, as before); long press or ⌘+click solos.
+const isInstrumental = computed(() => props.track.kind === "instrumental");
+
+// Instrumentals only mute; voice tracks also support the Solo gesture.
 const muteButton = useLongPress({
   tap: (shift) => emit("toggle-muted", shift),
-  longPress: () => emit("toggle-solo", false)
+  longPress: () => (isInstrumental.value ? emit("toggle-muted", false) : emit("toggle-solo", false))
 });
 // Lyrics: tap shows/hides; long press or ⌘+click shows only this track's lyrics.
 const lyricsButton = useLongPress({
@@ -132,7 +134,9 @@ const spec = computed(() => (isSilent.value || props.failed ? NEUTRAL : ownSpec.
 const ink = computed(() => deriveColor(ownSpec.value, "lyric", resolvedTheme.value));
 const dotColor = computed(() => deriveColor(spec.value, "wave", resolvedTheme.value));
 const glowColor = computed(() => deriveColor(spec.value, "fill", resolvedTheme.value, 0.12));
-const soloBackground = computed(() => deriveColor(ownSpec.value, "fill", resolvedTheme.value, 0.22));
+const soloBackground = computed(() =>
+  deriveColor(ownSpec.value, "fill", resolvedTheme.value, 0.22)
+);
 
 const waveSurferColorScheme = computed(() => ({
   waveColor: unplayedWaveColor(spec.value, resolvedTheme.value, specHue(palette.value.main)),
@@ -209,7 +213,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
 
 <template>
   <div
-    class="relative grid w-full grid-cols-1 items-center gap-x-4 max-md:border-base-content/10 max-md:border-t max-md:py-2 md:h-[46px] md:grid-cols-[198px_minmax(0,1fr)]"
+    class="max-md:border-base-content/10 relative grid w-full grid-cols-1 items-center gap-x-4 max-md:border-t max-md:py-2 md:h-[46px] md:grid-cols-[198px_minmax(0,1fr)]"
     :data-testid="`track-${track.title}`"
     :data-muted="muted || undefined"
     :data-soloed="soloed || undefined"
@@ -226,7 +230,9 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
     <div
       class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 gap-y-[3px] md:grid-cols-[minmax(0,1fr)_auto]"
     >
-      <span class="flex min-w-0 items-center gap-2 text-[13.5px] leading-none font-semibold max-md:text-sm">
+      <span
+        class="flex min-w-0 items-center gap-2 text-[13.5px] leading-none font-semibold max-md:text-sm"
+      >
         <span
           class="size-2.5 shrink-0 rounded-full"
           :style="{ background: dotColor, boxShadow: `0 0 10px ${dotColor}` }"
@@ -239,19 +245,23 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
         </span>
       </span>
 
-      <span v-if="!failed" class="flex gap-[3px] max-md:col-start-3 max-md:row-start-1 max-md:gap-1">
+      <span
+        v-if="!failed"
+        class="flex gap-[3px] max-md:col-start-3 max-md:row-start-1 max-md:gap-1"
+      >
         <button
           :disabled="!isReady"
           :class="[buttonBase, muted ? 'bg-error/15 text-error' : buttonIdle]"
           :aria-pressed="muted"
           :aria-label="`Silenciar ${track.title}`"
-          :title="`Silenciar${position ? ` (${position})` : ''} · ⌘+clic: solo`"
+          :title="`Silenciar${position ? ` (${position})` : ''}${isInstrumental ? '' : ' · ⌘+clic: solo'}`"
           data-testid="mute-button"
           v-on="muteButton"
         >
           M
         </button>
         <button
+          v-if="!isInstrumental"
           :disabled="!isReady"
           :class="[buttonBase, soloed ? '' : buttonIdle]"
           :style="soloed ? { background: soloBackground, color: ink } : undefined"
@@ -264,7 +274,7 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
           S
         </button>
         <button
-          v-if="hasLyrics"
+          v-if="hasLyrics && !isInstrumental"
           :disabled="!isReady"
           :class="[buttonBase, 'bg-base-content/6 hover:bg-base-content/12']"
           :style="{ color: lyricsEnabled ? ink : undefined }"
@@ -302,14 +312,8 @@ const buttonIdle = "bg-base-content/6 text-base-content/60 hover:bg-base-content
       />
     </div>
 
-    <div
-      class="relative min-w-0 max-md:mt-1"
-      :class="{ 'opacity-40': isSilent && !failed }"
-    >
-      <div
-        v-if="failed"
-        class="text-error flex h-[34px] items-center gap-2 text-xs font-medium"
-      >
+    <div class="relative min-w-0 max-md:mt-1" :class="{ 'opacity-40': isSilent && !failed }">
+      <div v-if="failed" class="text-error flex h-[34px] items-center gap-2 text-xs font-medium">
         <IconWarning class="size-4" />
         No se pudo cargar el audio de esta pista.
       </div>

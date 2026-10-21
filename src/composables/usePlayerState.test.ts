@@ -200,6 +200,55 @@ describe("volume and mute", () => {
 // --- Solo ---
 
 describe("solo", () => {
+  it("keeps multiple instrumentals audible during voice solos, respecting their mute and volume", () => {
+    const state = usePlayerState([
+      { id: 1, hasLyrics: false, kind: "instrumental" },
+      { id: 2, hasLyrics: true, kind: "voice" },
+      { id: 3, hasLyrics: true, kind: "voice" },
+      { id: 4, hasLyrics: false, kind: "instrumental" }
+    ]);
+    state.onVolumeChange(0, 0.25);
+    state.onVolumeChange(1, 0.4);
+    state.onVolumeChange(3, 0.6);
+    state.onSoloTrack(1);
+    expect(state.gains.value).toEqual([0.25, 0.4, 0, 0.6]);
+    state.onToggleTrackMuted(0);
+    expect(state.gains.value).toEqual([0, 0.4, 0, 0.6]);
+    state.onSoloTrack(2);
+    expect(state.gains.value).toEqual([0, 0.4, 1, 0.6]);
+    state.onToggleTrackMuted(0);
+    state.onSoloTrack(1);
+    state.onSoloTrack(2);
+    expect(state.gains.value).toEqual([0.25, 0.4, 1, 0.6]);
+  });
+
+  it("ignores instrumental solo shortcuts without changing the mix or lyrics", () => {
+    const state = usePlayerState([
+      { id: 1, hasLyrics: false, kind: "instrumental" },
+      { id: 2, hasLyrics: true, kind: "voice" }
+    ]);
+    state.onSoloTrack(0, true);
+    expect(state.anySoloed.value).toBe(false);
+    expect(state.gains.value).toEqual([1, 1]);
+    expect(state.trackIdsWithLyricsEnabled.value).toEqual([2]);
+  });
+
+  it("applies a saved classification without resetting playback or keeping an instrumental solo", () => {
+    const state = usePlayerState(threeTracks);
+    allReady(state);
+    state.onTimeUpdate(0, 37);
+    state.playing.value = true;
+    state.onVolumeChange(0, 0.3);
+    state.onSoloTrack(0);
+    state.onTrackKindChange(0, "instrumental");
+    expect(state.anySoloed.value).toBe(false);
+    expect(state.gains.value).toEqual([0.3, 1, 1]);
+    state.onSoloTrack(1);
+    expect(state.gains.value).toEqual([0.3, 1, 0]);
+    expect(state.currentTime.value).toBe(37);
+    expect(state.playing.value).toBe(true);
+  });
+
   it("solo silences the other tracks without touching their volume", () => {
     const { trackStates, gains, onSoloTrack, onVolumeChange } = usePlayerState(threeTracks);
     onVolumeChange(0, 0.3);

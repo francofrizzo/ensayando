@@ -170,7 +170,9 @@ const availableParts = computed(() =>
 const availableAudioTracks = computed(() => {
   const song = store.currentSong;
   if (!song) return [];
-  return [...song.audio_tracks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  return song.audio_tracks
+    .filter((track) => track.kind !== "instrumental")
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 });
 
 const onToggleColor = (key: string) =>

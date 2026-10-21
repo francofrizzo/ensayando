@@ -312,7 +312,7 @@ const run = (commandId: string) => props.commandRegistry.execute(commandId);
                 <span class="text-base-content/35 font-mono text-[11px]">#{{ track.id }}</span>
               </label>
             </div>
-            <p v-else class="text-base-content/50 text-[12.5px]">La canción no tiene pistas.</p>
+            <p v-else class="text-base-content/50 text-[12.5px]">No hay audios de voz.</p>
           </section>
         </div>
       </details>

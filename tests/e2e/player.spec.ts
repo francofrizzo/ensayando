@@ -112,6 +112,47 @@ test("several tracks can be soloed with the S buttons", async ({ page }) => {
   await expect(page.getByTestId("track-Vocals")).not.toHaveAttribute("data-silent");
 });
 
+test("instrumentals have no Solo or lyric assignment and stay audible during voice solos", async ({
+  page
+}) => {
+  test.setTimeout(45000);
+  await openTestSong(page);
+  await page.goto("/test-collection/test-song?editar=cancion");
+  const kind = page.getByTestId("track-row-0").getByRole("combobox", { name: "Tipo de audio" });
+  const previous = await kind.inputValue();
+  try {
+    await kind.selectOption("instrumental");
+    await page.getByTestId("save-changes").click();
+    await expect(page.getByTestId("save-changes")).toBeDisabled();
+    await page.getByRole("button", { name: "Salir del modo edición" }).click();
+    await expect(trackSoloButton(page, "Guitar")).toHaveCount(0);
+    await trackSoloButton(page, "Vocals").click();
+    await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-silent");
+    await expect(page.getByTestId("track-Drums")).toHaveAttribute("data-silent", "true");
+    await page.keyboard.press("Alt+Digit1");
+    await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-soloed");
+    await trackMuteButton(page, "Guitar").click({ modifiers: ["ControlOrMeta"] });
+    await expect(page.getByTestId("track-Guitar")).toHaveAttribute("data-muted", "true");
+    await trackMuteButton(page, "Guitar").click();
+    await expect(page.getByTestId("track-Guitar")).not.toHaveAttribute("data-silent");
+    await page.goto("/test-collection/test-song?editar=letra");
+    await page.locator("[data-lyrics-input]").first().click();
+    const audioOptions = page.getByTestId("inspector-exceptions");
+    await expect(audioOptions.getByText("Vocals", { exact: true })).toHaveCount(1);
+    await expect(audioOptions.getByText("Guitar", { exact: true })).toHaveCount(0);
+  } finally {
+    await page.goto("/test-collection/test-song?editar=cancion");
+    await page
+      .getByTestId("track-row-0")
+      .getByRole("combobox", { name: "Tipo de audio" })
+      .selectOption(previous);
+    if (await page.getByTestId("save-changes").isEnabled()) {
+      await page.getByTestId("save-changes").click();
+    }
+    await expect(page.getByTestId("save-changes")).toBeDisabled();
+  }
+});
+
 test("digit keys mute tracks", async ({ page }) => {
   await openTestSong(page);
 
