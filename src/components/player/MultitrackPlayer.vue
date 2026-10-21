@@ -27,6 +27,7 @@ import {
   IconEdit,
   IconLyrics,
   IconMixer,
+  IconOmitSilence,
   IconSkipNext,
   IconSkipPrev,
   IconUpload
@@ -262,13 +263,12 @@ const availableSilenceSkips = computed(() => {
     (track, index) => track.kind !== "instrumental" && (state.gains.value[index] ?? 0) > 0
   );
   if (voices.some((track) => track.kind !== "voice")) return null;
-  return (
-    silenceSkips(
-      voices.map((track) => ({
-        peaks: track.peaks,
-        duration: state.trackStates.value.find((item) => item.id === track.id)!.duration
-      }))
-    )?.filter((interval) => interval.end < state.totalDuration.value) ?? null
+  return silenceSkips(
+    voices.map((track) => ({
+      peaks: track.peaks,
+      duration: state.trackStates.value.find((item) => item.id === track.id)!.duration
+    })),
+    state.totalDuration.value
   );
 });
 const activeSilenceSkips = computed(() =>
@@ -290,7 +290,14 @@ watch(
     manuallySelectedPause.value = null;
     if (!playing) return;
     const interval = intervals.find((item) => time >= item.start && time < item.end);
-    if (interval) seekAllTracks(interval.end);
+    if (interval) {
+      if (interval.end === state.totalDuration.value) {
+        onFinish(state.referenceIndex.value);
+        // Pause before seeking to EOF: seeking there while playing can restart
+        // the WebAudio clock at zero. Completion still follows the normal path.
+        void nextTick(() => seekAllTracks(interval.end));
+      } else seekAllTracks(interval.end);
+    }
   },
   { flush: "post" }
 );
@@ -1174,6 +1181,21 @@ const initializeAudioContext = async () => {
           <IconAutoplay class="size-4" />
         </button>
         <button
+          class="btn btn-circle btn-sm btn-ghost"
+          :class="
+            uiStore.skipSilencesEnabled
+              ? 'bg-collection-soft text-collection-ink'
+              : 'text-base-content/60'
+          "
+          :aria-pressed="uiStore.skipSilencesEnabled"
+          :disabled="availableSilenceSkips === null && !uiStore.skipSilencesEnabled"
+          aria-label="Omitir silencio"
+          title="Omitir silencio"
+          @click="uiStore.skipSilencesEnabled = !uiStore.skipSilencesEnabled"
+        >
+          <IconOmitSilence class="size-4" />
+        </button>
+        <button
           class="btn btn-sm btn-ghost text-base-content/60 hidden gap-1.5 rounded-full font-semibold md:inline-flex"
           data-testid="toggle-mixer"
           @click="mixerOpen = !mixerOpen"
@@ -1182,7 +1204,7 @@ const initializeAudioContext = async () => {
           {{ mixerOpen ? "Ocultar pistas" : "Mostrar pistas" }}
         </button>
         <button
-          class="btn btn-circle btn-ghost md:hidden"
+          class="btn btn-circle btn-sm btn-ghost md:hidden"
           :class="{ 'bg-collection-soft text-collection-ink': mixerOpen }"
           :aria-label="mixerOpen ? 'Cerrar las pistas' : 'Abrir las pistas'"
           @click="mixerOpen = !mixerOpen"

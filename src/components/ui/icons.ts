@@ -14,6 +14,7 @@ export {
   IconPlayerSkipBackFilled as IconSkipPrev,
   IconPlayerSkipForwardFilled as IconSkipNext,
   IconPlayerTrackNext as IconAutoplay,
+  IconPlayerSkipForward as IconOmitSilence,
   IconVolume as IconVolumeOn,
   IconVolumeOff as IconVolumeOff,
   IconBubbleText as IconLyrics,

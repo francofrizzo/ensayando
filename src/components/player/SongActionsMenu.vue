@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {
+  IconAutoplay,
   IconDownload,
   IconEdit,
   IconKeyboard,
   IconMore,
+  IconOmitSilence,
   IconSettings,
   IconThemeDark,
   IconThemeLight,
@@ -55,15 +57,28 @@ const run = (action: () => void) => {
     </div>
     <ul tabindex="0" class="dropdown-content menu glass-3 rounded-box z-50 mt-2 w-72 gap-0.5 p-1.5">
       <li>
+        <label>
+          <IconAutoplay class="size-[17px] opacity-70" />
+          Reproducción continua
+          <input
+            v-model="uiStore.autoplayEnabled"
+            type="checkbox"
+            class="toggle toggle-sm ml-auto"
+            aria-label="Reproducción continua"
+          />
+        </label>
+      </li>
+      <li>
         <label
           :title="!props.canSkipSilences ? 'Sin picos válidos para las voces activas' : undefined"
         >
-          Saltar silencios
+          <IconOmitSilence class="size-[17px] opacity-70" />
+          Omitir silencio
           <input
             v-model="uiStore.skipSilencesEnabled"
             type="checkbox"
             class="toggle toggle-sm ml-auto"
-            aria-label="Saltar silencios"
+            aria-label="Omitir silencio"
             :disabled="!props.canSkipSilences && !uiStore.skipSilencesEnabled"
           />
         </label>

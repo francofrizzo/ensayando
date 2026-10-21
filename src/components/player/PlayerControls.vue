@@ -25,7 +25,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
 
 <template>
   <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-    <div class="flex min-w-0 items-center">
+    <div class="flex min-w-0 items-center max-[360px]:col-span-2 max-[360px]:row-start-2">
       <span
         v-if="props.isReady"
         class="flex items-baseline font-sans leading-none whitespace-nowrap tabular-nums"
@@ -42,7 +42,9 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </span>
     </div>
 
-    <div class="flex items-center gap-1.5 sm:gap-2.5">
+    <div
+      class="flex items-center gap-1.5 max-[360px]:col-span-3 max-[360px]:row-start-1 max-[360px]:justify-self-center sm:gap-2.5"
+    >
       <button
         class="btn btn-circle btn-ghost"
         :class="props.compact ? 'btn-sm' : 'btn-md'"
@@ -54,10 +56,7 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </button>
       <button
         class="btn btn-circle btn-primary play-glow border-0"
-        :class="[
-          props.compact ? 'size-11' : 'size-14',
-          !props.isReady && 'cursor-default'
-        ]"
+        :class="[props.compact ? 'size-11' : 'size-14', !props.isReady && 'cursor-default']"
         aria-label="Play/Pause"
         :data-ready="props.isReady || undefined"
         @click="props.isReady && emit('play-pause')"
@@ -88,7 +87,9 @@ const tenths = (time: number) => Math.floor((time % 1) * 10);
       </button>
     </div>
 
-    <div class="col-start-3 flex min-w-0 items-center justify-end gap-1.5">
+    <div
+      class="col-start-3 flex min-w-0 items-center justify-end gap-1.5 max-[360px]:row-start-2 max-sm:gap-0"
+    >
       <slot />
     </div>
   </div>

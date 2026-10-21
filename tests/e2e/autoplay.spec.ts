@@ -254,6 +254,15 @@ test("narrow player supports autoplay, manual navigation, reload and resetting t
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto(`/${slug}/cancion-1`);
   await expect(play(page)).toHaveAttribute("data-ready", "true");
+  const next = await page
+    .getByRole("button", { name: "Canción siguiente", exact: true })
+    .boundingBox();
+  const continuous = await autoplay(page).boundingBox();
+  const omit = await page
+    .getByRole("button", { name: "Omitir silencio", exact: true })
+    .boundingBox();
+  expect(next!.x + next!.width).toBeLessThanOrEqual(continuous!.x);
+  expect(continuous!.x + continuous!.width).toBeLessThanOrEqual(omit!.x);
   await autoplay(page).click();
   await page.getByRole("button", { name: "Canción siguiente", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${slug}/cancion-2$`));

@@ -7,7 +7,7 @@ const channels = (voice: number) =>
   Array.from({ length: 2 }, (_, channel) =>
     Array.from({ length: duration }, (_, second) => {
       if (voice === 2) return 30; // Instrumental never vetoes a vocal pause.
-      if (voice === 1) return channel === 1 && second >= 2 && second < 40 ? 0.3 : 0;
+      if (voice === 1) return channel === 1 && second >= 2 ? 0.3 : 0;
       return second < 2 || (second >= 40 && second < 45) ? 30 : 0;
     })
   );
@@ -40,7 +40,7 @@ function recording(voice: number) {
   return wav;
 }
 
-async function openSong(page: Page, missingPeaks = false) {
+async function openSong(page: Page, missingPeaks = false, withNextSong = false) {
   await page.addInitScript(() => localStorage.setItem("ens-ios-audio-notice-v1", "1"));
   // Keep the real local collection/auth/player, supplying controlled recordings
   // and peaks without mutating the shared seed used by other suites.
@@ -61,6 +61,20 @@ async function openSong(page: Page, missingPeaks = false) {
         audio_file_url: `http://localhost:5173/silence-${index}.wav`,
         peaks: missingPeaks && index === 1 ? null : { duration, channels: channels(index) }
       }));
+    }
+    if (withNextSong) {
+      const first = songs.find((song: { slug: string }) => song.slug === "test-song");
+      songs.push({
+        ...first,
+        id: first.id + 100000,
+        slug: "test-song-next",
+        title: "Segunda canción",
+        order: 999,
+        audio_tracks: first.audio_tracks.map((track: { id: number }) => ({
+          ...track,
+          id: track.id + 10
+        }))
+      });
     }
     await route.fulfill({ response, json: songs });
   });
@@ -85,7 +99,7 @@ async function openSong(page: Page, missingPeaks = false) {
 
 const solo = (page: Page, name: string) =>
   page.getByRole("button", { name: `Solo de ${name}`, exact: true });
-const toggle = (page: Page) => page.getByRole("checkbox", { name: "Saltar silencios" });
+const toggle = (page: Page) => page.getByRole("checkbox", { name: "Omitir silencio" });
 async function menu(page: Page) {
   await page.getByRole("button", { name: "Menú de la canción", exact: true }).click();
 }
@@ -105,11 +119,22 @@ test("skips only simultaneous vocal pauses, preserves manual seeks and suspends 
 }) => {
   await openSong(page);
   await solo(page, "Voz A").click();
+  await page.getByRole("button", { name: "Omitir silencio", exact: true }).click();
   await menu(page);
+  await expect(toggle(page)).toBeChecked();
+  await page.getByRole("checkbox", { name: "Reproducción continua" }).check();
+  await expect(
+    page.getByRole("button", { name: "Reproducción continua", exact: true })
+  ).toHaveAttribute("aria-pressed", "true");
+  await toggle(page).uncheck();
+  await expect(page.getByRole("button", { name: "Omitir silencio", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "false"
+  );
   await toggle(page).check();
   await page.getByTestId("song-title").click();
   await expect(page.getByTestId("silence-region").first()).toBeAttached();
-  await seek(page, 6.5); // Before the padded gap; normal playback must cross into it.
+  await seek(page, 3.5); // Two seconds after the first vocal exit, then skip.
   await page.getByRole("button", { name: "Play/Pause" }).click();
   await expect.poll(() => clock(page)).toBeGreaterThanOrEqual(34);
   await seek(page, 15); // A deliberate seek into the pause must not be overridden.
@@ -121,11 +146,44 @@ test("skips only simultaneous vocal pauses, preserves manual seeks and suspends 
   await page.getByRole("slider", { name: "Volumen de Voz B", exact: true }).fill("1");
   await expect(page.getByTestId("silence-region")).toHaveCount(0);
   await solo(page, "Voz B").click();
-  await seek(page, 6.5);
+  await seek(page, 3.5);
   await expect.poll(() => clock(page)).toBeGreaterThanOrEqual(34);
   await page.keyboard.press("e");
   await expect(page.getByTestId("silence-region")).toHaveCount(0);
 });
+
+for (const continuous of [false, true]) {
+  test(`omitting the final pause ${continuous ? "advances once and starts the next song" : "stops without advancing"}`, async ({
+    page
+  }) => {
+    await openSong(page, false, true);
+    await solo(page, "Voz A").click();
+    await page.getByRole("button", { name: "Omitir silencio", exact: true }).click();
+    if (continuous)
+      await page.getByRole("button", { name: "Reproducción continua", exact: true }).click();
+    await seek(page, 46.5); // Last vocal ends at 45s, final skip starts just after 47s.
+    await page.getByRole("button", { name: "Play/Pause" }).click();
+    if (continuous) {
+      await expect(page).toHaveURL(/\/test-song-next$/);
+      await expect(page.getByTestId("song-title")).toHaveText("Segunda canción");
+      await expect(page.getByRole("button", { name: "Play/Pause" }).locator("svg")).toHaveClass(
+        /tabler-icon-player-pause/
+      );
+      await expect.poll(() => clock(page)).toBeLessThan(10);
+    } else {
+      // WebKit can decode the 60s fixture a fraction of a sample shorter;
+      // the progress slider rounds seconds, while the clock floors them.
+      await expect(page.getByRole("slider", { name: "Posición", exact: true })).toHaveAttribute(
+        "aria-valuenow",
+        "60"
+      );
+      await expect(page.getByRole("button", { name: "Play/Pause" }).locator("svg")).toHaveClass(
+        /tabler-icon-player-play-filled/
+      );
+      await expect(page).toHaveURL(/\/test-song$/);
+    }
+  });
+}
 
 test("missing selected peaks disable skipping, but missing unselected peaks do not", async ({
   page
