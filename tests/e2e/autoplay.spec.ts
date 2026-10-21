@@ -81,6 +81,15 @@ test.beforeAll(async () => {
         }
       ])
       .throwOnError();
+    if (i === 2) {
+      await service
+        .from("audio_tracks")
+        .update({
+          peaks: { duration: 5, channels: [[0.1, 0.2, 0.1, 0.2, 0.1]] }
+        })
+        .eq("song_id", song!.id)
+        .throwOnError();
+    }
   }
 });
 
@@ -97,18 +106,37 @@ const autoplay = (page: import("@playwright/test").Page) =>
 test("autoplay advances once, restores the next mix, plays it, and stops at the collection end", async ({
   page
 }) => {
-  test.setTimeout(30000);
+  test.setTimeout(45000);
+  await page.route("**/storage/v1/object/public/audio-files/test/*.mp3", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await route.continue();
+  });
   await page.goto(`/${slug}/cancion-2`);
-  await expect(play(page)).toHaveAttribute("data-ready", "true");
+  await expect(play(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
+  if (await page.getByTestId("ios-playback-notice").isVisible()) {
+    await page.getByRole("button", { name: "Entendido", exact: true }).click();
+  }
   await page.getByRole("button", { name: "Solo de Voz", exact: true }).click();
   await page.getByRole("slider", { name: "Volumen de Piano" }).fill("0.41");
   await page.getByRole("button", { name: "Canción anterior", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${slug}/cancion-1$`));
-  await expect(play(page)).toHaveAttribute("data-ready", "true");
+  await expect(play(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
   await autoplay(page).click();
   await play(page).click();
+  await expect.poll(() => page.getByTestId("time-display").textContent()).not.toBe("0:00");
+  // Model Safari requiring a new gesture for contexts created after this Play.
+  // Existing, unlocked contexts keep running; the audio engine itself stays real.
+  await page.evaluate(() => {
+    const Original = window.AudioContext;
+    window.AudioContext = class extends Original {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        void this.suspend();
+      }
+    };
+  });
   await expect(page).toHaveURL(new RegExp(`/${slug}/cancion-2$`), { timeout: 15000 });
-  await expect(play(page)).toHaveAttribute("data-ready", "true");
+  await expect(play(page)).toHaveAttribute("data-ready", "true", { timeout: 15000 });
   await expect(autoplay(page)).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Solo de Voz", exact: true })).toHaveAttribute(
     "aria-pressed",

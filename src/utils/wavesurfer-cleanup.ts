@@ -1,5 +1,7 @@
 type WebAudioMedia = {
   audioContext?: { close: () => Promise<void> };
+  getGainNode?: () => { disconnect: () => void };
+  removeAttribute?: (attribute: string) => void;
 };
 
 type CleanableWaveSurfer = {
@@ -10,10 +12,12 @@ type CleanableWaveSurfer = {
 
 // WaveSurfer 7's WebAudio backend wraps a WebAudioPlayer that Player.destroy()
 // treats as external media, so destroy() skips media.pause() and the buffer
-// keeps playing. wavesurfer also ignores the `audioContext` option and spins up
-// its own AudioContext per instance that destroy() never closes. We pause
-// manually and close the context to stop background audio and release resources.
-export async function cleanupWaveSurfer(ws: CleanableWaveSurfer | null | undefined): Promise<void> {
+// keeps playing. Release the track's buffer and graph, but preserve an explicitly
+// shared context so the next song can reuse its user-gesture authorization.
+export async function cleanupWaveSurfer(
+  ws: CleanableWaveSurfer | null | undefined,
+  sharedContext?: WebAudioMedia["audioContext"]
+): Promise<void> {
   if (!ws) return;
 
   try {
@@ -31,7 +35,13 @@ export async function cleanupWaveSurfer(ws: CleanableWaveSurfer | null | undefin
   }
 
   const ctx = media?.audioContext;
-  if (ctx && typeof ctx.close === "function") {
+  try {
+    media?.getGainNode?.().disconnect();
+    media?.removeAttribute?.("src");
+  } catch {
+    /* ignore cleanup errors */
+  }
+  if (ctx && ctx !== sharedContext && typeof ctx.close === "function") {
     try {
       await ctx.close();
     } catch {

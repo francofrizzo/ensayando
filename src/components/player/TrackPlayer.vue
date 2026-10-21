@@ -3,6 +3,7 @@ import { WaveSurferPlayer } from "@meersagor/wavesurfer-vue";
 import { computed, onUnmounted, ref, toRef, watch } from "vue";
 import type WaveSurfer from "wavesurfer.js";
 import type { WaveSurferOptions } from "wavesurfer.js";
+import WebAudioPlayer from "wavesurfer.js/dist/webaudio.js";
 
 import { IconHash, IconLyrics, IconRetry, IconWarning } from "@/components/ui/icons";
 import { useCollectionPalette } from "@/composables/useCollectionPalette";
@@ -28,7 +29,7 @@ const props = defineProps<{
   hasLyrics: boolean;
   lyricsEnabled: boolean;
   editMode?: boolean;
-  audioContext?: AudioContext;
+  audioContext: AudioContext;
   deferLoad?: boolean;
   /** 1–9: the digit shortcut for this track. */
   position?: number;
@@ -50,6 +51,7 @@ const emit = defineEmits<{
 
 // State
 const waveSurfer = ref<WaveSurfer | null>(null);
+const media = new WebAudioPlayer(props.audioContext);
 const hasBegunLoad = ref(false);
 const currentUrl = ref<string | null>(null);
 if (!props.deferLoad) {
@@ -153,7 +155,7 @@ const waveSurferOptions = computed<Partial<Omit<WaveSurferOptions, "container">>
   dragToSeek: !isIOS,
   backend: "WebAudio" as const,
   url: currentUrl.value ?? undefined,
-  audioContext: props.audioContext,
+  media: media as unknown as HTMLMediaElement,
   peaks: props.track.peaks?.channels,
   ...waveSurferColorScheme.value
 }));
@@ -201,7 +203,7 @@ watch(
 onUnmounted(() => {
   const ws = waveSurfer.value;
   waveSurfer.value = null;
-  void cleanupWaveSurfer(ws).catch((error: unknown) => {
+  void cleanupWaveSurfer(ws, props.audioContext).catch((error: unknown) => {
     handleTrackError(error as Error, "destroy waveSurfer");
   });
 });

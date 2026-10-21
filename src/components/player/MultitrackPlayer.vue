@@ -45,6 +45,7 @@ import type { CollectionWithRole, LyricStanza, Song } from "@/data/types";
 import { useCollectionsStore } from "@/stores/collections";
 import { useUIStore } from "@/stores/ui";
 import { COMMAND_EVENT, type CommandEventDetail, dispatchPlayback } from "@/utils/appEvents";
+import { getPlaybackAudioContext } from "@/utils/audio-context";
 import { mixAndEncodeMp3 } from "@/utils/mixdown";
 import { isIOS } from "@/utils/platform";
 import { nextStanzaTime, previousStanzaTime, stanzaStartTimes } from "@/utils/stanzaNavigation";
@@ -486,9 +487,11 @@ onUnmounted(async () => {
   // run cleanup here too in case a TrackPlayer somehow lingered. cleanupWaveSurfer
   // is a no-op on null, which is what child refs will be by the time this runs.
   trackPlayers.value.forEach((player, index) => {
-    void cleanupWaveSurfer(player?.waveSurfer ?? null).catch((error: unknown) => {
-      handleAudioError(error as Error, `destroying wavesurfer ${index}`);
-    });
+    void cleanupWaveSurfer(player?.waveSurfer ?? null, audioContext.value).catch(
+      (error: unknown) => {
+        handleAudioError(error as Error, `destroying wavesurfer ${index}`);
+      }
+    );
   });
 
   try {
@@ -502,14 +505,6 @@ onUnmounted(async () => {
   } catch (error) {
     handleAudioError(error as Error, "cleanupAudioInterruptionListeners");
   }
-
-  // Clean up audio context reference
-  try {
-    await audioContext.value?.close();
-  } catch {
-    /* ignore cleanup errors */
-  }
-  audioContext.value = null;
 
   if (silentAudio.value) {
     try {
@@ -563,7 +558,7 @@ const SYNC_CHECK_INTERVAL = 1000;
 const DRIFT_THRESHOLD = 0.15;
 const hasInitializedAudio = ref(false);
 const silentAudio = ref<HTMLAudioElement | null>(null);
-const audioContext = ref<AudioContext | null>(null);
+const audioContext = ref(getPlaybackAudioContext());
 const audioStateChangeHandlerRef = ref<((this: AudioContext, ev: Event) => void) | null>(null);
 
 const isInitializing = ref(false);
@@ -716,25 +711,7 @@ watch(
 watch(
   () => isReady.value,
   (ready) => {
-    if (ready) {
-      // If we already created a shared AudioContext, set up listeners now
-      if (audioContext.value) {
-        setupAudioInterruptionListeners();
-        return;
-      }
-
-      // Fallback: derive context from first wavesurfer instance if we didn't create one
-      const firstTrack = trackPlayers.value[state.referenceIndex.value];
-      if (firstTrack?.waveSurfer) {
-        const ws = firstTrack.waveSurfer as WaveSurfer & {
-          backend?: { audioContext?: AudioContext };
-        };
-        if (ws.backend?.audioContext) {
-          audioContext.value = ws.backend.audioContext;
-          setupAudioInterruptionListeners();
-        }
-      }
-    }
+    if (ready) setupAudioInterruptionListeners();
   }
 );
 
@@ -847,19 +824,6 @@ const initializeAudioContext = async () => {
   }
 
   try {
-    // Create (or reuse) a single shared AudioContext for all WaveSurfer instances
-    if (!audioContext.value) {
-      const w = window as typeof window & { webkitAudioContext?: typeof AudioContext };
-      const AudioContextCtor: typeof AudioContext | undefined =
-        w.AudioContext || w.webkitAudioContext;
-      if (AudioContextCtor) {
-        audioContext.value = new AudioContextCtor({
-          sampleRate: 44100,
-          latencyHint: "playback" as AudioContextLatencyCategory
-        });
-      }
-    }
-
     // Create silent audio element to unlock audio context on user interaction
     // This is needed for WebAudio API which requires user gesture to start playing
     silentAudio.value = new Audio();
@@ -1240,7 +1204,7 @@ const initializeAudioContext = async () => {
             :has-lyrics="state.trackStates.value[index]!.hasLyrics"
             :lyrics-enabled="state.trackStates.value[index]!.lyricsEnabled"
             :edit-mode="uiStore.editMode"
-            :audio-context="audioContext || undefined"
+            :audio-context="audioContext"
             :defer-load="isIOS"
             @ready="(duration: number) => onReady(index, duration)"
             @time-update="(time: number) => state.onTimeUpdate(index, time)"
